@@ -23,16 +23,12 @@
 #lang br
 (require (prefix-in k: "abstract-knowledge.rkt"))
 (require (prefix-in d: "abstract-multi-domain.rkt"))
+(require (for-syntax syntax/parse))
 
-; first order of business: abstractlp-program is followed by PAIRS of _KNOWLEDGE and _PERIOD
-; how do we transform it into just a list of the (transformed) _KNOWLEDGE pattern variables?
-; see Fear of Macros - this requires syntax pattern matching
-; pattern is a (possibly empty) list of ((atom or rule) followed by period)
-; so if the pattern is the empty list, return no syntax
-; if it has two pieces (the second of which is a period), transform the first and ignore the second
-; if it has more, "concatenate" the syntax?
 (define-syntax (abstractlp-program stx)
-  #'"this is an abstract LP")
+  (syntax-parse stx
+    [(_) #'(list)]
+    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (abstractlp-program _MOREKNOWLEDGE ...))]))
 (provide abstractlp-program)
 
 (define #'(knowledge _ATOM-OR-RULE _PERIOD)
