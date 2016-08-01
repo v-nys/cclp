@@ -31,10 +31,6 @@
     [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (lp-program _MOREKNOWLEDGE ...))]))
 (provide lp-program)
 
-;(define #'(knowledge _ATOM-OR-RULE _PERIOD)
-;  #'(begin _ATOM-OR-RULE))
-;(provide knowledge)
-;
 ;(define-syntax (atom stx)
 ;  (syntax-parse stx
 ;    [(_ symbol) #'(d:abstract-atom (quote symbol) '())]
