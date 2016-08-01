@@ -59,7 +59,9 @@
 (define (read-syntax source-path input-port)
   (define parse-tree (parse source-path (tokenize input-port)))
   (strip-context
-    ; think this is equivalent to the use of inject-syntax from br...
+    ; here, PARSE-TREE is not quoted
+    ; so it is definitely expanded
+    ; if there is no associated syntax transformer, it makes sense to just leave it the way it is -> could be a function!
     (with-syntax ([_PARSE-TREE parse-tree])
                   #'(module abstractlp-mod "abstractlp-expander.rkt"
                       _PARSE-TREE))))
