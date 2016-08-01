@@ -37,6 +37,6 @@
 
 (define #'(abstractlp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
-     _PARSE-TREE ...))
+     '_PARSE-TREE ...))
 (provide (rename-out [abstractlp-module-begin #%module-begin])
          #%top-interaction)
