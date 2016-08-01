@@ -21,9 +21,7 @@
 ; SOFTWARE.
 
 #lang brag
-abstractlp-program : clause*
-clause : (atom | rule) PERIOD
-fact : atom
+abstractlp-program : ((atom | rule) PERIOD)*
 atom : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | (term ARITHMETIC-OP term)
 term : VARIABLE-IDENTIFIER | function-term | list
 function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN])

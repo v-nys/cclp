@@ -21,17 +21,20 @@
 ; SOFTWARE.
 
 #lang typed/racket
-
 (struct a ([index : Integer])) ; may generalize later by allowing for double indices
+(provide (struct-out a))
 (struct g ([index : Integer]))
+(provide (struct-out g))
 (define-type AbstractVariable (U a g))
 (provide AbstractVariable)
 
 (struct abstract-function ([functor : String] [args : (Listof abstract-function)]))
+(provide (struct-out abstract-function))
 (define-type AbstractTerm (U AbstractVariable abstract-function))
 (provide AbstractTerm)
 
 (struct abstract-atom ([symbol : String] [args : (Listof AbstractTerm)]))
+(provide (struct-out abstract-atom))
 (define-type AbstractConjunct abstract-atom)
 (provide AbstractConjunct)
 

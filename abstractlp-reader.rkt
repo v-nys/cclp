@@ -33,14 +33,14 @@
        [(re-seq lower-case (re-* (re-or alphabetic numeric))) (token 'SYMBOL lexeme)]
        [(re-or "<" ">" "=<" ">=" "is") (token 'ARITHMETIC-OP lexeme)] ; only need this for now
        [(re-seq "%" (re-* (char-complement "\n"))) (token 'COMMENT lexeme #:skip? #t)]
-       ["(" (token 'OPEN-PAREN)]
-       [")" (token 'CLOSE-PAREN)]
-       ["[" (token 'OPEN-LIST-PAREN)]
-       ["]" (token 'CLOSE-LIST-PAREN)]
-       ["|" (token 'LIST-SEPARATOR)]
-       ["," (token 'COMMA)]
-       [":-" (token 'IMPLIES)]
-       ["." (token 'PERIOD)]
+       ["(" (token 'OPEN-PAREN lexeme)]
+       [")" (token 'CLOSE-PAREN lexeme)]
+       ["[" (token 'OPEN-LIST-PAREN lexeme)]
+       ["]" (token 'CLOSE-LIST-PAREN lexeme)]
+       ["|" (token 'LIST-SEPARATOR lexeme)]
+       ["," (token 'COMMA lexeme)]
+       [":-" (token 'IMPLIES lexeme)]
+       ["." (token 'PERIOD lexeme)]
        [(eof) eof]))
     (get-token input-port))
   next-token)

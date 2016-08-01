@@ -20,25 +20,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang br
-(require (prefix-in k: "abstract-knowledge.rkt"))
-(require (prefix-in d: "abstract-multi-domain.rkt"))
-
-; first order of business: abstractlp-program is followed by PAIRS of _KNOWLEDGE and _PERIOD
-; how do we transform it into just a list of the (transformed) _KNOWLEDGE pattern variables?
-; see Fear of Macros - this requires syntax pattern matching
-;(define #'(abstractlp-program _KNOWLEDGE ...)
-;  #'(list _KNOWLEDGE ...))
-(define-syntax (abstractlp-program stx)
-  (syntax "this is an abstract LP"))
-(provide abstractlp-program)
-
-(define #'(knowledge _ATOM-OR-RULE _PERIOD)
-  #'(begin _ATOM-OR-RULE))
-(provide knowledge)
-
-(define #'(abstractlp-module-begin _PARSE-TREE ...)
-  #'(#%module-begin
-     _PARSE-TREE ...))
-(provide (rename-out [abstractlp-module-begin #%module-begin])
-         #%top-interaction)
+#lang reader "abstractlp-reader.rkt"
+% this program is a "warm-up" exercise for the expander
+iam.
+%man(john).
+%woman(mary).
+%married(john,mary).
