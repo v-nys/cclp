@@ -25,27 +25,24 @@
 (require (prefix-in d: "abstract-multi-domain.rkt"))
 (require (for-syntax syntax/parse))
 
-(define-for-syntax (odd-elements lst) '())
-
-(define-syntax (abstractlp-program stx)
-  (syntax-parse stx
-    [(_) #'(list)]
-    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (abstractlp-program _MOREKNOWLEDGE ...))]))
-(provide abstractlp-program)
-
-(define #'(knowledge _ATOM-OR-RULE _PERIOD)
-  #'(begin _ATOM-OR-RULE))
-(provide knowledge)
-
-(define-syntax (atom stx)
-  (syntax-parse stx
-    [(_ symbol) #'(d:abstract-atom (quote symbol) '())]
-    [(_ symbol open-paren arg1 ... close-paren) #'(d:abstract-atom (quote symbol) (odd-elements (syntax->list arg1 ...)))]
-    ))
-(provide atom)
+;(define-syntax (abstractlp-program stx)
+;  (syntax-parse stx
+;    [(_) #'(list)]
+;    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (abstractlp-program _MOREKNOWLEDGE ...))]))
+;(provide abstractlp-program)
+;
+;(define #'(knowledge _ATOM-OR-RULE _PERIOD)
+;  #'(begin _ATOM-OR-RULE))
+;(provide knowledge)
+;
+;(define-syntax (atom stx)
+;  (syntax-parse stx
+;    [(_ symbol) #'(d:abstract-atom (quote symbol) '())]
+;    [(_ symbol open-paren arg1 ... close-paren) #'(d:abstract-atom (quote symbol) (odd-elements (syntax->list arg1 ...)))]
+;    ))
+;(provide atom)
 
 (define #'(abstractlp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
-     _PARSE-TREE ...))
-(provide (rename-out [abstractlp-module-begin #%module-begin])
-         #%top-interaction)
+     '_PARSE-TREE ...))
+(provide (rename-out [abstractlp-module-begin #%module-begin]) #%top-interaction)
