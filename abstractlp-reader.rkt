@@ -59,7 +59,8 @@
 (define (read-syntax source-path input-port)
   (define parse-tree (parse source-path (tokenize input-port)))
   (strip-context
-    (inject-syntax ([#'_PARSE-TREE parse-tree])
+    ; think this is equivalent to the use of inject-syntax from br...
+    (with-syntax ([_PARSE-TREE parse-tree])
                   #'(module abstractlp-mod "abstractlp-expander.rkt"
                       _PARSE-TREE))))
 (provide read-syntax)
