@@ -20,11 +20,17 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang brag
-abstractlp-program : ((atom | rule) PERIOD)*
-atom : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | (term ARITHMETIC-OP term)
-term : VARIABLE-IDENTIFIER | function-term | list
-function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN])
-list : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (list | VARIABLE-IDENTIFIER)]] CLOSE-LIST-PAREN
-rule : atom IMPLIES conjunction
-conjunction : atom (COMMA atom)*
+#lang typed/racket
+(struct variable ([index : Integer]))
+(provide (struct-out variable))
+
+(struct function ([functor : String] [args : (Listof function)]))
+(provide (struct-out function))
+(define-type Term (U variable function))
+(provide Term)
+
+(struct atom ([symbol : String] [args : (Listof Term)]))
+(provide (struct-out atom))
+
+(define-type Conjunction (Listof AbstractConjunct))
+(provide Conjunction)

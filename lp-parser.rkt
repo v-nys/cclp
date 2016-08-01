@@ -20,29 +20,11 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang br
-(require (prefix-in k: "abstract-knowledge.rkt"))
-(require (prefix-in d: "abstract-multi-domain.rkt"))
-(require (for-syntax syntax/parse))
-
-;(define-syntax (abstractlp-program stx)
-;  (syntax-parse stx
-;    [(_) #'(list)]
-;    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (abstractlp-program _MOREKNOWLEDGE ...))]))
-;(provide abstractlp-program)
-;
-;(define #'(knowledge _ATOM-OR-RULE _PERIOD)
-;  #'(begin _ATOM-OR-RULE))
-;(provide knowledge)
-;
-;(define-syntax (atom stx)
-;  (syntax-parse stx
-;    [(_ symbol) #'(d:abstract-atom (quote symbol) '())]
-;    [(_ symbol open-paren arg1 ... close-paren) #'(d:abstract-atom (quote symbol) (odd-elements (syntax->list arg1 ...)))]
-;    ))
-;(provide atom)
-
-(define #'(abstractlp-module-begin _PARSE-TREE ...)
-  #'(#%module-begin
-     _PARSE-TREE ...))
-(provide (rename-out [abstractlp-module-begin #%module-begin]) #%top-interaction)
+#lang brag
+lp-program : ((atom | rule) PERIOD)*
+atom : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | (term ARITHMETIC-OP term)
+term : VARIABLE-IDENTIFIER | function-term | list
+function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN])
+list : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (list | VARIABLE-IDENTIFIER)]] CLOSE-LIST-PAREN
+rule : atom IMPLIES conjunction
+conjunction : atom (COMMA atom)*

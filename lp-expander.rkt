@@ -20,14 +20,29 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang reader "lp-reader.rkt"
-% this program is a "warm-up" exercise for the expander
-iam.
-ithink.
-idosomeotherthingsaswell.
-idoevenmorethings.
-idolotsofthings.
-%man(john).
-%woman(mary).
-%test(X).
-%married(john,mary).
+#lang br
+(require (prefix-in k: "abstract-knowledge.rkt"))
+(require (prefix-in d: "abstract-multi-domain.rkt"))
+(require (for-syntax syntax/parse))
+
+(define-syntax (lp-program stx)
+  (syntax-parse stx
+    [(_) #'(list)]
+    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (lp-program _MOREKNOWLEDGE ...))]))
+(provide lp-program)
+
+;(define #'(knowledge _ATOM-OR-RULE _PERIOD)
+;  #'(begin _ATOM-OR-RULE))
+;(provide knowledge)
+;
+;(define-syntax (atom stx)
+;  (syntax-parse stx
+;    [(_ symbol) #'(d:abstract-atom (quote symbol) '())]
+;    [(_ symbol open-paren arg1 ... close-paren) #'(d:abstract-atom (quote symbol) (odd-elements (syntax->list arg1 ...)))]
+;    ))
+;(provide atom)
+
+(define #'(lp-module-begin _PARSE-TREE ...)
+  #'(#%module-begin
+     '_PARSE-TREE ...))
+(provide (rename-out [lp-module-begin #%module-begin]) #%top-interaction)

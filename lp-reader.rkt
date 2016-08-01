@@ -55,14 +55,11 @@
     (exhaust tokenizer)))
 (provide all-tokens)
 
-(require "abstractlp-parser.rkt")
+(require "lp-parser.rkt")
 (define (read-syntax source-path input-port)
   (define parse-tree (parse source-path (tokenize input-port)))
   (strip-context
-    ; here, PARSE-TREE is not quoted
-    ; so it is definitely expanded
-    ; if there is no associated syntax transformer, it makes sense to just leave it the way it is -> could be a function!
     (with-syntax ([_PARSE-TREE parse-tree])
-                  #'(module abstractlp-mod "abstractlp-expander.rkt"
+                  #'(module lp-mod "lp-expander.rkt"
                       _PARSE-TREE))))
 (provide read-syntax)
