@@ -24,6 +24,10 @@
 % this program is a "warm-up" exercise for the expander
 iam.
 ithink.
-man(john).
-woman(mary).
-married(john,mary).
+idosomeotherthingsaswell.
+idoevenmorethings.
+idolotsofthings.
+%man(john).
+%woman(mary).
+%test(X).
+%married(john,mary).
