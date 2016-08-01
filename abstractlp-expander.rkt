@@ -27,10 +27,12 @@
 ; first order of business: abstractlp-program is followed by PAIRS of _KNOWLEDGE and _PERIOD
 ; how do we transform it into just a list of the (transformed) _KNOWLEDGE pattern variables?
 ; see Fear of Macros - this requires syntax pattern matching
-;(define #'(abstractlp-program _KNOWLEDGE ...)
-;  #'(list _KNOWLEDGE ...))
+; pattern is a (possibly empty) list of ((atom or rule) followed by period)
+; so if the pattern is the empty list, return no syntax
+; if it has two pieces (the second of which is a period), transform the first and ignore the second
+; if it has more, "concatenate" the syntax?
 (define-syntax (abstractlp-program stx)
-  (syntax "this is an abstract LP"))
+  #'"this is an abstract LP")
 (provide abstractlp-program)
 
 (define #'(knowledge _ATOM-OR-RULE _PERIOD)

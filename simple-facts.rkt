@@ -23,6 +23,7 @@
 #lang reader "abstractlp-reader.rkt"
 % this program is a "warm-up" exercise for the expander
 iam.
+ithink.
 %man(john).
 %woman(mary).
 %married(john,mary).
