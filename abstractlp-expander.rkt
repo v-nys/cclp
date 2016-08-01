@@ -20,16 +20,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang reader "abstractlp-reader.rkt"
-% this program should evaluate to a list of Knowledge instances
-sort(X,Y) :- perm(X,Y), ord(Y).
-
-perm([],[]).
-perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V).
-
-del(X,[X|Y],Y).
-del(X,[Y|U],[Y|V]) :- del(X,U,V).
-
-ord([]).
-ord([X]).
-ord([X,Y|Z]) :- X=<Y,ord([Y|Z]).
+#lang br
+(define #'(abstractlp-module-begin _PARSE-TREE ...)
+  #'(#%module-begin
+     '_PARSE-TREE ...))
+(provide (rename-out [abstractlp-module-begin #%module-begin])
+         #%top-interaction)
