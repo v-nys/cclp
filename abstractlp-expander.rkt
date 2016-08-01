@@ -37,7 +37,7 @@
 
 (define-syntax (atom stx)
   (syntax-parse stx
-    [(_ symbol) #'(d:abstract-atom symbol '())]))
+    [(_ symbol) #'(d:abstract-atom (quote symbol) '())]))
 (provide atom)
 
 (define #'(abstractlp-module-begin _PARSE-TREE ...)
