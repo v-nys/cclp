@@ -35,8 +35,13 @@
   #'(begin _ATOM-OR-RULE))
 (provide knowledge)
 
+(define-syntax (atom stx)
+  (syntax-parse stx
+    [(_ symbol) #'(d:abstract-atom symbol '())]))
+(provide atom)
+
 (define #'(abstractlp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
-     '_PARSE-TREE ...))
+     _PARSE-TREE ...))
 (provide (rename-out [abstractlp-module-begin #%module-begin])
          #%top-interaction)
