@@ -23,6 +23,16 @@
     (get-token input-port))
   next-token)
 
+; for easy testing
+(define (all-tokens str)
+  (define (exhaust t)
+    (let ([next (t)])
+      (if (equal? (position-token-token next) eof) (list next) (cons next (exhaust t)))))
+  (let* ([string-port (open-input-string str)]
+         [tokenizer (tokenize string-port)])
+    (exhaust tokenizer)))
+(provide all-tokens)
+
 (require "abstractlp-parser.rkt")
 (define (read-syntax source-path input-port)
   (define parse-tree (parse source-path (tokenize input-port)))
