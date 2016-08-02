@@ -46,22 +46,26 @@
 
 (define-syntax (term stx)
   (syntax-parse stx
-    ; clunky, but it should deal with variables now
-    [(_ VAR-OR-LIST-OR-MISC-FUNCTION) (if (string? (syntax->datum #'VAR-OR-LIST-OR-MISC-FUNCTION)) #'(cd:variable (syntax->datum #'VAR-OR-LIST-OR-MISC-FUNCTION)) #'VAR-OR-LIST-OR-MISC-FUNCTION)]))
+    [(_ VAR-OR-LIST-OR-MISC-FUNCTION) #'VAR-OR-LIST-OR-MISC-FUNCTION]))
 (provide term)
+
+(define-syntax-rule (variable VARIABLE-NAME) (cd:variable (quote VARIABLE-NAME)))
+(provide variable)
 
 (define-syntax (function-term stx)
   (syntax-parse stx
-    [(_ symbol) #'(cd:function (quote symbol) '())]
-    [(_ symbol open-paren arg1 ... close-paren) #'(cd:function (quote symbol) (odd-elements (list arg1 ...)))]
+    [(_ symbol) #'(cd:function (quote symbol) '())] ; constants
+    [(_ symbol open-paren arg1 ... close-paren) #'(cd:function (quote symbol) (odd-elements (list arg1 ...)))] ; function with arguments
     ))
 (provide function-term)
 
 (define-syntax (lplist stx)
   (syntax-parse stx
-    ; only supports empty lists right now
     [(_ open-paren close-paren) #'(cd:function "nil" '())]
-    ))
+    [(_ open-paren term0 close-paren) #'(cd:function "cons" (list term0 (cd:function "nil" '())))]
+    [(_ open-paren term0 comma-or-sep rest ... close-paren) (if (equal? "," (syntax->datum #'comma-or-sep))
+                                                                #'(cd:function "cons" (list term0 (lplist open-paren rest ... close-paren)))
+                                                                #'(cd:function "cons" (list term0 rest ...)))]))
 (provide lplist)
 
 (define #'(lp-module-begin _PARSE-TREE ...)

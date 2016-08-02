@@ -24,7 +24,7 @@
 (struct variable ([name : String]))
 (provide (struct-out variable))
 
-(struct function ([functor : String] [args : (Listof function)]))
+(struct function ([functor : String] [args : (Listof Term)]))
 (provide (struct-out function))
 (define-type Term (U variable function))
 (provide Term)

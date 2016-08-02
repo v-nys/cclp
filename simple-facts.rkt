@@ -35,6 +35,7 @@ varfact(X).
 woman(mary).
 onelementlist([X]).
 twoelementlist([X,Y]).
+threeelementlist([X,Y,Z]).
 tailedlist([X|Y]).
 multielementtailedlist([X,Y|Z]).
 %married(john,mary).
