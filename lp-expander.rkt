@@ -46,9 +46,8 @@
 
 (define-syntax (term stx)
   (syntax-parse stx
-    ; only supports function terms and empty lists right now
-    ; should be able to inspect token type to determine whether this needs to be a cd:variable
-    [(_ VAR-OR-LIST-OR-MISC-FUNCTION) (if (string? #'VAR-OR-LIST-OR-MISC-FUNCTION) #'(cd:variable VAR-OR-LIST-OR-MISC-FUNCTION) #'VAR-OR-LIST-OR-MISC-FUNCTION)]))
+    ; clunky, but it should deal with variables now
+    [(_ VAR-OR-LIST-OR-MISC-FUNCTION) (if (string? (syntax->datum #'VAR-OR-LIST-OR-MISC-FUNCTION)) #'(cd:variable (syntax->datum #'VAR-OR-LIST-OR-MISC-FUNCTION)) #'VAR-OR-LIST-OR-MISC-FUNCTION)]))
 (provide term)
 
 (define-syntax (function-term stx)

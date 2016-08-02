@@ -33,4 +33,8 @@ man(john).
 emptylist([]).
 varfact(X).
 woman(mary).
+onelementlist([X]).
+twoelementlist([X,Y]).
+tailedlist([X|Y]).
+multielementtailedlist([X,Y|Z]).
 %married(john,mary).
