@@ -31,12 +31,11 @@
     [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (lp-program _MOREKNOWLEDGE ...))]))
 (provide lp-program)
 
-(define-syntax odd-elems
-  (syntax-rules ()
-    [(_ arg0) arg0]
-    ; think this is where the problem is
-    ; parens around the template are a problem.
-    [(_ arg0 arg1 arg2 ...) (arg0 (odd-elems arg2 ...))]))
+(define-syntax (odd-elems stx)
+  (syntax-case stx ()
+    [(_ arg0) #'arg0]
+    ; probleem = parens
+    [(_ arg0 arg1 arg2 ...) #'(arg0 (odd-elems arg2 ...))]))
 
 (define-syntax (atom stx)
   (syntax-parse stx
