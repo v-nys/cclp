@@ -23,6 +23,7 @@
 #lang br
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (for-syntax syntax/parse))
+(require (for-syntax racket/match))
 
 (define-syntax (lp-program stx)
   (syntax-parse stx
@@ -30,16 +31,22 @@
     [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (lp-program _MOREKNOWLEDGE ...))]))
 (provide lp-program)
 
-; why doesn't odd-elements need to be defined for the syntax phase?
-; because we include it *in* the syntax - we don't use it *for* the syntax
-(define (odd-elements lst)
-  (match lst [(list a) (list a)]
-             [(list-rest a b c) (cons a c)]))
+(define-syntax odd-elems
+  (syntax-rules ()
+    [(_ arg0) arg0]
+    ; think this is where the problem is
+    ; parens around the template are a problem.
+    [(_ arg0 arg1 arg2 ...) (arg0 (odd-elems arg2 ...))]))
 
 (define-syntax (atom stx)
   (syntax-parse stx
     [(_ symbol) #'(cd:atom (quote symbol) '())]
-    [(_ symbol open-paren arg1 ... close-paren) #'(cd:atom (quote symbol) (odd-elements (list arg1 ...)))]
+; when an atom has multiple arguments, I get:
+;    application: not a procedure;
+; expected a procedure that can be applied to arguments
+;  given: #<function>
+;  arguments...:
+    [(_ symbol open-paren arg ... close-paren) #'(cd:atom (quote symbol) (list (odd-elems arg ...)))]
     ; TODO deal with the case of arithmetic operators
     ))
 (provide atom)
@@ -54,8 +61,8 @@
 
 (define-syntax (function-term stx)
   (syntax-parse stx
-    [(_ symbol) #'(cd:function (quote symbol) '())] ; constants
-    [(_ symbol open-paren arg1 ... close-paren) #'(cd:function (quote symbol) (odd-elements (list arg1 ...)))] ; function with arguments
+    [(_ symbol) #'(cd:function (quote symbol) '())]
+    [(_ symbol open-paren arg ... close-paren) #'(cd:function (quote symbol) (list (odd-elems arg ...)))]
     ))
 (provide function-term)
 

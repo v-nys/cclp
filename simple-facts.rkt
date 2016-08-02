@@ -38,4 +38,7 @@ twoelementlist([X,Y]).
 threeelementlist([X,Y,Z]).
 tailedlist([X|Y]).
 multielementtailedlist([X,Y|Z]).
+x(y).
+a(b(c(d))).
+e(f,g).
 %married(john,mary).
