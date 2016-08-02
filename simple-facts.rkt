@@ -27,7 +27,7 @@ ithink.
 idosomeotherthingsaswell.
 idoevenmorethings.
 idolotsofthings.
-%man(john).
-%woman(mary).
-%test(X).
-%married(john,mary).
+man(john).
+woman(mary).
+test(X).
+married(john,mary).

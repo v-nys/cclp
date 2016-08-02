@@ -32,5 +32,5 @@
 (struct atom ([symbol : String] [args : (Listof Term)]))
 (provide (struct-out atom))
 
-(define-type Conjunction (Listof AbstractConjunct))
+(define-type Conjunction (Listof atom))
 (provide Conjunction)

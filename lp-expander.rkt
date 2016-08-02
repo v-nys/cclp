@@ -21,8 +21,7 @@
 ; SOFTWARE.
 
 #lang br
-(require (prefix-in k: "abstract-knowledge.rkt"))
-(require (prefix-in d: "abstract-multi-domain.rkt"))
+(require (prefix-in cd: "concrete-domain.rkt"))
 (require (for-syntax syntax/parse))
 
 (define-syntax (lp-program stx)
@@ -31,14 +30,33 @@
     [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (lp-program _MOREKNOWLEDGE ...))]))
 (provide lp-program)
 
-;(define-syntax (atom stx)
-;  (syntax-parse stx
-;    [(_ symbol) #'(d:abstract-atom (quote symbol) '())]
-;    [(_ symbol open-paren arg1 ... close-paren) #'(d:abstract-atom (quote symbol) (odd-elements (syntax->list arg1 ...)))]
-;    ))
-;(provide atom)
+; why doesn't odd-elements need to be defined for the syntax phase?
+; because we include it *in* the syntax - we don't use it *for* the syntax
+(define (odd-elements lst)
+  (match lst [(list a) (list a)]
+             [(list-rest a b c) (cons a c)]))
+
+(define-syntax (atom stx)
+  (syntax-parse stx
+    [(_ symbol) #'(cd:atom (quote symbol) '())]
+    ; the only alternative is that there are parentheses, at least one term, possibly a series of comma-term
+    ; arg1 ... is a list of syntax objects? or is it syntax?
+    ; arg1 is a pattern variable
+    ; TODO try to make this more robust with syntax patterns later on
+    ; e.g. [(_ symbol (~datum "(") arg1 ... (~datum ")")) #'(cd:atom (quote symbol) (odd-elements (syntax->list arg1 ...)))] -> read syntax-parse docs
+    ;
+    ; we need a list of args
+    ; syntax->list gives us a list of syntax objects
+    ; odd-elements is still a list of syntax objects
+    ; but we shouldn't need to do any further evaluation at runtime
+    ; then again: interpreter...
+    [(_ symbol open-paren arg1 ... close-paren) #'(cd:atom (quote symbol) (odd-elements (list arg1 ...)))]
+    ; pattern matching could alleviate this?
+    ; might be best to read up on syntax-parse
+    ))
+(provide atom)
 
 (define #'(lp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
-     '_PARSE-TREE ...))
+     _PARSE-TREE ...))
 (provide (rename-out [lp-module-begin #%module-begin]) #%top-interaction)
