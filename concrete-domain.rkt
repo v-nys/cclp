@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 #lang typed/racket
-(struct variable ([index : Integer]))
+(struct variable ([name : String]))
 (provide (struct-out variable))
 
 (struct function ([functor : String] [args : (Listof function)]))

@@ -39,22 +39,31 @@
 (define-syntax (atom stx)
   (syntax-parse stx
     [(_ symbol) #'(cd:atom (quote symbol) '())]
-    ; the only alternative is that there are parentheses, at least one term, possibly a series of comma-term
-    ; arg1 ... is a list of syntax objects? or is it syntax?
-    ; arg1 is a pattern variable
-    ; TODO try to make this more robust with syntax patterns later on
-    ; e.g. [(_ symbol (~datum "(") arg1 ... (~datum ")")) #'(cd:atom (quote symbol) (odd-elements (syntax->list arg1 ...)))] -> read syntax-parse docs
-    ;
-    ; we need a list of args
-    ; syntax->list gives us a list of syntax objects
-    ; odd-elements is still a list of syntax objects
-    ; but we shouldn't need to do any further evaluation at runtime
-    ; then again: interpreter...
     [(_ symbol open-paren arg1 ... close-paren) #'(cd:atom (quote symbol) (odd-elements (list arg1 ...)))]
-    ; pattern matching could alleviate this?
-    ; might be best to read up on syntax-parse
+    ; TODO deal with the case of arithmetic operators
     ))
 (provide atom)
+
+(define-syntax (term stx)
+  (syntax-parse stx
+    ; only supports function terms and empty lists right now
+    ; should be able to inspect token type to determine whether this needs to be a cd:variable
+    [(_ VAR-OR-LIST-OR-MISC-FUNCTION) (if (string? #'VAR-OR-LIST-OR-MISC-FUNCTION) #'(cd:variable VAR-OR-LIST-OR-MISC-FUNCTION) #'VAR-OR-LIST-OR-MISC-FUNCTION)]))
+(provide term)
+
+(define-syntax (function-term stx)
+  (syntax-parse stx
+    [(_ symbol) #'(cd:function (quote symbol) '())]
+    [(_ symbol open-paren arg1 ... close-paren) #'(cd:function (quote symbol) (odd-elements (list arg1 ...)))]
+    ))
+(provide function-term)
+
+(define-syntax (lplist stx)
+  (syntax-parse stx
+    ; only supports empty lists right now
+    [(_ open-paren close-paren) #'(cd:function "nil" '())]
+    ))
+(provide lplist)
 
 (define #'(lp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
