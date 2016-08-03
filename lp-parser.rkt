@@ -25,7 +25,7 @@
 #lang brag
 lp-program : ((user-atom | rule) PERIOD)*
 user-atom : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN])
-atom : user-atom | (term ARITHMETIC-OP term)
+atom : user-atom | (term ARITHMETIC-TEST term)
 term : variable | function-term | lplist | number
 function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN])
 lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN

@@ -32,7 +32,7 @@
        [(re-seq upper-case (re-* (re-or (re-or alphabetic numeric) "_"))) (token 'VARIABLE-IDENTIFIER lexeme)]
        [(re-seq lower-case (re-* (re-or (re-or alphabetic numeric) "_"))) (token 'SYMBOL lexeme)]
        [(re-seq numeric (re-* numeric)) (token 'NUMBER lexeme)]
-       [(re-or "<" ">" "=<" ">=" "is") (token 'ARITHMETIC-OP lexeme)] ; only need this for now
+       [(re-or "<" ">" "=<" ">=" "is") (token 'ARITHMETIC-TEST lexeme)]
        [(re-seq "%" (re-* (char-complement "\n"))) (token 'COMMENT lexeme #:skip? #t)]
        ["(" (token 'OPEN-PAREN lexeme)]
        [")" (token 'CLOSE-PAREN lexeme)]
