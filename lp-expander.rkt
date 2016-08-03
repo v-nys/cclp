@@ -22,6 +22,7 @@
 
 #lang br
 (require (prefix-in cd: "concrete-domain.rkt"))
+(require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (for-syntax syntax/parse))
 (require (for-syntax racket/match))
 
@@ -77,6 +78,14 @@
                                                                 #'(cd:function "cons" (list term0 (lplist open-paren rest ... close-paren)))
                                                                 #'(cd:function "cons" (list term0 rest ...)))]))
 (provide lplist)
+
+(define-syntax-rule (rule atom ":-" conjunction) (ck:rule atom conjunction))
+(provide rule)
+
+(define-syntax (conjunction stx)
+  (syntax-parse stx
+    [(_ conjunct ...) #'(list conjunct ...)]))
+(provide conjunction)
 
 (define #'(lp-module-begin _PARSE-TREE ...)
   #'(#%module-begin

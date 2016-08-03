@@ -44,5 +44,5 @@ e(f,g).
 odd(9).
 gt(9,6).
 bidir_married(john,mary).
-%married(X,Y) :- bidir_married(X,Y).
-%married(X,Y) :- bidir_married(Y,X).
+married(X,Y) :- bidir_married(X,Y).
+married(X,Y) :- bidir_married(Y,X).
