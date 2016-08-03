@@ -26,15 +26,11 @@
 % ideally, we should be able to make this list available to other modules
 iam.
 ithink.
-idosomeotherthingsaswell.
-idoevenmorethings.
-idolotsofthings.
 man(john).
 emptylist([]).
 varfact(X).
 woman(mary).
-onelementlist([X]).
-twoelementlist([X,Y]).
+oneelementlist([X]).
 threeelementlist([X,Y,Z]).
 tailedlist([X|Y]).
 multielementtailedlist([X,Y|Z]).
