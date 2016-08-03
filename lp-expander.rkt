@@ -33,19 +33,13 @@
 
 (define-syntax (odd-elems stx)
   (syntax-case stx ()
-    [(_ arg0) #'arg0]
-    ; probleem = parens
-    [(_ arg0 arg1 arg2 ...) #'(arg0 (odd-elems arg2 ...))]))
+    [(_ arg0) #'(list arg0)]
+    [(_ arg0 arg1 arg2 ...) #'(cons arg0 (odd-elems arg2 ...))]))
 
 (define-syntax (atom stx)
   (syntax-parse stx
     [(_ symbol) #'(cd:atom (quote symbol) '())]
-; when an atom has multiple arguments, I get:
-;    application: not a procedure;
-; expected a procedure that can be applied to arguments
-;  given: #<function>
-;  arguments...:
-    [(_ symbol open-paren arg ... close-paren) #'(cd:atom (quote symbol) (list (odd-elems arg ...)))]
+    [(_ symbol open-paren arg ... close-paren) #'(cd:atom (quote symbol) (odd-elems arg ...))]
     ; TODO deal with the case of arithmetic operators
     ))
 (provide atom)
@@ -61,7 +55,7 @@
 (define-syntax (function-term stx)
   (syntax-parse stx
     [(_ symbol) #'(cd:function (quote symbol) '())]
-    [(_ symbol open-paren arg ... close-paren) #'(cd:function (quote symbol) (list (odd-elems arg ...)))]
+    [(_ symbol open-paren arg ... close-paren) #'(cd:function (quote symbol) (odd-elems arg ...))]
     ))
 (provide function-term)
 
