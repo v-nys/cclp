@@ -25,23 +25,30 @@
 (require (for-syntax syntax/parse))
 (require (for-syntax racket/match))
 
+; helper function
+; takes a syntax object, returns a list containing a syntax object for every other argument
+(define-syntax (odd-elems-as-list stx)
+  (syntax-case stx ()
+    [(_ arg0) #'(list arg0)]
+    [(_ arg0 arg1 arg2 ...) #'(cons arg0 (odd-elems-as-list arg2 ...))]))
+
+; a logic program is just a list of clauses
 (define-syntax (lp-program stx)
   (syntax-parse stx
     [(_) #'(list)]
     [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (lp-program _MOREKNOWLEDGE ...))]))
 (provide lp-program)
 
-(define-syntax (odd-elems stx)
-  (syntax-case stx ()
-    [(_ arg0) #'(list arg0)]
-    [(_ arg0 arg1 arg2 ...) #'(cons arg0 (odd-elems arg2 ...))]))
-
-(define-syntax (user-atom stx)
+(define-syntax (atom stx)
   (syntax-parse stx
     [(_ symbol) #'(cd:atom (quote symbol) '())]
-    [(_ symbol open-paren arg ... close-paren) #'(cd:atom (quote symbol) (odd-elems arg ...))]
-    ))
-(provide user-atom)
+    [(_ symbol "(" arg ... ")") #'(cd:atom (quote symbol) (odd-elems-as-list arg ...))]))
+(provide atom)
+
+(define-syntax (arithmetic-test stx)
+  (syntax-parse stx
+    [(_ arg1 op arg2) #'(cd:atom (quote op) (list arg1 arg2))]))
+(provide arithmetic-test)
 
 (define-syntax (term stx)
   (syntax-parse stx
@@ -51,13 +58,14 @@
 (define-syntax-rule (variable VARIABLE-NAME) (cd:variable (quote VARIABLE-NAME)))
 (provide variable)
 
-(define-syntax-rule (number NUMBER) (cd:number (string->number (quote NUMBER))))
+(define-syntax-rule (number NUMBER) (cd:function (number->string (quote NUMBER)) '()))
 (provide number)
 
 (define-syntax (function-term stx)
   (syntax-parse stx
-    [(_ symbol) #'(cd:function (quote symbol) '())]
-    [(_ symbol open-paren arg ... close-paren) #'(cd:function (quote symbol) (odd-elems arg ...))]
+    [(_ symbol:str) #'(cd:function (quote symbol) '())]
+    [(_ symbol) #'symbol]
+    [(_ symbol "(" arg ... ")") #'(cd:function (quote symbol) (odd-elems-as-list arg ...))]
     ))
 (provide function-term)
 
