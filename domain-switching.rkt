@@ -27,8 +27,10 @@
 (require "concrete-domain.rkt")
 (require "abstract-multi-domain.rkt")
 
-(struct none ())
-(struct (a) some ([v : a]))
+(struct none () #:transparent)
+(provide (struct-out none))
+(struct (a) some ([v : a]) #:transparent)
+(provide (struct-out some))
 (define-type (Opt a) (U none (some a)))
 
 (: get-maximum-abstract-var (-> (-> AbstractVariable Boolean) (-> AbstractVariable Integer) (Listof AbstractVariable) (Opt Integer)))
@@ -40,13 +42,19 @@
                  [(none? acc) (some (index-selector val))]
                  [(some? acc) (some (max (some-v acc) (index-selector val)))]
                  [else none])) (none) vals)) ; last clause is just there to get the type right
+(provide get-maximum-abstract-var)
 
-(: pre-abstract-aux (-> (U atom Conjunction Term) hash (U abstract-atom AbstractConjunction AbstractTerm)))
-(define (pre-abstract-aux concrete-domain-elem existing-mapping)
-  (define max-a (get-maximum-abstract-var (λ (x) (a? x))) (λ (x) (a-index x)) (hash-values existing-mapping))
-  (define max-g (get-maximum-abstract-var (λ (x) (g? x))) (λ (x) (g-index x)) (hash-values existing-mapping))
+
+(: pre-abstract-aux (-> (U atom Term) hash (U abstract-atom AbstractTerm)))
+; TODO implement
   
-
-;(: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
-;(define (pre-abstract concrete-domain-elem)
+; TODO test!
+(: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
+(define (pre-abstract concrete-domain-elem)
+  (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (mapAccum pre-abstract-aux (hash-set) (atom-args concrete-domain-elem)))]
+        [(Conjunction? concrete-domain-elem) (mapAccum pre-abstract-aux (hash-set) concrete-domain-elem)]
+        [(function? concrete-domain-elem) (if (null? (function-args concrete-domain-elem))
+                                              (car (pre-abstract-aux concrete-domain-elem (hash-set)))
+                                              (abstract-function (function-functor concrete-domain-elem)
+                                                                 (mapAccum pre-abstract-aux (hash-set) (function-args concrete-domain-elem))))]))
   

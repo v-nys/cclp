@@ -21,19 +21,19 @@
 ; SOFTWARE.
 
 #lang typed/racket
-(struct a ([index : Integer])) ; may generalize later by allowing for double indices
+(struct a ([index : Integer]) #:transparent) ; may generalize later by allowing for double indices
 (provide (struct-out a))
-(struct g ([index : Integer]))
+(struct g ([index : Integer]) #:transparent)
 (provide (struct-out g))
 (define-type AbstractVariable (U a g))
 (provide AbstractVariable)
 
-(struct abstract-function ([functor : String] [args : (Listof abstract-function)]))
+(struct abstract-function ([functor : String] [args : (Listof abstract-function)]) #:transparent)
 (provide (struct-out abstract-function))
 (define-type AbstractTerm (U AbstractVariable abstract-function))
 (provide AbstractTerm)
 
-(struct abstract-atom ([symbol : String] [args : (Listof AbstractTerm)]))
+(struct abstract-atom ([symbol : String] [args : (Listof AbstractTerm)]) #:transparent)
 (provide (struct-out abstract-atom))
 (define-type AbstractConjunct abstract-atom)
 (provide AbstractConjunct)
