@@ -41,4 +41,8 @@ multielementtailedlist([X,Y|Z]).
 x(y).
 a(b(c(d))).
 e(f,g).
-%married(john,mary).
+odd(9).
+gt(9,6).
+bidir_married(john,mary).
+%married(X,Y) :- bidir_married(X,Y).
+%married(X,Y) :- bidir_married(Y,X).

@@ -20,12 +20,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+; TODO arithmetic
+
 #lang brag
-lp-program : ((atom | rule) PERIOD)*
-atom : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | (term ARITHMETIC-OP term)
-term : variable | function-term | lplist
+lp-program : ((user-atom | rule) PERIOD)*
+user-atom : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN])
+atom : user-atom | (term ARITHMETIC-OP term)
+term : variable | function-term | lplist | number
 function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN])
 lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN
-rule : atom IMPLIES conjunction
+rule : user-atom IMPLIES conjunction
 conjunction : atom (COMMA atom)*
 variable : VARIABLE-IDENTIFIER
+number : NUMBER

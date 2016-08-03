@@ -36,13 +36,12 @@
     [(_ arg0) #'(list arg0)]
     [(_ arg0 arg1 arg2 ...) #'(cons arg0 (odd-elems arg2 ...))]))
 
-(define-syntax (atom stx)
+(define-syntax (user-atom stx)
   (syntax-parse stx
     [(_ symbol) #'(cd:atom (quote symbol) '())]
     [(_ symbol open-paren arg ... close-paren) #'(cd:atom (quote symbol) (odd-elems arg ...))]
-    ; TODO deal with the case of arithmetic operators
     ))
-(provide atom)
+(provide user-atom)
 
 (define-syntax (term stx)
   (syntax-parse stx
@@ -51,6 +50,9 @@
 
 (define-syntax-rule (variable VARIABLE-NAME) (cd:variable (quote VARIABLE-NAME)))
 (provide variable)
+
+(define-syntax-rule (number NUMBER) (cd:number (string->number (quote NUMBER))))
+(provide number)
 
 (define-syntax (function-term stx)
   (syntax-parse stx

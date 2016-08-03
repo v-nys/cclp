@@ -26,7 +26,9 @@
 
 (struct function ([functor : String] [args : (Listof Term)]))
 (provide (struct-out function))
-(define-type Term (U variable function))
+(struct number ([value : Number]))
+(provide (struct-out number))
+(define-type Term (U variable function number))
 (provide Term)
 
 (struct atom ([symbol : String] [args : (Listof Term)]))
