@@ -60,6 +60,7 @@
       (let ([max-g (get-maximum-abstract-var g? avar-index (hash-values existing-mapping))])
         (match max-g [none (cons (g 1) (hash-set existing-mapping constant (g 1)))]
           [(some val) (cons (g (+ val 1)) (hash-set existing-mapping constant (g (+ val 1))))]))))
+(provide pre-abstract-aux-constant)
 
 (: pre-abstract-aux-term (-> Term (HashTable Term AbstractVariable) (Pair AbstractTerm (HashTable Term AbstractVariable))))
 (define (pre-abstract-aux-term concrete-term existing-mapping)
