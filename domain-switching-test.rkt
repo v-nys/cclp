@@ -4,14 +4,14 @@
 (check-equal? (get-maximum-abstract-var g? avar-index (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14))) (some 14) "Find the biggest g, where there is one")
 (check-equal? (get-maximum-abstract-var g? avar-index (list (a 1) (a 2) (a 5) (a 9) (a 6) (a 14))) (none) "Find the biggest g, where there is none")
 
-(check-equal? (pre-abstract (variable "A")) (a 1))
-(check-equal? (pre-abstract (function "dummy" '())) (g 1))
+(check-equal? (pre-abstract (variable "A")) (a 1) "single new variable case")
+(check-equal? (pre-abstract (function "dummy" '())) (g 1) "single new constant case")
 
-(check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash)) (cons (g 1) (hash (function "dummy" '()) (g 1))))
-(check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash (function "dummy" '()) (g 1))) (cons (g 1) (hash (function "dummy" '()) (g 1))))
-(check-equal? (pre-abstract-aux-constant (function "dummy2" '()) (hash (function "dummy1" '()) (g 1))) (cons (g 2) (hash (function "dummy1" '()) (g 1) (function "dummy2" '()) (g 2))))
+(check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash)) (cons (g 1) (hash (function "dummy" '()) (g 1))) "case of constant with no existing mapping")
+(check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash (function "dummy" '()) (g 1))) (cons (g 1) (hash (function "dummy" '()) (g 1))) "case of constant with an existing mapping")
+(check-equal? (pre-abstract-aux-constant (function "dummy2" '()) (hash (function "dummy1" '()) (g 1))) (cons (g 2) (hash (function "dummy1" '()) (g 1) (function "dummy2" '()) (g 2))) "case of constant when there is a mapping for another constant")
 
 (let ([abstract-args (list (a 1) (a 1) (a 2) (g 1) (g 2) (g 1))]
       ; should be able to do this more concisely using #lang lp building blocks, roughly as (expand (parse 'function "dummy(A,A,dummy2,dummy3,dummy2)"))
       [concrete-args (list (variable "A") (variable "A") (variable "B") (function "dummy2" '()) (function "dummy3" '()) (function "dummy2" '()))])
-     (check-equal? (pre-abstract (function "dummy" concrete-args)) (abstract-function "dummy" abstract-args)))
+     (check-equal? (pre-abstract (function "dummy" concrete-args)) (abstract-function "dummy" abstract-args) "abstracting a complex term"))

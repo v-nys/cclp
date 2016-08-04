@@ -50,7 +50,7 @@
   (if (hash-has-key? existing-mapping var)
       (cons (hash-ref existing-mapping var) existing-mapping)
       (let ([max-a (get-maximum-abstract-var a? avar-index (hash-values existing-mapping))])
-        (match max-a [none (cons (a 1) (hash-set existing-mapping var (a 1)))]
+        (match max-a [(none) (cons (a 1) (hash-set existing-mapping var (a 1)))]
           [(some val) (cons (a (+ val 1)) (hash-set existing-mapping var (a (+ val 1))))]))))
 
 (: pre-abstract-aux-constant (-> function (HashTable Term AbstractVariable) (Pair AbstractVariable (HashTable Term AbstractVariable))))
@@ -58,8 +58,8 @@
   (if (hash-has-key? existing-mapping constant)
       (cons (hash-ref existing-mapping constant) existing-mapping)
       (let ([max-g (get-maximum-abstract-var g? avar-index (hash-values existing-mapping))])
-        (match max-g [none (cons (g 1) (hash-set existing-mapping constant (g 1)))]
-          [(some val) (cons (g (+ val 1)) (hash-set existing-mapping constant (g (+ val 1))))]))))
+        (match max-g [(none) (cons (g 1) (hash-set existing-mapping constant (g 1)))]
+          [(some index) (cons (g (+ index 1)) (hash-set existing-mapping constant (g (+ index 1))))]))))
 (provide pre-abstract-aux-constant)
 
 (: pre-abstract-aux-term (-> Term (HashTable Term AbstractVariable) (Pair AbstractTerm (HashTable Term AbstractVariable))))
