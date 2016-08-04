@@ -35,7 +35,7 @@
         [(g? avar) (g-index avar)]))
 (provide avar-index)
 
-(struct abstract-function ([functor : String] [args : (Listof abstract-function)]) #:transparent)
+(struct abstract-function ([functor : String] [args : (Listof AbstractTerm)]) #:transparent)
 (provide (struct-out abstract-function))
 (define-type AbstractTerm (U AbstractVariable abstract-function))
 (provide AbstractTerm)

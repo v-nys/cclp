@@ -50,35 +50,40 @@
   (if (hash-has-key? existing-mapping var)
       (cons (hash-ref existing-mapping var) existing-mapping)
       (let ([max-a (get-maximum-abstract-var a? avar-index (hash-values existing-mapping))])
-        (match max-a [none (cons (a 1) (hash-set existing-mapping var (a 1)))]))))
+        (match max-a [none (cons (a 1) (hash-set existing-mapping var (a 1)))]
+          [(some val) (cons (a (+ val 1)) (hash-set existing-mapping var (a (+ val 1))))]))))
+
+(: pre-abstract-aux-constant (-> function (HashTable Term AbstractVariable) (Pair AbstractVariable (HashTable Term AbstractVariable))))
+(define (pre-abstract-aux-constant constant existing-mapping)
+  (if (hash-has-key? existing-mapping constant)
+      (cons (hash-ref existing-mapping constant) existing-mapping)
+      (let ([max-g (get-maximum-abstract-var g? avar-index (hash-values existing-mapping))])
+        (match max-g [none (cons (g 1) (hash-set existing-mapping constant (g 1)))]
+          [(some val) (cons (g (+ val 1)) (hash-set existing-mapping constant (g (+ val 1))))]))))
 
 (: pre-abstract-aux-term (-> Term (HashTable Term AbstractVariable) (Pair AbstractTerm (HashTable Term AbstractVariable))))
 (define (pre-abstract-aux-term concrete-term existing-mapping)
   (cond [(variable? concrete-term) (pre-abstract-aux-variable concrete-term existing-mapping)]
-        [(function? concrete-term) (if (null? (function-args concrete-term)
-                                              (pre-abstract-constant concrete-term existing-mapping)
-                                              (let* ([applied-to-args (mapAccum pre-abstract-aux-term existing-mapping (function-args concrete-domain-elem))]
-                                                     [just-mapped-args (car applied-to-args)]
-                                                     [just-acc (cdr applied-to-args)])
-                                                    (cons (abstract-function (functor concrete-domain-elem) just-mapped-args) just-acc))))]))
+        [(function? concrete-term) (if (null? (function-args concrete-term))
+                                       (pre-abstract-aux-constant concrete-term existing-mapping)
+                                       (let* ([applied-to-args (mapAccum pre-abstract-aux-term existing-mapping (function-args concrete-term))]
+                                              [just-mapped-args (car applied-to-args)]
+                                              [just-acc (cdr applied-to-args)])
+                                         (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]))
 
-
-(: pre-abstract-aux (-> (U atom Term) (HashTable Term AbstractVariable) (Pair (U abstract-atom AbstractTerm) (HashTable Term AbstractVariable))))
-(define (pre-abstract-aux concrete-domain-elem existing-mapping)
-  (cond [(atom? concrete-domain-elem) (if (null? (atom-args concrete-domain-elem))
-                                          (cons (abstract-atom (atom-symbol concrete-domain-elem) '()) existing-mapping)
-                                          (let* ([applied-to-args (mapAccum pre-abstract-aux-term existing-mapping (atom-args concrete-domain-elem))]
-                                                 [just-mapped-args (car applied-to-args)]
-                                                 [just-acc (cdr applied-to-args)])
-                                            (cons (abstract-atom (atom-symbol concrete-domain-elem) just-mapped-args) just-acc)))]
-        [(Term? concrete-domain-elem) (pre-abstract-aux-term concrete-domain-elem existing-mapping)]))
+; note: there is some duplication here, solely due to Conjunctions...
+(: pre-abstract-aux-atom (-> atom (HashTable Term AbstractVariable) (Pair abstract-atom (HashTable Term AbstractVariable))))
+(define (pre-abstract-aux-atom concrete-atom existing-mapping)
+  (if (null? (atom-args concrete-atom))
+      (cons (abstract-atom (atom-symbol concrete-atom) '()) existing-mapping)
+      (let* ([applied-to-args (mapAccum pre-abstract-aux-term existing-mapping (atom-args concrete-atom))]
+             [just-mapped-args (car applied-to-args)]
+             [just-acc (cdr applied-to-args)])
+        (cons (abstract-atom (atom-symbol concrete-atom) just-mapped-args) just-acc))))
 
 (: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
 (define (pre-abstract concrete-domain-elem)
-  (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (map car (mapAccum pre-abstract-aux (hash) (atom-args concrete-domain-elem))))]
-        [(Conjunction? concrete-domain-elem) (map car (mapAccum pre-abstract-aux (hash) concrete-domain-elem))]
-        [(function? concrete-domain-elem) (if (null? (function-args concrete-domain-elem))
-                                              (car (pre-abstract-aux concrete-domain-elem (hash-set)))
-                                              (abstract-function (function-functor concrete-domain-elem)
-                                                                 (map car (mapAccum pre-abstract-aux (hash) (function-args concrete-domain-elem)))))]))
-  
+  (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (car (mapAccum pre-abstract-aux-term (ann (hash) (HashTable Term AbstractVariable)) (atom-args concrete-domain-elem))))]
+        [(Conjunction? concrete-domain-elem) (car (mapAccum pre-abstract-aux-atom (ann (hash) (HashTable Term AbstractVariable)) concrete-domain-elem))]
+        [(Term? concrete-domain-elem) (car (pre-abstract-aux-term concrete-domain-elem (ann (hash) (HashTable Term AbstractVariable))))]))
+(provide pre-abstract)
