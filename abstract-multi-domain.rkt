@@ -25,8 +25,15 @@
 (provide (struct-out a))
 (struct g ([index : Integer]) #:transparent)
 (provide (struct-out g))
+
 (define-type AbstractVariable (U a g))
 (provide AbstractVariable)
+
+(: avar-index (-> AbstractVariable Integer))
+(define (avar-index avar)
+  (cond [(a? avar) (a-index avar)]
+        [(g? avar) (g-index avar)]))
+(provide avar-index)
 
 (struct abstract-function ([functor : String] [args : (Listof abstract-function)]) #:transparent)
 (provide (struct-out abstract-function))

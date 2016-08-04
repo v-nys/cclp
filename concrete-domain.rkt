@@ -26,11 +26,17 @@
 
 (struct function ([functor : String] [args : (Listof Term)]) #:transparent)
 (provide (struct-out function))
+
 (define-type Term (U variable function))
 (provide Term)
+(define-predicate Term? Term)
+(provide Term?)
 
 (struct atom ([symbol : String] [args : (Listof Term)]) #:transparent)
 (provide (struct-out atom))
 
 (define-type Conjunction (Listof atom))
 (provide Conjunction)
+
+(define-predicate Conjunction? Conjunction)
+(provide Conjunction?)
