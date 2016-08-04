@@ -46,11 +46,6 @@
     [(_ symbol "(" arg ... ")") #'(cd:atom (quote symbol) (odd-elems-as-list arg ...))]))
 (provide atom)
 
-(define-syntax (arithmetic-test stx)
-  (syntax-parse stx
-    [(_ arg1 op arg2) #'(cd:atom (quote op) (list arg1 arg2))]))
-(provide arithmetic-test)
-
 (define-syntax (term stx)
   (syntax-parse stx
     [(_ VAR-OR-LIST-OR-MISC-FUNCTION) #'VAR-OR-LIST-OR-MISC-FUNCTION]))
@@ -59,9 +54,6 @@
 (define-syntax-rule (variable VARIABLE-NAME) (cd:variable (quote VARIABLE-NAME)))
 (provide variable)
 
-(define-syntax-rule (number NUMBER) (cd:function (number->string (quote NUMBER)) '()))
-(provide number)
-
 (define-syntax (function-term stx)
   (syntax-parse stx
     [(_ symbol:str) #'(cd:function (quote symbol) '())]
@@ -69,6 +61,9 @@
     [(_ symbol "(" arg ... ")") #'(cd:function (quote symbol) (odd-elems-as-list arg ...))]
     ))
 (provide function-term)
+
+(define-syntax-rule (number NUMBER) (cd:function (number->string (quote NUMBER)) '()))
+(provide number)
 
 (define-syntax (lplist stx)
   (syntax-parse stx
@@ -84,7 +79,7 @@
 
 (define-syntax (conjunction stx)
   (syntax-parse stx
-    [(_ conjunct ...) #'(list conjunct ...)]))
+    [(_ conjunct ...) #'(odd-elems-as-list conjunct ...)]))
 (provide conjunction)
 
 (define #'(lp-module-begin _PARSE-TREE ...)

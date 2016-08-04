@@ -20,17 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-; note: there are no arithmetic tests,... as atoms
-; just write them in regular atom notation and provide full abstract eval info for them
-; lists are here as syntactic sugar, because they are so common and require so much boilerplate
-
 #lang brag
 lp-program : ((atom | rule) PERIOD)*
 atom : SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]
 term : variable | function-term | lplist
+variable : VARIABLE-IDENTIFIER
 function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | number
+number : NUMBER
 lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN
 rule : atom IMPLIES conjunction
 conjunction : atom (COMMA atom)*
-variable : VARIABLE-IDENTIFIER
-number : NUMBER
