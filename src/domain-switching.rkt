@@ -26,13 +26,8 @@
 #lang typed/racket
 (require "concrete-domain.rkt")
 (require "abstract-multi-domain.rkt")
+(require "data-utils.rkt")
 (require typed-racket-list-utils/utils)
-
-(struct none () #:transparent)
-(provide (struct-out none))
-(struct (a) some ([v : a]) #:transparent)
-(provide (struct-out some))
-(define-type (Opt a) (U none (some a)))
 
 (: get-maximum-abstract-var (-> (-> AbstractVariable Boolean) (-> AbstractVariable Integer) (Listof AbstractVariable) (Opt Integer)))
 ; type-test is to distinguish a from g

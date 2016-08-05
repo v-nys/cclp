@@ -20,25 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang reader "lp-reader.rkt"
-% this program is a "warm-up" exercise for the expander
-% the result of running it is a list, which is printed in the interactions panel
-% ideally, we should be able to make this list available to other modules
-iam.
-ithink.
-man(john).
-emptylist([]).
-varfact(X).
-woman(mary).
-oneelementlist([X]).
-threeelementlist([X,Y,Z]).
-tailedlist([X|Y]).
-multielementtailedlist([X,Y|Z]).
-x(y).
-a(b(c(d))).
-e(f,g).
-odd(9).
-gt(9,6).
-bidir_married(john,mary).
-married(X,Y) :- bidir_married(X,Y).
-married(X,Y) :- bidir_married(Y,X).
+#lang typed/racket
+(require "abstract-substitution.rkt")
+(require "data-utils.rkt")
+(: abstract-unify (-> AbstractSubstitution (Opt AbstractSubstitution)))
+(define (abstract-unify subst) (none))
