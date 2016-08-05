@@ -21,7 +21,8 @@
 ; SOFTWARE.
 
 #lang racket
-(require rackunit "domain-switching.rkt" "abstract-multi-domain.rkt" "concrete-domain.rkt")
+(require rackunit "../src/domain-switching.rkt" "../src/abstract-multi-domain.rkt" "../src/concrete-domain.rkt" "../src/data-utils.rkt")
+
 (check-equal? (get-maximum-abstract-var a? avar-index (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14))) (some 9) "Find the biggest a, where there is one")
 (check-equal? (get-maximum-abstract-var g? avar-index (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14))) (some 14) "Find the biggest g, where there is one")
 (check-equal? (get-maximum-abstract-var g? avar-index (list (a 1) (a 2) (a 5) (a 9) (a 6) (a 14))) (none) "Find the biggest g, where there is none")

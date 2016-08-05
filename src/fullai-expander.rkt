@@ -81,6 +81,9 @@
 (define-syntax-rule (substitution-pair lhs "/" rhs) (as:abstract-equality lhs rhs))
 (provide substitution-pair)
 
+(define (test) (display "test!"))
+(provide test)
+
 (define #'(lp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
      _PARSE-TREE ...))
