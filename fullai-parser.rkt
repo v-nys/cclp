@@ -20,33 +20,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang typed/racket
-(struct a ([index : Integer]) #:transparent) ; may generalize later by allowing for double indices
-(provide (struct-out a))
-(struct g ([index : Integer]) #:transparent)
-(provide (struct-out g))
-
-(define-type AbstractVariable (U a g))
-(provide AbstractVariable)
-
-(: avar-index (-> AbstractVariable Integer))
-(define (avar-index avar)
-  (cond [(a? avar) (a-index avar)]
-        [(g? avar) (g-index avar)]))
-(provide avar-index)
-
-(struct abstract-function ([functor : String] [args : (Listof AbstractTerm)]) #:transparent)
-(provide (struct-out abstract-function))
-(define-type AbstractTerm (U AbstractVariable abstract-function))
-(provide AbstractTerm)
-
-(struct abstract-atom ([symbol : String] [args : (Listof AbstractTerm)]) #:transparent)
-(provide (struct-out abstract-atom))
-(define-type AbstractConjunct abstract-atom)
-(provide AbstractConjunct)
-
-(define-type AbstractConjunction (Listof AbstractConjunct))
-(provide AbstractConjunction)
-
-(define-type AbstractDomainElem (U AbstractTerm abstract-atom AbstractConjunction))
-(provide AbstractDomainElem)
+#lang brag
+fullai-program : fullai-rule*
+fullai-rule : abstract-atom-with-args LEADS-TO substitution PERIOD
+abstract-atom-with-args : SYMBOL OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
+abstract-term : abstract-variable | abstract-function-term | abstract-lplist
+abstract-variable : abstract-variable-a | abstract-variable-g
+abstract-variable-a : AVAR-SYMBOL-a NUMBER
+abstract-variable-g : AVAR-SYMBOL-g NUMBER
+abstract-function-term : (SYMBOL [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]) | number-term
+number-term : NUMBER
+abstract-lplist : OPEN-LIST-PAREN [abstract-term (COMMA abstract-term)* [LIST-SEPARATOR (abstract-lplist | abstract-variable)]] CLOSE-LIST-PAREN
+substitution : substitution-pair (COMMA substitution-pair)*
+substitution-pair : abstract-variable SLASH abstract-term

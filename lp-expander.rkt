@@ -23,15 +23,8 @@
 #lang br
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
+(require "syntax-utils.rkt") ; to filter out odd elements
 (require (for-syntax syntax/parse))
-(require (for-syntax racket/match))
-
-; helper function
-; takes a syntax object, returns a list containing a syntax object for every other argument
-(define-syntax (odd-elems-as-list stx)
-  (syntax-case stx ()
-    [(_ arg0) #'(list arg0)]
-    [(_ arg0 arg1 arg2 ...) #'(cons arg0 (odd-elems-as-list arg2 ...))]))
 
 ; a logic program is just a list of clauses
 (define-syntax (lp-program stx)
@@ -57,9 +50,8 @@
 (define-syntax (function-term stx)
   (syntax-parse stx
     [(_ symbol:str) #'(cd:function (quote symbol) '())]
-    [(_ symbol) #'symbol]
-    [(_ symbol "(" arg ... ")") #'(cd:function (quote symbol) (odd-elems-as-list arg ...))]
-    ))
+    [(_ num-term) #'num-term] ; these are just plain numbers
+    [(_ symbol "(" arg ... ")") #'(cd:function (quote symbol) (odd-elems-as-list arg ...))]))
 (provide function-term)
 
 (define-syntax-rule (number NUMBER) (cd:function (number->string (quote NUMBER)) '()))
@@ -69,9 +61,8 @@
   (syntax-parse stx
     [(_ open-paren close-paren) #'(cd:function "nil" '())]
     [(_ open-paren term0 close-paren) #'(cd:function "cons" (list term0 (cd:function "nil" '())))]
-    [(_ open-paren term0 comma-or-sep rest ... close-paren) (if (equal? "," (syntax->datum #'comma-or-sep))
-                                                                #'(cd:function "cons" (list term0 (lplist open-paren rest ... close-paren)))
-                                                                #'(cd:function "cons" (list term0 rest ...)))]))
+    [(_ open-paren term0 "," rest ... close-paren) #'(cd:function "cons" (list term0 (lplist open-paren rest ... close-paren)))]
+    [(_ open-paren term0 "|" rest ... close-paren) #'(cd:function "cons" (list term0 rest ...))]))
 (provide lplist)
 
 (define-syntax-rule (rule atom ":-" conjunction) (ck:rule atom conjunction))

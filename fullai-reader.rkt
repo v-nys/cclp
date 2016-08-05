@@ -29,20 +29,18 @@
     (define get-token
       (lexer-src-pos
        [whitespace (token 'WS lexeme #:skip? #t)]
-       ; can we use α and γ rather than a and g to avoid confusion with concrete constants?
-       ; how would we parse an abstract variable? simple: abstract-var-symbol underscore number
+       ["α" (token 'AVAR-SYMBOL-a)] ; to avoid conflict with potential constants a and g
+       ["γ" (token 'AVAR-SYMBOL-g)] ; same
        [(re-seq lower-case (re-* (re-or (re-or alphabetic numeric) "_"))) (token 'SYMBOL lexeme)]
        [(re-seq numeric (re-* numeric)) (token 'NUMBER (string->number lexeme))]
-       [(re-or "<" ">" "=<" ">=" "is") (token 'ARITHMETIC-TEST lexeme)]
-       [(re-or "+" "-" "*" "/" "mod") (token 'ARITHMETIC-OP lexeme)]
-       [(re-seq "%" (re-* (char-complement "\n"))) (token 'COMMENT lexeme #:skip? #t)]
+       ["->" (token 'LEADS-TO lexeme)]
+       ["/" (token 'SLASH lexeme)]
        ["(" (token 'OPEN-PAREN lexeme)]
        [")" (token 'CLOSE-PAREN lexeme)]
        ["[" (token 'OPEN-LIST-PAREN lexeme)]
        ["]" (token 'CLOSE-LIST-PAREN lexeme)]
        ["|" (token 'LIST-SEPARATOR lexeme)]
        ["," (token 'COMMA lexeme)]
-       [":-" (token 'IMPLIES lexeme)]
        ["." (token 'PERIOD lexeme)]
        [(eof) eof]))
     (get-token input-port))
