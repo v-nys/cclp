@@ -29,8 +29,8 @@
     (define get-token
       (lexer-src-pos
        [whitespace (token 'WS lexeme #:skip? #t)]
-       [(re-seq upper-case (re-* (re-or (re-or alphabetic numeric) "_"))) (token 'VARIABLE-IDENTIFIER lexeme)]
-       [(re-seq lower-case (re-* (re-or (re-or alphabetic numeric) "_"))) (token 'SYMBOL lexeme)]
+       [(re-seq (char-range "A" "Z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'VARIABLE-IDENTIFIER lexeme)]
+       [(re-seq (char-range "a" "z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'SYMBOL lexeme)]
        [(re-seq numeric (re-* numeric)) (token 'NUMBER (string->number lexeme))]
        [(re-seq "%" (re-* (char-complement "\n"))) (token 'COMMENT lexeme #:skip? #t)]
        ["(" (token 'OPEN-PAREN lexeme)]

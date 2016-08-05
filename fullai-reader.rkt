@@ -29,9 +29,9 @@
     (define get-token
       (lexer-src-pos
        [whitespace (token 'WS lexeme #:skip? #t)]
-       ["α" (token 'AVAR-SYMBOL-a)] ; to avoid conflict with potential constants a and g
-       ["γ" (token 'AVAR-SYMBOL-g)] ; same
-       [(re-seq lower-case (re-* (re-or (re-or alphabetic numeric) "_"))) (token 'SYMBOL lexeme)]
+       ["α" (token 'AVAR-SYMBOL-A lexeme)] ; to avoid conflict with potential constants a and g
+       ["γ" (token 'AVAR-SYMBOL-G lexeme)] ; same
+       [(re-seq (char-range "a" "z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'SYMBOL lexeme)]
        [(re-seq numeric (re-* numeric)) (token 'NUMBER (string->number lexeme))]
        ["->" (token 'LEADS-TO lexeme)]
        ["/" (token 'SLASH lexeme)]

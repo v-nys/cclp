@@ -31,7 +31,7 @@
 (define-syntax-rule (fullai-program rule ...) (list rule ...))
 (provide fullai-program)
 
-(define-syntax-rule (fullai-rule atom "->" subst) (fai:FullAIRule atom subst))
+(define-syntax-rule (fullai-rule atom "->" subst ".") (fai:FullAIRule atom subst))
 (provide fullai-rule)
 
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")") (ad:abstract-atom (quote symbol) (odd-elems-as-list arg ...)))
@@ -67,10 +67,15 @@
     [(_ open-paren term0 "|" rest ... close-paren) #'(cd:function "cons" (list term0 rest ...))]))
 (provide abstract-lplist)
 
-(define-syntax-rule (substitution eq ...) (odd-elems-as-list eq ...))
+; empty substitutions make sense if we can just scratch the abstract atom
+; e.g. lte(g1,g2) just disappears and does not need a substitution
+(define-syntax substitution
+  (syntax-rules () [(list) (list)]
+                   [(eq0 eq1 ...) (odd-elems-as-list eq0 eq1 ...)]))
 (provide substitution)
 
-
+(define-syntax-rule (substitution-pair lhs "/" rhs) (as:abstract-equality lhs rhs))
+(provide substitution-pair)
 
 (define #'(lp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
