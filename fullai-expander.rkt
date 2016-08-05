@@ -31,8 +31,11 @@
 (define-syntax-rule (fullai-program rule ...) (list rule ...))
 (provide fullai-program)
 
-(define-syntax-rule (fullai-rule atom "->" subst ".") (fai:FullAIRule atom subst))
-(provide fullai-rule)
+(define-syntax-rule (fullai-rule-with-body atom "->" subst ".") (fai:FullAIRule atom subst))
+(provide fullai-rule-with-body)
+
+(define-syntax-rule (fullai-rule-without-body atom ".") (fai:FullAIRule atom (list)))
+(provide fullai-rule-without-body)
 
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")") (ad:abstract-atom (quote symbol) (odd-elems-as-list arg ...)))
 (provide abstract-atom-with-args)
@@ -43,10 +46,10 @@
 (define-syntax-rule (abstract-variable specific-var) specific-var)
 (provide abstract-variable)
 
-(define-syntax-rule (abstract-variable-a "α" index) (ad:a (string->number index)))
+(define-syntax-rule (abstract-variable-a "α" index) (ad:a (quote index)))
 (provide abstract-variable-a)
 
-(define-syntax-rule (abstract-variable-g "γ" index) (ad:g (string->number index)))
+(define-syntax-rule (abstract-variable-g "γ" index) (ad:g (quote index)))
 (provide abstract-variable-g)
 
 (define-syntax (abstract-function-term stx)
@@ -69,9 +72,10 @@
 
 ; empty substitutions make sense if we can just scratch the abstract atom
 ; e.g. lte(g1,g2) just disappears and does not need a substitution
-(define-syntax substitution
-  (syntax-rules () [(list) (list)]
-                   [(eq0 eq1 ...) (odd-elems-as-list eq0 eq1 ...)]))
+(define-syntax (substitution stx)
+  (syntax-parse stx
+    [(_) (list)]
+    [(_ lhs0 lhs1 ...) #'(odd-elems-as-list lhs0 lhs1 ...)]))
 (provide substitution)
 
 (define-syntax-rule (substitution-pair lhs "/" rhs) (as:abstract-equality lhs rhs))
