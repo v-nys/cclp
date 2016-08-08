@@ -28,6 +28,8 @@
 
 (define-type AbstractVariable (U a g))
 (provide AbstractVariable)
+(define-predicate AbstractVariable? AbstractVariable)
+(provide AbstractVariable?)
 
 (: avar-index (-> AbstractVariable Integer))
 (define (avar-index avar)

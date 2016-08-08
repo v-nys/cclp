@@ -25,7 +25,14 @@
 (require "data-utils.rkt")
 (require "abstract-multi-domain.rkt")
 (: abstract-unify (-> AbstractSubstitution (Opt AbstractSubstitution)))
-(define (abstract-unify subst) (none))
+(define (abstract-unify subst)
+  (match subst
+    [(list) (some (list))]
+    [(list-rest (abstract-equality t1 t2) tail) #:when (equal? t1 t2) (abstract-unify tail)]
+    [(list-rest (abstract-equality v t) tail) #:when (and (AbstractVariable? v) (occurs v t)) (none)]
+    ; TODO: rest requires auxiliary substitution functions
+    [else (none)]))
+(provide abstract-unify)
 
 (: occurs (-> AbstractVariable AbstractDomainElem Boolean))
 (define (occurs avar aterm)
