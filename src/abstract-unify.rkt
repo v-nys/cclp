@@ -23,5 +23,14 @@
 #lang typed/racket
 (require "abstract-substitution.rkt")
 (require "data-utils.rkt")
+(require "abstract-multi-domain.rkt")
 (: abstract-unify (-> AbstractSubstitution (Opt AbstractSubstitution)))
 (define (abstract-unify subst) (none))
+
+(: occurs (-> AbstractVariable AbstractDomainElem Boolean))
+(define (occurs avar aterm)
+  (match aterm
+    [(abstract-function symbol args) (ormap (λ ([elem : AbstractTerm]) (occurs avar elem)) args)]
+    [(abstract-atom symbol args) (ormap (λ ([elem : AbstractTerm]) (occurs avar elem)) args)]
+    [else (equal? avar aterm)]))
+(provide occurs)
