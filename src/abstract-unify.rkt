@@ -42,11 +42,11 @@
              [else (some (cons (abstract-equality (a i) t) (some-v recursion)))]))]
     [(list-rest (abstract-equality (abstract-atom sym1 args1) (abstract-atom sym2 args2)) tail)
      (if (and (equal? sym1 sym2) (equal? (length args1) (length args2)))
-         (abstract-unify (append (for/list ([arg1 args1] [arg2 args2]) (abstract-equality arg1 arg2)) tail))
+         (abstract-unify (append (for/list ([arg1 : AbstractTerm args1] [arg2 : AbstractTerm args2]) (abstract-equality arg1 arg2)) tail))
          (none))]
     [(list-rest (abstract-equality (abstract-function sym1 args1) (abstract-function sym2 args2)) tail)
      (if (and (equal? sym1 sym2) (equal? (length args1) (length args2)))
-         (abstract-unify (append (for/list ([arg1 args1] [arg2 args2]) (abstract-equality arg1 arg2)) tail))
+         (abstract-unify (append (for/list ([arg1 : AbstractTerm args1] [arg2 : AbstractTerm args2]) (abstract-equality arg1 arg2)) tail))
          (none))]
     [(list-rest (abstract-equality t var) tail) #:when (AbstractVariable? var) (abstract-unify (cons (abstract-equality var t) tail))]
     
