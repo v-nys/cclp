@@ -68,7 +68,11 @@
 (check-equal? (abstract-unify (term-equality-list ("[γ1]" "[γ2]"))) (some (term-equality-list ("γ1" "γ2"))) "unification of lists")
 (check-equal? (abstract-unify (term-equality-list ("append(α13,α14,α12)" "append(α19,α20,α18)"))) (some (term-equality-list ("α13" "α19") ("α14" "α20") ("α12" "α18"))) "unification of renamings respects the order of the arguments")
 (check-equal? (abstract-unify (term-equality-list ("collect(γ3,α3)" "collect(node(α1),cons(α1,γ4))"))) (some (term-equality-list ("α1" "γ5") ("γ3" "node(γ5)") ("α3" "cons(γ5,γ4)"))))
-(check-equal? (abstract-unify (term-equality-list ("collect(γ1,α4)" "collect(tree(α5,α6),α7)"))) (some (term-equality-list ("α5" "γ6") ("α6" "γ7") ("γ1" "tree(γ6,γ7)") ("α4" "α7"))))
+
+(test-case "unification of more complex terms"
+           (check-true (some? (abstract-unify (term-equality-list ("collect(γ1,α4)" "collect(tree(α5,α6),α7)")))))
+           (check-equal? (list->set (some-v (abstract-unify (term-equality-list ("collect(γ1,α4)" "collect(tree(α5,α6),α7)")))))
+                         (list->set (term-equality-list ("α5" "γ6") ("α6" "γ7") ("γ1" "tree(γ6,γ7)") ("α4" "α7")))))
 
 ; TODO unification for multi?
 ; TODO think of more scenarios?

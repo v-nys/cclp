@@ -27,15 +27,13 @@
 
 (: abstract-unify (-> AbstractSubstitution (Opt AbstractSubstitution)))
 (define (abstract-unify subst)
-  (begin
-  (displayln subst)
   (match subst
     [(list) (some (list))]
     [(list-rest (abstract-equality t1 t2) tail) #:when (equal? t1 t2) (abstract-unify tail)]
     [(list-rest (abstract-equality v t) tail) #:when (and (AbstractVariable? v) (occurs v t)) (none)]
-    [(list-rest (abstract-equality (a i) t) tail) #:when (AbstractTerm? t) ; we can't unify a conjunct with a term
-     (let ([substituted (substitute-in-substitution t (a i) tail)]
-           [recursion (abstract-unify tail)])
+    [(list-rest (abstract-equality (a i) t) tail) #:when (AbstractTerm? t) ; we can't unify a conjunct or conjunction with a term
+     (let* ([substituted (substitute-in-substitution t (a i) tail)]
+            [recursion (abstract-unify substituted)])
        (cond [(none? recursion) recursion]
              [else (some (cons (abstract-equality (a i) t) (some-v recursion)))]))]
     [(list-rest (abstract-equality (abstract-atom sym1 args1) (abstract-atom sym2 args2)) tail)
@@ -56,7 +54,7 @@
             [substituted-substitution (substitute-in-substitution t (g i) tail)])
        (if (set-empty? nested-any-indices)
            (let ([rest (abstract-unify substituted-substitution)]) (if (none? rest) rest (some (cons (abstract-equality (g i) t) (some-v rest)))))
-           (none)))]
+           (abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)))))]
            ;(abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)))))]
             
      
@@ -74,7 +72,7 @@
 ;                         else ((aunify substituted_substitution) >>= (\s -> return (eq:s)))
      
     ; TODO Hoe pakken we dit best aan voor multi? al iets in Haskell code maar niet helemaal tevreden van.
-    [else (none)])))
+    [else (none)]))
 (provide abstract-unify)
 
 (: occurs (-> AbstractVariable AbstractDomainElem Boolean))
