@@ -55,7 +55,8 @@
             [substituted-substitution (substitute-in-substitution t (g i) tail)])
        (if (set-empty? nested-any-indices)
            (let ([rest (abstract-unify substituted-substitution)]) (if (none? rest) rest (some (cons (abstract-equality (g i) t) (some-v rest)))))
-           (abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)))))]
+           (none)))]
+           ;(abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)))))]
             
      
 ;    aunify substitution@(eq@(AEquality ug@(FuncTerm (AConst ac@(UG i))) t):xs) =
