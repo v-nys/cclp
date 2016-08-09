@@ -1,5 +1,6 @@
 #lang racket
 (require
+  (for-syntax "../src/fullai-parser.rkt")
   (for-syntax "../src/fullai-reader.rkt") ; for all-tokens
   (for-syntax syntax/strip-context) ; for replace-context
   (for-syntax "../src/fullai-expander.rkt")
