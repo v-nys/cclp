@@ -45,11 +45,19 @@
          (abstract-unify (append (for/list : (Listof abstract-equality) ([arg1 : AbstractTerm args1] [arg2 : AbstractTerm args2]) (abstract-equality arg1 arg2)) tail))
          (none))]
     [(list-rest (abstract-equality t var) tail) #:when (AbstractVariable? var) (abstract-unify (cons (abstract-equality var t) tail))]
+    
 
-    ;[(list-rest (abstract-equality (g i) t) tail)
+    [(list-rest (abstract-equality (g i) t) tail) #:when (AbstractTerm? t)
+     (let* ([max-g (maximum-var-index-in-substitution g? (cons (abstract-equality (g i) t) tail))]
+            [g-offset (if (some? max-g) (some-v max-g) 1)]
+            [nested-any-indices (assemble-var-indices a? t)]
+            [equalities (map (λ ([idx : Integer]) (abstract-equality (a idx) (g (+ idx g-offset)))) (set->list nested-any-indices))]
+            [substituted-substitution (substitute-in-substitution t (g i) tail)])
+       (if (set-empty? nested-any-indices)
+           (let ([rest (abstract-unify substituted-substitution)]) (if (none? rest) rest (some (cons (abstract-equality (g i) t) (some-v rest)))))
+           (abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)))))]
+            
      
-
-
 ;    aunify substitution@(eq@(AEquality ug@(FuncTerm (AConst ac@(UG i))) t):xs) =
 ;  let max_ug = maximum_struct_substitution UG substitution
 ;      ug_offset = case max_ug of (Just i) -> i
@@ -62,13 +70,8 @@
 ;      substituted_substitution = (substitute_in_substitution t ug xs)
 ;  in if (any_vals /= []) then (aunify (any_equalities ++ (eq:substituted_substitution)))
 ;                         else ((aunify substituted_substitution) >>= (\s -> return (eq:s)))
-;aunify subst@(AEquality
-;              (ConjunctTerm (Multi gram1 i1 f1))
-;              (ConjunctTerm (Multi gram2 i2 f2)):aeqs) = if length i1 == length i2 && length f1 == length f2 && gram1 == gram2
-;                                                         then aunify $ (zipWith (\i f -> AEquality (FuncTerm i) (FuncTerm f)) (i1 ++ f1) (i2 ++ f2)) ++ aeqs
-;                                                         else Nothing
-
-        
+     
+    ; TODO Hoe pakken we dit best aan voor multi? al iets in Haskell code maar niet helemaal tevreden van.
     [else (none)]))
 (provide abstract-unify)
 

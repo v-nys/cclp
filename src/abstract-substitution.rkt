@@ -8,7 +8,7 @@
 
 (require "data-utils.rkt") ; for Opt
 
-; note: can only substitute for an abstract variable, and there is never any reason to substitute an atom or conjunction for something
+; note: can only substitute for an abstract variable, and there is never any reason to substitute an atom or conjunction for something, so use terms
 (: substitute-in-term (-> AbstractTerm AbstractVariable AbstractTerm AbstractTerm))
 (define (substitute-in-term substituter substitutee input-elem)
   (match (list substituter substitutee input-elem)
@@ -44,6 +44,7 @@
              (cond [(none? acc) max-aeq]
                    [(none? max-aeq) acc]
                    [else (some (max (some-v acc) (some-v max-aeq)))]))) (none) substitution))
+(provide maximum-var-index-in-substitution)
 
 (: maximum-var-index-in-equality (-> (-> AbstractVariable Boolean) abstract-equality (Opt Integer)))
 (define (maximum-var-index-in-equality right-variable-type? aeq)
