@@ -27,6 +27,8 @@
 
 (: abstract-unify (-> AbstractSubstitution (Opt AbstractSubstitution)))
 (define (abstract-unify subst)
+  (begin
+  (displayln subst)
   (match subst
     [(list) (some (list))]
     [(list-rest (abstract-equality t1 t2) tail) #:when (equal? t1 t2) (abstract-unify tail)]
@@ -44,9 +46,8 @@
      (if (and (equal? sym1 sym2) (equal? (length args1) (length args2)))
          (abstract-unify (append (for/list : (Listof abstract-equality) ([arg1 : AbstractTerm args1] [arg2 : AbstractTerm args2]) (abstract-equality arg1 arg2)) tail))
          (none))]
-    [(list-rest (abstract-equality t var) tail) #:when (AbstractVariable? var) (abstract-unify (cons (abstract-equality var t) tail))]
-    
-
+    [(list-rest (abstract-equality t (a i)) tail) (abstract-unify (cons (abstract-equality (a i) t) tail))]
+    [(list-rest (abstract-equality (abstract-function sym args) (g i)) tail) (abstract-unify (cons (abstract-equality (g i) (abstract-function sym args)) tail))]
     [(list-rest (abstract-equality (g i) t) tail) #:when (AbstractTerm? t)
      (let* ([max-g (maximum-var-index-in-substitution g? (cons (abstract-equality (g i) t) tail))]
             [g-offset (if (some? max-g) (some-v max-g) 1)]
@@ -73,7 +74,7 @@
 ;                         else ((aunify substituted_substitution) >>= (\s -> return (eq:s)))
      
     ; TODO Hoe pakken we dit best aan voor multi? al iets in Haskell code maar niet helemaal tevreden van.
-    [else (none)]))
+    [else (none)])))
 (provide abstract-unify)
 
 (: occurs (-> AbstractVariable AbstractDomainElem Boolean))

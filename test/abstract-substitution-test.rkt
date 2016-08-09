@@ -20,6 +20,11 @@
 (check-equal? (maximum-var-index (parse-atom "foo(γ1,γ2)") a?) (none))
 (check-equal? (maximum-var-index (parse-atom "foo(α1,α2)") g?) (none))
 
+(check-equal? (substitute-in-substitution (parse-term "γ5") (parse-term "α1") (list (abstract-equality (parse-term "α4") (parse-term "foo(bar(α3,α1,α2))"))))
+              (list (abstract-equality (parse-term "α4") (parse-term "foo(bar(α3,γ5,α2))"))))
+(check-equal? (substitute-in-substitution (parse-term "γ5") (parse-term "α4") (list (abstract-equality (parse-term "α4") (parse-term "foo(bar(α3,α1,α2))"))))
+              (list (abstract-equality (parse-term "γ5") (parse-term "foo(bar(α3,α1,α2))"))))
+
 ; TODO test for conjunctions
 
 ;  describe "substitution for abstract constants in terms" $ do
