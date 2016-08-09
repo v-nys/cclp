@@ -71,3 +71,4 @@
 (check-equal? (abstract-unify (term-equality-list ("collect(γ1,α4)" "collect(tree(α5,α6),α7)"))) (some (term-equality-list ("α5" "γ6") ("α6" "γ7") ("γ1" "tree(γ6,γ7)") ("α4" "α7"))))
 
 ; TODO unification for multi?
+; TODO think of more scenarios?

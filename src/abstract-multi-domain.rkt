@@ -26,6 +26,8 @@
 (struct g ([index : Integer]) #:transparent)
 (provide (struct-out g))
 
+(require "data-utils.rkt") ; for optional set union
+
 (define-type AbstractVariable (U a g))
 (provide AbstractVariable)
 (define-predicate AbstractVariable? AbstractVariable)
@@ -44,7 +46,6 @@
 (define-predicate AbstractTerm? AbstractTerm)
 (provide AbstractTerm?)
 
-
 (struct abstract-atom ([symbol : String] [args : (Listof AbstractTerm)]) #:transparent)
 (provide (struct-out abstract-atom))
 (define-type AbstractConjunct abstract-atom)
@@ -57,3 +58,12 @@
 
 (define-type AbstractDomainElem (U AbstractTerm abstract-atom AbstractConjunction))
 (provide AbstractDomainElem)
+
+; may want to move this outside of core domain?
+(: assemble-var-indices (-> (-> AbstractVariable Boolean) AbstractDomainElem (Setof Integer)))
+(define (assemble-var-indices right-variable-type? domain-elem)
+  (cond [(AbstractVariable? domain-elem) (if (right-variable-type? domain-elem) (set (avar-index domain-elem)) (set))]
+        [(abstract-atom? domain-elem) (apply optional-set-union (map (λ ([arg : AbstractTerm]) (assemble-var-indices right-variable-type? arg)) (abstract-atom-args domain-elem)))]
+        [(abstract-function? domain-elem) (apply optional-set-union (map (λ ([arg : AbstractTerm]) (assemble-var-indices right-variable-type? arg)) (abstract-function-args domain-elem)))]
+        [(AbstractConjunction? domain-elem) (apply optional-set-union (map (λ ([arg : abstract-atom]) (assemble-var-indices right-variable-type? arg)) domain-elem))]))
+(provide assemble-var-indices)

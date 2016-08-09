@@ -1,5 +1,24 @@
 #lang racket
+(require rackunit)
+(require "domain-boilerplate.rkt")
+(require "../src/abstract-substitution.rkt")
 
+(check-equal? (maximum-var-index (parse-term "γ1") g?) (some 1))
+(check-equal? (maximum-var-index (parse-term "γ1") a?) (none))
+(check-equal? (maximum-var-index (parse-term "α2") a?) (some 2))
+(check-equal? (maximum-var-index (parse-term "α2") g?) (none))
+
+(check-equal? (maximum-var-index (parse-term "foo(γ1,α2)") g?) (some 1))
+(check-equal? (maximum-var-index (parse-term "foo(γ1,α2)") a?) (some 2))
+(check-equal? (maximum-var-index (parse-term "foo(γ1,γ2)") g?) (none))
+(check-equal? (maximum-var-index (parse-term "foo(α1,α2)") g?) (none))
+
+(check-equal? (maximum-var-index (parse-atom "foo(γ1,α2)") g?) (some 1))
+(check-equal? (maximum-var-index (parse-atom "foo(γ1,α2)") a?) (some 2))
+(check-equal? (maximum-var-index (parse-atom "foo(γ1,γ2)") g?) (none))
+(check-equal? (maximum-var-index (parse-atom "foo(α1,α2)") g?) (none))
+
+; TODO test for conjunctions
 
 ;  describe "substitution for abstract constants in terms" $ do
 ;

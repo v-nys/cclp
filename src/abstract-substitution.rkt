@@ -6,6 +6,8 @@
 (define-type AbstractSubstitution (Listof abstract-equality))
 (provide AbstractSubstitution)
 
+(require "data-utils.rkt") ; for Opt
+
 ; note: can only substitute for an abstract variable, and there is never any reason to substitute an atom or conjunction for something
 (: substitute-in-term (-> AbstractTerm AbstractVariable AbstractTerm AbstractTerm))
 (define (substitute-in-term substituter substitutee input-elem)
@@ -34,3 +36,32 @@
          (abstract-equality (substitute-in-domain-elem substituter substitutee (abstract-equality-term1 aeq))
                             (substitute-in-domain-elem substituter substitutee (abstract-equality-term2 aeq)))) input-subst))
 (provide substitute-in-substitution)
+
+(: maximum-var-index-in-substitution (-> (-> AbstractVariable Boolean) AbstractSubstitution (Opt Integer)))
+(define (maximum-var-index-in-substitution right-variable-type? substitution)
+  (foldl (λ ([eq : abstract-equality] [acc : (Opt Integer)])
+           (let ([max-aeq (maximum-var-index-in-equality right-variable-type? eq)])
+             (cond [(none? acc) max-aeq]
+                   [(none? max-aeq) acc]
+                   [else (some (max (some-v acc) (some-v max-aeq)))]))) (none) substitution))
+
+(: maximum-var-index-in-equality (-> (-> AbstractVariable Boolean) abstract-equality (Opt Integer)))
+(define (maximum-var-index-in-equality right-variable-type? aeq)
+  (let ([max-lhs (maximum-var-index (abstract-equality-term1 aeq) right-variable-type?)]
+        [max-rhs (maximum-var-index (abstract-equality-term2 aeq) right-variable-type?)])
+    (cond [(none? max-lhs) max-rhs]
+          [(none? max-rhs) max-lhs]
+          [else (some (max (some-v max-lhs) (some-v max-rhs)))])))
+
+(: maximum-var-index (-> AbstractDomainElem (-> AbstractVariable Boolean) (Opt Integer)))
+(define (maximum-var-index domain-elem right-variable-type?)
+  (define max-of-args-accumulator (λ ([el : AbstractDomainElem] [acc : (Opt Integer)])
+                                                   (let ([subterm-max (maximum-var-index el right-variable-type?)])
+                                                     (cond [(none? acc) subterm-max]
+                                                           [(none? subterm-max) acc]
+                                                           [else (some (max (some-v acc) (some-v subterm-max)))]))))
+  (cond [(AbstractVariable? domain-elem) (if (right-variable-type? domain-elem) (some (avar-index domain-elem)) (none))]
+        [(abstract-function? domain-elem) (foldl max-of-args-accumulator (none) (abstract-function-args domain-elem))]
+        [(abstract-atom? domain-elem) (foldl max-of-args-accumulator (none) (abstract-atom-args domain-elem))]
+        [(AbstractConjunction? domain-elem) (foldl max-of-args-accumulator (none) domain-elem)]))
+(provide maximum-var-index)
