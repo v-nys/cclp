@@ -4,6 +4,7 @@
   (for-syntax "../src/fullai-reader.rkt") ; for all-tokens
   (for-syntax syntax/strip-context) ; for replace-context
   (for-syntax "../src/fullai-expander.rkt")
+  "../src/fullai-expander.rkt"
   )
 
 ; think the current error is a side-effect of breaking hygiene
