@@ -24,13 +24,32 @@
 (require "abstract-substitution.rkt")
 (require "data-utils.rkt")
 (require "abstract-multi-domain.rkt")
+
+
+
+
+
 (: abstract-unify (-> AbstractSubstitution (Opt AbstractSubstitution)))
 (define (abstract-unify subst)
   (match subst
     [(list) (some (list))]
     [(list-rest (abstract-equality t1 t2) tail) #:when (equal? t1 t2) (abstract-unify tail)]
     [(list-rest (abstract-equality v t) tail) #:when (and (AbstractVariable? v) (occurs v t)) (none)]
-    ; TODO: rest requires auxiliary substitution functions
+    [(list-rest (abstract-equality (a i) t) tail) #:when (AbstractTerm? t) ; we can't unify a conjunct with a term
+     (let ([substituted (substitute-in-substitution t (a i) tail)]
+           [recursion (abstract-unify tail)])
+       (cond [(none? recursion) recursion]
+             [else (some (cons (abstract-equality (a i) t) (some-v recursion)))]))]
+    [(list-rest (abstract-equality (abstract-atom sym1 args1) (abstract-atom sym2 args2)) tail)
+     (if (and (equal? sym1 sym2) (equal? (length args1) (length args2)))
+         (abstract-unify (append (for/list ([arg1 args1] [arg2 args2]) (abstract-equality arg1 arg2)) tail))
+         (none))]
+    [(list-rest (abstract-equality (abstract-function sym1 args1) (abstract-function sym2 args2)) tail)
+     (if (and (equal? sym1 sym2) (equal? (length args1) (length args2)))
+         (abstract-unify (append (for/list ([arg1 args1] [arg2 args2]) (abstract-equality arg1 arg2)) tail))
+         (none))]
+    [(list-rest (abstract-equality t var) tail) #:when (AbstractVariable? var) (abstract-unify (cons (abstract-equality var t) tail))]
+    
     [else (none)]))
 (provide abstract-unify)
 

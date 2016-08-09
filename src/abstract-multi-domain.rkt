@@ -41,6 +41,9 @@
 (provide (struct-out abstract-function))
 (define-type AbstractTerm (U AbstractVariable abstract-function))
 (provide AbstractTerm)
+(define-predicate AbstractTerm? AbstractTerm)
+(provide AbstractTerm?)
+
 
 (struct abstract-atom ([symbol : String] [args : (Listof AbstractTerm)]) #:transparent)
 (provide (struct-out abstract-atom))
@@ -49,6 +52,8 @@
 
 (define-type AbstractConjunction (Listof AbstractConjunct))
 (provide AbstractConjunction)
+(define-predicate AbstractConjunction? AbstractConjunction)
+(provide AbstractConjunction?)
 
 (define-type AbstractDomainElem (U AbstractTerm abstract-atom AbstractConjunction))
 (provide AbstractDomainElem)
