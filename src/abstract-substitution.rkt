@@ -17,16 +17,16 @@
     [(list _ t (abstract-function symbol args)) (abstract-function symbol (map (λ ([a : AbstractTerm]) (substitute-in-term substituter substitutee a)) args))]
     [else input-elem])); TODO: multi
 
-(: substitute-in-atom (-> AbstractTerm AbstractVariable abstract-atom abstract-atom))
-(define (substitute-in-atom substituter substitutee input-atom)
+(: substitute-in-conjunct (-> AbstractTerm AbstractVariable abstract-atom abstract-atom))
+(define (substitute-in-conjunct substituter substitutee input-atom)
   (match input-atom [(abstract-atom sym args) (abstract-atom sym (map (λ ([a : AbstractTerm]) (substitute-in-term substituter substitutee a)) args))]))
 
 (: substitute-in-conjunction (-> AbstractTerm AbstractVariable AbstractConjunction AbstractConjunction))
-(define (substitute-in-conjunction substituter substitutee conjunction) (map (λ ([a : abstract-atom]) (substitute-in-atom substituter substitutee a)) conjunction))
+(define (substitute-in-conjunction substituter substitutee conjunction) (map (λ ([a : abstract-atom]) (substitute-in-conjunct substituter substitutee a)) conjunction))
 
 (: substitute-in-domain-elem (-> AbstractTerm AbstractVariable AbstractDomainElem AbstractDomainElem))
 (define (substitute-in-domain-elem substituter substitutee elem)
-  (cond [(abstract-atom? elem) (substitute-in-atom substituter substitutee elem)]
+  (cond [(abstract-atom? elem) (substitute-in-conjunct substituter substitutee elem)]
         [(AbstractTerm? elem) (substitute-in-term substituter substitutee elem)]
         [(AbstractConjunction? elem) (substitute-in-conjunction substituter substitutee elem)]))
 
@@ -75,5 +75,18 @@
                                acc))
          t subst))
 (provide apply-substitution-to-term)
-;(: apply-substitution-to-conjunct (-> AbstractSubstitution AbstractConjunct AbstractConjunct))
-;(: apply-substitution-to-conjunction (-> AbstractSubstitution AbstractConjunction AbstractConjunction))
+
+; pretty much the same as applying to term - if I knew how to express a more flexible type, I could probably merge the two
+(: apply-substitution-to-conjunct (-> AbstractSubstitution AbstractConjunct AbstractConjunct))
+(define (apply-substitution-to-conjunct subst t)
+  (foldl (λ ([el : abstract-equality] [acc : AbstractConjunct])
+           (substitute-in-conjunct (assert (abstract-equality-term2 el) AbstractTerm?)
+                                   (assert (abstract-equality-term1 el) AbstractVariable?)
+                                   acc))
+         t subst))
+(provide apply-substitution-to-conjunct)
+
+(: apply-substitution-to-conjunction (-> AbstractSubstitution AbstractConjunction AbstractConjunction))
+(define (apply-substitution-to-conjunction subst conjunction)
+  (map (λ ([conjunct : AbstractConjunct]) (apply-substitution-to-conjunct subst conjunct)) conjunction))
+(provide apply-substitution-to-conjunction)

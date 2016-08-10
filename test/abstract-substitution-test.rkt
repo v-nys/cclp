@@ -29,7 +29,13 @@
                                           (parse-term "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
               (parse-term "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
 
-; TODO test for conjunctions
+(check-equal? (apply-substitution-to-conjunct (list (abstract-equality (g 1) (parse-term "quux")) (abstract-equality (a 2) (g 4)))
+                                              (parse-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
+              (parse-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
+
+(check-equal? (apply-substitution-to-conjunction (list (abstract-equality (g 1) (parse-term "quux")) (abstract-equality (a 2) (g 4)))
+                                                 (list (parse-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))") (parse-atom "zip(zoom(γ1,α1),kweh(α2,γ2,α5))")))
+              (list (parse-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))") (parse-atom "zip(zoom(quux,α1),kweh(γ4,γ2,α5))")))
 
 ;  describe "substitution for abstract constants in terms" $ do
 ;
