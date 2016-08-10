@@ -20,4 +20,22 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
+#lang typed/racket
+(require "abstract-knowledge.rkt")
+(require "abstract-substitution.rkt")
+
+; NOTE: this does not rename the knowledge!
+(: abstract-unfold (-> AbstractConjunct AbstractKnowledge (Opt (Pairof AbstractSubstitution AbstractConjunction))))
+(define (abstract-unfold conjunct knowledge)
+  (cond [(rule? knowledge)
+         (let* ([in-subst (abstract-equality conjunct (rule-head knowledge))]
+                [out-subst (abstract-unify in-subst)])
+           (if (some? out-subst) (cons (some-v out-subst) (apply-substitution-to-conjunction (some-v out-subst) (rule-body knowledge))) (none)))]
+        [(full-evaluation? knowledge)
+         (if (>=-extension (input-pattern knowledge) conjunct)
+             (let* ([in-subst (abstract-equality conjunct (output-pattern knowledge))]
+                    [out-subst (abstract-unify in-subst)])
+               (if (some? out-subst) (cons (some-v out-subst) empty))))]))
+  
+; note that there are two types of knowledge: rules and input pattern - output pattern pairs
+; for pattern pair? the input pair has to be at least as general as the selected conjunct; no conjunction is returned, so which substitution do we get? that produced by unifying with the output pattern?

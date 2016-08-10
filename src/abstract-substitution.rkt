@@ -66,3 +66,10 @@
         [(abstract-atom? domain-elem) (foldl max-of-args-accumulator (none) (abstract-atom-args domain-elem))]
         [(AbstractConjunction? domain-elem) (foldl max-of-args-accumulator (none) domain-elem)]))
 (provide maximum-var-index)
+
+; note: a substitution can only be applied if it is variable-pure!
+(: apply-substitution-to-term (-> AbstractSubstitution AbstractTerm AbstractTerm))
+(define (apply-substitution-to-term subst t)
+  (foldl (λ ([el : abstract-equality] [acc : AbstractTerm]) (substitute-in-term (abstract-equality-term2 el) (abstract-equality-term1 el) acc)) t subst))
+;(: apply-substitution-to-conjunct (-> AbstractSubstitution AbstractConjunct AbstractConjunct))
+;(: apply-substitution-to-conjunction (-> AbstractSubstitution AbstractConjunction AbstractConjunction))
