@@ -55,21 +55,6 @@
        (if (set-empty? nested-any-indices)
            (let ([rest (abstract-unify substituted-substitution)]) (if (none? rest) rest (some (cons (abstract-equality (g i) t) (some-v rest)))))
            (abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)))))]
-           ;(abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)))))]
-            
-     
-;    aunify substitution@(eq@(AEquality ug@(FuncTerm (AConst ac@(UG i))) t):xs) =
-;  let max_ug = maximum_struct_substitution UG substitution
-;      ug_offset = case max_ug of (Just i) -> i
-;                                 _ -> 1
-;      current_any = assemble_any t
-;      any_vals = map (\x -> case x of A j -> UG (j + ug_offset)) current_any
-;      any_equalities = zipWith AEquality
-;                               (map (FuncTerm . AConst) current_any)
-;                               (map (FuncTerm . AConst) any_vals)
-;      substituted_substitution = (substitute_in_substitution t ug xs)
-;  in if (any_vals /= []) then (aunify (any_equalities ++ (eq:substituted_substitution)))
-;                         else ((aunify substituted_substitution) >>= (\s -> return (eq:s)))
      
     ; TODO Hoe pakken we dit best aan voor multi? al iets in Haskell code maar niet helemaal tevreden van.
     [else (none)]))
