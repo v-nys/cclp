@@ -25,6 +25,10 @@
 (check-equal? (substitute-in-substitution (parse-term "γ5") (parse-term "α4") (list (abstract-equality (parse-term "α4") (parse-term "foo(bar(α3,α1,α2))"))))
               (list (abstract-equality (parse-term "γ5") (parse-term "foo(bar(α3,α1,α2))"))))
 
+(check-equal? (apply-substitution-to-term (list (abstract-equality (g 1) (parse-term "quux")) (abstract-equality (a 2) (g 4)))
+                                          (parse-term "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
+              (parse-term "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
+
 ; TODO test for conjunctions
 
 ;  describe "substitution for abstract constants in terms" $ do
