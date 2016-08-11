@@ -50,6 +50,8 @@
 (provide (struct-out abstract-atom))
 (define-type AbstractConjunct abstract-atom)
 (provide AbstractConjunct)
+(define-predicate AbstractConjunct? AbstractConjunct)
+(provide AbstractConjunct?)
 
 (define-type AbstractConjunction (Listof AbstractConjunct))
 (provide AbstractConjunction)
