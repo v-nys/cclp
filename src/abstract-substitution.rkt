@@ -90,3 +90,10 @@
 (define (apply-substitution-to-conjunction subst conjunction)
   (map (λ ([conjunct : AbstractConjunct]) (apply-substitution-to-conjunct subst conjunct)) conjunction))
 (provide apply-substitution-to-conjunction)
+
+(: apply-substitution (-> AbstractSubstitution AbstractDomainElem AbstractDomainElem))
+(define (apply-substitution subst domain-elem)
+  (cond [(AbstractTerm? domain-elem) (apply-substitution-to-term subst domain-elem)]
+        [(AbstractConjunct? domain-elem) (apply-substitution-to-conjunct subst domain-elem)]
+        [(AbstractConjunction? domain-elem) (apply-substitution-to-conjunction subst domain-elem)]))
+(provide apply-substitution)
