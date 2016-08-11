@@ -1,6 +1,6 @@
 #lang typed/racket
 
-; this module is necessary to avoid circular import (domain->unification and vice versa)
+; cannot define these functions in the domain module, would cause circular import between domain module and unification module
 
 (: >=-extension (-> AbstractDomainElem AbstractDomainElem Boolean))
 (define (>=-extension domain-elem1 domain-elem2)
