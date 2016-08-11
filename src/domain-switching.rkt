@@ -77,9 +77,13 @@
              [just-acc (cdr applied-to-args)])
         (cons (abstract-atom (atom-symbol concrete-atom) just-mapped-args) just-acc))))
 
+(: pre-abstract-conjunction (-> Conjunction AbstractConjunction))
+(define (pre-abstract-conjunction conjunction)
+  (car (mapAccum pre-abstract-aux-atom (ann (hash) (HashTable Term AbstractVariable)) conjunction)))
+          
 (: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
 (define (pre-abstract concrete-domain-elem)
   (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (car (mapAccum pre-abstract-aux-term (ann (hash) (HashTable Term AbstractVariable)) (atom-args concrete-domain-elem))))]
-        [(Conjunction? concrete-domain-elem) (car (mapAccum pre-abstract-aux-atom (ann (hash) (HashTable Term AbstractVariable)) concrete-domain-elem))]
+        [(Conjunction? concrete-domain-elem) (pre-abstract-conjunction concrete-domain-elem)]
         [(Term? concrete-domain-elem) (car (pre-abstract-aux-term concrete-domain-elem (ann (hash) (HashTable Term AbstractVariable))))]))
 (provide pre-abstract)
