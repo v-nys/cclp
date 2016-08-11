@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 #lang racket
-(require rackunit "../src/domain-switching.rkt" "../src/abstract-multi-domain.rkt" "../src/concrete-domain.rkt" "../src/data-utils.rkt")
+(require rackunit "../src/domain-switching.rkt" "../src/abstract-multi-domain.rkt" "../src/concrete-domain.rkt" "../src/data-utils.rkt" "domain-boilerplate.rkt" "concrete-domain-boilerplate.rkt" (prefix-in ak: "../src/abstract-knowledge.rkt"))
 
 (check-equal? (get-maximum-abstract-var a? avar-index (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14))) (some 9) "Find the biggest a, where there is one")
 (check-equal? (get-maximum-abstract-var g? avar-index (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14))) (some 14) "Find the biggest g, where there is one")
@@ -38,3 +38,6 @@
       ; should be able to do this more concisely using #lang lp building blocks, roughly as (expand (parse 'function "dummy(A,A,dummy2,dummy3,dummy2)"))
       [concrete-args (list (variable "A") (variable "A") (variable "B") (function "dummy2" '()) (function "dummy3" '()) (function "dummy2" '()))])
      (check-equal? (pre-abstract (function "dummy" concrete-args)) (abstract-function "dummy" abstract-args) "abstracting a complex term"))
+
+(check-equal? (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
+              (ak:rule (parse-atom "collect(tree(α1,α2),α3)") (list (parse-atom "collect(α1,α4)") (parse-atom "collect(α2,α5)") (parse-atom "append(α4,α5,α3)"))))
