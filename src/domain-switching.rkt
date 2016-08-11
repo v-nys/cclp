@@ -28,6 +28,7 @@
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
 (require typed-racket-list-utils/utils)
+(require (prefix-in ck: "concrete-knowledge.rkt") (prefix-in ak: "abstract-knowledge.rkt"))
 
 (: get-maximum-abstract-var (-> (-> AbstractVariable Boolean) (-> AbstractVariable Integer) (Listof AbstractVariable) (Opt Integer)))
 ; type-test is to distinguish a from g
@@ -76,6 +77,13 @@
              [just-mapped-args (car applied-to-args)]
              [just-acc (cdr applied-to-args)])
         (cons (abstract-atom (atom-symbol concrete-atom) just-mapped-args) just-acc))))
+
+(: pre-abstract-rule (-> ck:rule ak:rule))
+(define (pre-abstract-rule concrete-rule)
+  (let* ([rule-as-conjunction (cons (ck:rule-head concrete-rule) (ck:rule-body concrete-rule))]
+         [abstracted-conjunction (pre-abstract-conjunction rule-as-conjunction)])
+    (ak:rule (car abstracted-conjunction) (cdr abstracted-conjunction))))
+(provide pre-abstract-rule)
 
 (: pre-abstract-conjunction (-> Conjunction AbstractConjunction))
 (define (pre-abstract-conjunction conjunction)
