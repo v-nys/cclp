@@ -30,16 +30,16 @@
 
 ; NOTE: this does not rename the knowledge!
 ; NOTE: we need 2-tuple rather than cons because consing with empty list changes type to list
-(: abstract-step (-> AbstractConjunct AbstractKnowledge (Opt (2-tuple AbstractSubstitution AbstractConjunction))))
-(define (abstract-step conjunct knowledge)
+(: abstract-step (-> AbstractConjunct AbstractKnowledge Integer (Opt (2-tuple AbstractSubstitution AbstractConjunction))))
+(define (abstract-step conjunct knowledge g-offset)
   (cond [(rule? knowledge)
          (let* ([in-subst (abstract-equality conjunct (rule-head knowledge))]
-                [out-subst (abstract-unify (list in-subst))])
+                [out-subst (abstract-unify (list in-subst) g-offset)])
            (if (some? out-subst) (some ((inst 2-tuple AbstractSubstitution AbstractConjunction) (some-v out-subst) (apply-substitution-to-conjunction (some-v out-subst) (rule-body knowledge)))) (none)))]
         [(full-evaluation? knowledge)
          (if (>=-extension (full-evaluation-input-pattern knowledge) conjunct)
              (let* ([in-subst (abstract-equality conjunct (full-evaluation-output-pattern knowledge))]
-                    [out-subst (abstract-unify (list in-subst))])
+                    [out-subst (abstract-unify (list in-subst) g-offset)])
                (if (some? out-subst) (some ((inst 2-tuple AbstractSubstitution AbstractConjunction) (some-v out-subst) empty)) (none)))
              (none))]))
 (provide abstract-step)
