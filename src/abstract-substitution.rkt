@@ -80,6 +80,21 @@
   (map (λ ([conjunct : AbstractConjunct]) (apply-substitution-to-conjunct subst conjunct)) conjunction))
 (provide apply-substitution-to-conjunction)
 
+(: apply-substitution-to-rule (-> AbstractSubstitution rule rule))
+(define (apply-substitution-to-rule subst r)
+  (rule (apply-substitution-to-conjunct subst (rule-head r)) (apply-substitution-to-conjunction subst (rule-body r))))
+
+(: apply-substitution-to-full-evaluation (-> AbstractSubstitution full-evaluation full-evaluation))
+(define (apply-substitution-to-full-evaluation subst fe)
+  (full-evaluation (apply-substitution-to-conjunct subst (full-evaluation-input-pattern fe)) (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))))
+
+(: apply-substitution-to-knowledge (-> AbstractSubstitution AbstractKnowledge AbstractKnowledge))
+(define (apply-substitution-to-knowledge subst knowledge)
+  (if (rule? knowledge)
+      (apply-substitution-to-rule subst knowledge)
+      (apply-substitution-to-full-evaluation subst knowledge)))
+(provide apply-substitution-to-knowledge)
+
 (: apply-substitution (-> AbstractSubstitution AbstractDomainElem AbstractDomainElem))
 (define (apply-substitution subst domain-elem)
   (cond [(AbstractTerm? domain-elem) (apply-substitution-to-term subst domain-elem)]

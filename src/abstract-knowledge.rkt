@@ -23,7 +23,7 @@
 #lang typed/racket
 (require "abstract-multi-domain.rkt")
 
-(struct rule ([head : AbstractConjunct] [body : AbstractConjunction]))
+(struct rule ([head : AbstractConjunct] [body : AbstractConjunction]) #:transparent)
 (provide (struct-out rule))
 
 (struct full-evaluation ([input-pattern : AbstractConjunct] [output-pattern : AbstractConjunct]))
