@@ -2,6 +2,7 @@
 (require rackunit)
 (require "domain-boilerplate.rkt")
 (require "../src/abstract-multi-domain.rkt")
+(require "../src/abstraction-inspection-utils.rkt")
 
 (check-equal? (assemble-var-indices g? (parse-term "α1")) (set))
 (check-equal? (assemble-var-indices a? (parse-term "γ1")) (set))

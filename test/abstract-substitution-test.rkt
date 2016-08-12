@@ -3,6 +3,7 @@
 (require "domain-boilerplate.rkt")
 (require "../src/data-utils.rkt")
 (require "../src/abstract-multi-domain.rkt")
+(require "../src/abstraction-inspection-utils.rkt")
 (require "../src/abstract-substitution.rkt")
 
 (check-equal? (maximum-var-index (parse-term "γ1") g?) (some 1))

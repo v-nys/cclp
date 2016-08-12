@@ -1,5 +1,7 @@
 #lang typed/racket
 (require "abstract-multi-domain.rkt")
+(require "abstract-knowledge.rkt")
+(require "abstraction-inspection-utils.rkt")
 
 (struct abstract-equality ([term1 : AbstractDomainElem] [term2 : AbstractDomainElem]) #:transparent)
 (provide (struct-out abstract-equality))
@@ -53,19 +55,6 @@
     (cond [(none? max-lhs) max-rhs]
           [(none? max-rhs) max-lhs]
           [else (some (max (some-v max-lhs) (some-v max-rhs)))])))
-
-(: maximum-var-index (-> AbstractDomainElem (-> AbstractVariable Boolean) (Opt Integer)))
-(define (maximum-var-index domain-elem right-variable-type?)
-  (define max-of-args-accumulator (λ ([el : AbstractDomainElem] [acc : (Opt Integer)])
-                                                   (let ([subterm-max (maximum-var-index el right-variable-type?)])
-                                                     (cond [(none? acc) subterm-max]
-                                                           [(none? subterm-max) acc]
-                                                           [else (some (max (some-v acc) (some-v subterm-max)))]))))
-  (cond [(AbstractVariable? domain-elem) (if (right-variable-type? domain-elem) (some (avar-index domain-elem)) (none))]
-        [(abstract-function? domain-elem) (foldl max-of-args-accumulator (none) (abstract-function-args domain-elem))]
-        [(abstract-atom? domain-elem) (foldl max-of-args-accumulator (none) (abstract-atom-args domain-elem))]
-        [(AbstractConjunction? domain-elem) (foldl max-of-args-accumulator (none) domain-elem)]))
-(provide maximum-var-index)
 
 (: apply-substitution-to-term (-> AbstractSubstitution AbstractTerm AbstractTerm))
 (define (apply-substitution-to-term subst t)

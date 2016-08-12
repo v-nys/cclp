@@ -3,6 +3,7 @@
 (require "domain-boilerplate.rkt")
 
 (require "../src/abstract-domain-ordering.rkt")
+(require "../src/abstraction-inspection-utils.rkt")
 
 (check-true (>=-extension (parse-term "α1") (parse-term "γ1")))
 (check-true (>=-extension (parse-term "α1") (parse-term "α2")))

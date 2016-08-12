@@ -24,6 +24,7 @@
 (require "abstract-substitution.rkt")
 (require "data-utils.rkt")
 (require "abstract-multi-domain.rkt")
+(require "abstraction-inspection-utils.rkt")
 
 (: abstract-unify (-> AbstractSubstitution (Opt AbstractSubstitution)))
 (define (abstract-unify subst)
