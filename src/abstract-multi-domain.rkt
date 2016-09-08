@@ -20,43 +20,34 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang typed/racket
-(struct a ([index : Integer]) #:transparent) ; may generalize later by allowing for double indices
+#lang racket
+(require racket/struct) ; for nicer struct output
+;(define (write-a structure port mode)
+;  ; unquoted - quoted
+;  ; 
+;  (cond [(eq? mode 0) (write (string->symbol (string-append "a" (a-index structure))) port)]
+;        [(eq? mode 1) (write (string->symbol (string-append "a" (a-index structure))) port)]
+;        [otherwise ] ; write and display work the same way, we don't need escapes,...
+
+;      (print (string-append "a" (number->string (a-index structure))) port)
+;      (error (format "unsupported write method for a: ~a" mode))))
+
+; TODO investigate whether transparency is a good idea, may be better to get rid of it?
+
+(struct a (index) #:transparent #:methods gen:custom-write [(define write-proc (make-constructor-style-printer (lambda (obj) 'a) (lambda (obj) (list (a-index obj)))))])
 (provide (struct-out a))
-(struct g ([index : Integer]) #:transparent)
+(struct g (index) #:transparent #:methods gen:custom-write [(define write-proc (make-constructor-style-printer (lambda (obj) 'g) (lambda (obj) (list (g-index obj)))))])
 (provide (struct-out g))
 
 (require "data-utils.rkt") ; for optional set union
 
-(define-type AbstractVariable (U a g))
-(provide AbstractVariable)
-(define-predicate AbstractVariable? AbstractVariable)
-(provide AbstractVariable?)
-
-(: avar-index (-> AbstractVariable Integer))
 (define (avar-index avar)
   (cond [(a? avar) (a-index avar)]
         [(g? avar) (g-index avar)]))
 (provide avar-index)
 
-(struct abstract-function ([functor : String] [args : (Listof AbstractTerm)]) #:transparent)
+(struct abstract-function (functor args) #:transparent )
 (provide (struct-out abstract-function))
-(define-type AbstractTerm (U AbstractVariable abstract-function))
-(provide AbstractTerm)
-(define-predicate AbstractTerm? AbstractTerm)
-(provide AbstractTerm?)
 
-(struct abstract-atom ([symbol : String] [args : (Listof AbstractTerm)]) #:transparent)
+(struct abstract-atom (symbol args) #:transparent)
 (provide (struct-out abstract-atom))
-(define-type AbstractConjunct abstract-atom)
-(provide AbstractConjunct)
-(define-predicate AbstractConjunct? AbstractConjunct)
-(provide AbstractConjunct?)
-
-(define-type AbstractConjunction (Listof AbstractConjunct))
-(provide AbstractConjunction)
-(define-predicate AbstractConjunction? AbstractConjunction)
-(provide AbstractConjunction?)
-
-(define-type AbstractDomainElem (U AbstractTerm AbstractConjunct AbstractConjunction))
-(provide AbstractDomainElem)
