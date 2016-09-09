@@ -10,8 +10,20 @@
          (prefix-in ak: "../src/abstract-knowledge.rkt")
          "../src/abstract-renaming.rkt"
          "../src/abstract-substitution.rkt")
-(check-equal? (abstract-step (parse-atom "collect(γ1,α1)")
-                             (rename-apart (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
-                                           (list (parse-atom "collect(γ1,α1)")))
-                             0)
-              (some (2-tuple (list (abstract-equality (a 6) (g 7)) (abstract-equality (a 7) (g 8)) (abstract-equality (g 1) (parse-term "tree(γ7,γ8)")) (abstract-equality (a 1) (a 8))) (list (parse-atom "collect(γ7,α9)") (parse-atom "collect(γ8,α10)") (parse-atom "append(α9,α10,α8)")))))
+
+; TODO could make a macro-generating macro for these guys...
+(define-syntax-rule (readable-check-eq? actual-expr expected-expr)
+  (with-check-info* (list (make-check-info 'actual-as-string (~v actual-expr))
+                          (make-check-info 'expected-as-string (~v expected-expr)))
+    (lambda () (check-eq? actual-expr expected-expr))))
+
+(define-syntax-rule (readable-check-equal? actual-expr expected-expr)
+  (with-check-info* (list (make-check-info 'actual-as-string (~v actual-expr))
+                          (make-check-info 'expected-as-string (~v expected-expr)))
+    (lambda () (check-equal? actual-expr expected-expr))))
+
+(readable-check-equal? (abstract-step (parse-atom "collect(γ1,α1)")
+                                      (rename-apart (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
+                                                    (list (parse-atom "collect(γ1,α1)")))
+                                      0)
+                       (some (2-tuple (list (abstract-equality (a 6) (g 7)) (abstract-equality (a 7) (g 8)) (abstract-equality (g 1) (parse-term "tree(γ7,γ8)")) (abstract-equality (a 1) (a 8))) (list (parse-atom "collect(γ7,α9)") (parse-atom "collect(γ8,α10)") (parse-atom "append(α9,α10,α8)")))))

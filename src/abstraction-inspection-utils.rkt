@@ -1,6 +1,6 @@
 #lang typed/racket
-(require "abstract-multi-domain.rkt")
-(require "abstract-knowledge.rkt")
+(require "typed-abstract-multi-domain.rkt")
+(require "typed-abstract-knowledge.rkt")
 (require "data-utils.rkt")
 
 (: assemble-var-indices (-> (-> AbstractVariable Boolean) (U AbstractDomainElem AbstractKnowledge) (Setof Integer)))

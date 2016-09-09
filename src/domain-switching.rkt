@@ -25,10 +25,10 @@
 
 #lang typed/racket
 (require "concrete-domain.rkt")
-(require "abstract-multi-domain.rkt")
+(require "typed-abstract-multi-domain.rkt")
 (require "data-utils.rkt")
 (require typed-racket-list-utils/utils)
-(require (prefix-in ck: "concrete-knowledge.rkt") (prefix-in ak: "abstract-knowledge.rkt"))
+(require (prefix-in ck: "concrete-knowledge.rkt") (prefix-in ak: "typed-abstract-knowledge.rkt"))
 
 (: get-maximum-abstract-var (-> (-> AbstractVariable Boolean) (-> AbstractVariable Integer) (Listof AbstractVariable) (Opt Integer)))
 ; type-test is to distinguish a from g

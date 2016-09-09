@@ -21,11 +21,12 @@
 ; SOFTWARE.
 
 #lang typed/racket
-(require "abstract-knowledge.rkt")
-(require "abstract-substitution.rkt")
+(require "typed-abstract-knowledge.rkt")
+(require "typed-abstract-substitution.rkt")
+(require "abstract-substitution-functions.rkt")
 (require "abstract-unify.rkt")
 (require "data-utils.rkt")
-(require "abstract-multi-domain.rkt")
+(require "typed-abstract-multi-domain.rkt")
 (require "abstract-domain-ordering.rkt")
 
 ; NOTE: this does not rename the knowledge!

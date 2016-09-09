@@ -20,14 +20,27 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang typed/racket
+#lang racket
 (require "abstract-multi-domain.rkt")
 
-(struct rule ([head : AbstractConjunct] [body : AbstractConjunction]) #:transparent)
+(define (write-rule obj port mode)
+  (if (boolean? mode)
+      (fprintf port "#(struct:rule ~s ~s)" (rule-head obj) (rule-body obj))
+      (begin (fprintf port "~v" (rule-head obj))
+             (fprintf port " :- ")
+             (for ([atom-or-comma (add-between (rule-body obj) ",")]) (if (string? atom-or-comma) (fprintf port atom-or-comma) (fprintf port "~v" atom-or-comma)))
+             (fprintf port "."))))
+       
+(struct rule (head body) #:transparent #:methods gen:custom-write [(define write-proc write-rule)])
 (provide (struct-out rule))
 
-(struct full-evaluation ([input-pattern : AbstractConjunct] [output-pattern : AbstractConjunct]))
-(provide (struct-out full-evaluation))
+(define (write-full-eval obj port mode)
+  (if (boolean? mode)
+      (fprintf port "#(struct:full-evaluation ~s ~s)" (full-evaluation-input-pattern obj) (full-evaluation-output-pattern obj))
+      (begin (fprintf port "~v" (full-evaluation-input-pattern obj))
+             (fprintf port " -> ")
+             (fprintf port "~v" (full-evaluation-output-pattern obj))
+             (fprintf port "."))))
 
-(define-type AbstractKnowledge (U rule full-evaluation))
-(provide AbstractKnowledge)
+(struct full-evaluation (input-pattern output-pattern) #:methods gen:custom-write [(define write-proc write-full-eval)])
+(provide (struct-out full-evaluation))

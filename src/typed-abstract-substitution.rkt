@@ -20,14 +20,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
-(require "abstract-multi-domain.rkt")
-
-(define (write-abstract-equality obj port mode)
-  (if (boolean? mode)
-      (fprintf port "#(struct:abstract-equality ~s ~s)" (abstract-equality-term1 obj) (abstract-equality-term2 obj))
-      (fprintf port "~v=~v" (abstract-equality-term1 obj) (abstract-equality-term2 obj))))
-
-; terms are really any abstract domain elements
-(struct abstract-equality (term1 term2) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-equality)])
+#lang typed/racket
+(require "typed-abstract-multi-domain.rkt")
+(require/typed "abstract-substitution.rkt" [#:struct abstract-equality ([term1 : AbstractDomainElem] [term2 : AbstractDomainElem])])
 (provide (struct-out abstract-equality))
+
+(define-type AbstractSubstitution (Listof abstract-equality))
+(provide AbstractSubstitution)

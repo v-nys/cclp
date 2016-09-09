@@ -21,33 +21,33 @@
 ; SOFTWARE.
 
 #lang racket
-(require racket/struct) ; for nicer struct output
-;(define (write-a structure port mode)
-;  ; unquoted - quoted
-;  ; 
-;  (cond [(eq? mode 0) (write (string->symbol (string-append "a" (a-index structure))) port)]
-;        [(eq? mode 1) (write (string->symbol (string-append "a" (a-index structure))) port)]
-;        [otherwise ] ; write and display work the same way, we don't need escapes,...
 
-;      (print (string-append "a" (number->string (a-index structure))) port)
-;      (error (format "unsupported write method for a: ~a" mode))))
+; TODO investigate whether transparency for structs can be removed?
 
-; TODO investigate whether transparency is a good idea, may be better to get rid of it?
-
-(struct a (index) #:transparent #:methods gen:custom-write [(define write-proc (make-constructor-style-printer (lambda (obj) 'a) (lambda (obj) (list (a-index obj)))))])
+(define (write-a obj port mode)
+  (if (eq? mode #t) (fprintf port "#(struct:a ~s)" (a-index obj)) (fprintf port "a~a" (a-index obj))))
+(struct a (index) #:transparent #:methods gen:custom-write [(define write-proc write-a)])
 (provide (struct-out a))
-(struct g (index) #:transparent #:methods gen:custom-write [(define write-proc (make-constructor-style-printer (lambda (obj) 'g) (lambda (obj) (list (g-index obj)))))])
+
+(define (write-g obj port mode)
+  (if (eq? mode #t) (fprintf port "#(struct:g ~s)" (g-index obj)) (fprintf port "g~a" (g-index obj))))
+(struct g (index) #:transparent #:methods gen:custom-write [(define write-proc write-g)])
 (provide (struct-out g))
 
-(require "data-utils.rkt") ; for optional set union
-
-(define (avar-index avar)
-  (cond [(a? avar) (a-index avar)]
-        [(g? avar) (g-index avar)]))
-(provide avar-index)
-
-(struct abstract-function (functor args) #:transparent )
+(define (write-abstract-function obj port mode)
+  (if (boolean? mode)
+      (fprintf port "#(struct:abstract-function ~s ~s)" (abstract-function-functor obj) (abstract-function-args obj))
+      (begin (fprintf port "~a(" (abstract-function-functor obj))
+             (for ([arg-or-comma (add-between (abstract-function-args obj) ",")]) (if (string? arg-or-comma) (fprintf port arg-or-comma) (fprintf port "~v" arg-or-comma)))
+             (fprintf port ")"))))
+(struct abstract-function (functor args) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-function)])
 (provide (struct-out abstract-function))
 
-(struct abstract-atom (symbol args) #:transparent)
+(define (write-abstract-atom obj port mode)
+  (if (boolean? mode)
+      (fprintf port "#(struct:abstract-atom ~s ~s)" (abstract-atom-symbol obj) (abstract-atom-args obj))
+      (begin (fprintf port "~a(" (abstract-atom-symbol obj))
+             (for ([arg-or-comma (add-between (abstract-atom-args obj) ",")]) (if (string? arg-or-comma) (fprintf port arg-or-comma) (fprintf port "~v" arg-or-comma)))
+             (fprintf port ")"))))
+(struct abstract-atom (symbol args) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-atom)])
 (provide (struct-out abstract-atom))

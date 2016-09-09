@@ -1,5 +1,5 @@
 #lang typed/racket
-(require "abstract-multi-domain.rkt" (prefix-in ak: "abstract-knowledge.rkt") "data-utils.rkt" "abstract-substitution.rkt" "abstraction-inspection-utils.rkt")
+(require "typed-abstract-multi-domain.rkt" (prefix-in ak: "typed-abstract-knowledge.rkt") "data-utils.rkt" "typed-abstract-substitution.rkt" "abstract-substitution-functions.rkt" "abstraction-inspection-utils.rkt")
 (: opt-max (-> (Opt Integer) (Opt Integer) Integer Integer))
 (define (opt-max opt1 opt2 default)
   (cond [(and (some? opt1) (some? opt2)) (max (some-v opt1) (some-v opt2))]

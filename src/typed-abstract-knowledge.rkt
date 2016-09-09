@@ -20,14 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
-(require "abstract-multi-domain.rkt")
+#lang typed/racket
+(require "typed-abstract-multi-domain.rkt")
+(require/typed "abstract-knowledge.rkt" [#:struct rule ([head : AbstractConjunct] [body : AbstractConjunction])])
+(provide (struct-out rule))
 
-(define (write-abstract-equality obj port mode)
-  (if (boolean? mode)
-      (fprintf port "#(struct:abstract-equality ~s ~s)" (abstract-equality-term1 obj) (abstract-equality-term2 obj))
-      (fprintf port "~v=~v" (abstract-equality-term1 obj) (abstract-equality-term2 obj))))
+(require/typed "abstract-knowledge.rkt" [#:struct full-evaluation ([input-pattern : AbstractConjunct] [output-pattern : AbstractConjunct])])
+(provide (struct-out full-evaluation))
 
-; terms are really any abstract domain elements
-(struct abstract-equality (term1 term2) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-equality)])
-(provide (struct-out abstract-equality))
+(define-type AbstractKnowledge (U rule full-evaluation))
+(provide AbstractKnowledge)

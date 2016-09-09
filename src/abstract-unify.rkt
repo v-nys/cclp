@@ -21,9 +21,10 @@
 ; SOFTWARE.
 
 #lang typed/racket
-(require "abstract-substitution.rkt")
+(require "typed-abstract-substitution.rkt")
+(require "abstract-substitution-functions.rkt")
 (require "data-utils.rkt")
-(require "abstract-multi-domain.rkt")
+(require "typed-abstract-multi-domain.rkt")
 (require "abstraction-inspection-utils.rkt")
 
 ; TODO: some equalities are irrelevant for resolution
