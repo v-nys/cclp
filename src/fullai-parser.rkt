@@ -20,11 +20,14 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+; TODO calling this fullai seems wrong - just abstractlp, really
+
 #lang brag
 fullai-program : (fullai-rule-with-body | fullai-rule-without-body)*
-fullai-rule-with-body : abstract-atom-with-args LEADS-TO substitution PERIOD
+fullai-rule-with-body : abstract-atom-with-args LEADS-TO abstract-substitution PERIOD
 fullai-rule-without-body : abstract-atom-with-args PERIOD
 abstract-atom-with-args : SYMBOL OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
+abstract-atom-without-args : SYMBOL
 abstract-term : abstract-variable | abstract-function-term | abstract-lplist
 abstract-variable : abstract-variable-a | abstract-variable-g
 abstract-variable-a : AVAR-SYMBOL-A NUMBER
@@ -32,5 +35,6 @@ abstract-variable-g : AVAR-SYMBOL-G NUMBER
 abstract-function-term : (SYMBOL [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]) | number-term
 number-term : NUMBER
 abstract-lplist : OPEN-LIST-PAREN [abstract-term (COMMA abstract-term)* [LIST-SEPARATOR (abstract-lplist | abstract-variable)]] CLOSE-LIST-PAREN
-substitution : substitution-pair (COMMA substitution-pair)*
-substitution-pair : abstract-variable SLASH abstract-term
+abstract-substitution : abstract-substitution-pair (COMMA abstract-substitution-pair)*
+abstract-substitution-pair : abstract-variable SLASH abstract-term
+abstract-conjunction : (abstract-atom-with-args | abstract-atom-without-args) (COMMA (abstract-atom-with-args | abstract-atom-without-args))*

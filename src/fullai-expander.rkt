@@ -66,8 +66,8 @@
   (syntax-parse stx
     [(_ open-paren close-paren) #'(ad:abstract-function "nil" '())]
     [(_ open-paren term0 close-paren) #'(ad:abstract-function "cons" (list term0 (ad:abstract-function "nil" '())))]
-    [(_ open-paren term0 "," rest ... close-paren) #'(cd:function "cons" (list term0 (abstract-lplist open-paren rest ... close-paren)))]
-    [(_ open-paren term0 "|" rest ... close-paren) #'(cd:function "cons" (list term0 rest ...))]))
+    [(_ open-paren term0 "," rest ... close-paren) #'(ad:abstract-function "cons" (list term0 (abstract-lplist open-paren rest ... close-paren)))]
+    [(_ open-paren term0 "|" rest ... close-paren) #'(ad:abstract-function "cons" (list term0 rest ...))]))
 (provide abstract-lplist)
 
 ; empty substitutions make sense if we can just scratch the abstract atom
