@@ -28,13 +28,14 @@
 (require (prefix-in abp: "abstract-domain-boilerplate.rkt"))
 (require (prefix-in ak: "../src/typed-abstract-knowledge.rkt"))
 (require "../src/generational-tree.rkt")
+(require "../src/untyped-generational-tree-structs.rkt")
 (require typed-racket-tree-utils/tree)
 (require typed-racket-tree-utils/printer)
 (require "../src/data-utils.rkt")
 (require "printed-test-results.rkt")
 
 (define (node-printer my-node)
-  (display (node-label my-node)))
+  (print (node-label my-node)))
 
 (test-case "the generational tree is computed correctly based on a branch of several nodes without recursion"
            (define-values (atom0 atom1a atom1b atom1c atom2a atom2b atom2c atom2d)
@@ -65,4 +66,4 @@
                   [expected0 (node (atom-with-generation atom0 0) (list expected1a expected1b expected1c))]
                   [actual (generational-tree branch)])
              ; would be better if tree printer could print to string...
-             (begin (map (λ (t) (tree-display t node-printer)) actual) (tree-display expected0 node-printer) (readable-check-equal? actual (list expected0)))))
+             (begin (map (λ (t) (tree-display t node-printer)) actual) (tree-display expected0 node-printer) (readable-check-equal? (car actual) expected0))))

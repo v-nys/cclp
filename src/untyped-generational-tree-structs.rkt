@@ -22,8 +22,15 @@
 
 #lang racket
 
+(define (write-atom-with-generation obj port mode)
+  (if (boolean? mode)
+      (fprintf port "#(struct:atom-with-generation ~s ~s)" (atom-with-generation-atom obj) (atom-with-generation-generation obj))
+      (begin (fprintf port "~v" (atom-with-generation-atom obj))
+             (fprintf port ";")
+             (fprintf port "~v" (atom-with-generation-generation obj)))))
+
 (struct resolution-info (conjunction selection-and-clause))
 (provide (struct-out resolution-info))
 
-(struct atom-with-generation (atom generation))
+(struct atom-with-generation (atom generation) #:methods gen:custom-write [(define write-proc write-atom-with-generation)])
 (provide (struct-out atom-with-generation))

@@ -21,17 +21,11 @@
 ; SOFTWARE.
 
 #lang typed/racket
-(require/typed "untyped-generational-tree.rkt" [#:struct resolution-info ([conjunction : AbstractConjunction] [selection-and-clause : (Opt (Pairof Integer AbstractKnowledge))])]
-                                               [#:struct atom-with-generation ([atom : AbstractConjunct] [generation : Integer])])
+(require "generational-tree-structs.rkt")
 (require typed-racket-tree-utils/tree)
 (require "typed-abstract-knowledge.rkt")
 (require "typed-abstract-multi-domain.rkt")
 (require "data-utils.rkt")
-
-; an 'input' branch is a list of these guys
-(provide (struct-out resolution-info))
-
-(provide (struct-out atom-with-generation))
 
 (: clause-output-length (-> AbstractKnowledge Integer))
 (define (clause-output-length clause)
@@ -57,7 +51,5 @@
        (append (map (λ ([pre : AbstractConjunct] [post : (node atom-with-generation)]) (node (atom-with-generation pre 0) (list post))) first-unselected first-successors)
                (list (node (atom-with-generation selected-atom 0) selected-successors))
                (map (λ ([pre : AbstractConjunct] [post : (node atom-with-generation)]) (node (atom-with-generation pre 0) (list post))) last-unselected last-successors)))]))
-
-
 
 (provide generational-tree)
