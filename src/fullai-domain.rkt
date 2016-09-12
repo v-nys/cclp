@@ -20,8 +20,19 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang typed/racket
+#lang racket
 
-(require "typed-abstract-multi-domain.rkt" "typed-abstract-substitution.rkt")
-(struct FullAIRule ([input-pattern : abstract-atom] [output-substitution : AbstractSubstitution]) #:transparent)
-(provide (struct-out FullAIRule))
+(require "abstract-multi-domain.rkt" "abstract-substitution.rkt")
+(struct full-ai-rule (input-pattern output-substitution)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc f1 f2 equal?-recur)
+     (and (equal?-recur (full-ai-rule-input-pattern f1) (full-ai-rule-input-pattern f2))
+          (equal?-recur (full-ai-rule-output-substitution f1) (full-ai-rule-output-substitution f2))))
+   (define (hash-proc my-rule hash-recur)
+     (+ (hash-recur (full-ai-rule-input-pattern my-rule))
+        (* 3 (hash-recur (full-ai-rule-output-substitution my-rule)))))
+   (define (hash2-proc my-rule hash2-recur)
+     (+ (hash2-recur (full-ai-rule-input-pattern my-rule))
+        (hash2-recur (full-ai-rule-output-substitution my-rule))))])
+(provide (struct-out full-ai-rule))

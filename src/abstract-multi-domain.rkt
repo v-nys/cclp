@@ -22,17 +22,45 @@
 
 #lang racket
 
-; TODO investigate whether transparency for structs can be removed?
-
 (define (write-a obj port mode)
   (if (eq? mode #t) (fprintf port "#(struct:a ~s)" (a-index obj)) (fprintf port "a~a" (a-index obj))))
-(struct a (index) #:transparent #:methods gen:custom-write [(define write-proc write-a)])
+(struct a (index) #:transparent
+  #:methods
+  gen:custom-write [(define write-proc write-a)]
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc a1 a2 equal?-recur)
+     (equal?-recur (a-index a1) (a-index a2)))
+   (define (hash-proc my-a hash-recur)
+     (hash-recur (a-index my-a)))
+   (define (hash2-proc my-a hash2-recur)
+     (hash2-recur (a-index my-a)))])
 (provide (struct-out a))
 
 (define (write-g obj port mode)
   (if (eq? mode #t) (fprintf port "#(struct:g ~s)" (g-index obj)) (fprintf port "g~a" (g-index obj))))
-(struct g (index) #:transparent #:methods gen:custom-write [(define write-proc write-g)])
+(struct g (index)
+  #:methods
+  gen:custom-write [(define write-proc write-g)]
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc g1 g2 equal?-recur)
+     (equal?-recur (g-index g1) (g-index g2)))
+   (define (hash-proc my-g hash-recur)
+     (hash-recur (g-index my-g)))
+   (define (hash2-proc my-g hash2-recur)
+     (hash2-recur (g-index my-g)))])
 (provide (struct-out g))
+
+(define (abstract-variable? v)
+  (or (a? v) (g? v)))
+(provide abstract-variable?)
+
+(define (avar-index v)
+  (match v
+    [(a i) i]
+    [(g i) i]))
+(provide avar-index)
 
 (define (write-abstract-function obj port mode)
   (if (boolean? mode)
@@ -51,3 +79,6 @@
              (fprintf port ")"))))
 (struct abstract-atom (symbol args) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-atom)])
 (provide (struct-out abstract-atom))
+
+(define (abstract-term? elem) (or (abstract-variable? elem) (abstract-function? elem)))
+(provide abstract-term?)

@@ -31,10 +31,10 @@
 (define-syntax-rule (fullai-program rule ...) (list rule ...))
 (provide fullai-program)
 
-(define-syntax-rule (fullai-rule-with-body atom "->" subst ".") (fai:FullAIRule atom subst))
+(define-syntax-rule (fullai-rule-with-body atom "->" subst ".") (fai:full-ai-rule atom subst))
 (provide fullai-rule-with-body)
 
-(define-syntax-rule (fullai-rule-without-body atom ".") (fai:FullAIRule atom (list)))
+(define-syntax-rule (fullai-rule-without-body atom ".") (fai:full-ai-rule atom (list)))
 (provide fullai-rule-without-body)
 
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")") (ad:abstract-atom (quote symbol) (odd-elems-as-list arg ...)))

@@ -23,25 +23,25 @@
 ; functionality for switching between the concrete and abstract domain
 ; essentially the abstraction function α and concretization function γ
 
-#lang typed/racket
+#lang racket
 (require "concrete-domain.rkt")
-(require "typed-abstract-multi-domain.rkt")
+(require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
-(require typed-racket-list-utils/utils)
-(require (prefix-in ck: "concrete-knowledge.rkt") (prefix-in ak: "typed-abstract-knowledge.rkt"))
+(require racket-list-utils/utils)
+(require (prefix-in ck: "concrete-knowledge.rkt") (prefix-in ak: "abstract-knowledge.rkt"))
 
-(: get-maximum-abstract-var (-> (-> AbstractVariable Boolean) (-> AbstractVariable Integer) (Listof AbstractVariable) (Opt Integer)))
+;(: get-maximum-abstract-var (-> (-> AbstractVariable Boolean) (-> AbstractVariable Integer) (Listof AbstractVariable) (Opt Integer)))
 ; type-test is to distinguish a from g
 ; index-selector gets the index from a or g, respectively
 (define (get-maximum-abstract-var type-test? index-selector vals)
-  (foldl (λ ([val : AbstractVariable] [acc : (Opt Integer)])
+  (foldl (λ (val acc)
            (cond [(not (type-test? val)) acc]
                  [(none? acc) (some (index-selector val))]
                  [(some? acc) (some (max (some-v acc) (index-selector val)))]
                  [else none])) (none) vals)) ; last clause is just there to get the type right
 (provide get-maximum-abstract-var)
 
-(: pre-abstract-aux-variable (-> variable (HashTable Term AbstractVariable) (Pair AbstractVariable (HashTable Term AbstractVariable))))
+;(: pre-abstract-aux-variable (-> variable (HashTable Term AbstractVariable) (Pair AbstractVariable (HashTable Term AbstractVariable))))
 (define (pre-abstract-aux-variable var existing-mapping)
   (if (hash-has-key? existing-mapping var)
       (cons (hash-ref existing-mapping var) existing-mapping)
@@ -49,7 +49,7 @@
         (match max-a [(none) (cons (a 1) (hash-set existing-mapping var (a 1)))]
           [(some val) (cons (a (+ val 1)) (hash-set existing-mapping var (a (+ val 1))))]))))
 
-(: pre-abstract-aux-constant (-> function (HashTable Term AbstractVariable) (Pair AbstractVariable (HashTable Term AbstractVariable))))
+;(: pre-abstract-aux-constant (-> function (HashTable Term AbstractVariable) (Pair AbstractVariable (HashTable Term AbstractVariable))))
 (define (pre-abstract-aux-constant constant existing-mapping)
   (if (hash-has-key? existing-mapping constant)
       (cons (hash-ref existing-mapping constant) existing-mapping)
@@ -58,7 +58,7 @@
           [(some index) (cons (g (+ index 1)) (hash-set existing-mapping constant (g (+ index 1))))]))))
 (provide pre-abstract-aux-constant)
 
-(: pre-abstract-aux-term (-> Term (HashTable Term AbstractVariable) (Pair AbstractTerm (HashTable Term AbstractVariable))))
+;(: pre-abstract-aux-term (-> Term (HashTable Term AbstractVariable) (Pair AbstractTerm (HashTable Term AbstractVariable))))
 (define (pre-abstract-aux-term concrete-term existing-mapping)
   (cond [(variable? concrete-term) (pre-abstract-aux-variable concrete-term existing-mapping)]
         [(function? concrete-term) (if (null? (function-args concrete-term))
@@ -69,7 +69,7 @@
                                          (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]))
 
 ; note: there is some duplication here, solely due to Conjunctions...
-(: pre-abstract-aux-atom (-> atom (HashTable Term AbstractVariable) (Pair abstract-atom (HashTable Term AbstractVariable))))
+;(: pre-abstract-aux-atom (-> atom (HashTable Term AbstractVariable) (Pair abstract-atom (HashTable Term AbstractVariable))))
 (define (pre-abstract-aux-atom concrete-atom existing-mapping)
   (if (null? (atom-args concrete-atom))
       (cons (abstract-atom (atom-symbol concrete-atom) '()) existing-mapping)
@@ -78,20 +78,20 @@
              [just-acc (cdr applied-to-args)])
         (cons (abstract-atom (atom-symbol concrete-atom) just-mapped-args) just-acc))))
 
-(: pre-abstract-rule (-> ck:rule ak:rule))
+;(: pre-abstract-rule (-> ck:rule ak:rule))
 (define (pre-abstract-rule concrete-rule)
   (let* ([rule-as-conjunction (cons (ck:rule-head concrete-rule) (ck:rule-body concrete-rule))]
          [abstracted-conjunction (pre-abstract-conjunction rule-as-conjunction)])
     (ak:rule (car abstracted-conjunction) (cdr abstracted-conjunction))))
 (provide pre-abstract-rule)
 
-(: pre-abstract-conjunction (-> Conjunction AbstractConjunction))
+;(: pre-abstract-conjunction (-> Conjunction AbstractConjunction))
 (define (pre-abstract-conjunction conjunction)
-  (car (mapAccum pre-abstract-aux-atom (ann (hash) (HashTable Term AbstractVariable)) conjunction)))
+  (car (mapAccum pre-abstract-aux-atom (hash) conjunction)))
           
-(: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
+;(: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
 (define (pre-abstract concrete-domain-elem)
-  (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (car (mapAccum pre-abstract-aux-term (ann (hash) (HashTable Term AbstractVariable)) (atom-args concrete-domain-elem))))]
-        [(Conjunction? concrete-domain-elem) (pre-abstract-conjunction concrete-domain-elem)]
-        [(Term? concrete-domain-elem) (car (pre-abstract-aux-term concrete-domain-elem (ann (hash) (HashTable Term AbstractVariable))))]))
+  (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (car (mapAccum pre-abstract-aux-term (hash) (atom-args concrete-domain-elem))))]
+        [(list? concrete-domain-elem) (pre-abstract-conjunction concrete-domain-elem)]
+        [(term? concrete-domain-elem) (car (pre-abstract-aux-term concrete-domain-elem (hash)))]))
 (provide pre-abstract)

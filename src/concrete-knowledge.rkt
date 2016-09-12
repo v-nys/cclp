@@ -20,7 +20,18 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang typed/racket
+#lang racket
 (require "concrete-domain.rkt")
-(struct rule ([head : atom] [body : Conjunction]) #:transparent)
+(struct rule (head body)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc r1 r2 equal?-recur)
+     (and (equal?-recur (rule-head r1) (rule-head r2))
+          (equal?-recur (rule-body r1) (rule-body r2))))
+   (define (hash-proc my-rule hash-recur)
+     (+ (hash-recur (rule-head my-rule))
+        (* 3 (hash-recur (rule-body my-rule)))))
+   (define (hash2-proc my-rule hash2-recur)
+     (+ (hash2-recur (rule-head my-rule))
+        (hash2-recur (rule-body my-rule))))])
 (provide (struct-out rule))

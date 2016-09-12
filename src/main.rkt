@@ -20,14 +20,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang typed/racket
+#lang racket
 (require "permutation-sort.rkt")
 (require "io-utils.rkt")
-(require typed-racket-tree-utils/tree typed-racket-tree-utils/printer)
+(require racket-tree-utils/src/tree racket-tree-utils/src/printer)
 
-; TreeLabel { substitution :: ASubstitution, conjunction :: Conjunction, selection :: AtomSelection, prohibitedGeneralization :: Maybe Conjunction } | Failure | Cycle
-
-(: main (-> Void))
+;(: main (-> Void))
 (define (main)
   (define new-program "Analyze a new program.")
   (define continue-previous "Continue previous analysis.")
@@ -37,12 +35,12 @@
           [(equal? selection continue-previous) (void)])
     (main)))
 
-(: analyze-new-program (-> Void))
+;(: analyze-new-program (-> Void))
 (define (analyze-new-program)
   (define perm-sort "Permutation sort.")
   (define sameleaves "Sameleaves.")
   (define go-back "None, return to the top level.")
   (define selection (prompt-for-answer "Which program do you want to analyze?" perm-sort sameleaves go-back))
-  (cond [(equal? selection perm-sort) (interact-with (treeify "permsort(g_1,a_1)"))]
+  (cond ;[(equal? selection perm-sort) (interact-with (treeify "permsort(g_1,a_1)"))]
         [(equal? selection sameleaves) (void)]
         [(equal? selection go-back) (void)]))

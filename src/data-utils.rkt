@@ -1,18 +1,37 @@
-#lang typed/racket
+#lang racket
 
-(struct none () #:transparent)
+(struct none ()
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc n1 n2 equal?-recur) #t)
+   (define (hash-proc my-none hash-recur) 357)
+   (define (hash2-proc my-none hash2-recur) 729)])
 (provide (struct-out none))
-(struct (a) some ([v : a]) #:transparent)
+
+(struct some (v)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc s1 s2 equal?-recur) (equal?-recur s1 s2))
+   (define (hash-proc my-some hash-recur) (hash-recur (some-v my-some)))
+   (define (hash2-proc my-some hash2-recur) (hash2-recur (some-v my-some)))])
 (provide (struct-out some))
-(define-type (Opt a) (U none (some a)))
-(provide Opt)
 
 ; 2-tuples are useful because consing with an empty list can change something's type to list when we want it to be a pair
-(struct (X Y) 2-tuple ([first : X] [second : Y]) #:transparent)
+(struct 2-tuple (first second)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc t1 t2 equal?-recur)
+     (and (equal?-recur (2-tuple-first t1) (2-tuple-first t2))
+          (equal?-recur (2-tuple-second t1) (2-tuple-second t2))))
+   (define (hash-proc my-tuple hash-recur)
+     (+ (hash-recur (2-tuple-first my-tuple))
+        (* 3 (hash-recur (2-tuple-second my-tuple)))))
+   (define (hash2-proc my-tuple hash2-recur)
+     (+ (hash2-recur (2-tuple-first my-tuple))
+        (hash2-recur (2-tuple-second my-tuple))))])
 (provide (struct-out 2-tuple))
 
 ; may want to create a set utils module?
-(: optional-set-union (All (A) (-> (Setof A) * (Setof A))))
 (define (optional-set-union . sets)
-  (foldl (λ ([el : (Setof A)] [acc : (Setof A)]) (set-union el acc)) (ann (set) (Setof A)) sets))
+  (foldl (λ (el acc) (set-union el acc)) sets))
 (provide optional-set-union)
