@@ -9,18 +9,8 @@
          (prefix-in ck: "../src/concrete-knowledge.rkt")
          (prefix-in ak: "../src/abstract-knowledge.rkt")
          "../src/abstract-renaming.rkt"
-         "../src/abstract-substitution.rkt")
-
-; TODO could make a macro-generating macro for these guys...
-(define-syntax-rule (readable-check-eq? actual-expr expected-expr)
-  (with-check-info* (list (make-check-info 'actual-as-string (~v actual-expr))
-                          (make-check-info 'expected-as-string (~v expected-expr)))
-    (lambda () (check-eq? actual-expr expected-expr))))
-
-(define-syntax-rule (readable-check-equal? actual-expr expected-expr)
-  (with-check-info* (list (make-check-info 'actual-as-string (~v actual-expr))
-                          (make-check-info 'expected-as-string (~v expected-expr)))
-    (lambda () (check-equal? actual-expr expected-expr))))
+         "../src/abstract-substitution.rkt"
+         "printed-test-results.rkt")
 
 (readable-check-equal? (abstract-step (parse-atom "collect(γ1,α1)")
                                       (rename-apart (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
