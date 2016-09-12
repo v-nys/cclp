@@ -21,16 +21,16 @@
 ; SOFTWARE.
 
 #lang typed/racket
+(require/typed "untyped-generational-tree.rkt" [#:struct resolution-info ([conjunction : AbstractConjunction] [selection-and-clause : (Opt (Pairof Integer AbstractKnowledge))])]
+                                               [#:struct atom-with-generation ([atom : AbstractConjunct] [generation : Integer])])
 (require typed-racket-tree-utils/tree)
 (require "typed-abstract-knowledge.rkt")
 (require "typed-abstract-multi-domain.rkt")
 (require "data-utils.rkt")
 
 ; an 'input' branch is a list of these guys
-(struct resolution-info ([conjunction : AbstractConjunction] [selection-and-clause : (Opt (Pairof Integer AbstractKnowledge))]))
 (provide (struct-out resolution-info))
 
-(struct atom-with-generation ([atom : AbstractConjunct] [generation : Integer]))
 (provide (struct-out atom-with-generation))
 
 (: clause-output-length (-> AbstractKnowledge Integer))

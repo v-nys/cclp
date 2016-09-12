@@ -65,4 +65,4 @@
                   [expected0 (node (atom-with-generation atom0 0) (list expected1a expected1b expected1c))]
                   [actual (generational-tree branch)])
              ; would be better if tree printer could print to string...
-             (when (not (equal? actual (list expected0))) (begin (map (λ (t) (tree-display t node-printer)) actual) (tree-display expected0 node-printer) (readable-check-equal? actual (list expected0))))))
+             (begin (map (λ (t) (tree-display t node-printer)) actual) (tree-display expected0 node-printer) (readable-check-equal? actual (list expected0)))))
