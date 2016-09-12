@@ -29,6 +29,7 @@
 (require (prefix-in ak: "../src/typed-abstract-knowledge.rkt"))
 (require "../src/generational-tree.rkt")
 (require typed-racket-tree-utils/tree)
+(require "../src/data-utils.rkt")
 
 ; (struct resolution-info ([conjunction : AbstractConjunction] [selection : Integer] [clause : ak:AbstractKnowledge]))
 ; (struct atom-with-generation ([atom : AbstractConjunct] [generation : Integer]))
@@ -47,9 +48,9 @@
     (values (pre-abstract-rule (cbp:parse-rule "primes(X,Y) :- integers(2,Z), sift(Z,Y), length(Y,X)"))
             (pre-abstract-rule (cbp:parse-rule "integers(N,[N|I]) :- plus(N,1,M), integers(M,I)"))))
   (define-values (branch-node1 branch-node2 branch-node3)
-    (values (resolution-info (list atom0) 0 clause1)
-            (resolution-info (list atom1a atom1b atom1c) 0 clause2)
-            (resolution-info (list atom2a atom2b atom2c atom2d) #f #f)))
+    (values (resolution-info (list atom0) (some (cons 0 clause1)))
+            (resolution-info (list atom1a atom1b atom1c) (some (cons 0 clause2)))
+            (resolution-info (list atom2a atom2b atom2c atom2d) (none))))
   (let* ([target-atom (abp:parse-atom "sift([γ1|α1],α2)")]
          [branch (list branch-node1 branch-node2 branch-node3)]
          [expected2a (node (atom-with-generation atom2a 0) (list))]
@@ -60,4 +61,4 @@
          [expected1b (node (atom-with-generation atom1b 0) (list expected2c))]
          [expected1c (node (atom-with-generation atom1c 0) (list expected2d))]
          [expected0 (node (atom-with-generation atom0 0) (list expected1a expected1b expected1c))])
-           (check-equal? (generational-tree branch target-atom) (list expected0))))
+           (check-equal? (generational-tree branch) (list expected0))))

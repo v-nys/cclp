@@ -24,9 +24,10 @@
 (require typed-racket-tree-utils/tree)
 (require "typed-abstract-knowledge.rkt")
 (require "typed-abstract-multi-domain.rkt")
+(require "data-utils.rkt")
 
 ; an 'input' branch is a list of these guys
-(struct resolution-info ([conjunction : AbstractConjunction] [selection : Integer] [clause : AbstractKnowledge]))
+(struct resolution-info ([conjunction : AbstractConjunction] [selection-and-clause : (Opt (Pairof Integer AbstractKnowledge))]))
 (provide (struct-out resolution-info))
 
 (struct atom-with-generation ([atom : AbstractConjunct] [generation : Integer]))
@@ -39,18 +40,20 @@
     [(full-evaluation i o) 0]))
 
 ; empty branch would be a contract violation, take care of that...
+; not having a selection-and-clause and having a successor list element would also be a violation
+; +vice versa
 (: generational-tree (-> (Listof resolution-info) (Listof (node atom-with-generation))))
 (define (generational-tree branch)
-  (match branch [(list res-info) (map (λ ([atom-in-conjunction : AbstractConjunct]) (node (atom-with-generation atom-in-conjunction 0) '())) (resolution-info-conjunction res-info))]
-    [(list-rest res-info res-info-rest)
-     (let* ([selected (resolution-info-selection res-info)]
-            [first-unselected (take (resolution-info-conjunction res-info) selected)]
-            [selected-atom (list-ref (resolution-info-conjunction res-info) (resolution-info-selection res-info))]
-            [last-unselected (drop (resolution-info-conjunction res-info) (+ 1 selected))]
+  (match branch
+    [(list res-info) (map (λ ([atom-in-conjunction : AbstractConjunct]) (node (atom-with-generation atom-in-conjunction 0) '())) (resolution-info-conjunction res-info))]
+    [(list-rest (resolution-info res-conjunction (some (cons selected clause-used))) res-info-rest)
+     (let* ([first-unselected (take res-conjunction selected)]
+            [selected-atom (list-ref res-conjunction selected)]
+            [last-unselected (drop res-conjunction (+ 1 selected))]
             [next-layer (generational-tree res-info-rest)]
             [first-successors (take next-layer selected)]
-            [selected-successors (take next-layer (clause-output-length (resolution-info-clause res-info)))]
-            [last-successors (drop next-layer (+ selected (clause-output-length (resolution-info-clause res-info))))])
+            [selected-successors (take next-layer (clause-output-length clause-used))]
+            [last-successors (drop next-layer (+ selected (clause-output-length clause-used)))])
        (append (map (λ ([pre : AbstractConjunct] [post : (node atom-with-generation)]) (node (atom-with-generation pre 0) (list post))) first-unselected first-successors)
                (list (node (atom-with-generation selected-atom 0) selected-successors))
                (map (λ ([pre : AbstractConjunct] [post : (node atom-with-generation)]) (node (atom-with-generation pre 0) (list post))) last-unselected last-successors)))]))
