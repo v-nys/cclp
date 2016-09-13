@@ -35,15 +35,16 @@
 
 (struct resolution-info (conjunction selection-and-clause))
 ; TODO add contract
-; conjunction is a nonempty list (of abstract-atom)
-; selection-and-clause is an Opt pair of Integer, AbstractKnowledge
+; conjunction is a (non-empty-listof abstract-atom)
+; selection-and-clause is an Opt pair of Integer, AbstractKnowledge, so (or/c none? (someof (cons/c Integer abstract-knowledge?))
 ;the Integer is at least 0 and lower than the list length
 (provide (struct-out resolution-info))
 
 
 
 
-
+; TODO add contract
+; atom is just an abstract atom, generation is at least 0
 (struct atom-with-generation (atom generation)
   #:methods
   gen:custom-write [(define write-proc write-atom-with-generation)]
@@ -61,15 +62,13 @@
 (provide (struct-out atom-with-generation))
 
 ;(: clause-output-length (-> AbstractKnowledge Integer))
+; could use define/contract for extra information
 (define (clause-output-length clause)
   (match clause
     [(rule h b) (length b)]
     [(full-evaluation i o) 0]))
 
-; empty branch would be a contract violation, take care of that...
-; not having a selection-and-clause and having a successor list element would also be a violation
-; +vice versa
-;(: generational-tree (-> (Listof resolution-info) (Listof (node atom-with-generation))))
+
 (define (generational-tree branch)
   (match branch
     [(list res-info) (map (λ (atom-in-conjunction) (node (atom-with-generation atom-in-conjunction 0) '())) (resolution-info-conjunction res-info))]
@@ -85,4 +84,10 @@
                (list (node (atom-with-generation selected-atom 0) selected-successors))
                (map (λ (pre post) (node (atom-with-generation pre 0) (list post))) last-unselected last-successors)))]))
 
-(provide generational-tree)
+; TODO: need a nodeof contract in the tree library
+;
+; can refine this further:
+; not having a selection-and-clause and having a successor list element would also be a violation
+; +vice versa
+(provide (contract-out
+          [generational-tree (-> (non-empty-listof resolution-info?) (listof (nodeof atom-with-generation?)))]))
