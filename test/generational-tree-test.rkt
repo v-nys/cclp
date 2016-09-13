@@ -93,7 +93,3 @@
                       (displayln "expected:")
                       (tree-display expected0 node-display)
                       (readable-check-equal? actual expected0)))))
-
-
-
-; TODO add a test with a target atom for recursion, so that there are actual generations
