@@ -34,7 +34,15 @@
              (fprintf port "~v" (atom-with-generation-generation obj)))))
 
 (struct resolution-info (conjunction selection-and-clause))
+; TODO add contract
+; conjunction is a nonempty list (of abstract-atom)
+; selection-and-clause is an Opt pair of Integer, AbstractKnowledge
+;the Integer is at least 0 and lower than the list length
 (provide (struct-out resolution-info))
+
+
+
+
 
 (struct atom-with-generation (atom generation)
   #:methods
