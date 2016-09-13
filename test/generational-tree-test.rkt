@@ -35,7 +35,7 @@
 (require "../src/abstract-knowledge.rkt")
 
 (define (node-display tree out)
-  (display (node-label tree) out))
+  (print (node-label tree) out))
 
 (test-case "the generational tree is computed correctly based on a branch of several nodes"
            (define-values (atom0 atom1a atom1b atom1c atom2a atom2b atom2c atom2d atom3a atom3b atom3c atom4a atom4b atom4c atom4d)
@@ -67,7 +67,7 @@
              (values (resolution-info (list atom0) (some (cons 0 clause1)))
                      (resolution-info (list atom1a atom1b atom1c) (some (cons 0 clause2)))
                      (resolution-info (list atom2a atom2b atom2c atom2d) (some (cons 0 full-ai1)))
-                     (resolution-info (list atom3a atom3b atom3c) (some (cons 2 clause3)))
+                     (resolution-info (list atom3a atom3b atom3c) (some (cons 1 clause3)))
                      (resolution-info (list atom4a atom4b atom4c atom4d) (none))))
            (let* ([target-atom (abp:parse-atom "sift([γ1|α1],α2)")]
                   [branch (list branch-node1 branch-node2 branch-node3 branch-node4 branch-node5)]
@@ -88,7 +88,9 @@
                   [expected0 (node (atom-with-generation atom0 0) (list expected1a expected1b expected1c))]
                   [actual (generational-tree branch)])
              (when (not (equal? (car actual) expected0))
-               (begin (map (λ (t) (tree-display t node-display)) actual)
+               (begin (displayln "actual:")
+                      (map (λ (t) (tree-display t node-display)) actual)
+                      (displayln "expected:")
                       (tree-display expected0 node-display)
                       (readable-check-equal? (car actual) expected0)))))
 

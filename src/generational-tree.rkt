@@ -75,7 +75,7 @@
             [last-unselected (drop res-conjunction (+ 1 selected))]
             [next-layer (generational-tree res-info-rest)]
             [first-successors (take next-layer selected)]
-            [selected-successors (take next-layer (clause-output-length clause-used))]
+            [selected-successors (take (drop next-layer selected) (clause-output-length clause-used))]
             [last-successors (drop next-layer (+ selected (clause-output-length clause-used)))])
        (append (map (λ (pre post) (node (atom-with-generation pre 0) (list post))) first-unselected first-successors)
                (list (node (atom-with-generation selected-atom 0) selected-successors))
