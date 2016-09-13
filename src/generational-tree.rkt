@@ -38,6 +38,7 @@
 ; conjunction is a (non-empty-listof abstract-atom)
 ; selection-and-clause is an Opt pair of Integer, AbstractKnowledge, so (or/c none? (someof (cons/c Integer abstract-knowledge?))
 ;the Integer is at least 0 and lower than the list length
+; note: should clause be renamed here or not? doesn't actually matter - we only consider the length and type (full ai or not)
 (provide (struct-out resolution-info))
 
 ; TODO add contract

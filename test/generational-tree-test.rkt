@@ -32,33 +32,52 @@
 (require racket-tree-utils/src/printer)
 (require "../src/data-utils.rkt")
 (require "printed-test-results.rkt")
+(require "../src/abstract-knowledge.rkt")
 
 (define (node-display tree out)
   (display (node-label tree) out))
 
-(test-case "the generational tree is computed correctly based on a branch of several nodes without recursion"
-           (define-values (atom0 atom1a atom1b atom1c atom2a atom2b atom2c atom2d)
+(test-case "the generational tree is computed correctly based on a branch of several nodes"
+           (define-values (atom0 atom1a atom1b atom1c atom2a atom2b atom2c atom2d atom3a atom3b atom3c atom4a atom4b atom4c atom4d)
              (values (abp:parse-atom "primes(γ1,α1)")
+                     
                      (abp:parse-atom "integers(γ2,α2)")
                      (abp:parse-atom "sift(α2,α1)")
                      (abp:parse-atom "length(α1,γ1)")
+                     
                      (abp:parse-atom "plus(γ2,γ3,α3)")
                      (abp:parse-atom "integers(α3,α4)")
                      (abp:parse-atom "sift([γ2|α4],α1)")
-                     (abp:parse-atom "length(α1,γ1)")))
-           (define-values (clause1 clause2)
+                     (abp:parse-atom "length(α1,γ1)")
+                     
+                     (abp:parse-atom "integers(γ4,α4)")
+                     (abp:parse-atom "sift([γ2|α4],α1)")
+                     (abp:parse-atom "length(α1,γ1)")
+                     
+                     (abp:parse-atom "integers(γ4,α4)")
+                     (abp:parse-atom "filter(γ2,α4,α5)")
+                     (abp:parse-atom "sift(α5,[γ2|α6])")
+                     (abp:parse-atom "length([γ2|α6],γ1)")))
+           (define-values (clause1 clause2 full-ai1 clause3)
              (values (pre-abstract-rule (cbp:parse-rule "primes(X,Y) :- integers(2,Z), sift(Z,Y), length(Y,X)"))
-                     (pre-abstract-rule (cbp:parse-rule "integers(N,[N|I]) :- plus(N,1,M), integers(M,I)"))))
-           (define-values (branch-node1 branch-node2 branch-node3)
+                     (pre-abstract-rule (cbp:parse-rule "integers(N,[N|I]) :- plus(N,1,M), integers(M,I)"))
+                     (full-evaluation (abp:parse-atom "plus(γ1,γ2,α2)") (abp:parse-atom "plus(γ1,γ2,γ3)"))
+                     (pre-abstract-rule (cbp:parse-rule "sift([N|Ints],[N|Primes]) :- filter(N,Ints,F), sift(F,Primes)"))))
+           (define-values (branch-node1 branch-node2 branch-node3 branch-node4 branch-node5)
              (values (resolution-info (list atom0) (some (cons 0 clause1)))
                      (resolution-info (list atom1a atom1b atom1c) (some (cons 0 clause2)))
-                     (resolution-info (list atom2a atom2b atom2c atom2d) (none))))
+                     (resolution-info (list atom2a atom2b atom2c atom2d) (some (cons 0 full-ai1)))
+                     (resolution-info (list atom3a atom3b atom3c) (some (cons 2 clause3)))
+                     (resolution-info (list atom4a atom4b atom4c atom4d) (none))))
            (let* ([target-atom (abp:parse-atom "sift([γ1|α1],α2)")]
-                  [branch (list branch-node1 branch-node2 branch-node3)]
+                  [branch (list branch-node1 branch-node2 branch-node3 branch-node4 branch-node5)]
+                  [expected3a (node (atom-with-generation atom3a 0) (list))]
+                  [expected3b (node (atom-with-generation atom3b 0) (list))]
+                  [expected3c (node (atom-with-generation atom3c 0) (list))]
                   [expected2a (node (atom-with-generation atom2a 0) (list))]
-                  [expected2b (node (atom-with-generation atom2b 0) (list))]
-                  [expected2c (node (atom-with-generation atom2c 0) (list))]
-                  [expected2d (node (atom-with-generation atom2d 0) (list))]
+                  [expected2b (node (atom-with-generation atom2b 0) (list expected3a))]
+                  [expected2c (node (atom-with-generation atom2c 0) (list expected3b))]
+                  [expected2d (node (atom-with-generation atom2d 0) (list expected3c))]
                   [expected1a (node (atom-with-generation atom1a 0) (list expected2a expected2b))]
                   [expected1b (node (atom-with-generation atom1b 0) (list expected2c))]
                   [expected1c (node (atom-with-generation atom1c 0) (list expected2d))]
@@ -68,5 +87,7 @@
                (begin (map (λ (t) (tree-display t node-display)) actual)
                       (tree-display expected0 node-display)
                       (readable-check-equal? (car actual) expected0)))))
+
+
 
 ; TODO add a test with a target atom for recursion, so that there are actual generations
