@@ -12,16 +12,17 @@
         [else default]))
 
 ;(: rename-apart (-> ak:AbstractKnowledge AbstractConjunction ak:AbstractKnowledge))
-(define (rename-apart knowledge conjunction)
-  (let* ([g-max-conjunction (maximum-var-index conjunction g?)]
-         [a-max-conjunction (maximum-var-index conjunction a?)]
-         [g-max-knowledge (maximum-var-index knowledge g?)]
-         [a-max-knowledge (maximum-var-index knowledge a?)]
-         [g-offset (opt-max g-max-conjunction g-max-knowledge 0)]
-         [a-offset (opt-max a-max-conjunction a-max-knowledge 0)]
-         [a-indices (assemble-var-indices a? knowledge)]
-         [g-indices (assemble-var-indices g? knowledge)]
+; modified so that it works for all abstract domain elements
+(define (rename-apart renamee non-renamee)
+  (let* ([g-max-non-renamee (maximum-var-index non-renamee g?)]
+         [a-max-non-renamee (maximum-var-index non-renamee a?)]
+         [g-max-renamee (maximum-var-index renamee g?)]
+         [a-max-renamee (maximum-var-index renamee a?)]
+         [g-offset (opt-max g-max-non-renamee g-max-renamee 0)]
+         [a-offset (opt-max a-max-non-renamee a-max-renamee 0)]
+         [a-indices (assemble-var-indices a? renamee)]
+         [g-indices (assemble-var-indices g? renamee)]
          [subst (append (map (λ (index) (abstract-equality (a index) (a (+ a-offset index)))) (set->list a-indices))
                         (map (λ (index) (abstract-equality (g index) (g (+ g-offset index)))) (set->list g-indices)))])
-  (apply-substitution-to-knowledge subst knowledge)))
+  (apply-substitution subst renamee)))
 (provide rename-apart)

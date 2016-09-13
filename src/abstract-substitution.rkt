@@ -82,6 +82,8 @@
           [(none? max-rhs) max-lhs]
           [else (some (max (some-v max-lhs) (some-v max-rhs)))])))
 
+; TODO can probably clean this up significantly now that this is no longer in TR
+
 ;(: apply-substitution-to-term (-> AbstractSubstitution AbstractTerm AbstractTerm))
 (define (apply-substitution-to-term subst t)
   (foldl (λ (el acc)

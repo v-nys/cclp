@@ -25,6 +25,7 @@
 (require "abstract-knowledge.rkt")
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
+(require "abstract-domain-ordering.rkt")
 
 (define (write-atom-with-generation obj port mode)
   (if (boolean? mode)
@@ -66,24 +67,53 @@
     [(rule h b) (length b)]
     [(full-evaluation i o) 0]))
 
-(define (generational-tree branch)
+
+(define (generational-tree-skeleton branch)
   (match branch
-    [(list res-info) (map (λ (atom-in-conjunction) (node (atom-with-generation atom-in-conjunction 0) '())) (resolution-info-conjunction res-info))]
+    [(list res-info) (map (λ (atom-in-conjunction) (node atom-in-conjunction '())) (resolution-info-conjunction res-info))]
     [(list-rest (resolution-info res-conjunction (some (cons selected clause-used))) res-info-rest)
      (let* ([first-unselected (take res-conjunction selected)]
             [selected-atom (list-ref res-conjunction selected)]
             [last-unselected (drop res-conjunction (+ 1 selected))]
-            [next-layer (generational-tree res-info-rest)]
+            [next-layer (generational-tree-skeleton res-info-rest)]
             [first-successors (take next-layer selected)]
             [selected-successors (take (drop next-layer selected) (clause-output-length clause-used))]
             [last-successors (drop next-layer (+ selected (clause-output-length clause-used)))])
-       (append (map (λ (pre post) (node (atom-with-generation pre 0) (list post))) first-unselected first-successors)
-               (list (node (atom-with-generation selected-atom 0) selected-successors))
-               (map (λ (pre post) (node (atom-with-generation pre 0) (list post))) last-unselected last-successors)))]))
+       (append (map (λ (pre post) (node pre (list post))) first-unselected first-successors)
+               (list (node selected-atom selected-successors))
+               (map (λ (pre post) (node pre (list post))) last-unselected last-successors)))]))
+
+; TODO test
+(define (annotate-generational-tree tree target-atom generation-acc live-depth depth-acc)
+  (match tree
+    [(node atom-label (list)) (node (atom-with-generation atom-label generation-acc) (list))]
+    [(node atom-label (list single-elem)) (node (atom-with-generation atom-label generation-acc)
+                                                (list (annotate-generational-tree single-elem target-atom generation-acc live-depth (+ depth-acc 1))))]
+    [(node atom-label (list-rest h t))
+     #:when (and (>=-extension target-atom atom-label) (multiple-live-descendants? (node atom-label (cons h t)) live-depth depth-acc))
+     (node (atom-with-generation atom-label generation-acc)
+           (map (λ (subtree) (annotate-generational-tree subtree target-atom (+ generation-acc 1) live-depth (+ depth-acc 1))) (cons h t)))]
+    [(node atom-label (list-rest h t))
+     (node (atom-with-generation atom-label generation-acc)
+           (map (λ (subtree) (annotate-generational-tree subtree target-atom generation-acc live-depth (+ depth-acc 1))) (cons h t)))]))
+
+; TODO test
+(define (multiple-live-descendants? my-node live-depth curr-depth)
+  (let ([children-reaching-live-depth (filter (λ (c) (can-reach-depth? c live-depth (+ curr-depth 1))) (node-children my-node))])
+    (>= (length children-reaching-live-depth) 2)))
+
+(define (can-reach-depth? my-node target-depth curr-depth)
+  (cond [(= curr-depth target-depth) #t]
+        [(null? (node-children my-node)) #f]
+        [else (ormap (λ (c) can-reach-depth? c target-depth (+ curr-depth) 1) (node-children my-node))]))
+
+(define (generational-tree branch target-atom)
+  (define skeleton (generational-tree-skeleton branch))
+  (annotate-generational-tree (car skeleton) target-atom 0 (- (length branch) 1) 0))
 
 ; can refine this further:
 ; first resolution-info should have an atomic query
 ; not having a selection-and-clause and having a successor list element would also be a violation
 ; +vice versa
 (provide (contract-out
-          [generational-tree (-> (non-empty-listof resolution-info?) (listof (nodeof atom-with-generation?)))]))
+          [generational-tree (-> (non-empty-listof resolution-info?) abstract-atom? (nodeof atom-with-generation?))]))

@@ -86,13 +86,13 @@
                   [expected1b (node (atom-with-generation atom1b 0) (list expected2c))]
                   [expected1c (node (atom-with-generation atom1c 0) (list expected2d))]
                   [expected0 (node (atom-with-generation atom0 0) (list expected1a expected1b expected1c))]
-                  [actual (generational-tree branch)])
-             (when (not (equal? (car actual) expected0))
+                  [actual (generational-tree branch target-atom)])
+             (when (not (equal? actual expected0))
                (begin (displayln "actual:")
-                      (map (λ (t) (tree-display t node-display)) actual)
+                      (tree-display actual node-display)
                       (displayln "expected:")
                       (tree-display expected0 node-display)
-                      (readable-check-equal? (car actual) expected0)))))
+                      (readable-check-equal? actual expected0)))))
 
 
 
