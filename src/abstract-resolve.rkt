@@ -35,12 +35,13 @@
   (cond [(rule? knowledge)
          (let* ([in-subst (abstract-equality conjunct (rule-head knowledge))]
                 [out-subst (abstract-unify (list in-subst) g-offset)])
-           (if (some? out-subst) (some ((some-v out-subst) (apply-substitution-to-conjunction (some-v out-subst) (rule-body knowledge)))) (none)))]
+           (if (some? out-subst) (some (2-tuple (some-v out-subst) (apply-substitution-to-conjunction (some-v out-subst) (rule-body knowledge)))) (none)))]
+
         [(full-evaluation? knowledge)
          (if (>=-extension (full-evaluation-input-pattern knowledge) conjunct)
              (let* ([in-subst (abstract-equality conjunct (full-evaluation-output-pattern knowledge))]
                     [out-subst (abstract-unify (list in-subst) g-offset)])
-               (if (some? out-subst) (some ((some-v out-subst) empty)) (none)))
+               (if (some? out-subst) (some (2-tuple (some-v out-subst) empty)) (none)))
              (none))]))
 (provide abstract-step)
   

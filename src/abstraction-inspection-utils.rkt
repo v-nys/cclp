@@ -6,7 +6,8 @@
 (define (assemble-var-indices right-variable-type? abstract-data)
   (cond [(abstract-variable? abstract-data) (if (right-variable-type? abstract-data) (set (avar-index abstract-data)) (set))]
         [(abstract-atom? abstract-data) (apply optional-set-union (map (λ (arg) (assemble-var-indices right-variable-type? arg)) (abstract-atom-args abstract-data)))]
-        [(abstract-function? abstract-data) (apply optional-set-union (map (λ (arg) (assemble-var-indices right-variable-type? arg)) (abstract-function-args abstract-data)))]
+        [(abstract-function? abstract-data)
+         (apply optional-set-union (map (λ (arg) (assemble-var-indices right-variable-type? arg)) (abstract-function-args abstract-data)))]
         [(list? abstract-data) (apply optional-set-union (map (λ (arg) (assemble-var-indices right-variable-type? arg)) abstract-data))]
         [(rule? abstract-data) (set-union (assemble-var-indices right-variable-type? (rule-head abstract-data)) (assemble-var-indices right-variable-type? (rule-body abstract-data)))]
         [(full-evaluation? abstract-data) (set-union (assemble-var-indices right-variable-type? (full-evaluation-input-pattern abstract-data)) (assemble-var-indices right-variable-type? (full-evaluation-input-pattern abstract-data)))]))

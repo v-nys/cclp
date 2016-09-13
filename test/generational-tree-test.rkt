@@ -26,16 +26,15 @@
 (require "../src/domain-switching.rkt")
 (require (prefix-in cbp: "concrete-domain-boilerplate.rkt"))
 (require (prefix-in abp: "abstract-domain-boilerplate.rkt"))
-(require (prefix-in ak: "../src/typed-abstract-knowledge.rkt"))
+(require (prefix-in ak: "../src/abstract-knowledge.rkt"))
 (require "../src/generational-tree.rkt")
-(require "../src/untyped-generational-tree-structs.rkt")
-(require typed-racket-tree-utils/tree)
-(require typed-racket-tree-utils/printer)
+(require racket-tree-utils/src/tree)
+(require racket-tree-utils/src/printer)
 (require "../src/data-utils.rkt")
 (require "printed-test-results.rkt")
 
-(define (node-printer my-node)
-  (print (node-label my-node)))
+(define (node-display tree out)
+  (display (node-label tree) out))
 
 (test-case "the generational tree is computed correctly based on a branch of several nodes without recursion"
            (define-values (atom0 atom1a atom1b atom1c atom2a atom2b atom2c atom2d)
@@ -65,5 +64,9 @@
                   [expected1c (node (atom-with-generation atom1c 0) (list expected2d))]
                   [expected0 (node (atom-with-generation atom0 0) (list expected1a expected1b expected1c))]
                   [actual (generational-tree branch)])
-             ; would be better if tree printer could print to string...
-             (begin (map (λ (t) (tree-display t node-printer)) actual) (tree-display expected0 node-printer) (readable-check-equal? (car actual) expected0))))
+             (when (not (equal? (car actual) expected0))
+               (begin (map (λ (t) (tree-display t node-display)) actual)
+                      (tree-display expected0 node-display)
+                      (readable-check-equal? (car actual) expected0)))))
+
+; TODO add a test with a target atom for recursion, so that there are actual generations

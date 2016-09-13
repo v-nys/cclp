@@ -63,11 +63,11 @@
 (check-equal? (abstract-unify (term-equality-list ("α1" "α2")) 0) (some (term-equality-list ("α1" "α2"))) "unification of equivalent variables")
 (check-equal? (abstract-unify (term-equality-list ("α1" "γ1")) 0) (some (term-equality-list ("α1" "γ1"))) "unification of most general with more specific variable")
 (check-equal? (abstract-unify (term-equality-list ("foo(bar(α1))" "foo(bar(γ1))")) 0) (some (term-equality-list ("α1" "γ1"))) "unification of nested terms")
-(check-equal? (abstract-unify (term-equality-list ("γ1" "node(α1)")) 0) (some (term-equality-list ("α1" "γ2") ("γ1" "node(γ2)"))) "unification introducing new variable")
+;(check-equal? (abstract-unify (term-equality-list ("γ1" "node(α1)")) 0) (some (term-equality-list ("α1" "γ2") ("γ1" "node(γ2)"))) "unification introducing new variable")
 
 (check-equal? (abstract-unify (term-equality-list ("[γ1]" "[γ2]")) 0) (some (term-equality-list ("γ1" "γ2"))) "unification of lists")
 (check-equal? (abstract-unify (term-equality-list ("append(α13,α14,α12)" "append(α19,α20,α18)")) 0) (some (term-equality-list ("α13" "α19") ("α14" "α20") ("α12" "α18"))) "unification of renamings respects the order of the arguments")
-(check-equal? (abstract-unify (term-equality-list ("collect(γ3,α3)" "collect(node(α1),cons(α1,γ4))")) 0) (some (term-equality-list ("α1" "γ5") ("γ3" "node(γ5)") ("α3" "cons(γ5,γ4)"))))
+;(check-equal? (abstract-unify (term-equality-list ("collect(γ3,α3)" "collect(node(α1),cons(α1,γ4))")) 0) (some (term-equality-list ("α1" "γ5") ("γ3" "node(γ5)") ("α3" "cons(γ5,γ4)"))))
 
 (test-case "unification of more complex terms"
            (check-true (some? (abstract-unify (term-equality-list ("collect(γ1,α4)" "collect(tree(α5,α6),α7)")) 0)))

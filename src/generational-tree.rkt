@@ -38,7 +38,18 @@
 
 (struct atom-with-generation (atom generation)
   #:methods
-  gen:custom-write [(define write-proc write-atom-with-generation)])
+  gen:custom-write [(define write-proc write-atom-with-generation)]
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc a1 a2 equal?-recur)
+     (and (equal?-recur (atom-with-generation-atom a1) (atom-with-generation-atom a2))
+          (equal?-recur (atom-with-generation-generation a1) (atom-with-generation-generation a2))))
+   (define (hash-proc my-awg hash-recur)
+     (+ (hash-recur (atom-with-generation-atom my-awg))
+        (hash-recur (atom-with-generation-generation my-awg))))
+   (define (hash2-proc my-awg hash2-recur)
+     (+ (hash2-recur (atom-with-generation-atom my-awg))
+        (hash2-recur (atom-with-generation-generation my-awg))))])
 (provide (struct-out atom-with-generation))
 
 ;(: clause-output-length (-> AbstractKnowledge Integer))
