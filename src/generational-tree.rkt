@@ -40,9 +40,6 @@
 ;the Integer is at least 0 and lower than the list length
 (provide (struct-out resolution-info))
 
-
-
-
 ; TODO add contract
 ; atom is just an abstract atom, generation is at least 0
 (struct atom-with-generation (atom generation)
@@ -68,7 +65,6 @@
     [(rule h b) (length b)]
     [(full-evaluation i o) 0]))
 
-
 (define (generational-tree branch)
   (match branch
     [(list res-info) (map (λ (atom-in-conjunction) (node (atom-with-generation atom-in-conjunction 0) '())) (resolution-info-conjunction res-info))]
@@ -84,9 +80,8 @@
                (list (node (atom-with-generation selected-atom 0) selected-successors))
                (map (λ (pre post) (node (atom-with-generation pre 0) (list post))) last-unselected last-successors)))]))
 
-; TODO: need a nodeof contract in the tree library
-;
 ; can refine this further:
+; first resolution-info should have an atomic query
 ; not having a selection-and-clause and having a successor list element would also be a violation
 ; +vice versa
 (provide (contract-out
