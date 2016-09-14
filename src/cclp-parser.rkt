@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 #lang brag
-cclp-program : PROGRAM-DELIMITER program-section (FULL-EVALUATION-DELIMITER full-evaluation-section)?
+cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PREPRIOR-DELIMITER preprior-section]
 
 program-section : ((atom | rule) PERIOD)*
 atom : SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]

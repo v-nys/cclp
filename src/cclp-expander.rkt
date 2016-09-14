@@ -27,14 +27,17 @@
 (require "syntax-utils.rkt") ; to filter out odd elements
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
+(require (prefix-in ex: "execution.rkt"))
 (require (for-syntax syntax/parse))
 
-; TODO: PART FOR THE WHOLE THING
-; should be a 3-tuple
-; rule is PROGRAM-DELIMITER program-section (FULL-EVALUATION-DELIMITER full-evaluation-section)? (PREPRIOR-DELIMITER preprior-section)?
+
+; PUTTING THE THREE PARTS TOGETHER
+
 (define-syntax (cclp-program stx)
   (syntax-parse stx
     [(_ "{PROGRAM}" _PROGRAM-SECTION) #'(list _PROGRAM-SECTION (list) (list))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION) #'(list _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION) #'(list _PROGRAM-SECTION (list) _PREPRIOR-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION) #'(list _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION)]))
 (provide cclp-program)
 
@@ -100,6 +103,12 @@
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")") (ad:abstract-atom (quote symbol) (odd-elems-as-list arg ...)))
 (provide abstract-atom-with-args)
 
+(define-syntax-rule (abstract-atom-without-args symbol) (ad:abstract-atom (quote symbol) (list)))
+(provide abstract-atom-without-args)
+
+(define-syntax-rule (abstract-atom with-or-without-args) with-or-without-args)
+(provide abstract-atom)
+
 (define-syntax-rule (abstract-term specific-term) specific-term)
 (provide abstract-term)
 
@@ -143,9 +152,16 @@
 
 ; PART RELATED TO PREPRIOR
 
+(define-syntax-rule (preprior-section pair ...) (list pair ...))
+(provide preprior-section)
 
+; TODO: syntax rule for preprior-pair
+; consists of abstract atoms, separated by comma
+(define-syntax-rule (preprior-pair atom1 "," atom2) (ex:priority atom1 atom2))
+(provide preprior-pair)
 
-; AND THE GLUE
+; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
+; Will want to figure out how to immediately go to program analysis (or deserialization) from here!
 
 (define #'(cclp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
