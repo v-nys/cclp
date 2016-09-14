@@ -128,7 +128,7 @@
     [(_ symbol "(" arg ... ")") #'(ad:abstract-function (quote symbol) (odd-elems-as-list arg ...))]))
 (provide abstract-function-term)
 
-(define-syntax-rule (number-term NUMBER) (ad:function (number->string (quote NUMBER)) '()))
+(define-syntax-rule (number-term NUMBER) (ad:abstract-function (number->string (quote NUMBER)) '()))
 (provide number-term)
 
 (define-syntax (abstract-lplist stx)
