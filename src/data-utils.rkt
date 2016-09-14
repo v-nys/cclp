@@ -16,6 +16,12 @@
    (define (hash2-proc my-some hash2-recur) (hash2-recur (some-v my-some)))])
 (provide (struct-out some))
 
+(define (maybe type-predicate)
+  (λ (elem) (or (none? elem)
+                (and (some? elem)
+                     (type-predicate (some-v elem))))))
+(provide maybe)
+
 ; 2-tuples are useful because consing with an empty list can change something's type to list when we want it to be a pair
 (struct 2-tuple (first second)
   #:methods
@@ -30,6 +36,13 @@
      (+ (hash2-recur (2-tuple-first my-tuple))
         (hash2-recur (2-tuple-second my-tuple))))])
 (provide (struct-out 2-tuple))
+
+(define (2-tupleof type-predicate1 type-predicate2)
+  (λ (elem)
+    (and (2-tuple? elem)
+         (type-predicate1 (2-tuple-first elem))
+         (type-predicate2 (2-tuple-second elem)))))
+(provide 2-tupleof)
 
 ; may want to create a set utils module?
 (define (optional-set-union . sets)

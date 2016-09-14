@@ -28,22 +28,18 @@
 (require "abstract-multi-domain.rkt")
 (require "abstract-domain-ordering.rkt")
 
-; NOTE: this does not rename the knowledge!
-; NOTE: we need 2-tuple rather than cons because consing with empty list changes type to list
-;(: abstract-step (-> AbstractConjunct AbstractKnowledge Integer (Opt (2-tuple AbstractSubstitution AbstractConjunction))))
-(define (abstract-step conjunct knowledge g-offset)
+; NOTE: this does not rename the knowledge, regardless of whether it is a rule or a full evaluation!
+(define (abstract-step-without-renaming conjunct knowledge g-offset)
   (cond [(rule? knowledge)
          (let* ([in-subst (abstract-equality conjunct (rule-head knowledge))]
                 [out-subst (abstract-unify (list in-subst) g-offset)])
            (if (some? out-subst) (some (2-tuple (some-v out-subst) (apply-substitution-to-conjunction (some-v out-subst) (rule-body knowledge)))) (none)))]
-
         [(full-evaluation? knowledge)
          (if (>=-extension (full-evaluation-input-pattern knowledge) conjunct)
              (let* ([in-subst (abstract-equality conjunct (full-evaluation-output-pattern knowledge))]
                     [out-subst (abstract-unify (list in-subst) g-offset)])
                (if (some? out-subst) (some (2-tuple (some-v out-subst) empty)) (none)))
              (none))]))
-(provide abstract-step)
-  
+(provide (contract-out [abstract-step-without-renaming (-> abstract-atom? (or/c rule? full-evaluation?) integer? (maybe (2-tupleof (listof abstract-equality?) (listof abstract-atom?))))]))
 ; note that there are two types of knowledge: rules and input pattern - output pattern pairs
 ; for pattern pair? the input pair has to be at least as general as the selected conjunct; no conjunction is returned, so which substitution do we get? that produced by unifying with the output pattern?

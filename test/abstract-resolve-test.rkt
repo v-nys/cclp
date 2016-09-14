@@ -13,10 +13,10 @@
          "printed-test-results.rkt")
 
 (readable-check-equal?
- (abstract-step (parse-atom "collect(γ1,α1)")
-                (rename-apart (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
-                              (list (parse-atom "collect(γ1,α1)")))
-                0)
+ (abstract-step-without-renaming (parse-atom "collect(γ1,α1)")
+                                 (rename-apart (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
+                                               (list (parse-atom "collect(γ1,α1)")))
+                                 0)
  (some (2-tuple (list (abstract-equality (a 6) (g 7))
                       (abstract-equality (a 7) (g 8))
                       (abstract-equality (g 1) (parse-term "tree(γ7,γ8)"))
