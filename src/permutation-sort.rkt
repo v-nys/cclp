@@ -20,7 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang reader "lp-reader.rkt"
+#lang reader "cclp-reader.rkt"
+PROGRAM:
 % this program should evaluate to a list of Knowledge instances
 sort(X,Y) :- perm(X,Y),ord(Y).
 
@@ -33,3 +34,14 @@ del(X,[Y|U],[Y|V]) :- del(X,U,V).
 ord([]).
 ord([X]).
 ord([X,Y|Z]) :- lte(X,Y),ord([Y|Z]).
+
+FULL EVALUATION:
+lte(γ1,γ2) -> γ1/γ1.
+del(α1,[γ1|γ2],α2) -> α1/γ3,α2/γ4.
+
+PREPRIOR:
+% note that aliasing between atoms in pairs has no meaning here
+% also note that atoms which appear alone do not need to be here
+perm(γ1,α1),ord(α1)
+perm(γ1,α1),ord([γ2|α1]) % may be necessary (priority over more general instance does not imply priority over this one), leaving it in for now
+ord([γ1,γ2|α1]),perm(α1,α2)
