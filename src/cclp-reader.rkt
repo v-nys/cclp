@@ -29,9 +29,9 @@
     (define get-token
       (lexer-src-pos
        [whitespace (token 'WS lexeme #:skip? #t)]
-       ["PROGRAM:" (token 'PROGRAM-DELIMITER lexeme)]
-       ["FULL EVALUATION:" (token 'FULL-EVALUATION-DELIMITER lexeme)]
-       ["PREPRIOR:" (token 'PREPRIOR-DELIMITER lexeme)]
+       ["{PROGRAM}" (token 'PROGRAM-DELIMITER lexeme)]
+       ["{FULL EVALUATION}" (token 'FULL-EVALUATION-DELIMITER lexeme)]
+       ["{PREPRIOR}" (token 'PREPRIOR-DELIMITER lexeme)]
        ["α" (token 'AVAR-SYMBOL-A lexeme)] ; to avoid conflict with potential constants a and g
        ["γ" (token 'AVAR-SYMBOL-G lexeme)] ; same
        [(re-seq (char-range "A" "Z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'VARIABLE-IDENTIFIER lexeme)]

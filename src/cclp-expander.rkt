@@ -21,15 +21,75 @@
 ; SOFTWARE.
 
 #lang br
-
 (require (prefix-in ad: "abstract-multi-domain.rkt")) ; for abstract variables, functions, atoms,...
 (require (prefix-in as: "abstract-substitution.rkt")) ; because output patterns can be obtained by applying a subsitution
-(require (prefix-in fai: "fullai-domain.rkt")) ; for obvious reasons
+(require (prefix-in fai: "fullai-domain.rkt")) ; for rules on how to fully evaluate
 (require "syntax-utils.rkt") ; to filter out odd elements
+(require (prefix-in cd: "concrete-domain.rkt"))
+(require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (for-syntax syntax/parse))
 
-(define-syntax-rule (fullai-program rule ...) (list rule ...))
-(provide fullai-program)
+; TODO: PART FOR THE WHOLE THING
+; should be a 3-tuple
+; rule is PROGRAM-DELIMITER program-section (FULL-EVALUATION-DELIMITER full-evaluation-section)? (PREPRIOR-DELIMITER preprior-section)?
+(define-syntax (cclp-program stx)
+  (syntax-parse stx
+    [(_ "{PROGRAM}" _PROGRAM-SECTION) #'(list _PROGRAM-SECTION (list) (list))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION) #'(list _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION)]))
+(provide cclp-program)
+
+; PART FOR THE LOGIC PROGRAM ITSELF
+
+(define-syntax (program-section stx)
+  (syntax-parse stx
+    [(_) #'(list)]
+    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (program-section _MOREKNOWLEDGE ...))]))
+(provide program-section)
+
+(define-syntax (atom stx)
+  (syntax-parse stx
+    [(_ symbol) #'(cd:atom (quote symbol) '())]
+    [(_ symbol "(" arg ... ")") #'(cd:atom (quote symbol) (odd-elems-as-list arg ...))]))
+(provide atom)
+
+(define-syntax (term stx)
+  (syntax-parse stx
+    [(_ VAR-OR-LIST-OR-MISC-FUNCTION) #'VAR-OR-LIST-OR-MISC-FUNCTION]))
+(provide term)
+
+(define-syntax-rule (variable VARIABLE-NAME) (cd:variable (quote VARIABLE-NAME)))
+(provide variable)
+
+(define-syntax (function-term stx)
+  (syntax-parse stx
+    [(_ symbol:str) #'(cd:function (quote symbol) '())]
+    [(_ num-term) #'num-term] ; these are just plain numbers
+    [(_ symbol "(" arg ... ")") #'(cd:function (quote symbol) (odd-elems-as-list arg ...))]))
+(provide function-term)
+
+(define-syntax-rule (number NUMBER) (cd:function (number->string (quote NUMBER)) '()))
+(provide number)
+
+(define-syntax (lplist stx)
+  (syntax-parse stx
+    [(_ open-paren close-paren) #'(cd:function "nil" '())]
+    [(_ open-paren term0 close-paren) #'(cd:function "cons" (list term0 (cd:function "nil" '())))]
+    [(_ open-paren term0 "," rest ... close-paren) #'(cd:function "cons" (list term0 (lplist open-paren rest ... close-paren)))]
+    [(_ open-paren term0 "|" rest ... close-paren) #'(cd:function "cons" (list term0 rest ...))]))
+(provide lplist)
+
+(define-syntax-rule (rule atom ":-" conjunction) (ck:rule atom conjunction))
+(provide rule)
+
+(define-syntax (conjunction stx)
+  (syntax-parse stx
+    [(_ conjunct ...) #'(odd-elems-as-list conjunct ...)]))
+(provide conjunction)
+
+; PART RELATED TO FULL EVALUATION
+
+(define-syntax-rule (full-evaluation-section rule ...) (list rule ...))
+(provide full-evaluation-section)
 
 (define-syntax-rule (fullai-rule-with-body atom "->" subst ".") (fai:full-ai-rule atom subst))
 (provide fullai-rule-with-body)
@@ -81,7 +141,13 @@
 (define-syntax-rule (abstract-substitution-pair lhs "/" rhs) (as:abstract-equality lhs rhs))
 (provide abstract-substitution-pair)
 
-(define #'(lp-module-begin _PARSE-TREE ...)
+; PART RELATED TO PREPRIOR
+
+
+
+; AND THE GLUE
+
+(define #'(cclp-module-begin _PARSE-TREE ...)
   #'(#%module-begin
      _PARSE-TREE ...))
-(provide (rename-out [lp-module-begin #%module-begin]) #%top-interaction)
+(provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
