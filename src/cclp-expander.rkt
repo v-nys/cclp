@@ -29,7 +29,8 @@
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (prefix-in ex: "execution.rkt"))
 (require (for-syntax syntax/parse))
-
+(require "interaction.rkt")
+(require racket/contract)
 
 ; PUTTING THE THREE PARTS TOGETHER
 
@@ -161,9 +162,8 @@
 (provide preprior-pair)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
-; Will want to figure out how to immediately go to program analysis (or deserialization) from here!
+; can we get the filename of the program being run? would be useful for serialization
 
 (define #'(cclp-module-begin _PARSE-TREE ...)
-  #'(#%module-begin
-     _PARSE-TREE ...))
+  #'(#%module-begin (cclp-run current-contract-region _PARSE-TREE ...)))
 (provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
