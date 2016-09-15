@@ -31,15 +31,16 @@
 (require (for-syntax syntax/parse))
 (require "interaction.rkt")
 (require racket/contract)
+(require (only-in "data-utils.rkt" 3-tuple))
 
 ; PUTTING THE THREE PARTS TOGETHER
 
 (define-syntax (cclp-program stx)
   (syntax-parse stx
-    [(_ "{PROGRAM}" _PROGRAM-SECTION) #'(list _PROGRAM-SECTION (list) (list))]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION) #'(list _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list))]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION) #'(list _PROGRAM-SECTION (list) _PREPRIOR-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION) #'(list _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION)]))
+    [(_ "{PROGRAM}" _PROGRAM-SECTION) #'(3-tuple _PROGRAM-SECTION (list) (list))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION) #'(3-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION) #'(3-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION) #'(3-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION)]))
 (provide cclp-program)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
@@ -82,7 +83,10 @@
     [(_ open-paren term0 "|" rest ... close-paren) #'(cd:function "cons" (list term0 rest ...))]))
 (provide lplist)
 
-(define-syntax-rule (rule atom ":-" conjunction) (ck:rule atom conjunction))
+(define-syntax (rule stx)
+  (syntax-parse stx
+    [(_ atom) #'(ck:rule atom '())]
+    [(_ atom ":-" conjunction) #'(ck:rule atom conjunction)]))
 (provide rule)
 
 (define-syntax (conjunction stx)

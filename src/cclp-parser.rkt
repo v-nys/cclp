@@ -23,14 +23,14 @@
 #lang brag
 cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PREPRIOR-DELIMITER preprior-section]
 
-program-section : ((atom | rule) PERIOD)*
+program-section : (rule PERIOD)*
 atom : SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]
 term : variable | function-term | lplist
 variable : VARIABLE-IDENTIFIER
 function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | number-term
 number-term : NUMBER
 lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN
-rule : atom IMPLIES conjunction
+rule : (atom IMPLIES conjunction) | atom
 conjunction : atom (COMMA atom)*
 
 full-evaluation-section : (fullai-rule-with-body | fullai-rule-without-body)+

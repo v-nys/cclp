@@ -31,7 +31,7 @@
              (for ([atom-or-comma (add-between (rule-body obj) ",")]) (if (string? atom-or-comma) (fprintf port atom-or-comma) (fprintf port "~v" atom-or-comma)))
              (fprintf port "."))))
        
-(struct rule (head body) #:transparent #:methods gen:custom-write [(define write-proc write-rule)])
+(struct rule (head body) #:methods gen:custom-write [(define write-proc write-rule)])
 (provide (struct-out rule))
 
 (define (write-full-eval obj port mode)
@@ -44,3 +44,6 @@
 
 (struct full-evaluation (input-pattern output-pattern) #:methods gen:custom-write [(define write-proc write-full-eval)])
 (provide (struct-out full-evaluation))
+
+(define abstract-knowledge? (or/c rule? full-evaluation?))
+(provide abstract-knowledge?)

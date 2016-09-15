@@ -44,6 +44,34 @@
          (type-predicate2 (2-tuple-second elem)))))
 (provide 2-tupleof)
 
+; NOTE: if I ever need a 4-tuple or higher, it's time for a macro-generating macro
+
+(struct 3-tuple (first second third)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc t1 t2 equal?-recur)
+     (and (equal?-recur (3-tuple-first t1) (3-tuple-first t2))
+          (equal?-recur (3-tuple-second t1) (3-tuple-second t2))
+          (equal?-recur (3-tuple-third t1) (3-tuple-third t2))))
+   (define (hash-proc my-tuple hash-recur)
+     (+ (hash-recur (3-tuple-first my-tuple))
+        (* 3 (hash-recur (3-tuple-second my-tuple)))
+        (* 7 (hash-recur (3-tuple-third my-tuple)))))
+   (define (hash2-proc my-tuple hash2-recur)
+     (+ (hash2-recur (3-tuple-first my-tuple))
+        (hash2-recur (3-tuple-second my-tuple))
+        (hash2-recur (3-tuple-third my-tuple))))]
+  #:transparent)
+(provide (struct-out 3-tuple))
+
+(define (3-tupleof type-predicate1 type-predicate2 type-predicate3)
+  (λ (elem)
+    (and (3-tuple? elem)
+         (type-predicate1 (3-tuple-first elem))
+         (type-predicate2 (3-tuple-second elem))
+         (type-predicate3 (3-tuple-third elem)))))
+(provide 3-tupleof)
+
 ; may want to create a set utils module?
 (define (optional-set-union . sets)
   (foldl (λ (el acc) (set-union el acc)) (set) sets))
