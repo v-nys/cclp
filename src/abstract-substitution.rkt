@@ -109,8 +109,8 @@
 (provide apply-substitution-to-conjunction)
 
 ;(: apply-substitution-to-rule (-> AbstractSubstitution rule rule))
-(define (apply-substitution-to-rule subst r)
-  (rule (apply-substitution-to-conjunct subst (rule-head r)) (apply-substitution-to-conjunction subst (rule-body r))))
+(define (apply-substitution-to-abstract-rule subst r)
+  (abstract-rule (apply-substitution-to-conjunct subst (abstract-rule-head r)) (apply-substitution-to-conjunction subst (abstract-rule-body r))))
 
 ;(: apply-substitution-to-full-evaluation (-> AbstractSubstitution full-evaluation full-evaluation))
 (define (apply-substitution-to-full-evaluation subst fe)
@@ -118,8 +118,8 @@
 
 ;(: apply-substitution-to-knowledge (-> AbstractSubstitution AbstractKnowledge AbstractKnowledge))
 (define (apply-substitution-to-knowledge subst knowledge)
-  (if (rule? knowledge)
-      (apply-substitution-to-rule subst knowledge)
+  (if (abstract-rule? knowledge)
+      (apply-substitution-to-abstract-rule subst knowledge)
       (apply-substitution-to-full-evaluation subst knowledge)))
 (provide apply-substitution-to-knowledge)
 

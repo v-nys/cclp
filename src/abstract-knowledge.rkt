@@ -25,14 +25,14 @@
 
 (define (write-rule obj port mode)
   (if (boolean? mode)
-      (fprintf port "#(struct:rule ~s ~s)" (rule-head obj) (rule-body obj))
-      (begin (fprintf port "~v" (rule-head obj))
+      (fprintf port "#(struct:rule ~s ~s)" (abstract-rule-head obj) (abstract-rule-body obj))
+      (begin (fprintf port "~v" (abstract-rule-head obj))
              (fprintf port " :- ")
-             (for ([atom-or-comma (add-between (rule-body obj) ",")]) (if (string? atom-or-comma) (fprintf port atom-or-comma) (fprintf port "~v" atom-or-comma)))
+             (for ([atom-or-comma (add-between (abstract-rule-body obj) ",")]) (if (string? atom-or-comma) (fprintf port atom-or-comma) (fprintf port "~v" atom-or-comma)))
              (fprintf port "."))))
        
-(struct rule (head body) #:methods gen:custom-write [(define write-proc write-rule)])
-(provide (struct-out rule))
+(struct abstract-rule (head body) #:methods gen:custom-write [(define write-proc write-rule)])
+(provide (struct-out abstract-rule))
 
 (define (write-full-eval obj port mode)
   (if (boolean? mode)
@@ -44,6 +44,3 @@
 
 (struct full-evaluation (input-pattern output-pattern) #:methods gen:custom-write [(define write-proc write-full-eval)])
 (provide (struct-out full-evaluation))
-
-(define abstract-knowledge? (or/c rule? full-evaluation?))
-(provide abstract-knowledge?)

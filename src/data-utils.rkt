@@ -46,31 +46,35 @@
 
 ; NOTE: if I ever need a 4-tuple or higher, it's time for a macro-generating macro
 
-(struct 3-tuple (first second third)
+(struct 4-tuple (first second third fourth)
   #:methods
   gen:equal+hash
   [(define (equal-proc t1 t2 equal?-recur)
-     (and (equal?-recur (3-tuple-first t1) (3-tuple-first t2))
-          (equal?-recur (3-tuple-second t1) (3-tuple-second t2))
-          (equal?-recur (3-tuple-third t1) (3-tuple-third t2))))
+     (and (equal?-recur (4-tuple-first t1) (4-tuple-first t2))
+          (equal?-recur (4-tuple-second t1) (4-tuple-second t2))
+          (equal?-recur (4-tuple-third t1) (4-tuple-third t2))
+          (equal?-recur (4-tuple-fourth t1) (4-tuple-fourth t2))))
    (define (hash-proc my-tuple hash-recur)
-     (+ (hash-recur (3-tuple-first my-tuple))
-        (* 3 (hash-recur (3-tuple-second my-tuple)))
-        (* 7 (hash-recur (3-tuple-third my-tuple)))))
+     (+ (hash-recur (4-tuple-first my-tuple))
+        (* 3 (hash-recur (4-tuple-second my-tuple)))
+        (* 7 (hash-recur (4-tuple-third my-tuple)))
+        (* 11 (hash-recur (4-tuple-fourth my-tuple)))))
    (define (hash2-proc my-tuple hash2-recur)
-     (+ (hash2-recur (3-tuple-first my-tuple))
-        (hash2-recur (3-tuple-second my-tuple))
-        (hash2-recur (3-tuple-third my-tuple))))]
+     (+ (hash2-recur (4-tuple-first my-tuple))
+        (hash2-recur (4-tuple-second my-tuple))
+        (hash2-recur (4-tuple-third my-tuple))
+        (hash2-recur (4-tuple-fourth my-tuple))))]
   #:transparent)
-(provide (struct-out 3-tuple))
+(provide (struct-out 4-tuple))
 
-(define (3-tupleof type-predicate1 type-predicate2 type-predicate3)
+(define (4-tupleof type-predicate1 type-predicate2 type-predicate3 type-predicate4)
   (λ (elem)
-    (and (3-tuple? elem)
-         (type-predicate1 (3-tuple-first elem))
-         (type-predicate2 (3-tuple-second elem))
-         (type-predicate3 (3-tuple-third elem)))))
-(provide 3-tupleof)
+    (and (4-tuple? elem)
+         (type-predicate1 (4-tuple-first elem))
+         (type-predicate2 (4-tuple-second elem))
+         (type-predicate3 (4-tuple-third elem))
+         (type-predicate4 (4-tuple-fourth elem)))))
+(provide 4-tupleof)
 
 ; may want to create a set utils module?
 (define (optional-set-union . sets)
