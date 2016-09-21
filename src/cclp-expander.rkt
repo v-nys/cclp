@@ -53,8 +53,8 @@
 
 (define-syntax (atom stx)
   (syntax-parse stx
-    [(_ symbol) #'(cd:atom (quote symbol) '())]
-    [(_ symbol "(" arg ... ")") #'(cd:atom (quote symbol) (odd-elems-as-list arg ...))]))
+    [(_ symbol) #'(cd:atom (string->symbol symbol) '())]
+    [(_ symbol "(" arg ... ")") #'(cd:atom (string->symbol symbol) (odd-elems-as-list arg ...))]))
 (provide atom)
 
 (define-syntax (term stx)
@@ -67,9 +67,9 @@
 
 (define-syntax (function-term stx)
   (syntax-parse stx
-    [(_ symbol:str) #'(cd:function (quote symbol) '())]
+    [(_ symbol:str) #'(cd:function (string->symbol symbol) '())]
     [(_ num-term) #'num-term] ; these are just plain numbers
-    [(_ symbol "(" arg ... ")") #'(cd:function (quote symbol) (odd-elems-as-list arg ...))]))
+    [(_ symbol "(" arg ... ")") #'(cd:function (string->symbol symbol) (odd-elems-as-list arg ...))]))
 (provide function-term)
 
 (define-syntax-rule (number NUMBER) (cd:function (number->string (quote NUMBER)) '()))
@@ -105,10 +105,10 @@
 (define-syntax-rule (fullai-rule-without-body atom ".") (fai:full-ai-rule atom (list)))
 (provide fullai-rule-without-body)
 
-(define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")") (ad:abstract-atom (quote symbol) (odd-elems-as-list arg ...)))
+(define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")") (ad:abstract-atom (string->symbol symbol) (odd-elems-as-list arg ...)))
 (provide abstract-atom-with-args)
 
-(define-syntax-rule (abstract-atom-without-args symbol) (ad:abstract-atom (quote symbol) (list)))
+(define-syntax-rule (abstract-atom-without-args symbol) (ad:abstract-atom (string->symbol symbol) (list)))
 (provide abstract-atom-without-args)
 
 (define-syntax-rule (abstract-atom with-or-without-args) with-or-without-args)
@@ -128,9 +128,9 @@
 
 (define-syntax (abstract-function-term stx)
   (syntax-parse stx
-    [(_ symbol:str) #'(ad:abstract-function (quote symbol) '())] ; e.g. nil (in the abstract domain)
+    [(_ symbol:str) #'(ad:abstract-function (string->symbol symbol) '())] ; e.g. nil (in the abstract domain)
     [(_ num-term) #'num-term] ; e.g. 9 (in the abstract domain)
-    [(_ symbol "(" arg ... ")") #'(ad:abstract-function (quote symbol) (odd-elems-as-list arg ...))]))
+    [(_ symbol "(" arg ... ")") #'(ad:abstract-function (string->symbol symbol) (odd-elems-as-list arg ...))]))
 (provide abstract-function-term)
 
 (define-syntax-rule (number-term NUMBER) (ad:abstract-function (number->string (quote NUMBER)) '()))
