@@ -91,7 +91,9 @@
         [(equal? choice proceed)
          (begin (define candidate (candidate-for-update tree))
                 (if (some? candidate)
-                    (begin (define next-tree )
+                    (begin (define next-tree tree) ; TODO replace with actual next tree
+                           ;(define local-diff )
+                           ;(tree-display local-diff display-tree-label)
                            )
                     (display "There are no nodes left to analyze."))
                 (interactive-analysis next-tree clauses full-evaluations preprior))]

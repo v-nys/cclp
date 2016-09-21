@@ -1,9 +1,11 @@
 #lang racket
 (require rackunit)
-(require "domain-boilerplate.rkt")
+(require "concrete-domain-boilerplate.rkt")
 
 (require "../src/abstract-domain-ordering.rkt")
 (require "../src/abstraction-inspection-utils.rkt")
+
+(require parenlog)
 
 (check-true (>=-extension (parse-term "α1") (parse-term "γ1")))
 (check-true (>=-extension (parse-term "α1") (parse-term "α2")))
@@ -17,3 +19,4 @@
 (check-false (>=-extension (parse-atom "foo(γ1,bar(γ2,α1,γ1))") (parse-atom "foo(nil,bar(nonnil,γ3,nonnil))")))
 (check-false (>=-extension (parse-term "foo(γ1,bar(γ2,α1,γ1))") (parse-atom "foo(nil,bar(nonnil,γ3,nil))")) "terms and atoms cannot be unified")
 (check-true (>=-extension (parse-atom "sift([γ1|α1],α2)") (parse-atom "sift([γ2|α4],α1)"))) ; renaming should be implicit
+

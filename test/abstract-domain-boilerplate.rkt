@@ -1,25 +1,25 @@
 #lang racket
 (require
-  (for-syntax "../src/fullai-parser.rkt")
-  (for-syntax "../src/fullai-reader.rkt") ; for all-tokens
+  (for-syntax "../src/cclp-parser.rkt")
+  (for-syntax "../src/cclp-reader.rkt") ; for all-tokens
   (for-syntax syntax/strip-context) ; for replace-context
-  (for-syntax "../src/fullai-expander.rkt")
-  "../src/fullai-expander.rkt"
+  (for-syntax "../src/cclp-expander.rkt")
+  "../src/cclp-expander.rkt"
   )
 
-(define-syntax (parse-atom stx)
+(define-syntax (parse-abstract-atom stx)
   (define atom-parse (make-rule-parser abstract-atom-with-args))
   (syntax-case stx () [(_ THE-ATOM)
                        (with-syntax ([PARSE-TREE (replace-context #'() (atom-parse (all-tokens (syntax->datum #'THE-ATOM))))])
                          #'PARSE-TREE)]))
-(provide parse-atom)
+(provide parse-abstract-atom)
 
-(define-syntax (parse-term stx)
+(define-syntax (parse-abstract-term stx)
   (define term-parse (make-rule-parser abstract-term))
   (syntax-case stx () [(_ THE-TERM)
                        (with-syntax ([PARSE-TREE (replace-context #'() (term-parse (all-tokens (syntax->datum #'THE-TERM))))])
                          #'PARSE-TREE)]))
-(provide parse-term)
+(provide parse-abstract-term)
 
 (define-syntax (parse-abstract-substitution stx)
   (define substitution-parse (make-rule-parser abstract-substitution))

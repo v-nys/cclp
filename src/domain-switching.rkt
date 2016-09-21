@@ -63,7 +63,7 @@
   (cond [(variable? concrete-term) (pre-abstract-aux-variable concrete-term existing-mapping)]
         [(function? concrete-term) (if (null? (function-args concrete-term))
                                        (pre-abstract-aux-constant concrete-term existing-mapping)
-                                       (let* ([applied-to-args (mapAccum pre-abstract-aux-term existing-mapping (function-args concrete-term))]
+                                       (let* ([applied-to-args (map-accumulatel pre-abstract-aux-term existing-mapping (function-args concrete-term))]
                                               [just-mapped-args (car applied-to-args)]
                                               [just-acc (cdr applied-to-args)])
                                          (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]))
@@ -73,7 +73,7 @@
 (define (pre-abstract-aux-atom concrete-atom existing-mapping)
   (if (null? (atom-args concrete-atom))
       (cons (abstract-atom (atom-symbol concrete-atom) '()) existing-mapping)
-      (let* ([applied-to-args (mapAccum pre-abstract-aux-term existing-mapping (atom-args concrete-atom))]
+      (let* ([applied-to-args (map-accumulatel pre-abstract-aux-term existing-mapping (atom-args concrete-atom))]
              [just-mapped-args (car applied-to-args)]
              [just-acc (cdr applied-to-args)])
         (cons (abstract-atom (atom-symbol concrete-atom) just-mapped-args) just-acc))))
@@ -82,16 +82,16 @@
 (define (pre-abstract-rule concrete-rule)
   (let* ([rule-as-conjunction (cons (ck:rule-head concrete-rule) (ck:rule-body concrete-rule))]
          [abstracted-conjunction (pre-abstract-conjunction rule-as-conjunction)])
-    (ak:rule (car abstracted-conjunction) (cdr abstracted-conjunction))))
+    (ak:abstract-rule (car abstracted-conjunction) (cdr abstracted-conjunction))))
 (provide pre-abstract-rule)
 
 ;(: pre-abstract-conjunction (-> Conjunction AbstractConjunction))
 (define (pre-abstract-conjunction conjunction)
-  (car (mapAccum pre-abstract-aux-atom (hash) conjunction)))
+  (car (map-accumulatel pre-abstract-aux-atom (hash) conjunction)))
           
 ;(: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
 (define (pre-abstract concrete-domain-elem)
-  (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (car (mapAccum pre-abstract-aux-term (hash) (atom-args concrete-domain-elem))))]
+  (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (car (map-accumulatel pre-abstract-aux-term (hash) (atom-args concrete-domain-elem))))]
         [(list? concrete-domain-elem) (pre-abstract-conjunction concrete-domain-elem)]
         [(term? concrete-domain-elem) (car (pre-abstract-aux-term concrete-domain-elem (hash)))]))
 (provide pre-abstract)
