@@ -20,6 +20,7 @@
 
 (:- (inconsistency X Y)
     (before X Y)
-    ; zal contract violation geven als ik er een toevoeg? X en Y zijn nog geen structs!
-    ((,>=-extension) X Y))
+    ; something is wrong here
+    ; >=-extension doesn't seem to even be invoked - ">=-extensio" leads to the same outcome
+    (,>=-extension X Y))
 (? (inconsistency X Y))
