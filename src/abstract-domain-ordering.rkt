@@ -13,3 +13,8 @@
          [unifier (abstract-unify (list (abstract-equality domain-elem1 renamed-domain-elem2)) 0)])
     (and (some? unifier) (equal? (apply-substitution (some-v unifier) domain-elem1) renamed-domain-elem2))))
 (provide (contract-out [>=-extension (-> abstract-domain-elem? abstract-domain-elem? boolean?)]))
+
+(define (renames? domain-elem1 domain-elem2)
+  (and (>=-extension domain-elem1 domain-elem2)
+       (>=-extension domain-elem2 domain-elem2)))
+(provide renames?)
