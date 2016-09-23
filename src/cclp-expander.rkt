@@ -33,6 +33,8 @@
 (require racket/contract)
 (require (only-in "data-utils.rkt" 4-tuple))
 
+(require "abstract-domain-ordering.rkt")
+
 (require "abstract-multi-domain-sexp-conversion.rkt")
 (require parenlog)
 
@@ -96,6 +98,11 @@
   (syntax-parse stx
     [(_ conjunct ...) #'(odd-elems-as-list conjunct ...)]))
 (provide conjunction)
+
+(define-syntax (abstract-conjunction stx)
+  (syntax-parse stx
+    [(_ conjunct ...) #'(odd-elems-as-list conjunct ...)]))
+(provide abstract-conjunction)
 
 ; PART RELATED TO FULL EVALUATION
 
@@ -195,7 +202,7 @@
           (sexp_gt_extension Y Y1))
       (:- (sexp_gt_extension X Y)
           (,(λ (e1 e2) (>=-extension (sexp->abstract-atom X) (sexp->abstract-atom Y))) X Y)))
-         (prior)))]))
+         prior))]))
 (provide preprior-section)
 
 ; consists of abstract atoms, separated by comma

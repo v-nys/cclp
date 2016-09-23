@@ -13,17 +13,17 @@
 (check-true (is-valid? permsort-graph))
 (check-true (is-valid? hypothetical-graph-for-consistency))
 
-(check-equal?
- (selected-index
-  (abp:parse-abstract-conjunction "bar(γ1,α1),foo(γ1,γ2)")
-  hypothetical-graph-for-consistency)
- 1)
-
-(check-equal?
- (selected-index
-  (abp:parse-abstract-conjunction "bar(α1,α2),foo(γ1,α2)")
-  hypothetical-graph-for-consistency)
- 1)
+;(check-equal?
+; (selected-index
+;  (abp:parse-abstract-conjunction "bar(γ1,α1),foo(γ1,γ2)")
+;  hypothetical-graph-for-consistency)
+; 1)
+;
+;(check-equal?
+; (selected-index
+;  (abp:parse-abstract-conjunction "bar(α1,α2),foo(γ1,α2)")
+;  hypothetical-graph-for-consistency)
+; 1)
 ; ! Parenlog gedraagt zich niet goed met getallen,...
 ; moet ook conversie naar S-expressies controleren voor lijsten... krijg ik verwachte cons en ()?
 ; conversie naar S-expressies vereist misschien verdere aanpassingen.
