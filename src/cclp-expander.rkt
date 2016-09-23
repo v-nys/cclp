@@ -170,39 +170,39 @@
 (define-syntax (preprior-section stx)
   (syntax-case stx ()
     [(_ pair ...)
-     #'((λ () (define-model prior
-      pair ...
-      (not_a_member X ())
-      (:- (not_a_member X (cons A B))
-          (,(compose not equal?) X A)
-          (not_a_member X B))
-      (:- (reaches_without_encountering X Y Path)
-          (before X Y)
-          (not_a_member Y Path))
-      (:- (reaches_without_encountering X Z Path)
-          (before X Y)
-          (not_a_member Y Path)
-          (reaches_without_encountering Y Z (cons Y Path)))
-      (:- (reaches_loopfree X Y)
-          (reaches_without_encountering X Y (cons X ())))
-      (:- (violates_partial_order)
-          (reaches_loopfree X Y)
-          (reaches_loopfree Y X)
-          (,(compose not (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1) (sexp->abstract-atom sexp2)))) X Y))
-      (reaches_all_under_consistency X ())
-      (:- (reaches_all_under_consistency X (cons Destination Ds))
-          (sexp_gt_extension Destination X)
-          (reaches_all_under_consistency X Ds))
-      (:- (reaches_all_under_consistency X (cons Destination Ds))
-          (reaches_under_consistency X Destination)
-          (reaches_all_under_consistency X Ds))
-      (:- (reaches_under_consistency X Y)
-          (reaches_loopfree X1 Y1)
-          (sexp_gt_extension X1 X)
-          (sexp_gt_extension Y Y1))
-      (:- (sexp_gt_extension X Y)
-          (,(λ (e1 e2) (>=-extension (sexp->abstract-atom X) (sexp->abstract-atom Y))) X Y)))
-         prior))]))
+     #`((λ () (define-model prior
+                #,@(expand-syntax-once #'(pair ...))
+                (not_a_member X ())
+                (:- (not_a_member X (cons A B))
+                    (,(compose not equal?) X A)
+                    (not_a_member X B))
+                (:- (reaches_without_encountering X Y Path)
+                    (before X Y)
+                    (not_a_member Y Path))
+                (:- (reaches_without_encountering X Z Path)
+                    (before X Y)
+                    (not_a_member Y Path)
+                    (reaches_without_encountering Y Z (cons Y Path)))
+                (:- (reaches_loopfree X Y)
+                    (reaches_without_encountering X Y (cons X ())))
+                (:- (violates_partial_order)
+                    (reaches_loopfree X Y)
+                    (reaches_loopfree Y X)
+                    (,(compose not (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1) (sexp->abstract-atom sexp2)))) X Y))
+                (reaches_all_under_consistency X ())
+                (:- (reaches_all_under_consistency X (cons Destination Ds))
+                    (sexp_gt_extension Destination X)
+                    (reaches_all_under_consistency X Ds))
+                (:- (reaches_all_under_consistency X (cons Destination Ds))
+                    (reaches_under_consistency X Destination)
+                    (reaches_all_under_consistency X Ds))
+                (:- (reaches_under_consistency X Y)
+                    (reaches_loopfree X1 Y1)
+                    (sexp_gt_extension X1 X)
+                    (sexp_gt_extension Y Y1))
+                (:- (sexp_gt_extension X Y)
+                    (,(λ (e1 e2) (>=-extension (sexp->abstract-atom X) (sexp->abstract-atom Y))) X Y)))
+          prior))]))
 (provide preprior-section)
 
 ; consists of abstract atoms, separated by comma
@@ -210,23 +210,12 @@
 ;  ('before (abstract-domain-elem->sexp atom1)
 ;           (abstract-domain-elem->sexp atom2)))
 
-
-(define-syntax (preprior-pair stx)
-  (print stx)
+(define (preprior-pair stx)
   (syntax-case stx ()
-    [(_ atom1 "," atom2)
-     #'(before sexp1 sexp2)]))
+    [(_ atom "," atom2)
+     ; TODO conversie naar S-expressie is hier ook nodig!
+    #`(before #,@(expand-syntax #'atom1) #,@(expand-syntax #'atom2))]))
 (provide preprior-pair)
-
-;(preprior-pair
-;   (abstract-atom
-;    (abstract-atom-without-args
-;     "a"))
-;   ","
-;   (abstract-atom
-;    (abstract-atom-without-args
-;     "b")))
-
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization

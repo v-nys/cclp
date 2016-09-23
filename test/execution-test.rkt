@@ -6,6 +6,7 @@
 
 (define looping-graph (abp:parse-prior-relation "a,b a,c b,a b,d c,b c,e d,e"))
 (query-model looping-graph (preprior-pair A B C))
+(query-model looping-graph (before A B))
 (define non-looping-graph (abp:parse-prior-relation "a,b a,c b,d c,b c,e d,e"))
 (define permsort-graph (abp:parse-prior-relation "perm(γ1,α1),ord(α1) perm(γ1,α1),ord([γ1|α1]) ord([γ1,γ2|α1]),perm(γ1,α1)"))
 (define hypothetical-graph-for-consistency (abp:parse-prior-relation "foo(γ1,α1),bar(γ1,α1)"))
