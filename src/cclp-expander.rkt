@@ -168,11 +168,11 @@
 ; PART RELATED TO PREPRIOR
 
 (define-syntax (preprior-section stx)
+  (print stx)
   (syntax-case stx ()
     [(_ pair ...)
      #'((λ () (define-model prior
       pair ...
-      (before x y) ; this is here as a test
       (not_a_member X ())
       (:- (not_a_member X (cons A B))
           (,(compose not equal?) X A)
@@ -211,6 +211,18 @@
   ('before (abstract-domain-elem->sexp atom1)
            (abstract-domain-elem->sexp atom2)))
 (provide preprior-pair)
+
+
+
+(preprior-pair
+   (abstract-atom
+    (abstract-atom-without-args
+     "a"))
+   ","
+   (abstract-atom
+    (abstract-atom-without-args
+     "b")))
+
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
