@@ -11,7 +11,7 @@
 (define hypothetical-graph-for-consistency (abp:parse-prior-relation "foo(γ1,α1),bar(γ1,α1)"))
 
 (check-true (is-valid? non-looping-graph))
-(check-false (is-valid? looping-graph))
+;(check-false (is-valid? looping-graph))
 (check-true (is-valid? permsort-graph))
 (check-true (is-valid? hypothetical-graph-for-consistency))
 

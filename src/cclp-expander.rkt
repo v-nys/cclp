@@ -168,7 +168,6 @@
 ; PART RELATED TO PREPRIOR
 
 (define-syntax (preprior-section stx)
-  (print stx)
   (syntax-case stx ()
     [(_ pair ...)
      #'((λ () (define-model prior
@@ -207,21 +206,26 @@
 (provide preprior-section)
 
 ; consists of abstract atoms, separated by comma
-(define-syntax-rule (preprior-pair atom1 "," atom2)
-  ('before (abstract-domain-elem->sexp atom1)
-           (abstract-domain-elem->sexp atom2)))
+;(define-syntax-rule (preprior-pair atom1 "," atom2)
+;  ('before (abstract-domain-elem->sexp atom1)
+;           (abstract-domain-elem->sexp atom2)))
+
+
+(define-syntax (preprior-pair stx)
+  (print stx)
+  (syntax-case stx ()
+    [(_ atom1 "," atom2)
+     #'(before sexp1 sexp2)]))
 (provide preprior-pair)
 
-
-
-(preprior-pair
-   (abstract-atom
-    (abstract-atom-without-args
-     "a"))
-   ","
-   (abstract-atom
-    (abstract-atom-without-args
-     "b")))
+;(preprior-pair
+;   (abstract-atom
+;    (abstract-atom-without-args
+;     "a"))
+;   ","
+;   (abstract-atom
+;    (abstract-atom-without-args
+;     "b")))
 
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
