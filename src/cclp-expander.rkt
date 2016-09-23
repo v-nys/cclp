@@ -160,11 +160,10 @@
 
 ; PART RELATED TO PREPRIOR
 
-(define-syntax-rule (preprior-section pair ...)
-  ; PROBLEEM HIER: define-syntax-rule verwacht als tweede argument gewoon een template
-  ; heb dus andere functie nodig, die toestaat eerst template of syntax te definiëren en dan terug te geven
-  (begin
-    (define-model prior
+(define-syntax (preprior-section stx)
+  (syntax-case stx ()
+    [(_ pair ...)
+     #'((λ () (define-model prior
       pair ...
       (not_a_member X ())
       (:- (not_a_member X (cons A B))
@@ -196,7 +195,7 @@
           (sexp_gt_extension Y Y1))
       (:- (sexp_gt_extension X Y)
           (,(λ (e1 e2) (>=-extension (sexp->abstract-atom X) (sexp->abstract-atom Y))) X Y)))
-    prior))
+         (prior)))]))
 (provide preprior-section)
 
 ; consists of abstract atoms, separated by comma
