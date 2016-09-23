@@ -3,7 +3,8 @@
 (require parenlog)
 
 (define (is-valid? prior)
-  (< (length (query-model prior #:limit 1 (violates_partial_order))) 1))
+  (let ([counter-examples (query-model prior (violates_partial_order))])
+    (< (length counter-examples) 1)))
 (provide (contract-out [is-valid? (-> model? boolean?)]))
 
 (define (selected-index conjunction prior) 0)

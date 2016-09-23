@@ -2,6 +2,7 @@
 (require rackunit)
 (require "../src/execution.rkt")
 (require (prefix-in abp: "abstract-domain-boilerplate.rkt"))
+(require "../src/cclp-expander.rkt")
 
 (define looping-graph (abp:parse-prior-relation "a,b a,c b,a b,d c,b c,e d,e"))
 (define non-looping-graph (abp:parse-prior-relation "a,b a,c b,d c,b c,e d,e"))

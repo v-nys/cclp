@@ -172,6 +172,7 @@
     [(_ pair ...)
      #'((λ () (define-model prior
       pair ...
+      (before x y) ; this is here as a test
       (not_a_member X ())
       (:- (not_a_member X (cons A B))
           (,(compose not equal?) X A)
@@ -208,7 +209,7 @@
 ; consists of abstract atoms, separated by comma
 (define-syntax-rule (preprior-pair atom1 "," atom2)
   ('before (abstract-domain-elem->sexp atom1)
-           (abstract-domain-elem->sexp atom1)))
+           (abstract-domain-elem->sexp atom2)))
 (provide preprior-pair)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
