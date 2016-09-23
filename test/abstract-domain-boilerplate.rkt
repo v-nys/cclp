@@ -34,3 +34,12 @@
                        (with-syntax ([PARSE-TREE (replace-context #'() (conjunction-parse (all-tokens (syntax->datum #'THE-CONJUNCTION))))])
                          #'PARSE-TREE)]))
 (provide parse-abstract-conjunction)
+
+(define-syntax (parse-prior-relation stx)
+  (define prior-section-parse (make-rule-parser preprior-section))
+  (syntax-case stx () [(_ THE-SECTION)
+                       (with-syntax
+                           ([PARSE-TREE
+                             (replace-context #'() (prior-section-parse (all-tokens (syntax->datum #'THE-SECTION))))])
+                         #'PARSE-TREE)]))
+(provide parse-prior-relation)

@@ -26,9 +26,9 @@
 (require "data-utils.rkt")
 (require (only-in "concrete-knowledge.rkt" rule?))
 (require (only-in "fullai-domain.rkt" full-ai-rule?))
-(require (only-in "execution.rkt" priority?))
 (require (only-in "abstract-multi-domain.rkt" abstract-atom?))
 (require racket-tree-utils/src/tree (only-in racket-tree-utils/src/printer tree-display))
+(require (only-in parenlog model?))
 
 (struct tree-label (conjunction selection substitution rule))
 (define display-tree-label display)
@@ -126,5 +126,5 @@
 (provide (contract-out
           [cclp-run
            (-> path?
-               (4-tupleof (listof rule?) (listof full-ai-rule?) (listof priority?) abstract-atom?)
+               (4-tupleof (listof rule?) (listof full-ai-rule?) model? abstract-atom?)
                void?)]))
