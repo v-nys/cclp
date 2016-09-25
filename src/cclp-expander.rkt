@@ -21,9 +21,12 @@
 ; SOFTWARE.
 
 #lang br
-(require (prefix-in ad: "abstract-multi-domain.rkt")) ; for abstract variables, functions, atoms,...
-(require (prefix-in as: "abstract-substitution.rkt")) ; because output patterns can be obtained by applying a subsitution
-(require (prefix-in fai: "fullai-domain.rkt")) ; for rules on how to fully evaluate
+; for abstract variables, functions, atoms,...
+(require (prefix-in ad: "abstract-multi-domain.rkt"))
+; because output patterns can be obtained by applying a subsitution
+(require (prefix-in as: "abstract-substitution.rkt"))
+; for rules on how to fully evaluate
+(require (prefix-in fai: "fullai-domain.rkt"))
 (require "syntax-utils.rkt") ; to filter out odd elements
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
@@ -35,18 +38,26 @@
 
 (require "abstract-domain-ordering.rkt")
 
-(require (for-syntax "abstract-multi-domain-sexp-conversion.rkt")) ; for actual usage
-(require "abstract-multi-domain-sexp-conversion.rkt"); only for test
+; for actual usage
+(require (for-syntax "abstract-multi-domain-sexp-conversion.rkt"))
+; only for test
+(require "abstract-multi-domain-sexp-conversion.rkt")
 (require parenlog)
 
 ; PUTTING THE THREE PARTS TOGETHER
 
 (define-syntax (cclp-program stx)
   (syntax-parse stx
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION) #'(4-tuple _PROGRAM-SECTION (list) (list) _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION) #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION) #'(4-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}" _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION) #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _QUERY-SECTION)]))
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(4-tuple _PROGRAM-SECTION (list) (list) _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
+        _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(4-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
+        _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _QUERY-SECTION)]))
 (provide cclp-program)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
@@ -54,18 +65,22 @@
 (define-syntax (program-section stx)
   (syntax-parse stx
     [(_) #'(list)]
-    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...) #'(cons _KNOWLEDGE (program-section _MOREKNOWLEDGE ...))]))
+    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...)
+     #'(cons _KNOWLEDGE (program-section _MOREKNOWLEDGE ...))]))
 (provide program-section)
 
 (define-syntax (atom stx)
   (syntax-parse stx
-    [(_ symbol) #'(cd:atom (string->symbol symbol) '())]
-    [(_ symbol "(" arg ... ")") #'(cd:atom (string->symbol symbol) (odd-elems-as-list arg ...))]))
+    [(_ symbol)
+     #'(cd:atom (string->symbol symbol) '())]
+    [(_ symbol "(" arg ... ")")
+     #'(cd:atom (string->symbol symbol) (odd-elems-as-list arg ...))]))
 (provide atom)
 
 (define-syntax (term stx)
   (syntax-parse stx
-    [(_ VAR-OR-LIST-OR-MISC-FUNCTION) #'VAR-OR-LIST-OR-MISC-FUNCTION]))
+    [(_ VAR-OR-LIST-OR-MISC-FUNCTION)
+     #'VAR-OR-LIST-OR-MISC-FUNCTION]))
 (provide term)
 
 (define-syntax-rule (variable VARIABLE-NAME) (cd:variable (quote VARIABLE-NAME)))
@@ -73,9 +88,11 @@
 
 (define-syntax (function-term stx)
   (syntax-parse stx
-    [(_ symbol:str) #'(cd:function (string->symbol symbol) '())]
+    [(_ symbol:str)
+     #'(cd:function (string->symbol symbol) '())]
     [(_ num-term) #'num-term] ; these are just plain numbers
-    [(_ symbol "(" arg ... ")") #'(cd:function (string->symbol symbol) (odd-elems-as-list arg ...))]))
+    [(_ symbol "(" arg ... ")")
+     #'(cd:function (string->symbol symbol) (odd-elems-as-list arg ...))]))
 (provide function-term)
 
 (define-syntax-rule (number NUMBER) (cd:function (number->string (quote NUMBER)) '()))
@@ -83,10 +100,14 @@
 
 (define-syntax (lplist stx)
   (syntax-parse stx
-    [(_ open-paren close-paren) #'(cd:function "nil" '())]
-    [(_ open-paren term0 close-paren) #'(cd:function "cons" (list term0 (cd:function "nil" '())))]
-    [(_ open-paren term0 "," rest ... close-paren) #'(cd:function "cons" (list term0 (lplist open-paren rest ... close-paren)))]
-    [(_ open-paren term0 "|" rest ... close-paren) #'(cd:function "cons" (list term0 rest ...))]))
+    [(_ open-paren close-paren)
+     #'(cd:function "nil" '())]
+    [(_ open-paren term0 close-paren)
+     #'(cd:function "cons" (list term0 (cd:function "nil" '())))]
+    [(_ open-paren term0 "," rest ... close-paren)
+     #'(cd:function "cons" (list term0 (lplist open-paren rest ... close-paren)))]
+    [(_ open-paren term0 "|" rest ... close-paren)
+     #'(cd:function "cons" (list term0 rest ...))]))
 (provide lplist)
 
 (define-syntax (rule stx)
@@ -110,19 +131,24 @@
 (define-syntax-rule (full-evaluation-section rule ...) (list rule ...))
 (provide full-evaluation-section)
 
-(define-syntax-rule (fullai-rule-with-body atom "->" subst ".") (fai:full-ai-rule atom subst))
+(define-syntax-rule (fullai-rule-with-body atom "->" subst ".")
+  (fai:full-ai-rule atom subst))
 (provide fullai-rule-with-body)
 
-(define-syntax-rule (fullai-rule-without-body atom ".") (fai:full-ai-rule atom (list)))
+(define-syntax-rule (fullai-rule-without-body atom ".")
+  (fai:full-ai-rule atom (list)))
 (provide fullai-rule-without-body)
 
-(define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")") (ad:abstract-atom (string->symbol symbol) (odd-elems-as-list arg ...)))
+(define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
+  (ad:abstract-atom (string->symbol symbol) (odd-elems-as-list arg ...)))
 (provide abstract-atom-with-args)
 
-(define-syntax-rule (abstract-atom-without-args symbol) (ad:abstract-atom (string->symbol symbol) (list)))
+(define-syntax-rule (abstract-atom-without-args symbol)
+  (ad:abstract-atom (string->symbol symbol) (list)))
 (provide abstract-atom-without-args)
 
-(define-syntax-rule (abstract-atom with-or-without-args) with-or-without-args)
+(define-syntax-rule (abstract-atom with-or-without-args)
+  with-or-without-args)
 (provide abstract-atom)
 
 (define-syntax-rule (abstract-term specific-term) specific-term)
@@ -139,20 +165,26 @@
 
 (define-syntax (abstract-function-term stx)
   (syntax-parse stx
-    [(_ symbol:str) #'(ad:abstract-function (string->symbol symbol) '())] ; e.g. nil (in the abstract domain)
-    [(_ num-term) #'num-term] ; e.g. 9 (in the abstract domain)
-    [(_ symbol "(" arg ... ")") #'(ad:abstract-function (string->symbol symbol) (odd-elems-as-list arg ...))]))
+    [(_ symbol:str) #'(ad:abstract-function (string->symbol symbol) '())]
+    [(_ num-term) #'num-term]
+    [(_ symbol "(" arg ... ")")
+     #'(ad:abstract-function (string->symbol symbol) (odd-elems-as-list arg ...))]))
 (provide abstract-function-term)
 
-(define-syntax-rule (number-term NUMBER) (ad:abstract-function (number->string (quote NUMBER)) '()))
+(define-syntax-rule (number-term NUMBER)
+  (ad:abstract-function (number->string (quote NUMBER)) '()))
 (provide number-term)
 
 (define-syntax (abstract-lplist stx)
   (syntax-parse stx
-    [(_ open-paren close-paren) #'(ad:abstract-function "nil" '())]
-    [(_ open-paren term0 close-paren) #'(ad:abstract-function "cons" (list term0 (ad:abstract-function "nil" '())))]
-    [(_ open-paren term0 "," rest ... close-paren) #'(ad:abstract-function "cons" (list term0 (abstract-lplist open-paren rest ... close-paren)))]
-    [(_ open-paren term0 "|" rest ... close-paren) #'(ad:abstract-function "cons" (list term0 rest ...))]))
+    [(_ "[" "]")
+     #'(ad:abstract-function "nil" '())]
+    [(_ "[" term0 "]")
+     #'(ad:abstract-function "cons" (list term0 (ad:abstract-function "nil" '())))]
+    [(_ "[" term0 "," rest ... "]")
+     #'(ad:abstract-function "cons" (list term0 (abstract-lplist "[" rest ... "]")))]
+    [(_ "[" term0 "|" rest ... "]")
+     #'(ad:abstract-function "cons" (list term0 rest ...))]))
 (provide abstract-lplist)
 
 ; empty substitutions make sense if we can just scratch the abstract atom
@@ -160,10 +192,12 @@
 (define-syntax (abstract-substitution stx)
   (syntax-parse stx
     [(_) (list)]
-    [(_ lhs0 lhs1 ...) #'(odd-elems-as-list lhs0 lhs1 ...)]))
+    [(_ lhs0 lhs1 ...)
+     #'(odd-elems-as-list lhs0 lhs1 ...)]))
 (provide abstract-substitution)
 
-(define-syntax-rule (abstract-substitution-pair lhs "/" rhs) (as:abstract-equality lhs rhs))
+(define-syntax-rule (abstract-substitution-pair lhs "/" rhs)
+  (as:abstract-equality lhs rhs))
 (provide abstract-substitution-pair)
 
 ; PART RELATED TO PREPRIOR
@@ -172,7 +206,7 @@
   (syntax-case stx ()
     [(_ pair ...)
      (with-syntax
-         ([(partially-expanded-pair ...) (partially-expand-pair #'(pair ...))])
+         ([(partially-expanded-pair ...) (map partially-expand-pair (syntax->list #'(pair ...)))])
        #`((λ () (define-model prior
                   partially-expanded-pair ...
                   (not_a_member X ())
@@ -191,7 +225,9 @@
                   (:- (violates_partial_order)
                       (reaches_loopfree X Y)
                       (reaches_loopfree Y X)
-                      (,(compose not (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1) (sexp->abstract-atom sexp2)))) X Y))
+                      (,(compose not
+                                 (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
+                                                            (sexp->abstract-atom sexp2)))) X Y))
                   (reaches_all_under_consistency X ())
                   (:- (reaches_all_under_consistency X (cons Destination Ds))
                       (sexp_gt_extension Destination X)
@@ -204,7 +240,8 @@
                       (sexp_gt_extension X1 X)
                       (sexp_gt_extension Y Y1))
                   (:- (sexp_gt_extension X Y)
-                      (,(λ (e1 e2) (>=-extension (sexp->abstract-atom X) (sexp->abstract-atom Y))) X Y)))
+                      (,(λ (e1 e2) (>=-extension (sexp->abstract-atom X)
+                                                 (sexp->abstract-atom Y))) X Y)))
             prior)))]))
 (provide preprior-section)
 
@@ -214,7 +251,8 @@
      #`(before #,@(abstract-domain-elem->sexp (eval-syntax #'atom1))
                #,@(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
 
-; this looks promising: (syntax->datum (testable-partially-expand-pair #'(preprior-pair (abstract-atom (abstract-atom-without-args "a")) "," (abstract-atom (abstract-atom-without-args "b")))))
+; this looks promising:
+;(syntax->datum (testable-partially-expand-pair #'(preprior-pair (abstract-atom (abstract-atom-without-args "a")) "," (abstract-atom (abstract-atom-without-args "b")))))
 (define (testable-partially-expand-pair stx)
   (syntax-case stx ()
     [(_ atom1 "," atom2)
