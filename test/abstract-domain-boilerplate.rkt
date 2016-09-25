@@ -8,7 +8,7 @@
   )
 
 (define-syntax (parse-abstract-atom stx)
-  (define atom-parse (make-rule-parser abstract-atom-with-args))
+  (define atom-parse (make-rule-parser abstract-atom))
   (syntax-case stx () [(_ THE-ATOM)
                        (with-syntax ([PARSE-TREE (replace-context #'() (atom-parse (all-tokens (syntax->datum #'THE-ATOM))))])
                          #'PARSE-TREE)]))
