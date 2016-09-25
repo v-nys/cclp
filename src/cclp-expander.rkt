@@ -101,13 +101,13 @@
 (define-syntax (lplist stx)
   (syntax-parse stx
     [(_ open-paren close-paren)
-     #'(cd:function "nil" '())]
+     #'(cd:function 'nil '())]
     [(_ open-paren term0 close-paren)
-     #'(cd:function "cons" (list term0 (cd:function "nil" '())))]
+     #'(cd:function 'cons (list term0 (cd:function 'nil '())))]
     [(_ open-paren term0 "," rest ... close-paren)
-     #'(cd:function "cons" (list term0 (lplist open-paren rest ... close-paren)))]
+     #'(cd:function 'cons (list term0 (lplist open-paren rest ... close-paren)))]
     [(_ open-paren term0 "|" rest ... close-paren)
-     #'(cd:function "cons" (list term0 rest ...))]))
+     #'(cd:function 'cons (list term0 rest ...))]))
 (provide lplist)
 
 (define-syntax (rule stx)
@@ -178,13 +178,13 @@
 (define-syntax (abstract-lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
-     #'(ad:abstract-function "nil" '())]
+     #'(ad:abstract-function 'nil '())]
     [(_ "[" term0 "]")
-     #'(ad:abstract-function "cons" (list term0 (ad:abstract-function "nil" '())))]
+     #'(ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '())))]
     [(_ "[" term0 "," rest ... "]")
-     #'(ad:abstract-function "cons" (list term0 (abstract-lplist "[" rest ... "]")))]
+     #'(ad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]")))]
     [(_ "[" term0 "|" rest ... "]")
-     #'(ad:abstract-function "cons" (list term0 rest ...))]))
+     #'(ad:abstract-function 'cons (list term0 rest ...))]))
 (provide abstract-lplist)
 
 ; empty substitutions make sense if we can just scratch the abstract atom
