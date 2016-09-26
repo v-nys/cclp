@@ -247,17 +247,17 @@
 
 (define-for-syntax (partially-expand-pair stx)
   (syntax-case stx ()
+    ; FIXME is this producing something like "(before a b)" when it should produce (before (a) (b))?
+    ; (testable-partially-expand-pair #`(bleh (abp:parse-abstract-atom "a") "," (abp:parse-abstract-atom "b"))) does precisely that
     [(_ atom1 "," atom2)
-     #`(before #,@(abstract-domain-elem->sexp (eval-syntax #'atom1))
-               #,@(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
+     #`(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
+               #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
 
-; this looks promising:
-;(syntax->datum (testable-partially-expand-pair #'(preprior-pair (abstract-atom (abstract-atom-without-args "a")) "," (abstract-atom (abstract-atom-without-args "b")))))
 (define (testable-partially-expand-pair stx)
   (syntax-case stx ()
     [(_ atom1 "," atom2)
-     #`(before #,@((compose abstract-domain-elem->sexp eval-syntax) #'atom1)
-               #,@((compose abstract-domain-elem->sexp eval-syntax) #'atom2))]))
+     #`(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
+               #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization

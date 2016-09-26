@@ -13,3 +13,5 @@
               '(atom_containing_list (nil)))
 (check-equal? (sexp->abstract-atom '(integers (γ 1) (α 1)))
               (abp:parse-abstract-atom "integers(γ1,α1)"))
+(check-equal? (sexp->abstract-atom '(a))
+              (abp:parse-abstract-atom "a"))

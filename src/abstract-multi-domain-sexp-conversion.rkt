@@ -15,6 +15,7 @@
     [(list 'α i) (a i)]
     [(list 'γ i) (g i)]
     [(list-rest symbol args) (abstract-function symbol (map sexp->abstract-term args))]))
+
 (define (sexp->abstract-atom sexp)
   (abstract-atom (car sexp)
                  (map sexp->abstract-term (cdr sexp))))
