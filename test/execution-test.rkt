@@ -36,12 +36,19 @@
 (check-true (is-valid? permsort-graph))
 (check-true (is-valid? hypothetical-graph-for-consistency))
 
+; easiest scenario
+(check-equal?
+ (selected-index
+  (abp:parse-abstract-conjunction "c,b,d,a,e")
+  non-looping-graph)
+ 3)
+
 ;(check-equal?
 ; (selected-index
 ;  (abp:parse-abstract-conjunction "bar(γ1,α1),foo(γ1,γ2)")
 ;  hypothetical-graph-for-consistency)
 ; 1)
-;
+
 ;(check-equal?
 ; (selected-index
 ;  (abp:parse-abstract-conjunction "bar(α1,α2),foo(γ1,α2)")

@@ -20,3 +20,7 @@
   (abstract-atom (car sexp)
                  (map sexp->abstract-term (cdr sexp))))
 (provide (contract-out [sexp->abstract-atom (-> list? abstract-atom?)]))
+
+(define (abstract-conjunction->sexp con)
+  (foldr (λ (atm acc) (list 'cons (abstract-domain-elem->sexp atm) acc)) '() con))
+(provide (contract-out [abstract-conjunction->sexp (-> (listof abstract-atom?) list?)]))
