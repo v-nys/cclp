@@ -247,14 +247,6 @@
 
 (define-for-syntax (partially-expand-pair stx)
   (syntax-case stx ()
-    ; FIXME is this producing something like "(before a b)" when it should produce (before (a) (b))?
-    ; (testable-partially-expand-pair #`(bleh (abp:parse-abstract-atom "a") "," (abp:parse-abstract-atom "b"))) does precisely that
-    [(_ atom1 "," atom2)
-     #`(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
-               #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
-
-(define (testable-partially-expand-pair stx)
-  (syntax-case stx ()
     [(_ atom1 "," atom2)
      #`(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
                #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
