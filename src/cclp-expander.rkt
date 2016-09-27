@@ -247,8 +247,6 @@
                       (sexp_gt_extension X1 X)
                       (sexp_gt_extension Y Y1))
                   (:- (sexp_gt_extension X Y)
-                      ; this is not fine
-                      ; for some reason, function is being called with free variables
                       (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
                                                  (sexp->abstract-atom e2))) X Y)))
             prior)))]))

@@ -29,6 +29,7 @@
 (require (only-in "abstract-multi-domain.rkt" abstract-atom?))
 (require racket-tree-utils/src/tree (only-in racket-tree-utils/src/printer tree-display))
 (require (only-in parenlog model?))
+(require (only-in "execution.rkt" selected-index))
 
 (struct tree-label (conjunction selection substitution rule))
 (define display-tree-label display)
@@ -89,10 +90,21 @@
          (begin (tree-display tree display-tree-label)
                 (interactive-analysis tree clauses full-evaluations preprior))]
         [(equal? choice proceed)
-         ; note: this part is deliberately wrong, just need to be able to proceed with other code in this module
          (begin (define candidate (candidate-for-update tree))
-                (display "There are no nodes left to analyze.")
-                (interactive-analysis tree clauses full-evaluations preprior))]
+                (if (none? candidate)
+                    (begin (display "There are no nodes left to analyze.")
+                           (interactive-analysis tree clauses full-evaluations preprior))
+                    (let* ([candidate-label (node-label (some-v (candidate)))]
+                           [conjunction (tree-label-conjunction candidate-label)]
+                           [conjunct-index (selected-index conjunction preprior full-evaluations)]
+                           [conjunct (list-ref conjunction conjunct-index)]
+                           ;[resolution-results ]
+                           )
+                           ; TODO: resolve conjunct using every applicable clause (should have a function in abstract resolution module)
+                           ; TODO: create new trees from the outcomes (should be done here)
+                           ; TODO: continue analysis with tree in which candidate has been replaced with updated version
+                           (begin (display "Implementation is not complete yet.")
+                                  (interactive-analysis tree clauses full-evaluations preprior)))))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 

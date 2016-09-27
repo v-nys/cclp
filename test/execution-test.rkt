@@ -24,6 +24,7 @@
 (require rackunit)
 (require "../src/execution.rkt")
 (require (prefix-in abp: "abstract-domain-boilerplate.rkt"))
+(require "../src/fullai-domain.rkt")
 (require parenlog)
 
 (define looping-graph (abp:parse-prior-relation "a,b a,c b,a b,d c,b c,e d,e"))
@@ -36,21 +37,33 @@
 (check-true (is-valid? permsort-graph))
 (check-true (is-valid? hypothetical-graph-for-consistency))
 
-; easiest scenario
 (check-equal?
  (selected-index
   (abp:parse-abstract-conjunction "c,b,d,a,e")
-  non-looping-graph)
+  non-looping-graph
+  (list))
  3)
 
 (check-equal?
  (selected-index
   (abp:parse-abstract-conjunction "bar(γ1,α1),foo(γ1,γ2)")
-  hypothetical-graph-for-consistency)
+  hypothetical-graph-for-consistency
+  (list))
  1)
 
 (check-equal?
  (selected-index
   (abp:parse-abstract-conjunction "bar(α1,α2),foo(γ1,α2)")
-  hypothetical-graph-for-consistency)
+  hypothetical-graph-for-consistency
+  (list))
  1)
+
+(check-equal?
+ (selected-index
+  (abp:parse-abstract-conjunction "bar(α1,α2),foo(γ1,α2),quux(γ3,γ4)")
+  hypothetical-graph-for-consistency
+  (list
+   (full-ai-rule
+    (abp:parse-abstract-atom "quux(γ1,γ2)")
+    (list))))
+ 2)
