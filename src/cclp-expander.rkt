@@ -209,6 +209,9 @@
          ([(partially-expanded-pair ...) (map partially-expand-pair (syntax->list #'(pair ...)))])
        #`((λ () (define-model prior
                   partially-expanded-pair ...
+                  (member X (cons X Y))
+                  (:- (member X (cons Y Z))
+                      (member X Z))
                   (not_a_member X ())
                   (:- (not_a_member X (cons A B))
                       (,(compose not equal?) X A)
@@ -225,9 +228,13 @@
                   (:- (violates_partial_order)
                       (reaches_loopfree X Y)
                       (reaches_loopfree Y X)
+                      ; this is fine...
                       (,(compose not
                                  (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
                                                             (sexp->abstract-atom sexp2)))) X Y))
+                  (:- (member_reaches_all_under_consistency X Atoms)
+                      (member X Atoms)
+                      (reaches_all_under_consistency X Atoms))
                   (reaches_all_under_consistency X ())
                   (:- (reaches_all_under_consistency X (cons Destination Ds))
                       (sexp_gt_extension Destination X)
@@ -240,8 +247,10 @@
                       (sexp_gt_extension X1 X)
                       (sexp_gt_extension Y Y1))
                   (:- (sexp_gt_extension X Y)
-                      (,(λ (e1 e2) (>=-extension (sexp->abstract-atom X)
-                                                 (sexp->abstract-atom Y))) X Y)))
+                      ; this is not fine
+                      ; for some reason, function is being called with free variables
+                      (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
+                                                 (sexp->abstract-atom e2))) X Y)))
             prior)))]))
 (provide preprior-section)
 
