@@ -1,10 +1,11 @@
 #lang racket
 (require "abstract-multi-domain.rkt")
+(require (only-in "data-utils.rkt" positive-integer->symbol symbol->positive-integer))
 
 (define (abstract-domain-elem->sexp elem)
   (match elem
-    [(a i) (list 'α i)]
-    [(g i) (list 'γ i)]
+    [(a i) (list 'α (positive-integer->symbol i))]
+    [(g i) (list 'γ (positive-integer->symbol i))]
     [(abstract-atom symbol args) (cons symbol (map abstract-domain-elem->sexp args))]
     [(abstract-function functor args) (cons functor (map abstract-domain-elem->sexp args))]))
 ; can the contract be made more strict?
@@ -12,8 +13,8 @@
 
 (define (sexp->abstract-term sexp)
   (match sexp
-    [(list 'α i) (a i)]
-    [(list 'γ i) (g i)]
+    [(list 'α i) (a (symbol->positive-integer i))]
+    [(list 'γ i) (g (symbol->positive-integer i))]
     [(list-rest symbol args) (abstract-function symbol (map sexp->abstract-term args))]))
 
 (define (sexp->abstract-atom sexp)

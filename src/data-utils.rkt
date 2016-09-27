@@ -1,5 +1,7 @@
 #lang racket
 
+(require racket/string) ; for string-append
+
 (struct none ()
   #:methods
   gen:equal+hash
@@ -80,3 +82,12 @@
 (define (optional-set-union . sets)
   (foldl (λ (el acc) (set-union el acc)) (set) sets))
 (provide optional-set-union)
+
+; need these because Parenlog doesn't like S-expressions with numbers in them
+(define (positive-integer->symbol int)
+  (string->symbol (string-append "sym" (number->string int))))
+(provide positive-integer->symbol)
+
+(define (symbol->positive-integer sym)
+  (string->number (substring (symbol->string sym) 3)))
+(provide symbol->positive-integer)
