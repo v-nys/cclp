@@ -63,7 +63,7 @@
            (let ([rest (abstract-unify substituted-substitution additional-g-offset)]) (if (none? rest) rest (some (cons (abstract-equality (g i) t) (some-v rest)))))
            (abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)) additional-g-offset)))]
     [else (none)]))
-(provide abstract-unify)
+(provide (contract-out [abstract-unify (-> (listof abstract-equality?) exact-nonnegative-integer? (maybe (listof abstract-equality?)))]))
 
 (define (occurs avar aterm)
   (match aterm

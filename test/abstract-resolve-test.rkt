@@ -1,24 +1,43 @@
+; MIT License
+;
+; Copyright (c) 2016 Vincent Nys
+; 
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+; 
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+; 
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 #lang racket
 (require rackunit
-         "../src/data-utils.rkt"
-         "domain-boilerplate.rkt"
-         "concrete-domain-boilerplate.rkt"
-         "../src/abstract-multi-domain.rkt"
-         "../src/domain-switching.rkt"
+         (prefix-in abp: "abstract-domain-boilerplate.rkt")
+         (prefix-in cbp: "concrete-domain-boilerplate.rkt")
          "../src/abstract-resolve.rkt"
-         (prefix-in ck: "../src/concrete-knowledge.rkt")
-         (prefix-in ak: "../src/abstract-knowledge.rkt")
-         "../src/abstract-renaming.rkt"
-         "../src/abstract-substitution.rkt"
          "printed-test-results.rkt")
 
 (readable-check-equal?
- (abstract-step-without-renaming (parse-atom "collect(γ1,α1)")
-                                 (rename-apart (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
-                                               (list (parse-atom "collect(γ1,α1)")))
-                                 0)
- (some (2-tuple (list (abstract-equality (a 6) (g 7))
-                      (abstract-equality (a 7) (g 8))
-                      (abstract-equality (g 1) (parse-term "tree(γ7,γ8)"))
-                      (abstract-equality (a 1) (a 8)))
-                (list (parse-atom "collect(γ7,α9)") (parse-atom "collect(γ8,α10)") (parse-atom "append(α9,α10,α8)")))))
+ (abstract-resolve (abp:parse-abstract-conjunction "perm(γ1,α1),ord(α1)")
+                   (abp:parse-prior-relation "perm(γ1,α1),ord(α1)")
+                   (list (cbp:parse-rule "perm([],[])")
+                         (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
+                   (list))
+ (cons
+  0
+  (list (resolvent (abp:parse-abstract-conjunction "del(α8,[γ8|γ9],α10),perm(α10,α9),ord([α8|α9])")
+                   (abp:parse-abstract-substitution "α6/γ8,α7/γ9,γ1/[γ8|γ9],α1/[α8|α9]")
+                   (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
+        (resolvent (abp:parse-abstract-conjunction "ord(γ2)")
+                   (abp:parse-abstract-substitution "γ1/γ2,α1/γ2")
+                   (cbp:parse-rule "perm([],[])")))))

@@ -27,37 +27,36 @@
 (require (prefix-in as: "abstract-substitution.rkt"))
 ; for rules on how to fully evaluate
 (require (prefix-in fai: "fullai-domain.rkt"))
-(require "syntax-utils.rkt") ; to filter out odd elements
+(require (only-in "syntax-utils.rkt" odd-elems-as-list))
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (prefix-in ex: "execution.rkt"))
 (require (for-syntax syntax/parse))
-(require "interaction.rkt")
+(require (only-in "interaction.rkt" cclp-run))
 (require racket/contract)
 (require (only-in "data-utils.rkt" 4-tuple))
 
 (require "abstract-domain-ordering.rkt")
 
-; for actual usage
 (require (for-syntax "abstract-multi-domain-sexp-conversion.rkt"))
-; only for test
-(require "abstract-multi-domain-sexp-conversion.rkt")
 (require parenlog)
 
 ; PUTTING THE THREE PARTS TOGETHER
 
 (define-syntax (cclp-program stx)
-  (syntax-parse stx
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(4-tuple _PROGRAM-SECTION (list) (list) _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
-        _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(4-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
-        _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _QUERY-SECTION)]))
+  (begin
+    (print stx)
+    (syntax-parse stx
+      [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
+       #'(4-tuple _PROGRAM-SECTION (list) (list) _QUERY-SECTION)]
+      [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
+          _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
+       #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION)]
+      [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
+       #'(4-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _QUERY-SECTION)]
+      [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
+          _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
+       #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _QUERY-SECTION)])))
 (provide cclp-program)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
@@ -228,7 +227,6 @@
                   (:- (violates_partial_order)
                       (reaches_loopfree X Y)
                       (reaches_loopfree Y X)
-                      ; this is fine...
                       (,(compose not
                                  (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
                                                             (sexp->abstract-atom sexp2)))) X Y))

@@ -36,6 +36,9 @@
 (struct abstract-equality (term1 term2) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-equality)])
 (provide (struct-out abstract-equality))
 
+(define (abstract-substitution? l) (andmap abstract-equality? l))
+(provide abstract-substitution?)
+
 ; note: can only substitute for an abstract variable, and there is never any reason to substitute an atom or conjunction for something, so use terms
 ;(: substitute-in-term (-> AbstractTerm AbstractVariable AbstractTerm AbstractTerm))
 (define (substitute-in-term substituter substitutee input-elem)
@@ -116,16 +119,11 @@
 (define (apply-substitution-to-full-evaluation subst fe)
   (full-evaluation (apply-substitution-to-conjunct subst (full-evaluation-input-pattern fe)) (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))))
 
-;(: apply-substitution-to-knowledge (-> AbstractSubstitution AbstractKnowledge AbstractKnowledge))
-(define (apply-substitution-to-knowledge subst knowledge)
-  (if (abstract-rule? knowledge)
-      (apply-substitution-to-abstract-rule subst knowledge)
-      (apply-substitution-to-full-evaluation subst knowledge)))
-(provide apply-substitution-to-knowledge)
-
 ;(: apply-substitution (-> AbstractSubstitution AbstractDomainElem AbstractDomainElem))
-(define (apply-substitution subst domain-elem)
-  (cond [(abstract-term? domain-elem) (apply-substitution-to-term subst domain-elem)]
-        [(abstract-atom? domain-elem) (apply-substitution-to-conjunct subst domain-elem)]
-        [(list? domain-elem) (apply-substitution-to-conjunction subst domain-elem)]))
-(provide apply-substitution)
+(define (apply-substitution subst substitution-object)
+  (cond [(abstract-term? substitution-object) (apply-substitution-to-term subst substitution-object)]
+        [(abstract-atom? substitution-object) (apply-substitution-to-conjunct subst substitution-object)]
+        [(list? substitution-object) (apply-substitution-to-conjunction subst substitution-object)]
+        [(abstract-rule? substitution-object) (apply-substitution-to-abstract-rule subst substitution-object)]
+        [(full-evaluation? substitution-object) (apply-substitution-to-full-evaluation subst substitution-object)]))
+(provide (contract-out [apply-substitution (-> abstract-substitution? (or/c abstract-domain-elem? abstract-knowledge? (listof abstract-domain-elem?)) (or/c abstract-domain-elem? abstract-knowledge? (listof abstract-domain-elem?)))]))

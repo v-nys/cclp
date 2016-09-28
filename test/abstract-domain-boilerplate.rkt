@@ -1,11 +1,8 @@
 #lang racket
 (require
   (for-syntax "../src/cclp-parser.rkt")
-  (for-syntax "../src/cclp-reader.rkt") ; for all-tokens
-  (for-syntax syntax/strip-context) ; for replace-context
-  (for-syntax "../src/cclp-expander.rkt")
-  "../src/cclp-expander.rkt"
-  )
+  (for-syntax (only-in "../src/cclp-reader.rkt" all-tokens))
+  (for-syntax (only-in syntax/strip-context replace-context)))
 
 (define-syntax (parse-abstract-atom stx)
   (define atom-parse (make-rule-parser abstract-atom))
