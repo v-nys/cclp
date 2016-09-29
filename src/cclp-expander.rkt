@@ -44,19 +44,17 @@
 ; PUTTING THE THREE PARTS TOGETHER
 
 (define-syntax (cclp-program stx)
-  (begin
-    (print stx)
-    (syntax-parse stx
-      [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
-       #'(4-tuple _PROGRAM-SECTION (list) (list) _QUERY-SECTION)]
-      [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
-          _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
-       #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION)]
-      [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
-       #'(4-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _QUERY-SECTION)]
-      [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
-          _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
-       #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _QUERY-SECTION)])))
+  (syntax-parse stx
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(4-tuple _PROGRAM-SECTION (list) (list) _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
+        _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(4-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
+        _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _QUERY-SECTION)]))
 (provide cclp-program)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
@@ -146,8 +144,10 @@
   (ad:abstract-atom (quote (string->symbol symbol)) (list)))
 (provide abstract-atom-without-args)
 
-(define-syntax-rule (abstract-atom with-or-without-args)
-  with-or-without-args)
+
+(define-syntax (abstract-atom stx)
+  (begin (print stx)
+         (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing])))
 (provide abstract-atom)
 
 (define-syntax-rule (abstract-term specific-term) specific-term)
@@ -202,56 +202,60 @@
 ; PART RELATED TO PREPRIOR
 
 (define-syntax (preprior-section stx)
-  (syntax-case stx ()
-    [(_ pair ...)
-     #`((λ () (define-model prior
-                pair ...
-                (member X (cons X Y))
-                (:- (member X (cons Y Z))
-                    (member X Z))
-                (not_a_member X ())
-                (:- (not_a_member X (cons A B))
-                    (,(compose not equal?) X A)
-                    (not_a_member X B))
-                (:- (reaches_without_encountering X Y Path)
-                    (before X Y)
-                    (not_a_member Y Path))
-                (:- (reaches_without_encountering X Z Path)
-                    (before X Y)
-                    (not_a_member Y Path)
-                    (reaches_without_encountering Y Z (cons Y Path)))
-                (:- (reaches_loopfree X Y)
-                    (reaches_without_encountering X Y (cons X ())))
-                (:- (violates_partial_order)
-                    (reaches_loopfree X Y)
-                    (reaches_loopfree Y X)
-                    (,(compose not
-                               (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
-                                                          (sexp->abstract-atom sexp2)))) X Y))
-                (:- (member_reaches_all_under_consistency X Atoms)
-                    (member X Atoms)
-                    (reaches_all_under_consistency X Atoms))
-                (reaches_all_under_consistency X ())
-                (:- (reaches_all_under_consistency X (cons Destination Ds))
-                    (sexp_gt_extension Destination X)
-                    (reaches_all_under_consistency X Ds))
-                (:- (reaches_all_under_consistency X (cons Destination Ds))
-                    (reaches_under_consistency X Destination)
-                    (reaches_all_under_consistency X Ds))
-                (:- (reaches_under_consistency X Y)
-                    (reaches_loopfree X1 Y1)
-                    (sexp_gt_extension X1 X)
-                    (sexp_gt_extension Y Y1))
-                (:- (sexp_gt_extension X Y)
-                    (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
-                                               (sexp->abstract-atom e2))) X Y)))
-          prior))]))
+  (begin (println stx)
+         (syntax-case stx ()
+           [(_ pair ...)
+            #`((λ () (define-model prior
+                       ; problem with permutation sort is here
+                       ; just leaving out the pair causes interactive analysis to start
+                       pair ...
+                       (member X (cons X Y))
+                       (:- (member X (cons Y Z))
+                           (member X Z))
+                       (not_a_member X ())
+                       (:- (not_a_member X (cons A B))
+                           (,(compose not equal?) X A)
+                           (not_a_member X B))
+                       (:- (reaches_without_encountering X Y Path)
+                           (before X Y)
+                           (not_a_member Y Path))
+                       (:- (reaches_without_encountering X Z Path)
+                           (before X Y)
+                           (not_a_member Y Path)
+                           (reaches_without_encountering Y Z (cons Y Path)))
+                       (:- (reaches_loopfree X Y)
+                           (reaches_without_encountering X Y (cons X ())))
+                       (:- (violates_partial_order)
+                           (reaches_loopfree X Y)
+                           (reaches_loopfree Y X)
+                           (,(compose not
+                                      (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
+                                                                 (sexp->abstract-atom sexp2)))) X Y))
+                       (:- (member_reaches_all_under_consistency X Atoms)
+                           (member X Atoms)
+                           (reaches_all_under_consistency X Atoms))
+                       (reaches_all_under_consistency X ())
+                       (:- (reaches_all_under_consistency X (cons Destination Ds))
+                           (sexp_gt_extension Destination X)
+                           (reaches_all_under_consistency X Ds))
+                       (:- (reaches_all_under_consistency X (cons Destination Ds))
+                           (reaches_under_consistency X Destination)
+                           (reaches_all_under_consistency X Ds))
+                       (:- (reaches_under_consistency X Y)
+                           (reaches_loopfree X1 Y1)
+                           (sexp_gt_extension X1 X)
+                           (sexp_gt_extension Y Y1))
+                       (:- (sexp_gt_extension X Y)
+                           (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
+                                                      (sexp->abstract-atom e2))) X Y)))
+                 prior))])))
 (provide preprior-section)
 
 (define-syntax (preprior-pair stx)
-  (syntax-parse stx [(_ atom1 "," atom2)
-                     #'(before (abstract-domain-elem->sexp atom1)
-                               (abstract-domain-elem->sexp atom2))]))
+  (begin (println stx)
+         (syntax-parse stx [(_ atom1 "," atom2)
+                            #'(before (abstract-domain-elem->sexp atom1)
+                                      (abstract-domain-elem->sexp atom2))])))
 (provide preprior-pair)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
