@@ -2,7 +2,9 @@
 (require
   (for-syntax "../src/cclp-parser.rkt")
   (for-syntax (only-in "../src/cclp-reader.rkt" all-tokens))
-  (for-syntax (only-in syntax/strip-context replace-context)))
+  (for-syntax (only-in syntax/strip-context replace-context))
+  (for-syntax "../src/cclp-expander.rkt")
+  "../src/cclp-expander.rkt")
 
 (define-syntax (parse-abstract-atom stx)
   (define atom-parse (make-rule-parser abstract-atom))

@@ -30,7 +30,6 @@
 (require (only-in "syntax-utils.rkt" odd-elems-as-list))
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
-(require (prefix-in ex: "execution.rkt"))
 (require (for-syntax syntax/parse))
 (require (only-in "interaction.rkt" cclp-run))
 (require racket/contract)
@@ -39,6 +38,7 @@
 (require "abstract-domain-ordering.rkt")
 
 (require (for-syntax "abstract-multi-domain-sexp-conversion.rkt"))
+(require "abstract-multi-domain-sexp-conversion.rkt")
 (require parenlog)
 
 ; PUTTING THE THREE PARTS TOGETHER
