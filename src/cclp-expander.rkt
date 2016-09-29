@@ -71,9 +71,9 @@
 (define-syntax (atom stx)
   (syntax-parse stx
     [(_ symbol)
-     #'(cd:atom (string->symbol symbol) '())]
+     #'(cd:atom (quote (string->symbol symbol)) '())]
     [(_ symbol "(" arg ... ")")
-     #'(cd:atom (string->symbol symbol) (odd-elems-as-list arg ...))]))
+     #'(cd:atom (quote (string->symbol symbol)) (odd-elems-as-list arg ...))]))
 (provide atom)
 
 (define-syntax (term stx)
@@ -139,11 +139,11 @@
 (provide fullai-rule-without-body)
 
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
-  (ad:abstract-atom (string->symbol symbol) (odd-elems-as-list arg ...)))
+  (ad:abstract-atom (quote (string->symbol symbol)) (odd-elems-as-list arg ...)))
 (provide abstract-atom-with-args)
 
 (define-syntax-rule (abstract-atom-without-args symbol)
-  (ad:abstract-atom (string->symbol symbol) (list)))
+  (ad:abstract-atom (quote (string->symbol symbol)) (list)))
 (provide abstract-atom-without-args)
 
 (define-syntax-rule (abstract-atom with-or-without-args)
