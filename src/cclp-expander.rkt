@@ -203,11 +203,18 @@
 
 (define-syntax (preprior-section stx)
   (begin (println stx)
-         (syntax-case stx ()
+         (syntax-parse stx
            [(_ pair ...)
             #`((λ () (define-model prior
                        ; problem with permutation sort is here
                        ; just leaving out the pair causes interactive analysis to start
+                       ; interestingly, just writing (before a b) works, so expansion (if any?!) is not something like that
+                       ; would be very helpful if there was a way to see full program expansion
+                       ; also, still getting the info about "perm"
+                       ; oddly, expanding pair to void also doesn't allow the program to run
+                       ; so my understanding of how these macros work is flawed
+                       ; how do I figure it out?
+                       ; test: first define syntax for a pair using datum->syntax, then check its expansion? 
                        pair ...
                        (member X (cons X Y))
                        (:- (member X (cons Y Z))
@@ -254,8 +261,7 @@
 (define-syntax (preprior-pair stx)
   (begin (println stx)
          (syntax-parse stx [(_ atom1 "," atom2)
-                            #'(before (abstract-domain-elem->sexp atom1)
-                                      (abstract-domain-elem->sexp atom2))])))
+                            #'(before (abstract-domain-elem->sexp atom1) (abstract-domain-elem->sexp atom2))])))
 (provide preprior-pair)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
