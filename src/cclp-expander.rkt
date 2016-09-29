@@ -146,8 +146,7 @@
 
 
 (define-syntax (abstract-atom stx)
-  (begin (print stx)
-         (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing])))
+  (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
 (provide abstract-atom)
 
 (define-syntax-rule (abstract-term specific-term) specific-term)
@@ -202,7 +201,7 @@
 ; PART RELATED TO PREPRIOR
 
 (define-syntax (preprior-section stx)
-  (begin (println stx)
+  (begin (println (syntax->datum stx))
          (syntax-parse stx
            [(_ pair ...)
             #`((λ () (define-model prior
@@ -259,10 +258,24 @@
 (provide preprior-section)
 
 (define-syntax (preprior-pair stx)
-  (begin (println stx)
-         (syntax-parse stx [(_ atom1 "," atom2)
-                            #'(before (abstract-domain-elem->sexp atom1) (abstract-domain-elem->sexp atom2))])))
+  (syntax-parse stx
+    [(_ atom1 "," atom2)
+     #`(before #,(abstract-domain-elem->sexp #`atom1)
+               #,(abstract-domain-elem->sexp #`atom2))]))
 (provide preprior-pair)
+
+; moeilijkheid: abstract-atom is niet zichtbaar voor de eval-syntax
+; hoofdstuk 15 Racket Guide geeft aanwijzing, maar voor fase 0
+; idealiter zou er een manier zijn om geneste syntax eerst uit te breiden zonder eval
+; lijkt plausibel, maar hier zijn syntax objecten precies dat...
+; kan voorbeeld 'eigen structs' uit Fear of Macros inspiratie bieden?
+; daar is syntax-unsyntax-syntax aanwezig...
+(preprior-pair
+ (abstract-atom
+  (abstract-atom-with-args "perm" "(" (abstract-term (abstract-variable (abstract-variable-g "γ" 1))) "," (abstract-term (abstract-variable (abstract-variable-a "α" 1))) ")"))
+ ","
+ (abstract-atom
+  (abstract-atom-with-args "ord" "(" (abstract-term (abstract-variable (abstract-variable-a "α" 1))) ")")))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
