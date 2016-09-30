@@ -266,15 +266,37 @@
   (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
     (sad:abstract-atom (quote (string->symbol symbol)) (odd-elems-as-list arg ...)))
   (define-syntax-rule (abstract-atom-without-args symbol)
-    (sad:abstract-atom (quote (string->symbol symbol)) (list))))
+    (sad:abstract-atom (quote (string->symbol symbol)) (list)))
+  (define-syntax-rule (abstract-term specific-term) specific-term)
+  (define-syntax-rule (abstract-variable specific-var) specific-var)
+  (define-syntax-rule (abstract-variable-a "α" index) (sad:a (quote index)))
+  (define-syntax-rule (abstract-variable-g "γ" index) (sad:g (quote index)))
+  (define-syntax (abstract-function-term stx)
+    (syntax-parse stx
+      [(_ symbol:str) #'(sad:abstract-function (string->symbol symbol) '())]
+      [(_ num-term) #'num-term]
+      [(_ symbol "(" arg ... ")")
+       #'(sad:abstract-function (string->symbol symbol) (odd-elems-as-list arg ...))]))
+  (define-syntax-rule (number-term NUMBER)
+    (sad:abstract-function (number->string (quote NUMBER)) '()))
+  (define-syntax (abstract-lplist stx)
+    (syntax-parse stx
+      [(_ "[" "]")
+       #'(sad:abstract-function 'nil '())]
+      [(_ "[" term0 "]")
+       #'(sad:abstract-function 'cons (list term0 (sad:abstract-function 'nil '())))]
+      [(_ "[" term0 "," rest ... "]")
+       #'(sad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]")))]
+      [(_ "[" term0 "|" rest ... "]")
+       #'(sad:abstract-function 'cons (list term0 rest ...))])))
 
 
 ; TODO zie 'Macro Testing' in Racket Reference
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
-     #`(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
-               #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
+     #`'(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
+                #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
 (provide preprior-pair)
 
 ; moeilijkheid: abstract-atom is niet zichtbaar voor de eval-syntax
