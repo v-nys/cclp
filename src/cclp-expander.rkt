@@ -138,7 +138,7 @@
 (provide abstract-atom-with-args)
 
 (define-syntax-rule (abstract-atom-without-args symbol)
-  (ad:abstract-atom (quote (string->symbol symbol)) (list)))
+  (ad:abstract-atom (string->symbol symbol) (list)))
 (provide abstract-atom-without-args)
 
 (define-syntax (abstract-atom stx)
