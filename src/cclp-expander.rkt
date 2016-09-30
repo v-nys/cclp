@@ -174,6 +174,12 @@
   (cd:function NUMBER '()))
 (provide concrete-number)
 
+(define-syntax-rule (abstract-number-term TERM) TERM)
+(provide abstract-number-term)
+
+(define-syntax-rule (number-term TERM) TERM)
+(provide number-term)
+
 (define-syntax (abstract-lplist stx)
   (syntax-parse stx
     [(_ "[" "]")

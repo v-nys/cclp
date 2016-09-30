@@ -4,22 +4,20 @@
 (require (prefix-in cd: "../src/concrete-domain.rkt"))
 (require (prefix-in exp: "../src/cclp-expander.rkt"))
 
-; atomic elements: abstract variables, concrete variables and both types of numbers
-; no structures that can be peeled away
 (check-equal? (exp:abstract-variable-a "α" 1) (ad:a 1))
 (check-equal? (exp:abstract-variable-g "γ" 2) (ad:g 2))
 (check-equal? (exp:abstract-number 3) (ad:abstract-function 3 '()))
 (check-equal? (exp:concrete-number 4) (cd:function 4 '()))
 
-; abstract variables, with layers that can be peeled away
 (check-equal? (exp:abstract-variable (exp:abstract-variable-a "α" 1)) (ad:a 1))
 (check-equal? (exp:abstract-variable (exp:abstract-variable-g "γ" 2)) (ad:g 2))
 
-; numbers with layer that can be peeled away
+; note: (abstract) number terms could be folded in the grammar...
 (check-equal? (exp:abstract-number-term (exp:abstract-number 3)) (ad:abstract-function 3 '()))
 (check-equal? (exp:number-term (exp:concrete-number 4)) (cd:function 4 '()))
 
-; function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | number-term
-; concrete function terms without nested arguments
+(check-equal? (exp:lplist "[" "]") (cd:function 'nil '()))
+(check-equal? (exp:abstract-function-term "my-func") (ad:abstract-function 'my-func '()))
+(check-equal? (exp:abstract-atom-without-args "my-atom") (ad:abstract-atom 'my-atom '()))
 
-; concrete function terms with nested arguments
+; TODO need to cover more cases
