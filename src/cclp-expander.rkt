@@ -92,9 +92,6 @@
      #'(cd:function (string->symbol symbol) (odd-elems-as-list arg ...))]))
 (provide function-term)
 
-(define-syntax-rule (number NUMBER) (cd:function (number->string (quote NUMBER)) '()))
-(provide number)
-
 (define-syntax (lplist stx)
   (syntax-parse stx
     [(_ open-paren close-paren)
@@ -154,6 +151,7 @@
 (define-syntax-rule (abstract-variable specific-var) specific-var)
 (provide abstract-variable)
 
+; M.O.: string is hier eigenlijk vrij overbodig...
 (define-syntax-rule (abstract-variable-a "α" index) (ad:a (quote index)))
 (provide abstract-variable-a)
 
@@ -168,9 +166,13 @@
      #'(ad:abstract-function (string->symbol symbol) (odd-elems-as-list arg ...))]))
 (provide abstract-function-term)
 
-(define-syntax-rule (number-term NUMBER)
-  (ad:abstract-function (number->string (quote NUMBER)) '()))
-(provide number-term)
+(define-syntax-rule (abstract-number NUMBER)
+  (ad:abstract-function NUMBER '()))
+(provide abstract-number)
+
+(define-syntax-rule (concrete-number NUMBER)
+  (cd:function NUMBER '()))
+(provide concrete-number)
 
 (define-syntax (abstract-lplist stx)
   (syntax-parse stx
@@ -305,12 +307,12 @@
 ; lijkt plausibel, maar hier zijn syntax objecten precies dat...
 ; kan voorbeeld 'eigen structs' uit Fear of Macros inspiratie bieden?
 ; daar is syntax-unsyntax-syntax aanwezig...
-(preprior-pair
- (abstract-atom
-  (abstract-atom-with-args "perm" "(" (abstract-term (abstract-variable (abstract-variable-g "γ" 1))) "," (abstract-term (abstract-variable (abstract-variable-a "α" 1))) ")"))
- ","
- (abstract-atom
-  (abstract-atom-with-args "ord" "(" (abstract-term (abstract-variable (abstract-variable-a "α" 1))) ")")))
+;(preprior-pair
+; (abstract-atom
+;  (abstract-atom-with-args "perm" "(" (abstract-term (abstract-variable (abstract-variable-g "γ" 1))) "," (abstract-term (abstract-variable (abstract-variable-a "α" 1))) ")"))
+; ","
+; (abstract-atom
+;  (abstract-atom-with-args "ord" "(" (abstract-term (abstract-variable (abstract-variable-a "α" 1))) ")")))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
