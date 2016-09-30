@@ -144,7 +144,6 @@
   (ad:abstract-atom (quote (string->symbol symbol)) (list)))
 (provide abstract-atom-without-args)
 
-
 (define-syntax (abstract-atom stx)
   (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
 (provide abstract-atom)
@@ -257,11 +256,25 @@
                  prior))])))
 (provide preprior-section)
 
+; need some phase 2 stuff here...
+(require (for-syntax (prefix-in sad: "abstract-multi-domain.rkt")))
+(require (for-syntax (for-syntax syntax/parse) (for-syntax racket/base)))
+(require (for-syntax (only-in "syntax-utils.rkt" odd-elems-as-list)))
+(begin-for-syntax
+  (define-syntax (abstract-atom stx)
+    (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
+  (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
+    (sad:abstract-atom (quote (string->symbol symbol)) (odd-elems-as-list arg ...)))
+  (define-syntax-rule (abstract-atom-without-args symbol)
+    (sad:abstract-atom (quote (string->symbol symbol)) (list))))
+
+
+; TODO zie 'Macro Testing' in Racket Reference
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
-     #`(before #,(abstract-domain-elem->sexp #`atom1)
-               #,(abstract-domain-elem->sexp #`atom2))]))
+     #`(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
+               #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
 (provide preprior-pair)
 
 ; moeilijkheid: abstract-atom is niet zichtbaar voor de eval-syntax
