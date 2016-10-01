@@ -62,7 +62,15 @@
                ","
                (exp:abstract-term (exp:abstract-variable (exp:abstract-variable-g "γ" 2))) ")")
               (ad:abstract-function 'my-func (list (ad:g 1) (ad:g 2))))
-; TODO abstract atoms with actual nesting
+(check-equal? (exp:abstract-atom
+               (exp:abstract-atom-with-args
+                "my-atom"
+                "("
+                (exp:abstract-variable-g "γ" 1)
+                ","
+                (exp:abstract-variable-g "γ" 2)
+                ")"))
+              (ad:abstract-atom 'my-atom (list (ad:g 1) (ad:g 2))))
 
 ; concrete program section
 
@@ -80,6 +88,3 @@
    (ph2-exp:abstract-atom
     (ph2-exp:abstract-atom-without-args "myatom2"))))
  '(before (myatom1) (myatom2)))
-
-
-

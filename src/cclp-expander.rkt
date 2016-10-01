@@ -134,12 +134,9 @@
 (provide fullai-rule-without-body)
 
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
-  (ad:abstract-atom (quote (string->symbol symbol)) (odd-elems-as-list arg ...)))
+  (ad:abstract-atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))
 (provide abstract-atom-with-args)
 
-; HERE
-; ???
-; yes, only this is provided
 (define-syntax-rule (abstract-atom-without-args symbol)
   (ad:abstract-atom (string->symbol (quote symbol)) (list)))
 (provide abstract-atom-without-args)
