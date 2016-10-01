@@ -88,3 +88,25 @@
    (ph2-exp:abstract-atom
     (ph2-exp:abstract-atom-without-args "myatom2"))))
  '(before (myatom1) (myatom2)))
+
+(check-equal?
+ (phase1-eval
+  (ph1-exp:preprior-pair
+   (ph2-exp:abstract-atom
+    (ph2-exp:abstract-atom-with-args
+     "myatom1"
+     "("
+     (ph2-exp:abstract-variable-g "γ" 1)
+     ","
+     (ph2-exp:abstract-variable-g "γ" 2)
+     ")"))
+   ","
+   (ph2-exp:abstract-atom
+    (ph2-exp:abstract-atom-with-args
+     "myatom2"
+     "("
+     (ph2-exp:abstract-variable-g "γ" 1)
+     ","
+     (ph2-exp:abstract-variable-g "γ" 2)
+     ")"))))
+ '(before (myatom1 (γ sym1) (γ sym2)) (myatom2 (γ sym1) (γ sym2))))

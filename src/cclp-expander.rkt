@@ -256,6 +256,7 @@
 (provide preprior-section)
 
 ; need some phase 2 stuff here...
+; could cut down on this by moving common parts to separate module and importing appropriately
 (require (for-syntax (prefix-in sad: "abstract-multi-domain.rkt")))
 (require (for-syntax (for-syntax syntax/parse) (for-syntax racket/base)))
 (require (for-syntax (only-in "syntax-utils.rkt" odd-elems-as-list)))
