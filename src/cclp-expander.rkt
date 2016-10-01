@@ -137,8 +137,11 @@
   (ad:abstract-atom (quote (string->symbol symbol)) (odd-elems-as-list arg ...)))
 (provide abstract-atom-with-args)
 
+; HERE
+; ???
+; yes, only this is provided
 (define-syntax-rule (abstract-atom-without-args symbol)
-  (ad:abstract-atom (string->symbol symbol) (list)))
+  (ad:abstract-atom (string->symbol (quote symbol)) (list)))
 (provide abstract-atom-without-args)
 
 (define-syntax (abstract-atom stx)
@@ -273,8 +276,10 @@
     (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
   (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
     (sad:abstract-atom (string->symbol symbol) (odd-elems-as-list arg ...)))
+
   (define-syntax-rule (abstract-atom-without-args symbol)
     (sad:abstract-atom (string->symbol symbol) (list)))
+  
   (define-syntax-rule (abstract-term specific-term) specific-term)
   (define-syntax-rule (abstract-variable specific-var) specific-var)
   (define-syntax-rule (abstract-variable-a "α" index) (sad:a (quote index)))
@@ -299,7 +304,6 @@
        #'(sad:abstract-function 'cons (list term0 rest ...))])))
 
 
-; TODO zie 'Macro Testing' in Racket Reference
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
