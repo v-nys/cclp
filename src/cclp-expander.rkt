@@ -215,15 +215,6 @@
          (syntax-parse stx
            [(_ pair ...)
             #`((λ () (define-model prior
-                       ; problem with permutation sort is here
-                       ; just leaving out the pair causes interactive analysis to start
-                       ; interestingly, just writing (before a b) works, so expansion (if any?!) is not something like that
-                       ; would be very helpful if there was a way to see full program expansion
-                       ; also, still getting the info about "perm"
-                       ; oddly, expanding pair to void also doesn't allow the program to run
-                       ; so my understanding of how these macros work is flawed
-                       ; how do I figure it out?
-                       ; test: first define syntax for a pair using datum->syntax, then check its expansion? 
                        pair ...
                        (member X (cons X Y))
                        (:- (member X (cons Y Z))
@@ -310,19 +301,6 @@
      #`'(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
                 #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
 (provide preprior-pair)
-
-; moeilijkheid: abstract-atom is niet zichtbaar voor de eval-syntax
-; hoofdstuk 15 Racket Guide geeft aanwijzing, maar voor fase 0
-; idealiter zou er een manier zijn om geneste syntax eerst uit te breiden zonder eval
-; lijkt plausibel, maar hier zijn syntax objecten precies dat...
-; kan voorbeeld 'eigen structs' uit Fear of Macros inspiratie bieden?
-; daar is syntax-unsyntax-syntax aanwezig...
-;(preprior-pair
-; (abstract-atom
-;  (abstract-atom-with-args "perm" "(" (abstract-term (abstract-variable (abstract-variable-g "γ" 1))) "," (abstract-term (abstract-variable (abstract-variable-a "α" 1))) ")"))
-; ","
-; (abstract-atom
-;  (abstract-atom-with-args "ord" "(" (abstract-term (abstract-variable (abstract-variable-a "α" 1))) ")")))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization

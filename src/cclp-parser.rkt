@@ -20,6 +20,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+; note: grammar could be reduced in size (e.g. abstract-number-term is redundant)
+
 #lang brag
 cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PREPRIOR-DELIMITER preprior-section] QUERY-DELIMITER abstract-atom
 
@@ -42,6 +44,8 @@ abstract-term : abstract-variable | abstract-function-term | abstract-lplist
 abstract-variable : abstract-variable-a | abstract-variable-g
 abstract-variable-a : AVAR-SYMBOL-A NUMBER
 abstract-variable-g : AVAR-SYMBOL-G NUMBER
+abstract-number-term : abstract-number
+abstract-number : NUMBER
 abstract-function-term : (SYMBOL [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]) | abstract-number-term
 abstract-lplist : OPEN-LIST-PAREN [abstract-term (COMMA abstract-term)* [LIST-SEPARATOR (abstract-lplist | abstract-variable)]] CLOSE-LIST-PAREN
 abstract-substitution : abstract-substitution-pair (COMMA abstract-substitution-pair)*
