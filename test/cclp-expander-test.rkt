@@ -253,3 +253,15 @@
      (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-a "α" 1)))
      ")"))))
  '(before (ord (cons (γ sym1) (cons (γ sym2) (α sym1)))) (perm (γ sym1) (α sym1))))
+
+(check-true
+ ; this is just to check whether any errors appear
+ (begin
+   (phase1-eval
+    (ph1-exp:preprior-section
+     (ph1-exp:preprior-pair
+      (ph2-exp:abstract-atom
+       (ph2-exp:abstract-atom-without-args "ord"))
+      (ph2-exp:abstract-atom
+       (ph2-exp:abstract-atom-without-args "perm")))))
+   #t))
