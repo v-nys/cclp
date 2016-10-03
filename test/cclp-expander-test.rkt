@@ -165,3 +165,30 @@
      (ph2-exp:abstract-variable-g "γ" 2)
      ")"))))
  '(before (myatom1 (γ sym1) (γ sym2)) (myatom2 (γ sym1) (γ sym2))))
+
+ ; bug trigger test for permutation sort
+(check-equal?
+ (phase1-eval
+  (ph1-exp:preprior-pair
+   (ph2-exp:abstract-atom
+    (ph2-exp:abstract-atom-with-args
+     "perm"
+     "("
+     (ph2-exp:abstract-term
+      (ph2-exp:abstract-variable
+       (ph2-exp:abstract-variable-g "γ" 1)))
+     ","
+     (ph2-exp:abstract-term
+      (ph2-exp:abstract-variable
+       (ph2-exp:abstract-variable-a "α" 1)))
+     ")"))
+   ","
+   (ph2-exp:abstract-atom
+    (ph2-exp:abstract-atom-with-args
+     "ord"
+     "("
+     (ph2-exp:abstract-term
+      (ph2-exp:abstract-variable
+       (ph2-exp:abstract-variable-a "α" 1)))
+     ")"))))
+ '(before (perm (γ sym1) (α sym1)) (ord (α sym1))))

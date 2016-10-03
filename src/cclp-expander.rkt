@@ -86,10 +86,10 @@
 (define-syntax (function-term stx)
   (syntax-parse stx
     [(_ symbol:str)
-     #'(cd:function (string->symbol symbol) '())]
+     #'(cd:function (string->symbol (quote symbol)) '())]
     [(_ num-term) #'num-term] ; these are just plain numbers
     [(_ symbol "(" arg ... ")")
-     #'(cd:function (string->symbol symbol) (odd-elems-as-list arg ...))]))
+     #'(cd:function (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
 (provide function-term)
 
 (define-syntax (lplist stx)
@@ -208,51 +208,50 @@
 ; PART RELATED TO PREPRIOR
 
 (define-syntax (preprior-section stx)
-  (begin (println (syntax->datum stx))
-         (syntax-parse stx
-           [(_ pair ...)
-            #`((λ () (define-model prior
-                       pair ...
-                       (member X (cons X Y))
-                       (:- (member X (cons Y Z))
-                           (member X Z))
-                       (not_a_member X ())
-                       (:- (not_a_member X (cons A B))
-                           (,(compose not equal?) X A)
-                           (not_a_member X B))
-                       (:- (reaches_without_encountering X Y Path)
-                           (before X Y)
-                           (not_a_member Y Path))
-                       (:- (reaches_without_encountering X Z Path)
-                           (before X Y)
-                           (not_a_member Y Path)
-                           (reaches_without_encountering Y Z (cons Y Path)))
-                       (:- (reaches_loopfree X Y)
-                           (reaches_without_encountering X Y (cons X ())))
-                       (:- (violates_partial_order)
-                           (reaches_loopfree X Y)
-                           (reaches_loopfree Y X)
-                           (,(compose not
-                                      (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
-                                                                 (sexp->abstract-atom sexp2)))) X Y))
-                       (:- (member_reaches_all_under_consistency X Atoms)
-                           (member X Atoms)
-                           (reaches_all_under_consistency X Atoms))
-                       (reaches_all_under_consistency X ())
-                       (:- (reaches_all_under_consistency X (cons Destination Ds))
-                           (sexp_gt_extension Destination X)
-                           (reaches_all_under_consistency X Ds))
-                       (:- (reaches_all_under_consistency X (cons Destination Ds))
-                           (reaches_under_consistency X Destination)
-                           (reaches_all_under_consistency X Ds))
-                       (:- (reaches_under_consistency X Y)
-                           (reaches_loopfree X1 Y1)
-                           (sexp_gt_extension X1 X)
-                           (sexp_gt_extension Y Y1))
-                       (:- (sexp_gt_extension X Y)
-                           (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
-                                                      (sexp->abstract-atom e2))) X Y)))
-                 prior))])))
+  (syntax-parse stx
+    [(_ pair ...)
+     #`((λ () (define-model prior
+                pair ...
+                (member X (cons X Y))
+                (:- (member X (cons Y Z))
+                    (member X Z))
+                (not_a_member X ())
+                (:- (not_a_member X (cons A B))
+                    (,(compose not equal?) X A)
+                    (not_a_member X B))
+                (:- (reaches_without_encountering X Y Path)
+                    (before X Y)
+                    (not_a_member Y Path))
+                (:- (reaches_without_encountering X Z Path)
+                    (before X Y)
+                    (not_a_member Y Path)
+                    (reaches_without_encountering Y Z (cons Y Path)))
+                (:- (reaches_loopfree X Y)
+                    (reaches_without_encountering X Y (cons X ())))
+                (:- (violates_partial_order)
+                    (reaches_loopfree X Y)
+                    (reaches_loopfree Y X)
+                    (,(compose not
+                               (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
+                                                          (sexp->abstract-atom sexp2)))) X Y))
+                (:- (member_reaches_all_under_consistency X Atoms)
+                    (member X Atoms)
+                    (reaches_all_under_consistency X Atoms))
+                (reaches_all_under_consistency X ())
+                (:- (reaches_all_under_consistency X (cons Destination Ds))
+                    (sexp_gt_extension Destination X)
+                    (reaches_all_under_consistency X Ds))
+                (:- (reaches_all_under_consistency X (cons Destination Ds))
+                    (reaches_under_consistency X Destination)
+                    (reaches_all_under_consistency X Ds))
+                (:- (reaches_under_consistency X Y)
+                    (reaches_loopfree X1 Y1)
+                    (sexp_gt_extension X1 X)
+                    (sexp_gt_extension Y Y1))
+                (:- (sexp_gt_extension X Y)
+                    (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
+                                               (sexp->abstract-atom e2))) X Y)))
+          prior))]))
 (provide preprior-section)
 
 ; need some phase 2 stuff here...
@@ -265,7 +264,7 @@
     (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
   (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
     (sad:abstract-atom (string->symbol symbol) (odd-elems-as-list arg ...)))
-
+  
   (define-syntax-rule (abstract-atom-without-args symbol)
     (sad:abstract-atom (string->symbol symbol) (list)))
   
