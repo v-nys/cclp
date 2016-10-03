@@ -5,6 +5,7 @@
 (require (prefix-in exp: "../src/cclp-expander.rkt"))
 (require (prefix-in ph1-exp: (for-syntax "../src/cclp-expander.rkt")))
 (require (prefix-in ph2-exp: (for-syntax (for-syntax "../src/cclp-expander.rkt"))))
+(require (prefix-in fai: "../src/fullai-domain.rkt"))
 (require syntax/macro-testing)
 
 ; concrete domain
@@ -75,6 +76,21 @@
 ; concrete program section
 
 ; full eval section
+(check-equal?
+ (exp:fullai-rule-without-body
+  (exp:abstract-atom-with-args
+   "myatom"
+   "("
+   (exp:abstract-variable
+    (exp:abstract-variable-g "γ" 1))
+   ","
+   (exp:abstract-variable
+    (exp:abstract-variable-g "γ" 2))
+   ")")
+  ".")
+ (fai:full-ai-rule
+  (ad:abstract-atom 'my-atom (list (ad:g 1) (ad:g 2)))
+  (list)))
 
 ; prior section
 (check-equal?
