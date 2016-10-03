@@ -6,6 +6,7 @@
 (require (prefix-in ph1-exp: (for-syntax "../src/cclp-expander.rkt")))
 (require (prefix-in ph2-exp: (for-syntax (for-syntax "../src/cclp-expander.rkt"))))
 (require (prefix-in fai: "../src/fullai-domain.rkt"))
+(require (prefix-in asubst: "../src/abstract-substitution.rkt"))
 (require syntax/macro-testing)
 
 ; concrete domain
@@ -91,6 +92,41 @@
  (fai:full-ai-rule
   (ad:abstract-atom 'myatom (list (ad:g 1) (ad:g 2)))
   (list)))
+
+(check-equal?
+ (exp:fullai-rule-with-body
+  (exp:abstract-atom-with-args
+   "del"
+   "("
+   (exp:abstract-variable
+    (exp:abstract-variable-a "α" 1))
+   ","
+   (exp:abstract-variable
+    (exp:abstract-variable-g "γ" 1))
+   ","
+   (exp:abstract-variable
+    (exp:abstract-variable-a "α" 2))
+   ")")
+  "->"
+  (exp:abstract-substitution
+   (exp:abstract-substitution-pair
+    (exp:abstract-variable
+      (exp:abstract-variable-a "α" 1))
+    "/"
+    (exp:abstract-variable
+      (exp:abstract-variable-g "γ" 2)))
+   ","
+   (exp:abstract-substitution-pair
+    (exp:abstract-variable
+      (exp:abstract-variable-a "α" 2))
+    "/"
+    (exp:abstract-variable
+      (exp:abstract-variable-g "γ" 3))))
+  ".")
+ (fai:full-ai-rule
+  (ad:abstract-atom 'del (list (ad:a 1) (ad:g 1) (ad:a 2)))
+  (list (asubst:abstract-equality (ad:a 1) (ad:g 2))
+        (asubst:abstract-equality (ad:a 2) (ad:g 3)))))
 
 ; prior section
 (check-equal?

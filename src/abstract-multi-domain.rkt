@@ -24,7 +24,7 @@
 
 (define (write-a obj port mode)
   (if (eq? mode #t) (fprintf port "#(struct:a ~s)" (a-index obj)) (fprintf port "a~a" (a-index obj))))
-(struct a (index) #:transparent
+(struct a (index)
   #:methods
   gen:custom-write [(define write-proc write-a)]
   #:methods
