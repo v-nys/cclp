@@ -265,3 +265,24 @@
       (ph2-exp:abstract-atom
        (ph2-exp:abstract-atom-without-args "perm")))))
    #t))
+
+(check-true
+ (begin
+   (phase1-eval
+    (ph1-exp:cclp-program
+     "{PROGRAM}"
+     (ph1-exp:program-section
+      (ph1-exp:rule
+       (ph1-exp:atom "true"))
+      ".")
+     "{PREPRIOR}"
+     (ph1-exp:preprior-section
+     (ph1-exp:preprior-pair
+      (ph2-exp:abstract-atom
+       (ph2-exp:abstract-atom-without-args "ord"))
+      (ph2-exp:abstract-atom
+       (ph2-exp:abstract-atom-without-args "perm"))))
+     "{QUERY}"
+     (ph1-exp:abstract-atom
+      (ph1-exp:abstract-atom-without-args "true"))))
+   #t))
