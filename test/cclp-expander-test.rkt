@@ -166,7 +166,7 @@
      ")"))))
  '(before (myatom1 (γ sym1) (γ sym2)) (myatom2 (γ sym1) (γ sym2))))
 
- ; bug trigger test for permutation sort
+ ; bug trigger test 1 for permutation sort
 (check-equal?
  (phase1-eval
   (ph1-exp:preprior-pair

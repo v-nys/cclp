@@ -160,10 +160,10 @@
 
 (define-syntax (abstract-function-term stx)
   (syntax-parse stx
-    [(_ symbol:str) #'(ad:abstract-function (string->symbol symbol) '())]
+    [(_ symbol:str) #'(ad:abstract-function (string->symbol (quote symbol)) '())]
     [(_ num-term) #'num-term]
     [(_ symbol "(" arg ... ")")
-     #'(ad:abstract-function (string->symbol symbol) (odd-elems-as-list arg ...))]))
+     #'(ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
 (provide abstract-function-term)
 
 (define-syntax-rule (abstract-number NUMBER)
@@ -263,10 +263,10 @@
   (define-syntax (abstract-atom stx)
     (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
   (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
-    (sad:abstract-atom (string->symbol symbol) (odd-elems-as-list arg ...)))
+    (sad:abstract-atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))
   
   (define-syntax-rule (abstract-atom-without-args symbol)
-    (sad:abstract-atom (string->symbol symbol) (list)))
+    (sad:abstract-atom (string->symbol (quote symbol)) (list)))
   
   (define-syntax-rule (abstract-term specific-term) specific-term)
   (define-syntax-rule (abstract-variable specific-var) specific-var)
@@ -274,10 +274,10 @@
   (define-syntax-rule (abstract-variable-g "γ" index) (sad:g (quote index)))
   (define-syntax (abstract-function-term stx)
     (syntax-parse stx
-      [(_ symbol:str) #'(sad:abstract-function (string->symbol symbol) '())]
+      [(_ symbol:str) #'(sad:abstract-function (string->symbol (quote symbol)) '())]
       [(_ num-term) #'num-term]
       [(_ symbol "(" arg ... ")")
-       #'(sad:abstract-function (string->symbol symbol) (odd-elems-as-list arg ...))]))
+       #'(sad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
   (define-syntax-rule (number-term NUMBER)
     (sad:abstract-function (number->string (quote NUMBER)) '()))
   (define-syntax (abstract-lplist stx)
