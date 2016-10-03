@@ -89,7 +89,7 @@
    ")")
   ".")
  (fai:full-ai-rule
-  (ad:abstract-atom 'my-atom (list (ad:g 1) (ad:g 2)))
+  (ad:abstract-atom 'myatom (list (ad:g 1) (ad:g 2)))
   (list)))
 
 ; prior section
