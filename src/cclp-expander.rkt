@@ -69,9 +69,9 @@
 (define-syntax (atom stx)
   (syntax-parse stx
     [(_ symbol)
-     #'(cd:atom (quote (string->symbol symbol)) '())]
+     #'(cd:atom (string->symbol (quote symbol)) '())]
     [(_ symbol "(" arg ... ")")
-     #'(cd:atom (quote (string->symbol symbol)) (odd-elems-as-list arg ...))]))
+     #'(cd:atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
 (provide atom)
 
 (define-syntax (term stx)
@@ -80,7 +80,7 @@
      #'VAR-OR-LIST-OR-MISC-FUNCTION]))
 (provide term)
 
-(define-syntax-rule (variable VARIABLE-NAME) (cd:variable (quote VARIABLE-NAME)))
+(define-syntax-rule (variable VARIABLE-NAME) (cd:variable (string->symbol (quote VARIABLE-NAME))))
 (provide variable)
 
 (define-syntax (function-term stx)
