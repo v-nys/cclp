@@ -192,3 +192,64 @@
        (ph2-exp:abstract-variable-a "α" 1)))
      ")"))))
  '(before (perm (γ sym1) (α sym1)) (ord (α sym1))))
+
+; bug trigger test 2 for permutation sort
+(check-equal?
+ (phase1-eval
+  (ph1-exp:preprior-pair
+   (ph2-exp:abstract-atom
+    (ph2-exp:abstract-atom-with-args
+     "perm"
+     "("
+     (ph2-exp:abstract-term
+      (ph2-exp:abstract-variable
+       (ph2-exp:abstract-variable-g "γ" 1)))
+     ","
+     (ph2-exp:abstract-term
+      (ph2-exp:abstract-variable
+       (ph2-exp:abstract-variable-a "α" 1)))
+     ")"))
+   ","
+   (ph2-exp:abstract-atom
+    (ph2-exp:abstract-atom-with-args
+     "ord"
+     "("
+     (ph2-exp:abstract-term
+      (ph2-exp:abstract-lplist
+       "["
+       (ph2-exp:abstract-term
+        (ph2-exp:abstract-variable
+         (ph2-exp:abstract-variable-g "γ" 1)))
+       "|"
+       (ph2-exp:abstract-variable
+        (ph2-exp:abstract-variable-a "α" 1)) "]")) ")"))))
+ '(before (perm (γ sym1) (α sym1)) (ord (cons (γ sym1) (α sym1)))))
+
+; bug trigger test 3 for permutation sort
+(check-equal?
+ (phase1-eval
+  (ph1-exp:preprior-pair
+   (ph2-exp:abstract-atom
+    (ph2-exp:abstract-atom-with-args
+     "ord"
+     "("
+     (ph2-exp:abstract-term
+      (ph2-exp:abstract-lplist
+       "["
+       (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-g "γ" 1)))
+       ","
+       (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-g "γ" 2)))
+       "|"
+       (ph2-exp:abstract-variable (ph2-exp:abstract-variable-a "α" 1))
+       "]"))
+     ")"))
+   ","
+   (ph2-exp:abstract-atom
+    (ph2-exp:abstract-atom-with-args
+     "perm"
+     "("
+     (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-g "γ" 1)))
+     ","
+     (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-a "α" 1)))
+     ")"))))
+ '(before (ord (cons (γ sym1) (cons (γ sym2) (α sym1)))) (perm (γ sym1) (α sym1))))
