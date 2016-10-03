@@ -209,7 +209,7 @@
 
 (define-syntax (preprior-section stx)
   (begin
-    (print (syntax->datum stx))
+    ;(print (syntax->datum stx))
     (syntax-parse stx
       [(_ pair ...)
        #`((λ () (define-model prior
@@ -294,10 +294,12 @@
        #'(sad:abstract-function 'cons (list term0 rest ...))])))
 
 (define-syntax (preprior-pair stx)
-  (syntax-parse stx
-    [(_ atom1 "," atom2)
-     #`'(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
-                #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
+  (begin
+    (print stx)
+    (syntax-parse stx
+      [(_ atom1 "," atom2)
+       #`'(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
+                  #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))])))
 (provide preprior-pair)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
