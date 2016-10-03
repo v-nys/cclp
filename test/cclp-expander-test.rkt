@@ -68,13 +68,16 @@
                (exp:abstract-atom-with-args
                 "my-atom"
                 "("
-                (exp:abstract-variable-g "γ" 1)
+                (exp:abstract-variable (exp:abstract-variable-g "γ" 1))
                 ","
-                (exp:abstract-variable-g "γ" 2)
+                (exp:abstract-variable (exp:abstract-variable-g "γ" 2))
                 ")"))
               (ad:abstract-atom 'my-atom (list (ad:g 1) (ad:g 2))))
 
 ; concrete program section
+(check-equal?
+ (exp:variable "MyPrologVar")
+ (cd:variable 'MyPrologVar))
 
 ; full eval section
 (check-equal?
