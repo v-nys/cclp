@@ -262,7 +262,7 @@
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
-     #`('before atom1 atom2)]))
+     #`(list 'before atom1 atom2)]))
 (provide preprior-pair)
 
 (define-syntax (sexp-abstract-atom stx)
@@ -287,14 +287,14 @@
     [(_ "α" index)
      (with-syntax ([sym-stx (datum->syntax #'index (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
        #''(α sym-stx))]))
-(provide abstract-variable-a)
+(provide sexp-abstract-variable-a)
 
 (define-syntax (sexp-abstract-variable-g stx)
   (syntax-parse stx
     [(_ "γ" index)
      (with-syntax ([sym-stx (datum->syntax #'index (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
        #''(γ sym-stx))]))
-(provide abstract-variable-g)
+(provide sexp-abstract-variable-g)
 
 (define-syntax (sexp-abstract-number stx)
   (syntax-parse stx
@@ -318,6 +318,7 @@
     [(_ symbol:str "(" arg ... ")")
      (with-syntax ([sym-sym (string->symbol (syntax->datum #'symbol))])
        #'(cons 'sym-sym (odd-elems-as-list arg ...)))]))
+(provide sexp-abstract-atom-with-args)
 
 (define-syntax (sexp-abstract-function-term stx)
   (syntax-parse stx
@@ -338,6 +339,7 @@
      #'(list 'cons term0 (sexp-abstract-lplist open-paren rest ... close-paren))]
     [(_ open-paren term0 "|" rest close-paren)
      #'(list 'cons term0 rest)]))
+(provide sexp-abstract-lplist)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
