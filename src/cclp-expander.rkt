@@ -209,11 +209,14 @@
 
 (define-syntax (preprior-section stx)
   (begin
-    ;(print (syntax->datum stx))
     (syntax-parse stx
       [(_ pair ...)
-       #`((λ () (define-model prior
-                  pair ...
+       #`((λ () (begin
+                  (print pair) ...
+                  (define-model prior
+                  ;pair ...
+                  ; is het een probleem dat de naam member overlapt?
+                  ; toch niet om perm sort te starten, kan achteraf nog onderzoeken.
                   (member X (cons X Y))
                   (:- (member X (cons Y Z))
                       (member X Z))
@@ -252,54 +255,56 @@
                       (sexp_gt_extension Y Y1))
                   (:- (sexp_gt_extension X Y)
                       (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
-                                                 (sexp->abstract-atom e2))) X Y)))
+                                                 (sexp->abstract-atom e2))) X Y))))
             prior))])))
 (provide preprior-section)
 
 ; need some phase 2 stuff here...
 ; could cut down on this by moving common parts to separate module and importing appropriately
-(require (for-syntax (prefix-in sad: "abstract-multi-domain.rkt")))
-(require (for-syntax (for-syntax syntax/parse) (for-syntax racket/base)))
-(require (for-syntax (only-in "syntax-utils.rkt" odd-elems-as-list)))
-(begin-for-syntax
-  (define-syntax (abstract-atom stx)
-    (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
-  (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
-    (sad:abstract-atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))
-  
-  (define-syntax-rule (abstract-atom-without-args symbol)
-    (sad:abstract-atom (string->symbol (quote symbol)) (list)))
-  
-  (define-syntax-rule (abstract-term specific-term) specific-term)
-  (define-syntax-rule (abstract-variable specific-var) specific-var)
-  (define-syntax-rule (abstract-variable-a "α" index) (sad:a (quote index)))
-  (define-syntax-rule (abstract-variable-g "γ" index) (sad:g (quote index)))
-  (define-syntax (abstract-function-term stx)
-    (syntax-parse stx
-      [(_ symbol:str) #'(sad:abstract-function (string->symbol (quote symbol)) '())]
-      [(_ num-term) #'num-term]
-      [(_ symbol "(" arg ... ")")
-       #'(sad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
-  (define-syntax-rule (number-term NUMBER)
-    (sad:abstract-function (number->string (quote NUMBER)) '()))
-  (define-syntax (abstract-lplist stx)
-    (syntax-parse stx
-      [(_ "[" "]")
-       #'(sad:abstract-function 'nil '())]
-      [(_ "[" term0 "]")
-       #'(sad:abstract-function 'cons (list term0 (sad:abstract-function 'nil '())))]
-      [(_ "[" term0 "," rest ... "]")
-       #'(sad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]")))]
-      [(_ "[" term0 "|" rest ... "]")
-       #'(sad:abstract-function 'cons (list term0 rest ...))])))
+;(require (for-syntax (prefix-in sad: "abstract-multi-domain.rkt")))
+;(require (for-syntax (for-syntax syntax/parse) (for-syntax racket/base)))
+;(require (for-syntax (only-in "syntax-utils.rkt" odd-elems-as-list)))
+;(begin-for-syntax
+;  (define-syntax (abstract-atom stx)
+;    (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
+;  (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
+;    (sad:abstract-atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))
+;  
+;  (define-syntax-rule (abstract-atom-without-args symbol)
+;    (sad:abstract-atom (string->symbol (quote symbol)) (list)))
+;  
+;  (define-syntax-rule (abstract-term specific-term) specific-term)
+;  (define-syntax-rule (abstract-variable specific-var) specific-var)
+;  (define-syntax-rule (abstract-variable-a "α" index) (sad:a (quote index)))
+;  (define-syntax-rule (abstract-variable-g "γ" index) (sad:g (quote index)))
+;  (define-syntax (abstract-function-term stx)
+;    (syntax-parse stx
+;      [(_ symbol:str) #'(sad:abstract-function (string->symbol (quote symbol)) '())]
+;      [(_ num-term) #'num-term]
+;      [(_ symbol "(" arg ... ")")
+;       #'(sad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
+;  (define-syntax-rule (number-term NUMBER)
+;    (sad:abstract-function (number->string (quote NUMBER)) '()))
+;  (define-syntax (abstract-lplist stx)
+;    (syntax-parse stx
+;      [(_ "[" "]")
+;       #'(sad:abstract-function 'nil '())]
+;      [(_ "[" term0 "]")
+;       #'(sad:abstract-function 'cons (list term0 (sad:abstract-function 'nil '())))]
+;      [(_ "[" term0 "," rest ... "]")
+;       #'(sad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]")))]
+;      [(_ "[" term0 "|" rest ... "]")
+;       #'(sad:abstract-function 'cons (list term0 rest ...))])))
 
 (define-syntax (preprior-pair stx)
-  (begin
-    (print stx)
-    (syntax-parse stx
-      [(_ atom1 "," atom2)
-       #`'(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
-                  #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))])))
+  #`'(before (a) (b))
+;  (begin
+;    (print stx)
+;    (syntax-parse stx
+;      [(_ atom1 "," atom2)
+;       #`'(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
+;                  #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
+  )
 (provide preprior-pair)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
