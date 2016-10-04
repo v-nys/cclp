@@ -212,100 +212,132 @@
     (syntax-parse stx
       [(_ pair ...)
        #`((λ () (begin
-                  (print pair) ...
+                  pair ...
                   (define-model prior
-                  ;pair ...
-                  ; is het een probleem dat de naam member overlapt?
-                  ; toch niet om perm sort te starten, kan achteraf nog onderzoeken.
-                  (member X (cons X Y))
-                  (:- (member X (cons Y Z))
-                      (member X Z))
-                  (not_a_member X ())
-                  (:- (not_a_member X (cons A B))
-                      (,(compose not equal?) X A)
-                      (not_a_member X B))
-                  (:- (reaches_without_encountering X Y Path)
-                      (before X Y)
-                      (not_a_member Y Path))
-                  (:- (reaches_without_encountering X Z Path)
-                      (before X Y)
-                      (not_a_member Y Path)
-                      (reaches_without_encountering Y Z (cons Y Path)))
-                  (:- (reaches_loopfree X Y)
-                      (reaches_without_encountering X Y (cons X ())))
-                  (:- (violates_partial_order)
-                      (reaches_loopfree X Y)
-                      (reaches_loopfree Y X)
-                      (,(compose not
-                                 (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
-                                                            (sexp->abstract-atom sexp2)))) X Y))
-                  (:- (member_reaches_all_under_consistency X Atoms)
-                      (member X Atoms)
-                      (reaches_all_under_consistency X Atoms))
-                  (reaches_all_under_consistency X ())
-                  (:- (reaches_all_under_consistency X (cons Destination Ds))
-                      (sexp_gt_extension Destination X)
-                      (reaches_all_under_consistency X Ds))
-                  (:- (reaches_all_under_consistency X (cons Destination Ds))
-                      (reaches_under_consistency X Destination)
-                      (reaches_all_under_consistency X Ds))
-                  (:- (reaches_under_consistency X Y)
-                      (reaches_loopfree X1 Y1)
-                      (sexp_gt_extension X1 X)
-                      (sexp_gt_extension Y Y1))
-                  (:- (sexp_gt_extension X Y)
-                      (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
-                                                 (sexp->abstract-atom e2))) X Y))))
+                    ;pair ...
+                    ; is het een probleem dat de naam member overlapt?
+                    ; toch niet om perm sort te starten, kan achteraf nog onderzoeken.
+                    (member X (cons X Y))
+                    (:- (member X (cons Y Z))
+                        (member X Z))
+                    (not_a_member X ())
+                    (:- (not_a_member X (cons A B))
+                        (,(compose not equal?) X A)
+                        (not_a_member X B))
+                    (:- (reaches_without_encountering X Y Path)
+                        (before X Y)
+                        (not_a_member Y Path))
+                    (:- (reaches_without_encountering X Z Path)
+                        (before X Y)
+                        (not_a_member Y Path)
+                        (reaches_without_encountering Y Z (cons Y Path)))
+                    (:- (reaches_loopfree X Y)
+                        (reaches_without_encountering X Y (cons X ())))
+                    (:- (violates_partial_order)
+                        (reaches_loopfree X Y)
+                        (reaches_loopfree Y X)
+                        (,(compose not
+                                   (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
+                                                              (sexp->abstract-atom sexp2)))) X Y))
+                    (:- (member_reaches_all_under_consistency X Atoms)
+                        (member X Atoms)
+                        (reaches_all_under_consistency X Atoms))
+                    (reaches_all_under_consistency X ())
+                    (:- (reaches_all_under_consistency X (cons Destination Ds))
+                        (sexp_gt_extension Destination X)
+                        (reaches_all_under_consistency X Ds))
+                    (:- (reaches_all_under_consistency X (cons Destination Ds))
+                        (reaches_under_consistency X Destination)
+                        (reaches_all_under_consistency X Ds))
+                    (:- (reaches_under_consistency X Y)
+                        (reaches_loopfree X1 Y1)
+                        (sexp_gt_extension X1 X)
+                        (sexp_gt_extension Y Y1))
+                    (:- (sexp_gt_extension X Y)
+                        (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
+                                                   (sexp->abstract-atom e2))) X Y))))
             prior))])))
 (provide preprior-section)
 
-; need some phase 2 stuff here...
-; could cut down on this by moving common parts to separate module and importing appropriately
-;(require (for-syntax (prefix-in sad: "abstract-multi-domain.rkt")))
-;(require (for-syntax (for-syntax syntax/parse) (for-syntax racket/base)))
-;(require (for-syntax (only-in "syntax-utils.rkt" odd-elems-as-list)))
-;(begin-for-syntax
-;  (define-syntax (abstract-atom stx)
-;    (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
-;  (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
-;    (sad:abstract-atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))
-;  
-;  (define-syntax-rule (abstract-atom-without-args symbol)
-;    (sad:abstract-atom (string->symbol (quote symbol)) (list)))
-;  
-;  (define-syntax-rule (abstract-term specific-term) specific-term)
-;  (define-syntax-rule (abstract-variable specific-var) specific-var)
-;  (define-syntax-rule (abstract-variable-a "α" index) (sad:a (quote index)))
-;  (define-syntax-rule (abstract-variable-g "γ" index) (sad:g (quote index)))
-;  (define-syntax (abstract-function-term stx)
-;    (syntax-parse stx
-;      [(_ symbol:str) #'(sad:abstract-function (string->symbol (quote symbol)) '())]
-;      [(_ num-term) #'num-term]
-;      [(_ symbol "(" arg ... ")")
-;       #'(sad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
-;  (define-syntax-rule (number-term NUMBER)
-;    (sad:abstract-function (number->string (quote NUMBER)) '()))
-;  (define-syntax (abstract-lplist stx)
-;    (syntax-parse stx
-;      [(_ "[" "]")
-;       #'(sad:abstract-function 'nil '())]
-;      [(_ "[" term0 "]")
-;       #'(sad:abstract-function 'cons (list term0 (sad:abstract-function 'nil '())))]
-;      [(_ "[" term0 "," rest ... "]")
-;       #'(sad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]")))]
-;      [(_ "[" term0 "|" rest ... "]")
-;       #'(sad:abstract-function 'cons (list term0 rest ...))])))
-
 (define-syntax (preprior-pair stx)
-  #`'(before (a) (b))
-;  (begin
-;    (print stx)
-;    (syntax-parse stx
-;      [(_ atom1 "," atom2)
-;       #`'(before #,(abstract-domain-elem->sexp (eval-syntax #'atom1))
-;                  #,(abstract-domain-elem->sexp (eval-syntax #'atom2)))]))
-  )
+  (syntax-parse stx
+    [(_ atom1 "," atom2)
+     #`('before atom1 atom2)]))
 (provide preprior-pair)
+
+(define-syntax (sexp-abstract-atom stx)
+  (syntax-parse stx
+    [(_ actual-atom) #'actual-atom]))
+(provide sexp-abstract-atom)
+
+(define-syntax (sexp-abstract-atom-without-args stx)
+  (syntax-parse stx
+    [(_ sym:str)
+     (with-syntax ([sym-sym (string->symbol (syntax->datum #'sym))])
+       #''(sym-sym))]))
+(provide sexp-abstract-atom-without-args)
+
+(define-syntax (sexp-abstract-variable stx)
+  (syntax-parse stx
+    [(_ real-var) #'real-var]))
+(provide sexp-abstract-variable)
+
+(define-syntax (sexp-abstract-variable-a stx)
+  (syntax-parse stx
+    [(_ "α" index)
+     (with-syntax ([sym-stx (datum->syntax #'index (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
+       #''(α sym-stx))]))
+(provide abstract-variable-a)
+
+(define-syntax (sexp-abstract-variable-g stx)
+  (syntax-parse stx
+    [(_ "γ" index)
+     (with-syntax ([sym-stx (datum->syntax #'index (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
+       #''(γ sym-stx))]))
+(provide abstract-variable-g)
+
+(define-syntax (sexp-abstract-number stx)
+  (syntax-parse stx
+    [(_ num:nat) #'num]))
+(provide sexp-abstract-number)
+
+(define-syntax (sexp-abstract-number-term stx)
+  (syntax-parse stx
+    [(_ num) #'num]))
+(provide sexp-abstract-number-term)
+
+;sexp-abstract-atom-with-args : SYMBOL OPEN-PAREN sexp-abstract-term (COMMA sexp-abstract-term)* CLOSE-PAREN
+(define-syntax (sexp-abstract-term stx)
+  (syntax-parse stx
+    [(_ contents) #'contents]))
+(provide sexp-abstract-term)
+
+(define-syntax (sexp-abstract-atom-with-args stx)
+  (syntax-parse stx
+    [(_ sym:str) (with-syntax ([sym-sym (string->symbol (syntax->datum #'sym))]) #''(sym-sym))]
+    [(_ symbol:str "(" arg ... ")")
+     (with-syntax ([sym-sym (string->symbol (syntax->datum #'symbol))])
+       #'(cons 'sym-sym (odd-elems-as-list arg ...)))]))
+
+(define-syntax (sexp-abstract-function-term stx)
+  (syntax-parse stx
+    [(_ sym:str) (with-syntax ([sym-sym (string->symbol (syntax->datum #'sym))]) #''(sym-sym))]
+    [(_ symbol:str "(" arg ... ")")
+     (with-syntax ([sym-sym (string->symbol (syntax->datum #'symbol))])
+       #'(cons 'sym-sym (odd-elems-as-list arg ...)))]
+    [(_ num-term) #'num-term]))
+(provide sexp-abstract-function-term)
+
+(define-syntax (sexp-abstract-lplist stx)
+  (syntax-parse stx
+    [(_ open-paren close-paren)
+     #''(nil)]
+    [(_ open-paren term0 close-paren)
+     #'(list 'cons term0 'nil)]
+    [(_ open-paren term0 "," rest ... close-paren)
+     #'(list 'cons term0 (sexp-abstract-lplist open-paren rest ... close-paren))]
+    [(_ open-paren term0 "|" rest close-paren)
+     #'(list 'cons term0 rest)]))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
