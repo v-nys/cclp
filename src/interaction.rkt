@@ -33,7 +33,14 @@
 (require "abstract-resolve.rkt")
 
 (struct tree-label (conjunction selection substitution rule))
-(define display-tree-label display)
+(define (display-tree-label t [out (current-output-port)])
+  (match (node-label t)
+    [(tree-label con sel sub r)
+     (begin
+       (when ((compose not null?) sub) (display sub out))
+       (display con out))]))
+  
+
 
 ; TODO: transliterate this to get good tree representations
 ;displayResolution :: TreeLabel -> IO ()
