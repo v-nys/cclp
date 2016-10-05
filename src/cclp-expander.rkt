@@ -211,7 +211,7 @@
   (begin
     (syntax-parse stx
       [(_ pair ...)
-       (with-syntax ([(expanded-pair ...) (expand-syntax #'(pair ...))])
+       (with-syntax ([(expanded-pair ...) (datum->syntax #'(pair ...) (map expand-syntax-while-bound (syntax->list #'(pair ...))))])
          #`((λ () (define-model prior
                     expanded-pair ...
                     (member X (cons X Y))
@@ -259,7 +259,8 @@
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
-     (with-syntax ([before (datum->syntax stx 'before)])
+     ; TODO aanpassen zodat partiële expansie atom1 en atom2 (bijna) volledig ziet expanderen?
+     (with-syntax ([before (datum->syntax #'() 'before)])
        #`(before atom1 atom2))]))
 (provide preprior-pair)
 
@@ -271,7 +272,7 @@
 (define-syntax (sexp-abstract-atom-without-args stx)
   (syntax-parse stx
     [(_ sym:str)
-     (with-syntax ([sym-sym (datum->syntax stx (string->symbol (syntax->datum #'sym)))])
+     (with-syntax ([sym-sym (datum->syntax #'() (string->symbol (syntax->datum #'sym)))])
        #'(sym-sym))]))
 (provide sexp-abstract-atom-without-args)
 
@@ -338,14 +339,14 @@
      #'(list 'cons term0 rest)]))
 (provide sexp-abstract-lplist)
 
-;(define my-model
-;  (preprior-section
-;   (preprior-pair
-;  (sexp-abstract-atom
-;   (sexp-abstract-atom-without-args "ord"))
-;  ","
-;  (sexp-abstract-atom
-;   (sexp-abstract-atom-without-args "perm")))))
+(define my-model
+  (preprior-section
+   (preprior-pair
+    (sexp-abstract-atom
+     (sexp-abstract-atom-without-args "ord"))
+    ","
+    (sexp-abstract-atom
+     (sexp-abstract-atom-without-args "perm")))))
 
 ;(preprior-pair
 ;  (sexp-abstract-atom
@@ -355,13 +356,38 @@
 ;   (sexp-abstract-atom-without-args "perm")))
 
 ;(before (ord) (perm))
-;(preprior-pair
-;  (sexp-abstract-atom
-;   (sexp-abstract-atom-without-args "ord"))
-;  ","
-;  (sexp-abstract-atom
-;   (sexp-abstract-atom-without-args "perm")))
+(expand-syntax
+ #'(preprior-pair
+    (sexp-abstract-atom
+     (sexp-abstract-atom-without-args "ord"))
+    ","
+    (sexp-abstract-atom
+     (sexp-abstract-atom-without-args "perm"))))
 
+(expand-syntax-once
+ #'(preprior-pair
+    (sexp-abstract-atom
+     (sexp-abstract-atom-without-args "ord"))
+    ","
+    (sexp-abstract-atom
+     (sexp-abstract-atom-without-args "perm"))))
+
+(expand-syntax-once
+ #'(sexp-abstract-atom
+    (sexp-abstract-atom-without-args "ord")))
+
+(define-for-syntax (expand-syntax-while-bound stx)
+  (syntax-case stx (preprior-pair sexp-abstract-atom sexp-abstract-atom-without-args)
+    [(preprior-pair atom1 comma atom2)
+     (with-syntax ([before (datum->syntax #'() 'before)]
+                   [exp-atom1 (expand-syntax-while-bound #'atom1)]
+                   [exp-atom2 (expand-syntax-while-bound #'atom2)])
+       #`(before exp-atom1 exp-atom2))]
+    [(sexp-abstract-atom actual-atom)
+     (expand-syntax-while-bound #'actual-atom)]
+    [(sexp-abstract-atom-without-args atom-sym)
+     (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'atom-sym)))])
+       #`(sym))]))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
