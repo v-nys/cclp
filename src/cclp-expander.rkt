@@ -214,9 +214,7 @@
        #`((λ () (begin
                   pair ...
                   (define-model prior
-                    ;pair ...
-                    ; is het een probleem dat de naam member overlapt?
-                    ; toch niet om perm sort te starten, kan achteraf nog onderzoeken.
+                    pair ...
                     (member X (cons X Y))
                     (:- (member X (cons Y Z))
                         (member X Z))

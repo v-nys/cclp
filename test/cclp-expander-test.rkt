@@ -4,7 +4,6 @@
 (require (prefix-in cd: "../src/concrete-domain.rkt"))
 (require (prefix-in exp: "../src/cclp-expander.rkt"))
 (require (prefix-in ph1-exp: (for-syntax "../src/cclp-expander.rkt")))
-(require (prefix-in ph2-exp: (for-syntax (for-syntax "../src/cclp-expander.rkt"))))
 (require (prefix-in fai: "../src/fullai-domain.rkt"))
 (require (prefix-in asubst: "../src/abstract-substitution.rkt"))
 (require syntax/macro-testing)
@@ -137,32 +136,32 @@
  ; it looks like a function evaluation
  (phase1-eval
   (ph1-exp:preprior-pair
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-without-args "myatom1"))
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-without-args "myatom1"))
    ","
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-without-args "myatom2"))))
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-without-args "myatom2"))))
  '(before (myatom1) (myatom2)))
 
 (check-equal?
  (phase1-eval
   (ph1-exp:preprior-pair
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-with-args
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-with-args
      "myatom1"
      "("
-     (ph2-exp:abstract-variable-g "γ" 1)
+     (ph1-exp:sexp-abstract-variable-g "γ" 1)
      ","
-     (ph2-exp:abstract-variable-g "γ" 2)
+     (ph1-exp:sexp-abstract-variable-g "γ" 2)
      ")"))
    ","
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-with-args
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-with-args
      "myatom2"
      "("
-     (ph2-exp:abstract-variable-g "γ" 1)
+     (ph1-exp:sexp-abstract-variable-g "γ" 1)
      ","
-     (ph2-exp:abstract-variable-g "γ" 2)
+     (ph1-exp:sexp-abstract-variable-g "γ" 2)
      ")"))))
  '(before (myatom1 (γ sym1) (γ sym2)) (myatom2 (γ sym1) (γ sym2))))
 
@@ -170,26 +169,26 @@
 (check-equal?
  (phase1-eval
   (ph1-exp:preprior-pair
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-with-args
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-with-args
      "perm"
      "("
-     (ph2-exp:abstract-term
-      (ph2-exp:abstract-variable
-       (ph2-exp:abstract-variable-g "γ" 1)))
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-variable
+       (ph1-exp:sexp-abstract-variable-g "γ" 1)))
      ","
-     (ph2-exp:abstract-term
-      (ph2-exp:abstract-variable
-       (ph2-exp:abstract-variable-a "α" 1)))
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-variable
+       (ph1-exp:sexp-abstract-variable-a "α" 1)))
      ")"))
    ","
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-with-args
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-with-args
      "ord"
      "("
-     (ph2-exp:abstract-term
-      (ph2-exp:abstract-variable
-       (ph2-exp:abstract-variable-a "α" 1)))
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-variable
+       (ph1-exp:sexp-abstract-variable-a "α" 1)))
      ")"))))
  '(before (perm (γ sym1) (α sym1)) (ord (α sym1))))
 
@@ -197,60 +196,64 @@
 (check-equal?
  (phase1-eval
   (ph1-exp:preprior-pair
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-with-args
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-with-args
      "perm"
      "("
-     (ph2-exp:abstract-term
-      (ph2-exp:abstract-variable
-       (ph2-exp:abstract-variable-g "γ" 1)))
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-variable
+       (ph1-exp:sexp-abstract-variable-g "γ" 1)))
      ","
-     (ph2-exp:abstract-term
-      (ph2-exp:abstract-variable
-       (ph2-exp:abstract-variable-a "α" 1)))
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-variable
+       (ph1-exp:sexp-abstract-variable-a "α" 1)))
      ")"))
    ","
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-with-args
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-with-args
      "ord"
      "("
-     (ph2-exp:abstract-term
-      (ph2-exp:abstract-lplist
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-lplist
        "["
-       (ph2-exp:abstract-term
-        (ph2-exp:abstract-variable
-         (ph2-exp:abstract-variable-g "γ" 1)))
+       (ph1-exp:sexp-abstract-term
+        (ph1-exp:sexp-abstract-variable
+         (ph1-exp:sexp-abstract-variable-g "γ" 1)))
        "|"
-       (ph2-exp:abstract-variable
-        (ph2-exp:abstract-variable-a "α" 1)) "]")) ")"))))
+       (ph1-exp:sexp-abstract-variable
+        (ph1-exp:sexp-abstract-variable-a "α" 1)) "]")) ")"))))
  '(before (perm (γ sym1) (α sym1)) (ord (cons (γ sym1) (α sym1)))))
 
 ; bug trigger test 3 for permutation sort
 (check-equal?
  (phase1-eval
   (ph1-exp:preprior-pair
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-with-args
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-with-args
      "ord"
      "("
-     (ph2-exp:abstract-term
-      (ph2-exp:abstract-lplist
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-lplist
        "["
-       (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-g "γ" 1)))
+       (ph1-exp:sexp-abstract-term
+        (ph1-exp:sexp-abstract-variable (ph1-exp:sexp-abstract-variable-g "γ" 1)))
        ","
-       (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-g "γ" 2)))
+       (ph1-exp:sexp-abstract-term
+        (ph1-exp:sexp-abstract-variable (ph1-exp:sexp-abstract-variable-g "γ" 2)))
        "|"
-       (ph2-exp:abstract-variable (ph2-exp:abstract-variable-a "α" 1))
+       (ph1-exp:sexp-abstract-variable (ph1-exp:sexp-abstract-variable-a "α" 1))
        "]"))
      ")"))
    ","
-   (ph2-exp:abstract-atom
-    (ph2-exp:abstract-atom-with-args
+   (ph1-exp:sexp-abstract-atom
+    (ph1-exp:sexp-abstract-atom-with-args
      "perm"
      "("
-     (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-g "γ" 1)))
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-variable (ph1-exp:sexp-abstract-variable-g "γ" 1)))
      ","
-     (ph2-exp:abstract-term (ph2-exp:abstract-variable (ph2-exp:abstract-variable-a "α" 1)))
+     (ph1-exp:sexp-abstract-term
+      (ph1-exp:sexp-abstract-variable (ph1-exp:sexp-abstract-variable-a "α" 1)))
      ")"))))
  '(before (ord (cons (γ sym1) (cons (γ sym2) (α sym1)))) (perm (γ sym1) (α sym1))))
 
@@ -260,10 +263,11 @@
    (phase1-eval
     (ph1-exp:preprior-section
      (ph1-exp:preprior-pair
-      (ph2-exp:abstract-atom
-       (ph2-exp:abstract-atom-without-args "ord"))
-      (ph2-exp:abstract-atom
-       (ph2-exp:abstract-atom-without-args "perm")))))
+      (ph1-exp:sexp-abstract-atom
+       (ph1-exp:sexp-abstract-atom-without-args "ord"))
+      ","
+      (ph1-exp:sexp-abstract-atom
+       (ph1-exp:sexp-abstract-atom-without-args "perm")))))
    #t))
 
 (check-true
@@ -278,10 +282,11 @@
      "{PREPRIOR}"
      (ph1-exp:preprior-section
      (ph1-exp:preprior-pair
-      (ph2-exp:abstract-atom
-       (ph2-exp:abstract-atom-without-args "ord"))
-      (ph2-exp:abstract-atom
-       (ph2-exp:abstract-atom-without-args "perm"))))
+      (ph1-exp:sexp-abstract-atom
+       (ph1-exp:sexp-abstract-atom-without-args "ord"))
+      ","
+      (ph1-exp:sexp-abstract-atom
+       (ph1-exp:sexp-abstract-atom-without-args "perm"))))
      "{QUERY}"
      (ph1-exp:abstract-atom
       (ph1-exp:abstract-atom-without-args "true"))))

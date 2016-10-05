@@ -32,7 +32,9 @@
     [(_ THE-SUBSTITUTION)
      (with-syntax
          ([PARSE-TREE
-           (replace-context #'() (substitution-parse (all-tokens (syntax->datum #'THE-SUBSTITUTION))))])
+           (replace-context
+            #'()
+            (substitution-parse (all-tokens (syntax->datum #'THE-SUBSTITUTION))))])
        #'PARSE-TREE)]))
 (provide parse-abstract-substitution)
 
@@ -42,7 +44,9 @@
     [(_ THE-CONJUNCTION)
      (with-syntax
          ([PARSE-TREE
-           (replace-context #'() (conjunction-parse (all-tokens (syntax->datum #'THE-CONJUNCTION))))])
+           (replace-context
+            #'()
+            (conjunction-parse (all-tokens (syntax->datum #'THE-CONJUNCTION))))])
        #'PARSE-TREE)]))
 (provide parse-abstract-conjunction)
 
@@ -52,6 +56,7 @@
     [(_ THE-SECTION)
      (with-syntax
          ([PARSE-TREE
-           (replace-context #'() (prior-section-parse (all-tokens (syntax->datum #'THE-SECTION))))])
+           (replace-context
+            #'() (prior-section-parse (all-tokens (syntax->datum #'THE-SECTION))))])
        #'PARSE-TREE)]))
 (provide parse-prior-relation)
