@@ -1,22 +1,36 @@
 #lang racket
 (require rackunit)
-(require "concrete-domain-boilerplate.rkt")
-
+(require "abstract-domain-boilerplate.rkt")
 (require "../src/abstract-domain-ordering.rkt")
-(require "../src/abstraction-inspection-utils.rkt")
 
-(require parenlog)
-
-(check-true (>=-extension (parse-term "α1") (parse-term "γ1")))
-(check-true (>=-extension (parse-term "α1") (parse-term "α2")))
-(check-false (>=-extension (parse-term "γ1") (parse-term "α1")))
-(check-true (>=-extension (parse-term "γ1") (parse-term "γ1")))
-(check-true (>=-extension (parse-term "nil") (parse-term "nil")))
-(check-false (>=-extension (parse-term "nil") (parse-term "nonnil")))
-(check-true (>=-extension (parse-term "foo(γ1,bar(γ2,α1,γ1))") (parse-term "foo(nil,bar(nonnil,γ3,nil))")))
-(check-false (>=-extension (parse-term "foo(γ1,bar(γ2,α1,γ1))") (parse-term "foo(nil,bar(nonnil,γ3,nonnil))")))
-(check-true (>=-extension (parse-atom "foo(γ1,bar(γ2,α1,γ1))") (parse-atom "foo(nil,bar(nonnil,γ3,nil))")))
-(check-false (>=-extension (parse-atom "foo(γ1,bar(γ2,α1,γ1))") (parse-atom "foo(nil,bar(nonnil,γ3,nonnil))")))
-(check-false (>=-extension (parse-term "foo(γ1,bar(γ2,α1,γ1))") (parse-atom "foo(nil,bar(nonnil,γ3,nil))")) "terms and atoms cannot be unified")
-(check-true (>=-extension (parse-atom "sift([γ1|α1],α2)") (parse-atom "sift([γ2|α4],α1)"))) ; renaming should be implicit
+(check-true (>=-extension (parse-abstract-term "α1") (parse-abstract-term "γ1")))
+(check-true (>=-extension (parse-abstract-term "α1") (parse-abstract-term "α2")))
+(check-false (>=-extension (parse-abstract-term "γ1") (parse-abstract-term "α1")))
+(check-true (>=-extension (parse-abstract-term "γ1") (parse-abstract-term "γ1")))
+(check-true (>=-extension (parse-abstract-term "nil") (parse-abstract-term "nil")))
+(check-false (>=-extension (parse-abstract-term "nil") (parse-abstract-term "nonnil")))
+(check-true
+ (>=-extension
+  (parse-abstract-term "foo(γ1,bar(γ2,α1,γ1))")
+  (parse-abstract-term "foo(nil,bar(nonnil,γ3,nil))")))
+(check-false
+ (>=-extension
+  (parse-abstract-term "foo(γ1,bar(γ2,α1,γ1))")
+  (parse-abstract-term "foo(nil,bar(nonnil,γ3,nonnil))")))
+(check-true
+ (>=-extension
+  (parse-abstract-atom "foo(γ1,bar(γ2,α1,γ1))")
+  (parse-abstract-atom "foo(nil,bar(nonnil,γ3,nil))")))
+(check-false
+ (>=-extension
+  (parse-abstract-atom "foo(γ1,bar(γ2,α1,γ1))")
+  (parse-abstract-atom "foo(nil,bar(nonnil,γ3,nonnil))")))
+(check-false
+ (>=-extension
+  (parse-abstract-term "foo(γ1,bar(γ2,α1,γ1))")
+  (parse-abstract-atom "foo(nil,bar(nonnil,γ3,nil))")))
+(check-true
+ (>=-extension
+  (parse-abstract-atom "sift([γ1|α1],α2)")
+  (parse-abstract-atom "sift([γ2|α4],α1)"))) ; renaming should be implicit
 
