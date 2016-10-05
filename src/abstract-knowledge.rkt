@@ -28,10 +28,24 @@
       (fprintf port "#(struct:rule ~s ~s)" (abstract-rule-head obj) (abstract-rule-body obj))
       (begin (fprintf port "~v" (abstract-rule-head obj))
              (fprintf port " :- ")
-             (for ([atom-or-comma (add-between (abstract-rule-body obj) ",")]) (if (string? atom-or-comma) (fprintf port atom-or-comma) (fprintf port "~v" atom-or-comma)))
+             (for ([atom-or-comma (add-between (abstract-rule-body obj) ",")])
+               (if (string? atom-or-comma)
+                   (fprintf port atom-or-comma)
+                   (fprintf port "~v" atom-or-comma)))
              (fprintf port "."))))
        
-(struct abstract-rule (head body) #:methods gen:custom-write [(define write-proc write-rule)])
+(struct abstract-rule (head body)
+  #:methods gen:custom-write
+  [(define write-proc write-rule)]
+  #:methods gen:equal+hash
+  [(define (equal-proc r1 r2 equal?-recur)
+     (equal?-recur (abstract-rule-head r1) (abstract-rule-head r2)))
+   (define (hash-proc r hash-recur)
+     (+ (* (hash-recur (abstract-rule-head r)) 3)
+        (* (hash-recur (abstract-rule-body r)) 7)))
+   (define (hash2-proc r hash2-recur)
+     (+ (hash2-recur (abstract-rule-head r))
+        (hash2-recur (abstract-rule-body r))))])
 (provide (struct-out abstract-rule))
 
 (define (write-full-eval obj port mode)
