@@ -256,10 +256,12 @@
             prior)))])))
 (provide preprior-section)
 
+(define before "This is a dummy reference.")
+
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
-     #`(list 'before atom1 atom2)]))
+     #`(before atom1 atom2)]))
 (provide preprior-pair)
 
 (define-syntax (sexp-abstract-atom stx)
