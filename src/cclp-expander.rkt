@@ -34,6 +34,7 @@
 (require (only-in "interaction.rkt" cclp-run))
 (require racket/contract)
 (require (only-in "data-utils.rkt" 4-tuple))
+(require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 
 (require "abstract-domain-ordering.rkt")
 
@@ -343,51 +344,57 @@
   (preprior-section
    (preprior-pair
     (sexp-abstract-atom
-     (sexp-abstract-atom-without-args "ord"))
+     (sexp-abstract-atom-with-args
+      "ord"
+      "("
+      (sexp-abstract-term
+       (sexp-abstract-variable
+        (sexp-abstract-variable-a "α" 1)))
+      ")"))
     ","
     (sexp-abstract-atom
-     (sexp-abstract-atom-without-args "perm")))))
+     (sexp-abstract-atom-with-args
+      "perm"
+      "("
+      (sexp-abstract-term
+       (sexp-abstract-variable
+        (sexp-abstract-variable-g "γ" 2)))
+      ")")))))
 
-;(preprior-pair
-;  (sexp-abstract-atom
-;   (sexp-abstract-atom-without-args "ord"))
-;  ","
-;  (sexp-abstract-atom
-;   (sexp-abstract-atom-without-args "perm")))
-
-;(before (ord) (perm))
-(expand-syntax
- #'(preprior-pair
-    (sexp-abstract-atom
-     (sexp-abstract-atom-without-args "ord"))
-    ","
-    (sexp-abstract-atom
-     (sexp-abstract-atom-without-args "perm"))))
-
-(expand-syntax-once
- #'(preprior-pair
-    (sexp-abstract-atom
-     (sexp-abstract-atom-without-args "ord"))
-    ","
-    (sexp-abstract-atom
-     (sexp-abstract-atom-without-args "perm"))))
-
-(expand-syntax-once
- #'(sexp-abstract-atom
-    (sexp-abstract-atom-without-args "ord")))
-
+; expand-syntax expands preprior-pairs too far
+; it tries to expand the resulting unbound identifiers (e.g. the identifier before)
 (define-for-syntax (expand-syntax-while-bound stx)
-  (syntax-case stx (preprior-pair sexp-abstract-atom sexp-abstract-atom-without-args)
-    [(preprior-pair atom1 comma atom2)
+  (syntax-case stx (preprior-pair
+                    sexp-abstract-atom
+                    sexp-abstract-atom-without-args
+                    sexp-abstract-atom-with-args
+                    sexp-abstract-term)
+    [(preprior-pair atom1 "," atom2)
      (with-syntax ([before (datum->syntax #'() 'before)]
                    [exp-atom1 (expand-syntax-while-bound #'atom1)]
                    [exp-atom2 (expand-syntax-while-bound #'atom2)])
-       #`(before exp-atom1 exp-atom2))]
+       #'(before exp-atom1 exp-atom2))]
     [(sexp-abstract-atom actual-atom)
      (expand-syntax-while-bound #'actual-atom)]
     [(sexp-abstract-atom-without-args atom-sym)
      (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'atom-sym)))])
-       #`(sym))]))
+       #'(sym))]
+    ; TODO functions and lists (after testing atoms with variable arguments)
+    [(sexp-abstract-term actual-term)
+     (expand-syntax-while-bound #'actual-term)]
+    [(sexp-abstract-atom-with-args atom-sym "(" arg ... ")")
+     (let ([splicable-list (map expand-syntax-while-bound (odd-elems (syntax->list #'(arg ...))))])
+       (begin
+         (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'atom-sym)))])
+         #`(sym #,@splicable-list))))]
+    [(sexp-abstract-variable actual-variable)
+     (expand-syntax-while-bound #'actual-variable)]
+    [(sexp-abstract-variable-a "α" index)
+     (with-syntax ([alpha-symbol (datum->syntax #'() 'α)])
+       #'(alpha-symbol index))]
+    [(sexp-abstract-variable-g "γ" index)
+     (with-syntax ([gamma-symbol (datum->syntax #'() 'γ)])
+       #'(gamma-symbol index))]))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
