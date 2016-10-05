@@ -261,7 +261,8 @@
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
-     #`(before atom1 atom2)]))
+     (with-syntax ([before (datum->syntax #'() 'before)])
+     #`(before atom1 atom2))]))
 (provide preprior-pair)
 
 (define-syntax (sexp-abstract-atom stx)
@@ -272,8 +273,8 @@
 (define-syntax (sexp-abstract-atom-without-args stx)
   (syntax-parse stx
     [(_ sym:str)
-     (with-syntax ([sym-sym (string->symbol (syntax->datum #'sym))])
-       #''(sym-sym))]))
+     (with-syntax ([sym-sym (datum->syntax #'() (string->symbol (syntax->datum #'sym)))])
+       #'(sym-sym))]))
 (provide sexp-abstract-atom-without-args)
 
 (define-syntax (sexp-abstract-variable stx)
@@ -349,12 +350,12 @@
   (sexp-abstract-atom
    (sexp-abstract-atom-without-args "perm"))))
 
-(preprior-pair
-  (sexp-abstract-atom
-   (sexp-abstract-atom-without-args "ord"))
-  ","
-  (sexp-abstract-atom
-   (sexp-abstract-atom-without-args "perm")))
+;(preprior-pair
+;  (sexp-abstract-atom
+;   (sexp-abstract-atom-without-args "ord"))
+;  ","
+;  (sexp-abstract-atom
+;   (sexp-abstract-atom-without-args "perm")))
 
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
