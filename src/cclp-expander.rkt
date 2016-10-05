@@ -211,8 +211,9 @@
   (begin
     (syntax-parse stx
       [(_ pair ...)
+       (with-syntax ([(expanded-pair ...) (expand-syntax #'(pair ...))])
        #`((λ () (define-model prior
-                  pair ...
+                  expanded-pair ...
                   (member X (cons X Y))
                   (:- (member X (cons Y Z))
                       (member X Z))
@@ -252,7 +253,7 @@
                   (:- (sexp_gt_extension X Y)
                       (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
                                                  (sexp->abstract-atom e2))) X Y)))
-            prior))])))
+            prior)))])))
 (provide preprior-section)
 
 (define-syntax (preprior-pair stx)
@@ -302,7 +303,6 @@
     [(_ num) #'num]))
 (provide sexp-abstract-number-term)
 
-;sexp-abstract-atom-with-args : SYMBOL OPEN-PAREN sexp-abstract-term (COMMA sexp-abstract-term)* CLOSE-PAREN
 (define-syntax (sexp-abstract-term stx)
   (syntax-parse stx
     [(_ contents) #'contents]))
@@ -346,6 +346,13 @@
   ","
   (sexp-abstract-atom
    (sexp-abstract-atom-without-args "perm"))))
+
+(preprior-pair
+  (sexp-abstract-atom
+   (sexp-abstract-atom-without-args "ord"))
+  ","
+  (sexp-abstract-atom
+   (sexp-abstract-atom-without-args "perm")))
 
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
