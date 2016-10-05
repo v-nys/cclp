@@ -60,3 +60,5 @@
             #'() (prior-section-parse (all-tokens (syntax->datum #'THE-SECTION))))])
        #'PARSE-TREE)]))
 (provide parse-prior-relation)
+
+(parse-prior-relation "ord,perm")
