@@ -211,49 +211,47 @@
   (begin
     (syntax-parse stx
       [(_ pair ...)
-       #`((λ () (begin
+       #`((λ () (define-model prior
                   pair ...
-                  (define-model prior
-                    pair ...
-                    (member X (cons X Y))
-                    (:- (member X (cons Y Z))
-                        (member X Z))
-                    (not_a_member X ())
-                    (:- (not_a_member X (cons A B))
-                        (,(compose not equal?) X A)
-                        (not_a_member X B))
-                    (:- (reaches_without_encountering X Y Path)
-                        (before X Y)
-                        (not_a_member Y Path))
-                    (:- (reaches_without_encountering X Z Path)
-                        (before X Y)
-                        (not_a_member Y Path)
-                        (reaches_without_encountering Y Z (cons Y Path)))
-                    (:- (reaches_loopfree X Y)
-                        (reaches_without_encountering X Y (cons X ())))
-                    (:- (violates_partial_order)
-                        (reaches_loopfree X Y)
-                        (reaches_loopfree Y X)
-                        (,(compose not
-                                   (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
-                                                              (sexp->abstract-atom sexp2)))) X Y))
-                    (:- (member_reaches_all_under_consistency X Atoms)
-                        (member X Atoms)
-                        (reaches_all_under_consistency X Atoms))
-                    (reaches_all_under_consistency X ())
-                    (:- (reaches_all_under_consistency X (cons Destination Ds))
-                        (sexp_gt_extension Destination X)
-                        (reaches_all_under_consistency X Ds))
-                    (:- (reaches_all_under_consistency X (cons Destination Ds))
-                        (reaches_under_consistency X Destination)
-                        (reaches_all_under_consistency X Ds))
-                    (:- (reaches_under_consistency X Y)
-                        (reaches_loopfree X1 Y1)
-                        (sexp_gt_extension X1 X)
-                        (sexp_gt_extension Y Y1))
-                    (:- (sexp_gt_extension X Y)
-                        (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
-                                                   (sexp->abstract-atom e2))) X Y))))
+                  (member X (cons X Y))
+                  (:- (member X (cons Y Z))
+                      (member X Z))
+                  (not_a_member X ())
+                  (:- (not_a_member X (cons A B))
+                      (,(compose not equal?) X A)
+                      (not_a_member X B))
+                  (:- (reaches_without_encountering X Y Path)
+                      (before X Y)
+                      (not_a_member Y Path))
+                  (:- (reaches_without_encountering X Z Path)
+                      (before X Y)
+                      (not_a_member Y Path)
+                      (reaches_without_encountering Y Z (cons Y Path)))
+                  (:- (reaches_loopfree X Y)
+                      (reaches_without_encountering X Y (cons X ())))
+                  (:- (violates_partial_order)
+                      (reaches_loopfree X Y)
+                      (reaches_loopfree Y X)
+                      (,(compose not
+                                 (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
+                                                            (sexp->abstract-atom sexp2)))) X Y))
+                  (:- (member_reaches_all_under_consistency X Atoms)
+                      (member X Atoms)
+                      (reaches_all_under_consistency X Atoms))
+                  (reaches_all_under_consistency X ())
+                  (:- (reaches_all_under_consistency X (cons Destination Ds))
+                      (sexp_gt_extension Destination X)
+                      (reaches_all_under_consistency X Ds))
+                  (:- (reaches_all_under_consistency X (cons Destination Ds))
+                      (reaches_under_consistency X Destination)
+                      (reaches_all_under_consistency X Ds))
+                  (:- (reaches_under_consistency X Y)
+                      (reaches_loopfree X1 Y1)
+                      (sexp_gt_extension X1 X)
+                      (sexp_gt_extension Y Y1))
+                  (:- (sexp_gt_extension X Y)
+                      (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
+                                                 (sexp->abstract-atom e2))) X Y)))
             prior))])))
 (provide preprior-section)
 
@@ -338,6 +336,17 @@
     [(_ open-paren term0 "|" rest close-paren)
      #'(list 'cons term0 rest)]))
 (provide sexp-abstract-lplist)
+
+
+
+(preprior-section
+ (preprior-pair
+  (sexp-abstract-atom
+   (sexp-abstract-atom-without-args "ord"))
+  ","
+  (sexp-abstract-atom
+   (sexp-abstract-atom-without-args "perm"))))
+
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
