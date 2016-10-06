@@ -34,7 +34,26 @@
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")
 
-(struct tree-label (conjunction selection substitution rule))
+(struct tree-label (conjunction selection substitution rule)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc l1 l2 equal?-recur)
+     (and (equal?-recur (tree-label-conjunction l1) (tree-label-conjunction l2))
+          (equal?-recur (tree-label-selection l1) (tree-label-selection l2))
+          (equal?-recur (tree-label-substitution l1) (tree-label-substitution l2))
+          (equal?-recur (tree-label-rule l1) (tree-label-rule l2))))
+   ; same hash function as in Racket docs, not too concerned about optimum here
+   (define (hash-proc l hash-recur)
+     (+ (hash-recur (tree-label-conjunction l))
+        (* 3 (hash-recur (tree-label-selection l)))
+        (* 7 (hash-recur (tree-label-substitution l)))
+        (* 11 (hash-recur (tree-label-rule l)))))
+   (define (hash2-proc l hash2-recur)
+     (+ (hash2-recur (tree-label-conjunction l))
+        (hash2-recur (tree-label-selection l))
+        (hash2-recur (tree-label-substitution l))
+        (hash2-recur (tree-label-rule l))))])
+
 (define (display-tree-label t [out (current-output-port)])
   (match (node-label t)
     [(tree-label con sel sub r)
@@ -125,7 +144,11 @@
                                                            (tree-label-rule candidate-label))
                                                child-trees)]
                            [updated-top (replace-first-subtree tree (some-v candidate) updated-candidate)])
-                           (interactive-analysis updated-top clauses full-evaluations preprior))))]
+                           (begin
+                             ; geen van beide zou mogen
+                             (println (equal? (some-v candidate) updated-candidate))
+                             (println (equal? tree updated-top))
+                             (interactive-analysis updated-top clauses full-evaluations preprior)))))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
@@ -144,6 +167,7 @@
             (interactive-analysis initial-tree clauses full-evaluations preprior))]))
 
 (define (cclp-run filename program-data)
+  (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
   (define-values (analysis load quit)
