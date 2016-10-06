@@ -45,9 +45,9 @@
   (print-color p out #:fg discrete-color))
 
 (define (print-substitution s [out (current-output-port)])
-  (discrete-display "{" out)
-  (map (λ (x) (if (string? x) (discrete-display x out) (discrete-print x out))) (add-between s ";"))
-  (discrete-display "}" out))
+  (display "{" out)
+  (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between s ";"))
+  (display "}" out))
 
 (define (print-conjunction c [out (current-output-port)])
   (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between c ",")))
@@ -187,6 +187,10 @@
 
 (define (cclp-run filename program-data)
   (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
+  (with-charterm
+      (charterm-underline)
+    (charterm-display "This is a test!")
+    (charterm-normal))
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
   (define-values (analysis load quit)
