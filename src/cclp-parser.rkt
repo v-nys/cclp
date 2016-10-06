@@ -24,6 +24,8 @@
 ; original goal was to write preprior-pair so that components were regular abstract atoms, too
 ; this is beyond my current understanding of Racket macros
 
+; should prohibit constants of the form symXYZ, where XYZ is a natural number
+
 #lang brag
 cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PREPRIOR-DELIMITER preprior-section] QUERY-DELIMITER abstract-atom
 

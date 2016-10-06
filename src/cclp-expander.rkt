@@ -35,6 +35,7 @@
 (require racket/contract)
 (require (only-in "data-utils.rkt" 4-tuple))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
+(require (for-syntax (only-in "data-utils.rkt" positive-integer->symbol)))
 
 (require "abstract-domain-ordering.rkt")
 
@@ -95,13 +96,13 @@
 
 (define-syntax (lplist stx)
   (syntax-parse stx
-    [(_ open-paren close-paren)
+    [(_ "[" "]")
      #'(cd:function 'nil '())]
-    [(_ open-paren term0 close-paren)
+    [(_ "[" term0 "]")
      #'(cd:function 'cons (list term0 (cd:function 'nil '())))]
-    [(_ open-paren term0 "," rest ... close-paren)
-     #'(cd:function 'cons (list term0 (lplist open-paren rest ... close-paren)))]
-    [(_ open-paren term0 "|" rest ... close-paren)
+    [(_ "[" term0 "," rest ... "]")
+     #'(cd:function 'cons (list term0 (lplist "[" rest ... "]")))]
+    [(_ "[" term0 "|" rest ... "]")
      #'(cd:function 'cons (list term0 rest ...))]))
 (provide lplist)
 
@@ -212,7 +213,11 @@
   (begin
     (syntax-parse stx
       [(_ pair ...)
-       (with-syntax ([(expanded-pair ...) (datum->syntax #'(pair ...) (map expand-syntax-while-bound (syntax->list #'(pair ...))))])
+       (with-syntax
+           ([(expanded-pair ...)
+             (datum->syntax
+              #'(pair ...)
+              (map expand-syntax-while-bound (syntax->list #'(pair ...))))])
          #`((λ () (define-model prior
                     expanded-pair ...
                     (member X (cons X Y))
@@ -257,19 +262,21 @@
               prior)))])))
 (provide preprior-section)
 
+; REVIEW: is dit nog nodig? rechtstreekse expansie gebeurt nooit.
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
-     ; TODO aanpassen zodat partiële expansie atom1 en atom2 (bijna) volledig ziet expanderen?
      (with-syntax ([before (datum->syntax #'() 'before)])
        #`(before atom1 atom2))]))
 (provide preprior-pair)
 
+; REVIEW: is dit nog nodig? rechtstreekse expansie gebeurt nooit.
 (define-syntax (sexp-abstract-atom stx)
   (syntax-parse stx
     [(_ actual-atom) #'actual-atom]))
 (provide sexp-abstract-atom)
 
+; REVIEW: is dit nog nodig? rechtstreekse expansie gebeurt nooit.
 (define-syntax (sexp-abstract-atom-without-args stx)
   (syntax-parse stx
     [(_ sym:str)
@@ -277,22 +284,30 @@
        #'(sym-sym))]))
 (provide sexp-abstract-atom-without-args)
 
+; REVIEW: is dit nog nodig? rechtstreekse expansie gebeurt nooit.
 (define-syntax (sexp-abstract-variable stx)
   (syntax-parse stx
     [(_ real-var) #'real-var]))
 (provide sexp-abstract-variable)
 
+; REVIEW: is dit nog nodig? rechtstreekse expansie gebeurt nooit.
 (define-syntax (sexp-abstract-variable-a stx)
   (syntax-parse stx
     [(_ "α" index)
-     (with-syntax ([sym-stx (datum->syntax #'index (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
+     (with-syntax
+         ([sym-stx (datum->syntax
+                    #'index
+                    (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
        #''(α sym-stx))]))
 (provide sexp-abstract-variable-a)
 
 (define-syntax (sexp-abstract-variable-g stx)
   (syntax-parse stx
     [(_ "γ" index)
-     (with-syntax ([sym-stx (datum->syntax #'index (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
+     (with-syntax
+         ([sym-stx (datum->syntax
+                    #'index
+                    (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
        #''(γ sym-stx))]))
 (provide sexp-abstract-variable-g)
 
@@ -330,13 +345,13 @@
 
 (define-syntax (sexp-abstract-lplist stx)
   (syntax-parse stx
-    [(_ open-paren close-paren)
+    [(_ "[" "]")
      #''(nil)]
-    [(_ open-paren term0 close-paren)
+    [(_ "[" term0 "]")
      #'(list 'cons term0 'nil)]
-    [(_ open-paren term0 "," rest ... close-paren)
-     #'(list 'cons term0 (sexp-abstract-lplist open-paren rest ... close-paren))]
-    [(_ open-paren term0 "|" rest close-paren)
+    [(_ "[" term0 "," rest ... "]")
+     #'(list 'cons term0 (sexp-abstract-lplist "[" rest ... "]"))]
+    [(_ "[" term0 "|" rest "]")
      #'(list 'cons term0 rest)]))
 (provide sexp-abstract-lplist)
 
@@ -363,12 +378,19 @@
 
 ; expand-syntax expands preprior-pairs too far
 ; it tries to expand the resulting unbound identifiers (e.g. the identifier before)
+; therefore, we need an expansion mechanism which stops just in time
 (define-for-syntax (expand-syntax-while-bound stx)
   (syntax-case stx (preprior-pair
                     sexp-abstract-atom
                     sexp-abstract-atom-without-args
                     sexp-abstract-atom-with-args
-                    sexp-abstract-term)
+                    sexp-abstract-term
+                    sexp-abstract-number
+                    sexp-abstract-lplist
+                    sexp-abstract-number-term
+                    sexp-abstract-number
+                    sexp-abstract-function-term
+                    sexp-abstract-lplist)
     [(preprior-pair atom1 "," atom2)
      (with-syntax ([before (datum->syntax #'() 'before)]
                    [exp-atom1 (expand-syntax-while-bound #'atom1)]
@@ -379,22 +401,52 @@
     [(sexp-abstract-atom-without-args atom-sym)
      (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'atom-sym)))])
        #'(sym))]
-    ; TODO functions and lists (after testing atoms with variable arguments)
+    [(sexp-abstract-lplist "[" "]")
+     #'(nil)]
+    [(sexp-abstract-lplist "[" term0 "]")
+     (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)])
+       #'(cons expanded-term0 nil))]
+    [(sexp-abstract-lplist "[" term0 "," rest ... "]")
+     (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)]
+                   [expanded-rest (expand-syntax-while-bound #'(sexp-abstract-lplist "[" rest ... "]"))])
+       #'(cons expanded-term0 expanded-rest))]
+    [(sexp-abstract-lplist "[" term0 "|" rest "]")
+     (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)]
+                   [expanded-rest (expand-syntax-while-bound #'(sexp-abstract-lplist "[" rest "]"))])
+       #'(cons expanded-term0 expanded-rest))]
+    [(sexp-abstract-function-term (sexp-abstract-number-term num))
+     #'(sexp-abstract-number-term num)]
+    [(sexp-abstract-function-term func-sym)
+     (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'func-sym)))])
+       #`(sym))]
+    [(sexp-abstract-function-term func-sym "(" arg ... ")")
+     (let ([splicable-list (map expand-syntax-while-bound (odd-elems (syntax->list #'(arg ...))))])
+       (begin
+         (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'func-sym)))])
+           #`(sym #,@splicable-list))))]
+    [(sexp-abstract-number-term actual-number)
+     #'actual-number]
+    [(sexp-abstract-number num)
+     (with-syntax ([num-sym (datum->syntax #'num (positive-integer->symbol (syntax->datum #'num)))])
+       #'(num-sym))]
     [(sexp-abstract-term actual-term)
      (expand-syntax-while-bound #'actual-term)]
     [(sexp-abstract-atom-with-args atom-sym "(" arg ... ")")
      (let ([splicable-list (map expand-syntax-while-bound (odd-elems (syntax->list #'(arg ...))))])
        (begin
          (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'atom-sym)))])
-         #`(sym #,@splicable-list))))]
+           #`(sym #,@splicable-list))))]
     [(sexp-abstract-variable actual-variable)
      (expand-syntax-while-bound #'actual-variable)]
+    ; FIXME indices moeten ook hier als symbool voorgesteld worden...
     [(sexp-abstract-variable-a "α" index)
-     (with-syntax ([alpha-symbol (datum->syntax #'() 'α)])
-       #'(alpha-symbol index))]
+     (with-syntax ([alpha-symbol (datum->syntax #'() 'α)]
+                   [index-symbol (datum->syntax #'index (positive-integer->symbol (syntax->datum #'index)))])
+       #'(alpha-symbol index-symbol))]
     [(sexp-abstract-variable-g "γ" index)
-     (with-syntax ([gamma-symbol (datum->syntax #'() 'γ)])
-       #'(gamma-symbol index))]))
+     (with-syntax ([gamma-symbol (datum->syntax #'() 'γ)]
+                   [index-symbol (datum->syntax #'index (positive-integer->symbol (syntax->datum #'index)))])
+       #'(gamma-symbol index-symbol))]))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization

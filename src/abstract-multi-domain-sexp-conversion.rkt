@@ -7,10 +7,13 @@
     [(a i) (list 'α (positive-integer->symbol i))]
     [(g i) (list 'γ (positive-integer->symbol i))]
     [(abstract-atom symbol args) (cons symbol (map abstract-domain-elem->sexp args))]
-    [(abstract-function functor args) (cons functor (map abstract-domain-elem->sexp args))]))
+    [(abstract-function functor args) (if (number? functor)
+                                          (list (positive-integer->symbol functor))
+                                          (cons functor (map abstract-domain-elem->sexp args)))]))
 ; can the contract be made more strict?
 (provide (contract-out [abstract-domain-elem->sexp (-> abstract-domain-elem? list?)]))
 
+; TODO conversie terug naar getal
 (define (sexp->abstract-term sexp)
   (match sexp
     [(list 'α i) (a (symbol->positive-integer i))]
