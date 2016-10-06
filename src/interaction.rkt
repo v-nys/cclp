@@ -25,12 +25,14 @@
 (require "io-utils.rkt")
 (require "data-utils.rkt")
 (require (only-in "concrete-knowledge.rkt" rule?))
-(require (only-in "fullai-domain.rkt" full-ai-rule?))
+(require "fullai-domain.rkt")
 (require (only-in "abstract-multi-domain.rkt" abstract-atom?))
 (require racket-tree-utils/src/tree (only-in racket-tree-utils/src/printer tree-display))
 (require (only-in parenlog model?))
 (require (only-in "execution.rkt" selected-index))
 (require "abstract-resolve.rkt")
+(require "abstract-knowledge.rkt")
+(require "abstract-substitution.rkt")
 
 (struct tree-label (conjunction selection substitution rule))
 (define (display-tree-label t [out (current-output-port)])
@@ -147,8 +149,17 @@
   (define-values (analysis load quit)
     (values "analyze this program" "load existing analysis" "quit"))
   (define choice (prompt-for-answer "What do you want to do?" analysis load quit))
+  (define (full-ai-rule->full-evaluation r)
+    (full-evaluation
+     (full-ai-rule-input-pattern r)
+     (apply-substitution (full-ai-rule-output-substitution r) (full-ai-rule-input-pattern r))))
+  (define full-evaluations (map full-ai-rule->full-evaluation (4-tuple-second program-data)))
+  (define program-data-aux
+    (4-tuple
+     (4-tuple-first program-data) full-evaluations
+     (4-tuple-third program-data) (4-tuple-fourth program-data)))
   (cond [(equal? choice analysis)
-         (begin (begin-analysis program-data)
+         (begin (begin-analysis program-data-aux)
                 (cclp-run filename program-data))]
         [(equal? choice load)
          (begin (load-analysis serialized-filename)

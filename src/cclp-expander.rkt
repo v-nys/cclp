@@ -346,9 +346,9 @@
 (define-syntax (sexp-abstract-lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
-     #''(nil)]
+     #'(nil)]
     [(_ "[" term0 "]")
-     #'(list 'cons term0 'nil)]
+     #'(list 'cons term0 (nil))]
     [(_ "[" term0 "," rest ... "]")
      #'(list 'cons term0 (sexp-abstract-lplist "[" rest ... "]"))]
     [(_ "[" term0 "|" rest "]")
@@ -405,7 +405,7 @@
      #'(nil)]
     [(sexp-abstract-lplist "[" term0 "]")
      (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)])
-       #'(cons expanded-term0 nil))]
+       #'(cons expanded-term0 (nil)))]
     [(sexp-abstract-lplist "[" term0 "," rest ... "]")
      (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)]
                    [expanded-rest (expand-syntax-while-bound #'(sexp-abstract-lplist "[" rest ... "]"))])
@@ -438,7 +438,6 @@
            #`(sym #,@splicable-list))))]
     [(sexp-abstract-variable actual-variable)
      (expand-syntax-while-bound #'actual-variable)]
-    ; FIXME indices moeten ook hier als symbool voorgesteld worden...
     [(sexp-abstract-variable-a "α" index)
      (with-syntax ([alpha-symbol (datum->syntax #'() 'α)]
                    [index-symbol (datum->syntax #'index (positive-integer->symbol (syntax->datum #'index)))])

@@ -2,8 +2,8 @@
 (require "abstract-multi-domain.rkt")
 (require "abstract-multi-domain-sexp-conversion.rkt")
 (require "abstract-domain-ordering.rkt")
+(require "abstract-knowledge.rkt")
 (require (only-in racket-list-utils/utils findf-index))
-(require "fullai-domain.rkt")
 (require parenlog)
 
 (define (is-valid? prior)
@@ -16,7 +16,7 @@
                            (λ (r acc)
                              (if acc
                                  acc
-                                 (findf-index (λ (atom) (>=-extension (full-ai-rule-input-pattern r) atom)) conjunction)))
+                                 (findf-index (λ (atom) (>=-extension (full-evaluation-input-pattern r) atom)) conjunction)))
                            #f
                            full-ai-rules))
   (if full-eval-index
@@ -26,8 +26,10 @@
              [outcomes (query-model-dynamic prior query)])
         (if (null? outcomes)
             (error "Partial order is underspecified.")
-            (let ([sexp-renaming (hash-ref (car outcomes) 'X)])
-              (findf-index (λ (atom) (renames? atom (sexp->abstract-atom sexp-renaming))) conjunction))))))
+            (let ([sexp-renaming-of-selection (hash-ref (car outcomes) 'X)])
+              (findf-index
+               (λ (atom) (renames? atom (sexp->abstract-atom sexp-renaming-of-selection)))
+               conjunction))))))
 
 ; contract could be more specific (range is from 0 to length of the list...), but can wait
-(provide (contract-out [selected-index (-> (listof abstract-atom?) model? (listof full-ai-rule?)natural-number/c)]))
+(provide (contract-out [selected-index (-> (listof abstract-atom?) model? (listof full-evaluation?) natural-number/c)]))
