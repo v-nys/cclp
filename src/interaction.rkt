@@ -80,7 +80,7 @@
 (define (candidate-for-update tree)
   (match tree
     [(node (tree-label '() _ _ _) '()) (none)]
-    [(node (tree-label c (none) s r) '()) (some (tree-label c (none) s r))]
+    [(node (tree-label c (none) s r) '()) (some (node (tree-label c (none) s r) '()))]
     [(node (tree-label _ (some v) _ _) children)
      (if (andmap completed-tree? children)
          (none)
@@ -110,7 +110,7 @@
                 (if (none? candidate)
                     (begin (display "There are no nodes left to analyze.")
                            (interactive-analysis tree clauses full-evaluations preprior))
-                    (let* ([candidate-label (node-label (some-v (candidate)))]
+                    (let* ([candidate-label (node-label (some-v candidate))]
                            [conjunction (tree-label-conjunction candidate-label)]
                            [resolution-result (abstract-resolve conjunction preprior clauses full-evaluations)]
                            [index-selection (car resolution-result)]
@@ -138,6 +138,7 @@
      ; using #f for rule because this is the only case where there is no associated clause
      (begin (define initial-tree-label (tree-label (list (4-tuple-fourth program-data)) (none) (list) #f))
             (define initial-tree (node initial-tree-label (list)))
+            ; TODO full-evaluations zijn nu full-ai-rules ipv ... full-evaluations
             (interactive-analysis initial-tree clauses full-evaluations preprior))]))
 
 (define (cclp-run filename program-data)
