@@ -33,6 +33,24 @@
 (require "abstract-resolve.rkt")
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")
+(require terminal-color)
+(require charterm)
+
+(define discrete-color 'blue)
+
+(define (discrete-display d [out (current-output-port)])
+  (display-color d out #:fg discrete-color))
+
+(define (discrete-print p [out (current-output-port)])
+  (print-color p out #:fg discrete-color))
+
+(define (print-substitution s [out (current-output-port)])
+  (discrete-display "{" out)
+  (map (λ (x) (if (string? x) (discrete-display x out) (discrete-print x out))) (add-between s ";"))
+  (discrete-display "}" out))
+
+(define (print-conjunction c [out (current-output-port)])
+  (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between c ",")))
 
 (struct tree-label (conjunction selection substitution rule)
   #:methods
@@ -54,13 +72,13 @@
         (hash2-recur (tree-label-substitution l))
         (hash2-recur (tree-label-rule l))))])
 
-(define (display-tree-label t [out (current-output-port)])
+(define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
     [(tree-label con sel sub r)
      (begin
-       (when ((compose not null?) sub) (display sub out))
-       (display con out))]))
-  
+       (print-conjunction con out)
+       (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]))
+
 
 
 ; TODO: transliterate this to get good tree representations
@@ -124,7 +142,9 @@
     (values "show top level" "proceed" "go back" "save analysis" "end analysis"))
   (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save end))
   (cond [(equal? choice show-top)
-         (begin (tree-display tree display-tree-label)
+         (begin (newline)
+                (tree-display tree print-tree-label)
+                (newline)
                 (interactive-analysis tree clauses full-evaluations preprior))]
         [(equal? choice proceed)
          (begin (define candidate (candidate-for-update tree))
@@ -144,11 +164,11 @@
                                                            (tree-label-rule candidate-label))
                                                child-trees)]
                            [updated-top (replace-first-subtree tree (some-v candidate) updated-candidate)])
-                           (begin
-                             ; geen van beide zou mogen
-                             (println (equal? (some-v candidate) updated-candidate))
-                             (println (equal? tree updated-top))
-                             (interactive-analysis updated-top clauses full-evaluations preprior)))))]
+                      (begin
+                        (newline)
+                        (tree-display updated-candidate print-tree-label)
+                        (newline)
+                        (interactive-analysis updated-top clauses full-evaluations preprior)))))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
@@ -163,7 +183,6 @@
      ; using #f for rule because this is the only case where there is no associated clause
      (begin (define initial-tree-label (tree-label (list (4-tuple-fourth program-data)) (none) (list) #f))
             (define initial-tree (node initial-tree-label (list)))
-            ; TODO full-evaluations zijn nu full-ai-rules ipv ... full-evaluations
             (interactive-analysis initial-tree clauses full-evaluations preprior))]))
 
 (define (cclp-run filename program-data)

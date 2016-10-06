@@ -30,7 +30,7 @@
 (define (write-abstract-equality obj port mode)
   (if (boolean? mode)
       (fprintf port "#(struct:abstract-equality ~s ~s)" (abstract-equality-term1 obj) (abstract-equality-term2 obj))
-      (fprintf port "~v=~v" (abstract-equality-term1 obj) (abstract-equality-term2 obj))))
+      (fprintf port "~v/~v" (abstract-equality-term1 obj) (abstract-equality-term2 obj))))
 
 ; terms are really any abstract domain elements
 (struct abstract-equality (term1 term2) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-equality)])
