@@ -33,16 +33,21 @@
 (require "abstract-resolve.rkt")
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")
-(require terminal-color)
-(require charterm)
 
-(define discrete-color 'blue)
 
-(define (discrete-display d [out (current-output-port)])
-  (display-color d out #:fg discrete-color))
 
-(define (discrete-print p [out (current-output-port)])
-  (print-color p out #:fg discrete-color))
+
+(define (capability? cap) (system (~a "tput "cap" > /dev/null 2>&1")))
+(define (tput . xs) (system (apply ~a 'tput " " (add-between xs " "))) (void))
+(define (colorterm?) (and (capability? 'setaf) (capability? 'setab)))
+(define color-map '([black 0] [red 1] [green 2] [yellow 3]
+                              [blue 4] [magenta 5] [cyan 6] [white 7]))
+(define (foreground color) (tput 'setaf (cadr (assq color color-map))))
+(define (background color) (tput 'setab (cadr (assq color color-map))))
+(define (reset) (tput 'sgr0) (void))
+
+
+
 
 (define (print-substitution s [out (current-output-port)])
   (display "{" out)
@@ -187,10 +192,15 @@
 
 (define (cclp-run filename program-data)
   (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
-  (with-charterm
-      (charterm-underline)
-    (charterm-display "This is a test!")
-    (charterm-normal))
+  
+  (begin
+    (when (colorterm?) (foreground 'magenta))
+    (displayln "Color output test")
+    (displayln (capability? 'blink))
+    (displayln (capability? 'underline))
+    (displayln (capability? 'bold))
+    (when (colorterm?) (reset)))
+  
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
   (define-values (analysis load quit)
