@@ -46,7 +46,7 @@
          [g-indices (assemble-var-indices g? renamee)]
          [subst (append (map (λ (index) (abstract-equality (a index) (a (+ a-offset index)))) (set->list a-indices))
                         (map (λ (index) (abstract-equality (g index) (g (+ g-offset index)))) (set->list g-indices)))])
-  (apply-substitution subst renamee)))
+    (apply-substitution subst renamee)))
 (provide
  (contract-out
   [rename-apart

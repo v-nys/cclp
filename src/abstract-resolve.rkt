@@ -44,8 +44,8 @@
       (fprintf port
                "resolvent ~v of rule ~v after substitution ~v"
                (resolvent-conjunction obj)
-               (resolvent-substitution obj)
-               (resolvent-knowledge obj))))
+               (resolvent-knowledge obj)
+               (resolvent-substitution obj))))
 
 (struct resolvent (conjunction substitution knowledge)
   #:methods

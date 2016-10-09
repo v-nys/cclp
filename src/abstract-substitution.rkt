@@ -117,7 +117,10 @@
 
 ;(: apply-substitution-to-full-evaluation (-> AbstractSubstitution full-evaluation full-evaluation))
 (define (apply-substitution-to-full-evaluation subst fe)
-  (full-evaluation (apply-substitution-to-conjunct subst (full-evaluation-input-pattern fe)) (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))))
+  (full-evaluation
+   (apply-substitution-to-conjunct subst (full-evaluation-input-pattern fe))
+   (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))))
+(provide apply-substitution-to-full-evaluation)
 
 ;(: apply-substitution (-> AbstractSubstitution AbstractDomainElem AbstractDomainElem))
 (define (apply-substitution subst substitution-object)

@@ -56,7 +56,7 @@
              (fprintf port "~v" (full-evaluation-output-pattern obj))
              (fprintf port "."))))
 
-(struct full-evaluation (input-pattern output-pattern) #:methods gen:custom-write [(define write-proc write-full-eval)])
+(struct full-evaluation (input-pattern output-pattern) #:transparent #:methods gen:custom-write [(define write-proc write-full-eval)])
 (provide (struct-out full-evaluation))
 
 (define (abstract-knowledge? k) (or (abstract-rule? k) (full-evaluation? k)))
