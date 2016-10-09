@@ -35,10 +35,6 @@
 (require "abstract-substitution.rkt")
 (require terminal-color)
 
-
-
-
-
 (define (print-substitution s [out (current-output-port)])
   (display "{" out)
   (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between s ";"))
