@@ -33,18 +33,9 @@
 (require "abstract-resolve.rkt")
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")
+(require terminal-color)
 
 
-
-
-(define (capability? cap) (system (~a "tput "cap" > /dev/null 2>&1")))
-(define (tput . xs) (system (apply ~a 'tput " " (add-between xs " "))) (void))
-(define (colorterm?) (and (capability? 'setaf) (capability? 'setab)))
-(define color-map '([black 0] [red 1] [green 2] [yellow 3]
-                              [blue 4] [magenta 5] [cyan 6] [white 7]))
-(define (foreground color) (tput 'setaf (cadr (assq color color-map))))
-(define (background color) (tput 'setab (cadr (assq color color-map))))
-(define (reset) (tput 'sgr0) (void))
 
 
 
@@ -59,9 +50,9 @@
         [atom c])
     (begin
       ; could use some kind of macro for better pretty-printing
-      (when (and (some? ms) (eq? i (some-v ms)) (capability? 'underline)) (tput 'blink))
-      (print atom out)
-      (when (and (some? ms) (eq? i (some-v ms)) (capability? 'underline)) (reset))
+      (if (and (some? ms) (eq? i (some-v ms)))
+          (print-color atom out #:fg 'red)
+          (print atom out))
       (when (< i last-i) (display "," out)))))
 
 (struct tree-label (conjunction selection substitution rule)
