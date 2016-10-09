@@ -48,14 +48,21 @@
 
 
 
-
 (define (print-substitution s [out (current-output-port)])
   (display "{" out)
   (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between s ";"))
   (display "}" out))
 
-(define (print-conjunction c [out (current-output-port)])
-  (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between c ",")))
+(define (print-conjunction c ms [out (current-output-port)])
+  (define last-i (- (length c) 1))
+  (for ([i (range 0 (length c))]
+        [atom c])
+    (begin
+      ; could use some kind of macro for better pretty-printing
+      (when (and (some? ms) (eq? i (some-v ms)) (capability? 'underline)) (tput 'blink))
+      (print atom out)
+      (when (and (some? ms) (eq? i (some-v ms)) (capability? 'underline)) (reset))
+      (when (< i last-i) (display "," out)))))
 
 (struct tree-label (conjunction selection substitution rule)
   #:methods
@@ -81,7 +88,7 @@
   (match (node-label t)
     [(tree-label con sel sub r)
      (begin
-       (print-conjunction con out)
+       (print-conjunction con sel out)
        (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]))
 
 
@@ -193,13 +200,13 @@
 (define (cclp-run filename program-data)
   (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
   
-  (begin
-    (when (colorterm?) (foreground 'magenta))
-    (displayln "Color output test")
-    (displayln (capability? 'blink))
-    (displayln (capability? 'underline))
-    (displayln (capability? 'bold))
-    (when (colorterm?) (reset)))
+  ;  (begin
+  ;    (when (colorterm?) (foreground 'magenta))
+  ;    (displayln "Color output test")
+  ;    (displayln (capability? 'blink))
+  ;    (displayln (capability? 'underline))
+  ;    (displayln (capability? 'bold))
+  ;    (when (colorterm?) (reset)))
   
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
