@@ -67,8 +67,7 @@
                                        (let* ([applied-to-args (map-accumulatel pre-abstract-aux-term existing-mapping (function-args concrete-term))]
                                               [just-mapped-args (car applied-to-args)]
                                               [just-acc (cdr applied-to-args)])
-                                         (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]
-        [else (print concrete-term)]))
+                                         (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]))
 
 ; note: there is some duplication here, solely due to Conjunctions...
 ;(: pre-abstract-aux-atom (-> atom (HashTable Term AbstractVariable) (Pair abstract-atom (HashTable Term AbstractVariable))))
