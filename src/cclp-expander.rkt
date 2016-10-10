@@ -412,7 +412,7 @@
        #'(cons expanded-term0 expanded-rest))]
     [(sexp-abstract-lplist "[" term0 "|" rest "]")
      (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)]
-                   [expanded-rest (expand-syntax-while-bound #'(sexp-abstract-lplist "[" rest "]"))])
+                   [expanded-rest (expand-syntax-while-bound #'(sexp-abstract-term rest))])
        #'(cons expanded-term0 expanded-rest))]
     [(sexp-abstract-function-term (sexp-abstract-number-term num))
      #'(sexp-abstract-number-term num)]
