@@ -56,7 +56,7 @@
            (full-evaluation-input-pattern abstract-data))
           (assemble-var-indices
            right-variable-type?
-           (full-evaluation-input-pattern abstract-data)))]))
+           (full-evaluation-output-pattern abstract-data)))]))
 (provide assemble-var-indices)
 
 (define (maximum-var-index abstraction right-variable-type?)

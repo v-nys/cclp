@@ -24,7 +24,7 @@
   a?
   (full-evaluation (parse-abstract-atom "del(α1,[γ1|γ2],α2)")
                    (parse-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
- (set 3 4))
+ (set 1 2))
 (check-equal?
  (assemble-var-indices
   g?
