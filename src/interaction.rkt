@@ -52,30 +52,34 @@
           (print atom out))
       (when (< i last-i) (display "," out)))))
 
-(struct tree-label (conjunction selection substitution rule)
+(struct tree-label (conjunction selection substitution rule index)
   #:methods
   gen:equal+hash
   [(define (equal-proc l1 l2 equal?-recur)
      (and (equal?-recur (tree-label-conjunction l1) (tree-label-conjunction l2))
           (equal?-recur (tree-label-selection l1) (tree-label-selection l2))
           (equal?-recur (tree-label-substitution l1) (tree-label-substitution l2))
-          (equal?-recur (tree-label-rule l1) (tree-label-rule l2))))
+          (equal?-recur (tree-label-rule l1) (tree-label-rule l2))
+          (equal?-recur (tree-label-index l1) (tree-label-index l2))))
    ; same hash function as in Racket docs, not too concerned about optimum here
    (define (hash-proc l hash-recur)
      (+ (hash-recur (tree-label-conjunction l))
         (* 3 (hash-recur (tree-label-selection l)))
         (* 7 (hash-recur (tree-label-substitution l)))
-        (* 11 (hash-recur (tree-label-rule l)))))
+        (* 11 (hash-recur (tree-label-rule l)))
+        (* 13 (hash-recur (tree-label-index l)))))
    (define (hash2-proc l hash2-recur)
      (+ (hash2-recur (tree-label-conjunction l))
         (hash2-recur (tree-label-selection l))
         (hash2-recur (tree-label-substitution l))
-        (hash2-recur (tree-label-rule l))))])
+        (hash2-recur (tree-label-rule l))
+        (hash2-recur (tree-label-index l))))])
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
-    [(tree-label con sel sub r)
+    [(tree-label con sel sub r i)
      (begin
+       (display (format "~v:" i))
        (print-conjunction con sel out)
        (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]))
 
@@ -111,16 +115,16 @@
   (match t
     [(node 'fail '()) #t]
     [(node 'cycle '()) #t]
-    [(node (tree-label '() _ _ _) '()) #t]
-    [(node (tree-label _ _ _ _) '()) #f]
-    [(node (tree-label _ _ _ _) children) (andmap completed-tree? children)]))
+    [(node (tree-label '() _ _ _ _) '()) #t]
+    [(node (tree-label _ _ _ _ _) '()) #f]
+    [(node (tree-label _ _ _ _ _) children) (andmap completed-tree? children)]))
 
 
 (define (candidate-for-update tree)
   (match tree
-    [(node (tree-label '() _ _ _) '()) (none)]
-    [(node (tree-label c (none) s r) '()) (some (node (tree-label c (none) s r) '()))]
-    [(node (tree-label _ (some v) _ _) children)
+    [(node (tree-label '() _ _ _ _) '()) (none)]
+    [(node (tree-label c (none) s r i) '()) (some (node (tree-label c (none) s r i) '()))]
+    [(node (tree-label _ (some v) _ _ _) children)
      (if (andmap completed-tree? children)
          (none)
          (candidate-for-update (car (filter (λ (c) (not (completed-tree? c))) children))))]
@@ -134,7 +138,8 @@
     (resolvent-conjunction res)
     (none)
     (resolvent-substitution res)
-    (resolvent-knowledge res))
+    (resolvent-knowledge res)
+    1) ; just to check - should probably make this a parameter
    (list)))
 
 (define (interactive-analysis tree clauses full-evaluations preprior)
@@ -161,7 +166,8 @@
                                                (tree-label (tree-label-conjunction candidate-label)
                                                            (some index-selection)
                                                            (tree-label-substitution candidate-label)
-                                                           (tree-label-rule candidate-label))
+                                                           (tree-label-rule candidate-label)
+                                                           (tree-label-index candidate-label))
                                                child-trees)]
                            [updated-top (replace-first-subtree tree (some-v candidate) updated-candidate)])
                       (begin
@@ -181,7 +187,7 @@
      ; using none for selection because no selection will occur more often
      ; using list for substitution because it is not wrong and is consistent
      ; using #f for rule because this is the only case where there is no associated clause
-     (begin (define initial-tree-label (tree-label (list (4-tuple-fourth program-data)) (none) (list) #f))
+     (begin (define initial-tree-label (tree-label (list (4-tuple-fourth program-data)) (none) (list) #f 1))
             (define initial-tree (node initial-tree-label (list)))
             (interactive-analysis initial-tree clauses full-evaluations preprior))]))
 
