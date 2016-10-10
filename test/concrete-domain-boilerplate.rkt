@@ -9,6 +9,10 @@
 (define-syntax (parse-rule stx)
   (define rule-parse (make-rule-parser rule))
   (syntax-case stx () [(_ THE-RULE)
-                       (with-syntax ([PARSE-TREE (replace-context #'() (rule-parse (all-tokens (syntax->datum #'THE-RULE))))])
+                       (with-syntax
+                           ([PARSE-TREE
+                             (replace-context
+                              #'()
+                              (rule-parse (all-tokens (syntax->datum #'THE-RULE))))])
                          #'PARSE-TREE)]))
 (provide parse-rule)

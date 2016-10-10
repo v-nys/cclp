@@ -64,7 +64,7 @@
 ; could use define/contract for extra information
 (define (clause-output-length clause)
   (match clause
-    [(rule h b) (length b)]
+    [(abstract-rule h b) (length b)]
     [(full-evaluation i o) 0]))
 
 
@@ -116,4 +116,4 @@
 ; not having a selection-and-clause and having a successor list element would also be a violation
 ; +vice versa
 (provide (contract-out
-          [generational-tree (-> (non-empty-listof resolution-info?) abstract-atom? (nodeof atom-with-generation?))]))
+          [generational-tree (-> (non-empty-listof resolution-info?) abstract-atom? node?)]))

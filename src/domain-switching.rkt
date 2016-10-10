@@ -63,10 +63,12 @@
   (cond [(variable? concrete-term) (pre-abstract-aux-variable concrete-term existing-mapping)]
         [(function? concrete-term) (if (null? (function-args concrete-term))
                                        (pre-abstract-aux-constant concrete-term existing-mapping)
+                                       ; FIXME: pre-abstract-aux-term lijkt void terug te geven (ipv pair)
                                        (let* ([applied-to-args (map-accumulatel pre-abstract-aux-term existing-mapping (function-args concrete-term))]
                                               [just-mapped-args (car applied-to-args)]
                                               [just-acc (cdr applied-to-args)])
-                                         (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]))
+                                         (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]
+        [else (print concrete-term)]))
 
 ; note: there is some duplication here, solely due to Conjunctions...
 ;(: pre-abstract-aux-atom (-> atom (HashTable Term AbstractVariable) (Pair abstract-atom (HashTable Term AbstractVariable))))
@@ -91,7 +93,12 @@
           
 ;(: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
 (define (pre-abstract concrete-domain-elem)
-  (cond [(atom? concrete-domain-elem) (abstract-atom (atom-symbol concrete-domain-elem) (car (map-accumulatel pre-abstract-aux-term (hash) (atom-args concrete-domain-elem))))]
-        [(list? concrete-domain-elem) (pre-abstract-conjunction concrete-domain-elem)]
-        [(term? concrete-domain-elem) (car (pre-abstract-aux-term concrete-domain-elem (hash)))]))
+  (cond [(atom? concrete-domain-elem)
+         (abstract-atom
+          (atom-symbol concrete-domain-elem)
+          (car (map-accumulatel pre-abstract-aux-term (hash) (atom-args concrete-domain-elem))))]
+        [(list? concrete-domain-elem)
+         (pre-abstract-conjunction concrete-domain-elem)]
+        [(term? concrete-domain-elem)
+         (car (pre-abstract-aux-term concrete-domain-elem (hash)))]))
 (provide pre-abstract)

@@ -39,29 +39,29 @@
 
 (test-case "the generational tree is computed correctly based on a branch of several nodes"
            (define-values (atom0 atom1a atom1b atom1c atom2a atom2b atom2c atom2d atom3a atom3b atom3c atom4a atom4b atom4c atom4d)
-             (values (abp:parse-atom "primes(γ1,α1)")
+             (values (abp:parse-abstract-atom "primes(γ1,α1)")
                      
-                     (abp:parse-atom "integers(γ2,α2)")
-                     (abp:parse-atom "sift(α2,α1)")
-                     (abp:parse-atom "length(α1,γ1)")
+                     (abp:parse-abstract-atom "integers(γ2,α2)")
+                     (abp:parse-abstract-atom "sift(α2,α1)")
+                     (abp:parse-abstract-atom "length(α1,γ1)")
                      
-                     (abp:parse-atom "plus(γ2,γ3,α3)")
-                     (abp:parse-atom "integers(α3,α4)")
-                     (abp:parse-atom "sift([γ2|α4],α1)")
-                     (abp:parse-atom "length(α1,γ1)")
+                     (abp:parse-abstract-atom "plus(γ2,γ3,α3)")
+                     (abp:parse-abstract-atom "integers(α3,α4)")
+                     (abp:parse-abstract-atom "sift([γ2|α4],α1)")
+                     (abp:parse-abstract-atom "length(α1,γ1)")
                      
-                     (abp:parse-atom "integers(γ4,α4)")
-                     (abp:parse-atom "sift([γ2|α4],α1)")
-                     (abp:parse-atom "length(α1,γ1)")
+                     (abp:parse-abstract-atom "integers(γ4,α4)")
+                     (abp:parse-abstract-atom "sift([γ2|α4],α1)")
+                     (abp:parse-abstract-atom "length(α1,γ1)")
                      
-                     (abp:parse-atom "integers(γ4,α4)")
-                     (abp:parse-atom "filter(γ2,α4,α5)")
-                     (abp:parse-atom "sift(α5,[γ2|α6])")
-                     (abp:parse-atom "length([γ2|α6],γ1)")))
+                     (abp:parse-abstract-atom "integers(γ4,α4)")
+                     (abp:parse-abstract-atom "filter(γ2,α4,α5)")
+                     (abp:parse-abstract-atom "sift(α5,[γ2|α6])")
+                     (abp:parse-abstract-atom "length([γ2|α6],γ1)")))
            (define-values (clause1 clause2 full-ai1 clause3)
              (values (pre-abstract-rule (cbp:parse-rule "primes(X,Y) :- integers(2,Z), sift(Z,Y), length(Y,X)"))
                      (pre-abstract-rule (cbp:parse-rule "integers(N,[N|I]) :- plus(N,1,M), integers(M,I)"))
-                     (full-evaluation (abp:parse-atom "plus(γ1,γ2,α2)") (abp:parse-atom "plus(γ1,γ2,γ3)"))
+                     (full-evaluation (abp:parse-abstract-atom "plus(γ1,γ2,α2)") (abp:parse-abstract-atom "plus(γ1,γ2,γ3)"))
                      (pre-abstract-rule (cbp:parse-rule "sift([N|Ints],[N|Primes]) :- filter(N,Ints,F), sift(F,Primes)"))))
            (define-values (branch-node1 branch-node2 branch-node3 branch-node4 branch-node5)
              (values (resolution-info (list atom0) (some (cons 0 clause1)))
@@ -69,7 +69,7 @@
                      (resolution-info (list atom2a atom2b atom2c atom2d) (some (cons 0 full-ai1)))
                      (resolution-info (list atom3a atom3b atom3c) (some (cons 1 clause3)))
                      (resolution-info (list atom4a atom4b atom4c atom4d) (none))))
-           (let* ([target-atom (abp:parse-atom "sift([γ1|α1],α2)")]
+           (let* ([target-atom (abp:parse-abstract-atom "sift([γ1|α1],α2)")]
                   [branch (list branch-node1 branch-node2 branch-node3 branch-node4 branch-node5)]
                   [expected4a (node (atom-with-generation atom4a 0) (list))]
                   [expected4b (node (atom-with-generation atom4b 1) (list))]
