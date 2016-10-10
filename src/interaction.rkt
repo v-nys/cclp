@@ -79,7 +79,7 @@
   (match (node-label t)
     [(tree-label con sel sub r i)
      (begin
-       (display (format "~v:" i))
+       (when i (display (format "~v:" i)))
        (print-conjunction con sel out)
        (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]))
 
@@ -139,10 +139,10 @@
     (none)
     (resolvent-substitution res)
     (resolvent-knowledge res)
-    1) ; just to check - should probably make this a parameter
+    #f) ; resolvents have not yet been visited
    (list)))
 
-(define (interactive-analysis tree clauses full-evaluations preprior)
+(define (interactive-analysis tree clauses full-evaluations preprior next-index)
   (define-values (show-top proceed go-back save end)
     (values "show top level" "proceed" "go back" "save analysis" "end analysis"))
   (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save end))
@@ -150,12 +150,12 @@
          (begin (newline)
                 (tree-display tree print-tree-label)
                 (newline)
-                (interactive-analysis tree clauses full-evaluations preprior))]
+                (interactive-analysis tree clauses full-evaluations preprior next-index))]
         [(equal? choice proceed)
          (begin (define candidate (candidate-for-update tree))
                 (if (none? candidate)
                     (begin (display "There are no nodes left to analyze.")
-                           (interactive-analysis tree clauses full-evaluations preprior))
+                           (interactive-analysis tree clauses full-evaluations preprior next-index))
                     (let* ([candidate-label (node-label (some-v candidate))]
                            [conjunction (tree-label-conjunction candidate-label)]
                            [resolution-result (abstract-resolve conjunction preprior clauses full-evaluations)]
@@ -167,14 +167,14 @@
                                                            (some index-selection)
                                                            (tree-label-substitution candidate-label)
                                                            (tree-label-rule candidate-label)
-                                                           (tree-label-index candidate-label))
+                                                           next-index)
                                                child-trees)]
                            [updated-top (replace-first-subtree tree (some-v candidate) updated-candidate)])
                       (begin
                         (newline)
                         (tree-display updated-candidate print-tree-label)
                         (newline)
-                        (interactive-analysis updated-top clauses full-evaluations preprior)))))]
+                        (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1))))))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
@@ -187,20 +187,12 @@
      ; using none for selection because no selection will occur more often
      ; using list for substitution because it is not wrong and is consistent
      ; using #f for rule because this is the only case where there is no associated clause
-     (begin (define initial-tree-label (tree-label (list (4-tuple-fourth program-data)) (none) (list) #f 1))
+     (begin (define initial-tree-label (tree-label (list (4-tuple-fourth program-data)) (none) (list) #f #f))
             (define initial-tree (node initial-tree-label (list)))
-            (interactive-analysis initial-tree clauses full-evaluations preprior))]))
+            (interactive-analysis initial-tree clauses full-evaluations preprior 1))]))
 
 (define (cclp-run filename program-data)
   (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
-  
-  ;  (begin
-  ;    (when (colorterm?) (foreground 'magenta))
-  ;    (displayln "Color output test")
-  ;    (displayln (capability? 'blink))
-  ;    (displayln (capability? 'underline))
-  ;    (displayln (capability? 'bold))
-  ;    (when (colorterm?) (reset)))
   
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
