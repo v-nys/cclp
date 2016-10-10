@@ -23,8 +23,10 @@
                       (list (parse-abstract-atom "collect(α1,α4)")
                             (parse-abstract-atom "collect(α2,α5)")
                             (parse-abstract-atom "append(α4,α5,α3)"))))
-   (check-equal? renamed-abstract-rule expected))
- 
+   (check-equal? renamed-abstract-rule expected)))
+
+(test-case
+ "a properly renamed full evaluation should be obtained"
  (let* ([full-eval (ak:full-evaluation (parse-abstract-atom "del(α1,[γ1|γ2],α2)")
                                        (parse-abstract-atom "del(γ3,[γ1|γ2],γ4)"))]
         [abstract-conjunction (parse-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")]
