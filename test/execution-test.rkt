@@ -25,6 +25,7 @@
 (require "../src/execution.rkt")
 (require (prefix-in abp: "abstract-domain-boilerplate.rkt"))
 (require "../src/fullai-domain.rkt")
+(require "../src/abstract-knowledge.rkt")
 (require parenlog)
 
 (define looping-graph (abp:parse-prior-relation "a,b a,c b,a b,d c,b c,e d,e"))
@@ -63,7 +64,7 @@
   (abp:parse-abstract-conjunction "bar(α1,α2),foo(γ1,α2),quux(γ3,γ4)")
   hypothetical-graph-for-consistency
   (list
-   (full-ai-rule
+   (full-evaluation
     (abp:parse-abstract-atom "quux(γ1,γ2)")
-    (list))))
+    (abp:parse-abstract-atom "quux(γ1,γ2)"))))
  2)

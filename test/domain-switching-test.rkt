@@ -26,7 +26,7 @@
          "../src/abstract-multi-domain.rkt"
          "../src/concrete-domain.rkt"
          "../src/data-utils.rkt"
-         "domain-boilerplate.rkt"
+         "abstract-domain-boilerplate.rkt"
          "concrete-domain-boilerplate.rkt"
          (prefix-in ak: "../src/abstract-knowledge.rkt"))
 
@@ -47,4 +47,4 @@
      (check-equal? (pre-abstract (function "dummy" concrete-args)) (abstract-function "dummy" abstract-args) "abstracting a complex term"))
 
 (check-equal? (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
-              (ak:rule (parse-atom "collect(tree(α1,α2),α3)") (list (parse-atom "collect(α1,α4)") (parse-atom "collect(α2,α5)") (parse-atom "append(α4,α5,α3)"))))
+              (ak:abstract-rule (parse-abstract-atom "collect(tree(α1,α2),α3)") (list (parse-abstract-atom "collect(α1,α4)") (parse-abstract-atom "collect(α2,α5)") (parse-abstract-atom "append(α4,α5,α3)"))))
