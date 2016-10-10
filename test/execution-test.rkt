@@ -139,4 +139,4 @@
    (abp:parse-abstract-conjunction "perm(γ41,α13),ord([γ12,γ40|α13])")
    permsort-graph
    (list))
-  0))
+  1))
