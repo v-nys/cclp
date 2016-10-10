@@ -35,6 +35,8 @@
 (require "abstract-substitution.rkt")
 (require terminal-color)
 
+(define use-color #f)
+
 (define (print-substitution s [out (current-output-port)])
   (display "{" out)
   (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between s ";"))
@@ -45,9 +47,8 @@
   (for ([i (range 0 (length c))]
         [atom c])
     (begin
-      ; could use some kind of macro for better pretty-printing
       (if (and (some? ms) (eq? i (some-v ms)))
-          (print-color atom out #:fg 'red)
+          (if use-color (print-color atom out #:fg 'red) (print atom out))
           (print atom out))
       (when (< i last-i) (display "," out)))))
 
