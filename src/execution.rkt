@@ -12,13 +12,14 @@
 (provide (contract-out [is-valid? (-> model? boolean?)]))
 
 (define (selected-index conjunction prior full-ai-rules)
-  (define full-eval-index (foldl
-                           (λ (r acc)
-                             (if acc
-                                 acc
-                                 (findf-index (λ (atom) (>=-extension (full-evaluation-input-pattern r) atom)) conjunction)))
-                           #f
-                           full-ai-rules))
+  (define full-eval-index
+    (foldl
+     (λ (r acc)
+       (if acc
+           acc
+           (findf-index (λ (atom) (>=-extension (full-evaluation-input-pattern r) atom)) conjunction)))
+     #f
+     full-ai-rules))
   (if full-eval-index
       full-eval-index
       (let* ([sexp-conjunction (abstract-conjunction->sexp conjunction)]

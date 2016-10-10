@@ -30,7 +30,10 @@
 
 (define looping-graph (abp:parse-prior-relation "a,b a,c b,a b,d c,b c,e d,e"))
 (define non-looping-graph (abp:parse-prior-relation "a,b a,c b,d c,b c,e d,e"))
-(define permsort-graph (abp:parse-prior-relation "perm(γ1,α1),ord(α1) perm(γ1,α1),ord([γ1|α1]) ord([γ1,γ2|α1]),perm(γ1,α1)"))
+(define
+  permsort-graph
+  (abp:parse-prior-relation
+   "perm(γ1,α1),ord(α1) perm(γ1,α1),ord([γ1|α1]) ord([γ1,γ2|α1]),perm(γ1,α1)"))
 (define hypothetical-graph-for-consistency (abp:parse-prior-relation "foo(γ1,α1),bar(γ1,α1)"))
 
 (check-true (is-valid? non-looping-graph))
@@ -69,9 +72,71 @@
     (abp:parse-abstract-atom "quux(γ1,γ2)"))))
  2)
 
-(check-equal?
- (selected-index
-  (abp:parse-abstract-conjunction "perm(γ41,α13),ord([γ12,γ40|α13])")
-  permsort-graph
-  (list))
- 0)
+(test-case
+ "bug trigger test for permutation sort"
+ (check-equal?
+  (query-model permsort-graph
+               (member
+                X
+                (cons
+                 (perm (γ sym41) (α sym13))
+                 (cons
+                  (ord (cons
+                        (γ sym12)
+                        (cons
+                         (γ sym40)
+                         (α sym13))))
+                  ()))))
+  (list (hasheq 'X '(perm (γ sym41) (α sym13)))
+        (hasheq 'X '(ord (cons (γ sym12) (cons (γ sym40) (α sym13)))))))
+ (check-equal?
+  (query-model permsort-graph
+               (before X Y))
+               (list
+                (hasheq 'X '(perm (γ sym1) (α sym1)) 'Y '(ord (α sym1)))
+                (hasheq 'X '(perm (γ sym1) (α sym1)) 'Y '(ord (cons (γ sym1) (α sym1))))
+                (hasheq 'X '(ord (cons (γ sym1) (cons (γ sym2) (α sym1)))) 'Y '(perm (γ sym1) (α sym1)))))
+ (check-equal? (query-model
+                permsort-graph
+                (reaches_under_consistency
+                 (ord (cons
+                       (γ sym12)
+                       (cons
+                        (γ sym40)
+                        (α sym13))))
+                 (perm (γ sym41) (α sym13))))
+               (list (hasheq)))
+ (check-equal? (query-model
+                permsort-graph
+                (reaches_under_consistency
+                 (ord (cons
+                       (γ sym12)
+                       (cons
+                        (γ sym40)
+                        (α sym13))))
+                 (ord (cons
+                       (γ sym12)
+                       (cons
+                        (γ sym40)
+                        (α sym13))))))
+               (list (hasheq)))
+ (check-equal?
+  (query-model permsort-graph
+               (member_reaches_all_under_consistency
+                X
+                (cons
+                 (perm (γ sym41) (α sym13))
+                 (cons
+                  (ord (cons
+                        (γ sym12)
+                        (cons
+                         (γ sym40)
+                         (α sym13))))
+                  ()))))
+  (list (hasheq 'X '(ord (cons (γ sym12) (cons (γ sym40) (α sym13)))))))
+ (check-equal?
+  (selected-index
+   (abp:parse-abstract-conjunction "perm(γ41,α13),ord([γ12,γ40|α13])")
+   permsort-graph
+   (list))
+  0))
