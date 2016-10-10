@@ -108,7 +108,7 @@
                (list (hasheq)))
  (check-equal? (query-model
                 permsort-graph
-                (reaches_under_consistency
+                (sexp_gt_extension
                  (ord (cons
                        (γ sym12)
                        (cons
@@ -122,7 +122,7 @@
                (list (hasheq)))
  (check-equal?
   (query-model permsort-graph
-               (member_reaches_all_under_consistency
+               (member_reaches_or_includes_all_under_consistency
                 X
                 (cons
                  (perm (γ sym41) (α sym13))
