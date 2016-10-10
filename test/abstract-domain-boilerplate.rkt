@@ -4,6 +4,7 @@
   (for-syntax (only-in "../src/cclp-reader.rkt" all-tokens))
   (for-syntax (only-in syntax/strip-context replace-context))
   (for-syntax "../src/cclp-expander.rkt")
+  "../src/abstract-substitution.rkt"
   "../src/cclp-expander.rkt")
 
 (define-syntax (parse-abstract-atom stx)
@@ -60,3 +61,11 @@
             #'() (prior-section-parse (all-tokens (syntax->datum #'THE-SECTION))))])
        #'PARSE-TREE)]))
 (provide parse-prior-relation)
+
+(define-syntax (term-equality-list stx)
+  (syntax-case stx ()
+    [(_) #'(list)]
+    [(_ (t1 t2) rest ...)
+     #'(cons (abstract-equality (parse-abstract-term t1) (parse-abstract-term t2))
+             (term-equality-list rest ...))]))
+(provide term-equality-list)

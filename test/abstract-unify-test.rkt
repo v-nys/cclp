@@ -22,8 +22,6 @@
 
 #lang racket
 (require rackunit)
-(require (for-syntax "../src/fullai-parser.rkt") (for-syntax "../src/fullai-reader.rkt") (for-syntax "../src/fullai-expander.rkt"))
-(require "../src/fullai-expander.rkt")
 (require (for-syntax syntax/strip-context))
 (require "../src/abstract-unify.rkt")
 (require "../src/data-utils.rkt")
@@ -31,33 +29,27 @@
 (require "../src/abstract-multi-domain.rkt")
 (require "../src/abstract-substitution.rkt")
 
-(require "domain-boilerplate.rkt")
+(require "abstract-domain-boilerplate.rkt")
 
 ; the occurs check
-(check-true (occurs (g 1) (parse-term "γ1")))
-(check-false (occurs (g 1) (parse-term "γ2")))
-(check-true (occurs (a 1) (parse-term "α1")))
-(check-false (occurs (a 1) (parse-term "α2")))
+(check-true (occurs (g 1) (parse-abstract-term "γ1")))
+(check-false (occurs (g 1) (parse-abstract-term "γ2")))
+(check-true (occurs (a 1) (parse-abstract-term "α1")))
+(check-false (occurs (a 1) (parse-abstract-term "α2")))
 
-(check-false (occurs (a 1) (parse-term "someconstant")))
-(check-false (occurs (g 1) (parse-term "someconstant")))
+(check-false (occurs (a 1) (parse-abstract-term "someconstant")))
+(check-false (occurs (g 1) (parse-abstract-term "someconstant")))
 
-(check-true (occurs (a 1) (parse-term "foo(bar(α1))")))
-(check-false (occurs (a 1) (parse-term "foo(bar(α2))")))
-(check-true (occurs (g 1) (parse-term "foo(bar(γ1))")))
-(check-false (occurs (g 1) (parse-term "foo(bar(γ2))")))
+(check-true (occurs (a 1) (parse-abstract-term "foo(bar(α1))")))
+(check-false (occurs (a 1) (parse-abstract-term "foo(bar(α2))")))
+(check-true (occurs (g 1) (parse-abstract-term "foo(bar(γ1))")))
+(check-false (occurs (g 1) (parse-abstract-term "foo(bar(γ2))")))
 
-(check-true (occurs (a 1) (parse-atom "foo(bar(α1))")))
-(check-false (occurs (a 1) (parse-atom "foo(bar(α2))")))
-(check-true (occurs (g 1) (parse-atom "foo(bar(γ1))")))
-(check-false (occurs (g 1) (parse-atom "foo(bar(γ2))")))
+(check-true (occurs (a 1) (parse-abstract-atom "foo(bar(α1))")))
+(check-false (occurs (a 1) (parse-abstract-atom "foo(bar(α2))")))
+(check-true (occurs (g 1) (parse-abstract-atom "foo(bar(γ1))")))
+(check-false (occurs (g 1) (parse-abstract-atom "foo(bar(γ2))")))
 
-; abstract unification
-;(define-syntax-rule (term-equality-list t1 t2) (list (abstract-equality (parse-term t1) (parse-term t2))))
-(define-syntax (term-equality-list stx)
-  (syntax-case stx ()
-    [(_) #'(list)]
-    [(_ (t1 t2) rest ...) #'(cons (abstract-equality (parse-term t1) (parse-term t2)) (term-equality-list rest ...))]))
 (check-equal? (abstract-unify (term-equality-list ("foo" "bar")) 0) (none) "unification of different functions")
 (check-equal? (abstract-unify (term-equality-list ("foo" "foo")) 0) (some (list)) "unification of identical functions")
 (check-equal? (abstract-unify (term-equality-list ("α1" "α2")) 0) (some (term-equality-list ("α1" "α2"))) "unification of equivalent variables")
