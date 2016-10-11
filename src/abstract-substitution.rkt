@@ -27,6 +27,8 @@
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
 
+(require scribble/srcdoc)
+
 (define (write-abstract-equality obj port mode)
   (if (boolean? mode)
       (fprintf port "#(struct:abstract-equality ~s ~s)" (abstract-equality-term1 obj) (abstract-equality-term2 obj))
@@ -122,11 +124,21 @@
    (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))))
 (provide apply-substitution-to-full-evaluation)
 
-;(: apply-substitution (-> AbstractSubstitution AbstractDomainElem AbstractDomainElem))
 (define (apply-substitution subst substitution-object)
   (cond [(abstract-term? substitution-object) (apply-substitution-to-term subst substitution-object)]
         [(abstract-atom? substitution-object) (apply-substitution-to-conjunct subst substitution-object)]
         [(list? substitution-object) (apply-substitution-to-conjunction subst substitution-object)]
         [(abstract-rule? substitution-object) (apply-substitution-to-abstract-rule subst substitution-object)]
         [(full-evaluation? substitution-object) (apply-substitution-to-full-evaluation subst substitution-object)]))
-(provide (contract-out [apply-substitution (-> abstract-substitution? (or/c abstract-domain-elem? abstract-knowledge? (listof abstract-domain-elem?)) (or/c abstract-domain-elem? abstract-knowledge? (listof abstract-domain-elem?)))]))
+(provide
+ (proc-doc/names
+  apply-substitution
+  (-> abstract-substitution?
+      (or/c abstract-domain-elem?
+            abstract-knowledge?
+            (listof abstract-domain-elem?))
+      (or/c abstract-domain-elem?
+            abstract-knowledge?
+            (listof abstract-domain-elem?)))
+  (subst substitution-object)
+  ("One documentation-time expression" "Another documentation-time expression")))
