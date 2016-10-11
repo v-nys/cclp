@@ -75,6 +75,19 @@
         (hash2-recur (tree-label-substitution l))
         (hash2-recur (tree-label-rule l))
         (hash2-recur (tree-label-index l))))])
+(provide
+ (struct*-doc
+  tree-label
+  ([conjunction (listof abstract-atom?)]
+   [selection (maybe exact-positive-integer?)]
+   [substitution abstract-substitution?]
+   [rule abstract-knowledge?]
+   [index (or/c #f exact-positive-integer?)])
+  ("A representation of the contents of a node in the abstract analysis tree which has not yet been visited or which was successfully unfolded."
+   "selection stands for the index (if any) of the atom selected for unfolding"
+   "substitution is the substitution which was applied to the parent and a program clause to obtain conjunction"
+   "rule is the rule with which the parent was resolved to obtain conjunction"
+   "index is a unique label, assigned so that cycles can be clearly marked. It is an integer if the node has been visited and #f if the node has not yet been visited.")))
 
 (struct cycle (conjunction index substitution rule)
   #:methods
@@ -103,7 +116,7 @@
    [substitution abstract-substitution?]
    [rule abstract-knowledge?])
   ("A representation of a cycle detected during abstract analysis."
-   "index stands for the index of the (first) previously encountered conjunction which generalizes over conjunction")))
+   "Like tree-label, except that index stands for the index of the (first) previously encountered conjunction which generalizes over conjunction")))
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
