@@ -34,6 +34,7 @@ ord([γ1,γ2|α1]),perm(γ1,α1)
 sort(γ1,α1)
 }
 
+@include-section["interaction.scrbl"]
 @include-section["abstract-substitution.scrbl"]
 
 @section{Limitations}

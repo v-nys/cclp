@@ -33,6 +33,7 @@
 (require "abstract-resolve.rkt")
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")
+(require scribble/srcdoc)
 (require terminal-color)
 
 (define use-color #f)
@@ -75,6 +76,35 @@
         (hash2-recur (tree-label-rule l))
         (hash2-recur (tree-label-index l))))])
 
+(struct cycle (conjunction index substitution rule)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc c1 c2 equal?-recur)
+     (and (equal?-recur (cycle-conjunction c1) (cycle-conjunction c2))
+          (equal?-recur (cycle-index c1) (cycle-index c2))
+          (equal?-recur (cycle-substitution c1) (cycle-substitution c2))
+          (equal?-recur (cycle-rule c1) (cycle-rule c2))))
+   (define (hash-proc c hash-recur)
+     (+ (hash-recur (cycle-conjunction c))
+        (* 7 (hash-recur (cycle-substitution c)))
+        (* 11 (hash-recur (cycle-rule c)))
+        (* 13 (hash-recur (cycle-index c)))))
+   (define (hash2-proc c hash2-recur)
+     (+ (hash2-recur (cycle-conjunction c))
+        (hash2-recur (cycle-substitution c))
+        (hash2-recur (cycle-rule c))
+        (hash2-recur (cycle-index c))))])
+
+(provide
+ (struct*-doc
+  cycle
+  ([conjunction (listof abstract-atom?)]
+   [index exact-positive-integer?]
+   [substitution abstract-substitution?]
+   [rule abstract-knowledge?])
+  ("A representation of a cycle detected during abstract analysis."
+   "index stands for the index of the (first) previously encountered conjunction which generalizes over conjunction")))
+
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
     [(tree-label con sel sub r i)
@@ -114,11 +144,10 @@
 (define (completed-tree? t)
   (match t
     [(node 'fail '()) #t]
-    [(node 'cycle '()) #t]
+    [(node (cycle _ _ _ _) '()) #t]
     [(node (tree-label '() _ _ _ _) '()) #t]
     [(node (tree-label _ _ _ _ _) '()) #f]
     [(node (tree-label _ _ _ _ _) children) (andmap completed-tree? children)]))
-
 
 (define (candidate-for-update tree)
   (match tree
@@ -129,7 +158,7 @@
          (none)
          (candidate-for-update (car (filter (λ (c) (not (completed-tree? c))) children))))]
     [(node 'fail '()) (none)]
-    [(node 'cycle '()) (none)]
+    [(node (cycle _ _ _ _) '()) (none)]
     [_ (error 'missing-pattern)]))
 
 (define (resolvent->node res)
