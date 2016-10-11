@@ -126,34 +126,6 @@
        (print-conjunction con sel out)
        (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]))
 
-
-
-; TODO: transliterate this to get good tree representations
-;displayResolution :: TreeLabel -> IO ()
-;displayResolution (Label sub con (Just (selected, fullAI)) prohibited) = 
-;  do putStr $ if not (null sub) then show sub ++ " " else ""
-;     let (upToSelected, fromSelected) = case (elemIndex selected con) of (Just i) -> (splitAt i con)
-;         afterSelected = tail fromSelected
-;         in do if not (null upToSelected) then putStr $ showConjunction upToSelected ++ " ^ " else putStr ""
-;               if fullAI then setSGR [SetConsoleIntensity BoldIntensity] else setSGR [SetUnderlining SingleUnderline]
-;               putStr $ showConjunction [selected]
-;               setSGR [SetUnderlining NoUnderline]
-;               setSGR [SetConsoleIntensity NormalIntensity]
-;               if not (null afterSelected) then putStrLn $ " ^ " ++ showConjunction afterSelected else putStrLn ""
-;displayResolution Cycle = putStrLn $ "CYCLE"
-;displayResolution Failure = putStrLn $ "FAIL"
-;displayResolution other@(Label sub con Nothing prohibited) =
-;  do putStr $ if not (null sub) then show sub ++ " " else ""
-;     putStrLn $ showConjunction con
-
-
-;completed :: Tree TreeLabel -> Bool
-;completed (Node Failure []) = True
-;completed (Node Cycle []) = True
-;completed (Node (Label _ [] _ _) []) = True
-;completed (Node (Label _ _ _ _) []) = False
-;completed (Node (Label _ _ _ _) children) = all completed children
-
 (define (completed-tree? t)
   (match t
     [(node 'fail '()) #t]
