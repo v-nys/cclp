@@ -35,6 +35,7 @@
 (require "abstract-substitution.rkt")
 (require scribble/srcdoc)
 (require terminal-color)
+(require "abstract-domain-ordering.rkt")
 
 (define use-color #f)
 
@@ -52,6 +53,24 @@
           (if use-color (print-color atom out #:fg 'red) (print atom out))
           (print atom out))
       (when (< i last-i) (display "," out)))))
+
+(define (write-tree-label obj port mode)
+  (if (eq? mode #t)
+      (fprintf
+       port
+       "#(struct:tree-label ~s ~s ~s ~s ~s)"
+       (tree-label-conjunction obj)
+       (tree-label-selection obj)
+       (tree-label-substitution obj)
+       (tree-label-rule obj)
+       (tree-label-index obj))
+      (fprintf
+       port
+       "tree label conjunction ~a, with selection ~a, obtained through rule ~a and substitution ~a"
+       (tree-label-conjunction obj)
+       (tree-label-selection obj)
+       (tree-label-substitution obj)
+       (tree-label-rule obj))))
 
 (struct tree-label (conjunction selection substitution rule index)
   #:methods
@@ -74,14 +93,17 @@
         (hash2-recur (tree-label-selection l))
         (hash2-recur (tree-label-substitution l))
         (hash2-recur (tree-label-rule l))
-        (hash2-recur (tree-label-index l))))])
+        (hash2-recur (tree-label-index l))))]
+  #:methods
+  gen:custom-write
+  [(define write-proc write-tree-label)])
 (provide
  (struct*-doc
   tree-label
   ([conjunction (listof abstract-atom?)]
-   [selection (maybe exact-positive-integer?)]
+   [selection any/c]
    [substitution abstract-substitution?]
-   [rule abstract-knowledge?]
+   [rule (or/c #f abstract-knowledge?)]
    [index (or/c #f exact-positive-integer?)])
   ("A representation of the contents of a node in the abstract analysis tree which has not yet been visited or which was successfully unfolded."
    "selection stands for the index (if any) of the atom selected for unfolding"
@@ -89,34 +111,22 @@
    "rule is the rule with which the parent was resolved to obtain conjunction"
    "index is a unique label, assigned so that cycles can be clearly marked. It is an integer if the node has been visited and #f if the node has not yet been visited.")))
 
-(struct cycle (conjunction index substitution rule)
+(struct cycle (index)
   #:methods
   gen:equal+hash
   [(define (equal-proc c1 c2 equal?-recur)
-     (and (equal?-recur (cycle-conjunction c1) (cycle-conjunction c2))
-          (equal?-recur (cycle-index c1) (cycle-index c2))
-          (equal?-recur (cycle-substitution c1) (cycle-substitution c2))
-          (equal?-recur (cycle-rule c1) (cycle-rule c2))))
+     (equal?-recur (cycle-index c1) (cycle-index c2)))
    (define (hash-proc c hash-recur)
-     (+ (hash-recur (cycle-conjunction c))
-        (* 7 (hash-recur (cycle-substitution c)))
-        (* 11 (hash-recur (cycle-rule c)))
-        (* 13 (hash-recur (cycle-index c)))))
+     (hash-recur (cycle-index c)))
    (define (hash2-proc c hash2-recur)
-     (+ (hash2-recur (cycle-conjunction c))
-        (hash2-recur (cycle-substitution c))
-        (hash2-recur (cycle-rule c))
-        (hash2-recur (cycle-index c))))])
+     (hash2-recur (cycle-index c)))])
 
 (provide
  (struct*-doc
   cycle
-  ([conjunction (listof abstract-atom?)]
-   [index exact-positive-integer?]
-   [substitution abstract-substitution?]
-   [rule abstract-knowledge?])
+  ([index exact-positive-integer?])
   ("A representation of a cycle detected during abstract analysis."
-   "Like tree-label, except that index stands for the index of the (first) previously encountered conjunction which generalizes over conjunction")))
+   "index stands for the index of a handled conjunction which generalizes over the associatedconjunction")))
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
@@ -126,25 +136,32 @@
        (print-conjunction con sel out)
        (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]))
 
-(define (completed-tree? t)
+(define (candidate-and-predecessors t acc)
   (match t
-    [(node 'fail '()) #t]
-    [(node (cycle _ _ _ _) '()) #t]
-    [(node (tree-label '() _ _ _ _) '()) #t]
-    [(node (tree-label _ _ _ _ _) '()) #f]
-    [(node (tree-label _ _ _ _ _) children) (andmap completed-tree? children)]))
-
-(define (candidate-for-update tree)
-  (match tree
-    [(node (tree-label '() _ _ _ _) '()) (none)]
-    [(node (tree-label c (none) s r i) '()) (some (node (tree-label c (none) s r i) '()))]
-    [(node (tree-label _ (some v) _ _ _) children)
-     (if (andmap completed-tree? children)
-         (none)
-         (candidate-for-update (car (filter (λ (c) (not (completed-tree? c))) children))))]
-    [(node 'fail '()) (none)]
-    [(node (cycle _ _ _ _) '()) (none)]
-    [_ (error 'missing-pattern)]))
+    [(node (tree-label '() _ _ _ _) '()) (cons (none) acc)]
+    [(node 'fail '()) (cons (none) acc)]
+    [(node (cycle _) '()) (cons (none) acc)]
+    [(node (tree-label c (none) s r #f) '())
+     (cons (some (node (tree-label c (none) s r #f) '())) acc)]
+    [(node (tree-label c (none) s r i) (list (cycle ci)))
+     (candidate-and-predecessors ci (cons (c i) acc))]
+    [(node (tree-label c (some v) _ _ i) children)
+     (foldl
+      (λ (child acc2)
+        (if (some? (car acc2))
+            acc2
+            (candidate-and-predecessors
+             child
+             (cdr acc2))))
+      (cons (none) (cons (cons c i) acc))
+      (node-children t))]))
+; contract could be a bit more specific...
+(provide
+ (proc-doc/names
+  candidate-and-predecessors
+  (-> node? list? (cons/c any/c list?))
+  (tree accumulator)
+  ("Find the next candidate for unfolding and conjunctions which have already been dealt with.")))
 
 (define (resolvent->node res)
   (node
@@ -166,29 +183,55 @@
                 (newline)
                 (interactive-analysis tree clauses full-evaluations preprior next-index))]
         [(equal? choice proceed)
-         (begin (define candidate (candidate-for-update tree))
-                (if (none? candidate)
-                    (begin (display "There are no nodes left to analyze.")
-                           (interactive-analysis tree clauses full-evaluations preprior next-index))
-                    (let* ([candidate-label (node-label (some-v candidate))]
-                           [conjunction (tree-label-conjunction candidate-label)]
-                           [resolution-result (abstract-resolve conjunction preprior clauses full-evaluations)]
-                           [index-selection (car resolution-result)]
-                           [resolvents (cdr resolution-result)]
-                           [child-trees (map resolvent->node resolvents)]
-                           [updated-candidate (node
-                                               (tree-label (tree-label-conjunction candidate-label)
-                                                           (some index-selection)
-                                                           (tree-label-substitution candidate-label)
-                                                           (tree-label-rule candidate-label)
-                                                           next-index)
-                                               child-trees)]
-                           [updated-top (replace-first-subtree tree (some-v candidate) updated-candidate)])
-                      (begin
-                        (newline)
-                        (tree-display updated-candidate print-tree-label)
-                        (newline)
-                        (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1))))))]
+         (match (candidate-and-predecessors tree '())
+           [(cons (none) _)
+            (begin (display "There are no nodes left to analyze.")
+                   (interactive-analysis tree clauses full-evaluations preprior next-index))]
+           [(cons (some candidate) preds)
+            (let* ([candidate-label (node-label candidate)]
+                   [conjunction (tree-label-conjunction candidate-label)]
+                   [more-general-predecessor
+                    (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) preds)])
+              ; lots of duplicated code here, can this be improved?
+              (if more-general-predecessor
+                  (let* ([cycle-node (cycle (cdr more-general-predecessor))]
+                         [updated-candidate
+                          (node
+                           (tree-label
+                            (tree-label-conjunction candidate-label)
+                            (none)
+                            (tree-label-substitution candidate-label)
+                            (tree-label-rule candidate-label)
+                            next-index)
+                           (list cycle-node))]
+                         [updated-top (replace-first-subtree tree candidate updated-candidate)])
+                    (begin
+                      (newline)
+                      (tree-display updated-candidate print-tree-label)
+                      (newline)
+                      (interactive-analysis
+                       updated-top clauses full-evaluations preprior (+ next-index 1))))
+                  (let* ([resolution-result
+                          (abstract-resolve conjunction preprior clauses full-evaluations)]
+                         [index-selection (car resolution-result)]
+                         [resolvents (cdr resolution-result)]
+                         [child-trees (map resolvent->node resolvents)]
+                         [updated-candidate
+                          (node
+                           (tree-label
+                            (tree-label-conjunction candidate-label)
+                            (some index-selection)
+                            (tree-label-substitution candidate-label)
+                            (tree-label-rule candidate-label)
+                            next-index)
+                           child-trees)]
+                         [updated-top (replace-first-subtree tree candidate updated-candidate)])
+                    (begin
+                      (newline)
+                      (tree-display updated-candidate print-tree-label)
+                      (newline)
+                      (interactive-analysis
+                       updated-top clauses full-evaluations preprior (+ next-index 1))))))])]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
