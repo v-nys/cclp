@@ -140,7 +140,9 @@
        (print-conjunction con sel out)
        (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]
     [(cycle i)
-     (display (format "cycle back to node ~a" i) out)]))
+     (if use-color
+         (display-color (format "cycle back to node ~a" i) out #:fg 'green)
+         (display (format "cycle back to node ~a" i) out))]))
 
 (define (candidate-and-predecessors t acc)
   (match t
