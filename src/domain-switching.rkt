@@ -32,16 +32,25 @@
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 
-;(: get-maximum-abstract-var (-> (-> AbstractVariable Boolean) (-> AbstractVariable Integer) (Listof AbstractVariable) (Opt Integer)))
-; type-test is to distinguish a from g
-; index-selector gets the index from a or g, respectively
 (define (get-maximum-abstract-var type-test? index-selector vals)
-  (foldl (λ (val acc)
-           (cond [(not (type-test? val)) acc]
-                 [(none? acc) (some (index-selector val))]
-                 [(some? acc) (some (max (some-v acc) (index-selector val)))]
-                 [else none])) (none) vals)) ; last clause is just there to get the type right
-(provide get-maximum-abstract-var)
+  (foldl
+   (λ (val acc)
+     (cond [(not (type-test? val)) acc]
+           [(none? acc) (some (index-selector val))]
+           [(some? acc) (some (max (some-v acc) (index-selector val)))]))
+   (none)
+   vals))
+(provide
+ (proc-doc/names
+  get-maximum-abstract-var
+  (->
+   (-> abstract-variable? boolean?)
+   (-> abstract-variable? exact-positive-integer?)
+   (listof abstract-variable?)
+   (maybe exact-positive-integer?))
+  (type-test? index-selector vals)
+  @{Finds the greatest index of an abstract variable in @racket[vals]
+ which passes @racket[type-test?] by selecting it with @racket[index-selector].}))
 
 ;(: pre-abstract-aux-variable (-> variable (HashTable Term AbstractVariable) (Pair AbstractVariable (HashTable Term AbstractVariable))))
 (define (pre-abstract-aux-variable var existing-mapping)
@@ -67,11 +76,17 @@
         [(function? concrete-term)
          (if (null? (function-args concrete-term))
              (pre-abstract-aux-constant concrete-term existing-mapping)
-             ; FIXME: pre-abstract-aux-term lijkt void terug te geven (ipv pair)
-             (let* ([applied-to-args (map-accumulatel pre-abstract-aux-term existing-mapping (function-args concrete-term))]
+             (let* ([applied-to-args
+                     (map-accumulatel
+                      pre-abstract-aux-term
+                      existing-mapping
+                      (function-args concrete-term))]
                     [just-mapped-args (car applied-to-args)]
                     [just-acc (cdr applied-to-args)])
-               (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]))
+               (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]
+        [(number? concrete-term) (error "TODO: implement abstraction of numbers")]
+        [else (error "Missed a case")]))
+(provide pre-abstract-aux-term)
 
 ; note: there is some duplication here, solely due to Conjunctions...
 ;(: pre-abstract-aux-atom (-> atom (HashTable Term AbstractVariable) (Pair abstract-atom (HashTable Term AbstractVariable))))

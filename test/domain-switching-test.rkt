@@ -30,12 +30,19 @@
          "concrete-domain-boilerplate.rkt"
          (prefix-in ak: "../src/abstract-knowledge.rkt"))
 
-(check-equal? (get-maximum-abstract-var a? avar-index (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14))) (some 9) "Find the biggest a, where there is one")
+(check-equal?
+ (get-maximum-abstract-var
+  a?
+  avar-index
+  (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14)))
+ (some 9)
+ "Find the biggest a, where there is one")
 (check-equal? (get-maximum-abstract-var g? avar-index (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14))) (some 14) "Find the biggest g, where there is one")
 (check-equal? (get-maximum-abstract-var g? avar-index (list (a 1) (a 2) (a 5) (a 9) (a 6) (a 14))) (none) "Find the biggest g, where there is none")
 
 (check-equal? (pre-abstract (variable "A")) (a 1) "single new variable case")
 (check-equal? (pre-abstract (function "dummy" '())) (g 1) "single new constant case")
+(check-equal? (pre-abstract-aux-term 5 (hash)) (g 1) "numbers are also constants")
 
 (check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash)) (cons (g 1) (hash (function "dummy" '()) (g 1))) "case of constant with no existing mapping")
 (check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash (function "dummy" '()) (g 1))) (cons (g 1) (hash (function "dummy" '()) (g 1))) "case of constant with an existing mapping")
