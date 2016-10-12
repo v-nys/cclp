@@ -138,7 +138,9 @@
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out)
-       (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]))
+       (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]
+    [(cycle i)
+     (display (format "cycle back to node ~a" i) out)]))
 
 (define (candidate-and-predecessors t acc)
   (match t
@@ -200,23 +202,23 @@
               (if more-general-predecessor
                   (begin
                     (println "Found a more general predecessor!")
-                    (let* ([cycle-node (cycle (cdr more-general-predecessor))]
-                                [updated-candidate
-                                 (node
-                                  (tree-label
-                                   (tree-label-conjunction candidate-label)
-                                   (none)
-                                   (tree-label-substitution candidate-label)
-                                   (tree-label-rule candidate-label)
-                                   next-index)
-                                  (list cycle-node))]
-                                [updated-top (replace-first-subtree tree candidate updated-candidate)])
-                           (begin
-                             (newline)
-                             (tree-display updated-candidate print-tree-label)
-                             (newline)
-                             (interactive-analysis
-                              updated-top clauses full-evaluations preprior (+ next-index 1)))))
+                    (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
+                           [updated-candidate
+                            (node
+                             (tree-label
+                              (tree-label-conjunction candidate-label)
+                              (none)
+                              (tree-label-substitution candidate-label)
+                              (tree-label-rule candidate-label)
+                              next-index)
+                             (list cycle-node))]
+                           [updated-top (replace-first-subtree tree candidate updated-candidate)])
+                      (begin
+                        (newline)
+                        (tree-display updated-candidate print-tree-label)
+                        (newline)
+                        (interactive-analysis
+                         updated-top clauses full-evaluations preprior (+ next-index 1)))))
                   (let* ([resolution-result
                           (abstract-resolve conjunction preprior clauses full-evaluations)]
                          [index-selection (car resolution-result)]
