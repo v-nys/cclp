@@ -23,12 +23,14 @@
 ; functionality for switching between the concrete and abstract domain
 ; essentially the abstraction function α and concretization function γ
 
-#lang racket
+#lang at-exp racket
 (require "concrete-domain.rkt")
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
 (require racket-list-utils/utils)
 (require (prefix-in ck: "concrete-knowledge.rkt") (prefix-in ak: "abstract-knowledge.rkt"))
+(require scribble/srcdoc)
+(require (for-doc scribble/manual))
 
 ;(: get-maximum-abstract-var (-> (-> AbstractVariable Boolean) (-> AbstractVariable Integer) (Listof AbstractVariable) (Opt Integer)))
 ; type-test is to distinguish a from g
@@ -60,14 +62,16 @@
 
 ;(: pre-abstract-aux-term (-> Term (HashTable Term AbstractVariable) (Pair AbstractTerm (HashTable Term AbstractVariable))))
 (define (pre-abstract-aux-term concrete-term existing-mapping)
-  (cond [(variable? concrete-term) (pre-abstract-aux-variable concrete-term existing-mapping)]
-        [(function? concrete-term) (if (null? (function-args concrete-term))
-                                       (pre-abstract-aux-constant concrete-term existing-mapping)
-                                       ; FIXME: pre-abstract-aux-term lijkt void terug te geven (ipv pair)
-                                       (let* ([applied-to-args (map-accumulatel pre-abstract-aux-term existing-mapping (function-args concrete-term))]
-                                              [just-mapped-args (car applied-to-args)]
-                                              [just-acc (cdr applied-to-args)])
-                                         (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]))
+  (cond [(variable? concrete-term)
+         (pre-abstract-aux-variable concrete-term existing-mapping)]
+        [(function? concrete-term)
+         (if (null? (function-args concrete-term))
+             (pre-abstract-aux-constant concrete-term existing-mapping)
+             ; FIXME: pre-abstract-aux-term lijkt void terug te geven (ipv pair)
+             (let* ([applied-to-args (map-accumulatel pre-abstract-aux-term existing-mapping (function-args concrete-term))]
+                    [just-mapped-args (car applied-to-args)]
+                    [just-acc (cdr applied-to-args)])
+               (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]))
 
 ; note: there is some duplication here, solely due to Conjunctions...
 ;(: pre-abstract-aux-atom (-> atom (HashTable Term AbstractVariable) (Pair abstract-atom (HashTable Term AbstractVariable))))
@@ -89,8 +93,7 @@
 ;(: pre-abstract-conjunction (-> Conjunction AbstractConjunction))
 (define (pre-abstract-conjunction conjunction)
   (car (map-accumulatel pre-abstract-aux-atom (hash) conjunction)))
-          
-;(: pre-abstract (-> (U atom Conjunction Term) (U abstract-atom AbstractConjunction AbstractTerm)))
+
 (define (pre-abstract concrete-domain-elem)
   (cond [(atom? concrete-domain-elem)
          (abstract-atom
@@ -100,4 +103,14 @@
          (pre-abstract-conjunction concrete-domain-elem)]
         [(term? concrete-domain-elem)
          (car (pre-abstract-aux-term concrete-domain-elem (hash)))]))
-(provide pre-abstract)
+(provide
+ (proc-doc/names
+  pre-abstract
+  (->
+   (or/c atom? (listof atom?) term?)
+   (or/c abstract-atom? (listof abstract-atom?) abstract-term?))
+  (concrete-domain-elem)
+  @{Returns the most specific abstraction of @racket[concrete-domain-elem].
+ If @racket[concrete-domain-elem] is a concrete atom, the result is an abstract atom.
+ If @racket[concrete-domain-elem] is a concrete conjunction, the result is a concrete conjunction.
+ If @racket[concrete-domain-elem] is a concrete term, the result is an abstract term.}))

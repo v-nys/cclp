@@ -92,4 +92,4 @@
                       (tree-display actual node-display)
                       (displayln "expected:")
                       (tree-display expected0 node-display)
-                      (readable-check-equal? actual expected0)))))
+                      (check-equal? actual expected0)))))

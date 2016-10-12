@@ -28,7 +28,7 @@
          "printed-test-results.rkt"
          "../src/abstract-knowledge.rkt")
 
-(readable-check-equal?
+(check-equal?
  (abstract-resolve (abp:parse-abstract-conjunction "perm(γ1,α1),ord(α1)")
                    (abp:parse-prior-relation "perm(γ1,α1),ord(α1)")
                    (list (cbp:parse-rule "perm([],[])")
@@ -43,11 +43,10 @@
                    (abp:parse-abstract-substitution "γ1/γ2,α1/γ2")
                    (cbp:parse-rule "perm([],[])")))))
 
-; bug trigger test for problem with permutation sort
 (let ([full-eval
        (full-evaluation (abp:parse-abstract-atom "del(α1,[γ1|γ2],α2)")
                         (abp:parse-abstract-atom "del(γ3,[γ1|γ2],γ4)"))])
-  (readable-check-equal?
+  (check-equal?
    (abstract-resolve
     (abp:parse-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")
     (abp:parse-prior-relation "perm(γ1,α1),ord(α1)")
@@ -55,4 +54,8 @@
     (list full-eval))
    (cons
     0
-    (list (resolvent (abp:parse-abstract-conjunction "perm(γ4,α13),ord([γ3,γ6|α13])") (list) full-eval)))))
+    (list
+     (resolvent
+      (abp:parse-abstract-conjunction "perm(γ23,α13),ord([γ3,γ22|α13])")
+      (abp:parse-abstract-substitution "α12/γ22,γ18/γ20,γ19/γ21,α14/γ23")
+      full-eval)))))
