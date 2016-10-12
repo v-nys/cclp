@@ -48,13 +48,17 @@
 
 (define (print-conjunction c ms [out (current-output-port)])
   (define last-i (- (length c) 1))
-  (for ([i (range 0 (length c))]
-        [atom c])
-    (begin
-      (if (and (some? ms) (eq? i (some-v ms)))
-          (if use-color (print-color atom out #:fg 'red) (print atom out))
-          (print atom out))
-      (when (< i last-i) (display "," out)))))
+  (if (> (length c) 0)
+      (for ([i (range 0 (length c))]
+            [atom c])
+        (begin
+          (if (and (some? ms) (eq? i (some-v ms)))
+              (if use-color (print-color atom out #:fg 'red) (print atom out))
+              (print atom out))
+          (when (< i last-i) (display "," out))))
+      (if use-color
+          (display-color "□" #:fg 'green)
+          (display "□"))))
 
 (define (write-tree-label obj port mode)
   (if (eq? mode #t)
@@ -202,25 +206,23 @@
                     (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) preds)])
               ; lots of duplicated code here, can this be improved?
               (if more-general-predecessor
-                  (begin
-                    (println "Found a more general predecessor!")
-                    (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
-                           [updated-candidate
-                            (node
-                             (tree-label
-                              (tree-label-conjunction candidate-label)
-                              (none)
-                              (tree-label-substitution candidate-label)
-                              (tree-label-rule candidate-label)
-                              next-index)
-                             (list cycle-node))]
-                           [updated-top (replace-first-subtree tree candidate updated-candidate)])
-                      (begin
-                        (newline)
-                        (tree-display updated-candidate print-tree-label)
-                        (newline)
-                        (interactive-analysis
-                         updated-top clauses full-evaluations preprior (+ next-index 1)))))
+                  (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
+                         [updated-candidate
+                          (node
+                           (tree-label
+                            (tree-label-conjunction candidate-label)
+                            (none)
+                            (tree-label-substitution candidate-label)
+                            (tree-label-rule candidate-label)
+                            next-index)
+                           (list cycle-node))]
+                         [updated-top (replace-first-subtree tree candidate updated-candidate)])
+                    (begin
+                      (newline)
+                      (tree-display updated-candidate print-tree-label)
+                      (newline)
+                      (interactive-analysis
+                       updated-top clauses full-evaluations preprior (+ next-index 1))))
                   (let* ([resolution-result
                           (abstract-resolve conjunction preprior clauses full-evaluations)]
                          [index-selection (car resolution-result)]
