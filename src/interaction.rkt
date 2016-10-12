@@ -39,7 +39,7 @@
 
 (require (for-doc scribble/manual))
 
-(define use-color #t)
+(define use-color #f)
 
 (define (print-substitution s [out (current-output-port)])
   (display "{" out)
@@ -151,8 +151,8 @@
     [(node (cycle _) '()) (cons (none) acc)]
     [(node (tree-label c (none) s r #f) '())
      (cons (some (node (tree-label c (none) s r #f) '())) acc)]
-    [(node (tree-label c (none) s r i) (list (cycle ci)))
-     (candidate-and-predecessors ci (cons (c i) acc))]
+    [(node (tree-label c (none) s r i) (list (node (cycle ci) '())))
+     (candidate-and-predecessors (node (cycle ci) '()) (cons (c i) acc))]
     [(node (tree-label c (some v) _ _ i) children)
      (foldl
       (λ (child acc2)
