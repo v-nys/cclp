@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
+#lang at-exp racket
 
 (require "io-utils.rkt")
 (require "data-utils.rkt")
@@ -36,6 +36,8 @@
 (require scribble/srcdoc)
 (require terminal-color)
 (require "abstract-domain-ordering.rkt")
+
+(require (for-doc scribble/manual))
 
 (define use-color #f)
 
@@ -125,8 +127,9 @@
  (struct*-doc
   cycle
   ([index exact-positive-integer?])
-  ("A representation of a cycle detected during abstract analysis."
-   "index stands for the index of a handled conjunction which generalizes over the associatedconjunction")))
+  @{A representation of a cycle detected during abstract analysis.
+     @racket[index] stands for the index of a previously handled conjunction which generalizes over the conjunction which introduces the @racket[cycle].
+     The latter is normally represented as the parent of the @racket[cycle] in the abstract analysis tree.}))
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
