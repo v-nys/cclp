@@ -17,8 +17,8 @@
 (check-equal? (sexp->abstract-atom '(a))
               (abp:parse-abstract-atom "a"))
 
-(check-equal? (abstract-conjunction->sexp (list)) '())
+(check-equal? (abstract-domain-elem->sexp (list)) '())
 (check-equal?
- (abstract-conjunction->sexp
+ (abstract-domain-elem->sexp
   (list (abp:parse-abstract-atom "a") (abp:parse-abstract-atom "b") (abp:parse-abstract-atom "c")))
  '(cons (a) (cons (b) (cons (c) ()))))
