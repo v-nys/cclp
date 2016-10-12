@@ -36,5 +36,5 @@
          (ak:full-evaluation (parse-abstract-atom "del(α15,[γ20|γ21],α16)")
                              (parse-abstract-atom "del(γ22,[γ20|γ21],γ23)"))])
    (check-equal?
-    full-eval
+    renamed-abstract-rule
     expected)))
