@@ -19,6 +19,22 @@
 (check-equal? (assemble-var-indices a? (parse-abstract-term "foo(bar(γ1,γ2,α3,α4))")) (set 3 4))
 (check-equal? (assemble-var-indices g? (parse-abstract-atom "foo(bar(γ1,γ2,α3,α4))")) (set 1 2))
 (check-equal? (assemble-var-indices a? (parse-abstract-atom "foo(bar(γ1,γ2,α3,α4))")) (set 3 4))
+
+(check-equal?
+ (assemble-var-indices
+  g?
+  (list
+   (parse-abstract-atom "foo(bar(γ1,γ2,α3,α4))")
+   (parse-abstract-atom "foo(bar(γ5,γ6,α7,α8))")))
+ (set 1 2 5 6))
+(check-equal?
+ (assemble-var-indices
+  a?
+  (list
+   (parse-abstract-atom "foo(bar(γ1,γ2,α3,α4))")
+   (parse-abstract-atom "foo(bar(γ5,γ6,α7,α8))")))
+ (set 3 4 7 8))
+
 (check-equal?
  (assemble-var-indices
   a?

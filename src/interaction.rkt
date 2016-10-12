@@ -108,10 +108,10 @@
    [rule (or/c #f abstract-knowledge?)]
    [index (or/c #f exact-positive-integer?)])
   @{The contents of a node in the abstract analysis tree which has not yet been visited or which was successfully unfolded.
-   The field @racket[selection] stands for the index (if any) of the atom selected for unfolding.
-   The field @racket[substitution] is the substitution which was applied to the parent and a program clause to obtain @racket[conjunction].
-   The field @racket[rule] is the abstract knowledge with which the parent was resolved to obtain @racket[conjunction].
-   The field @racket[index] is a unique label, assigned so that cycles can be clearly marked.
+     The field @racket[selection] stands for the index (if any) of the atom selected for unfolding.
+     The field @racket[substitution] is the substitution which was applied to the parent and a program clause to obtain @racket[conjunction].
+     The field @racket[rule] is the abstract knowledge with which the parent was resolved to obtain @racket[conjunction].
+     The field @racket[index] is a unique label, assigned so that cycles can be clearly marked.
      It is an integer if the node has been visited and @racket[#f] if the node has not yet been visited.}))
 
 (struct cycle (index)
@@ -198,23 +198,25 @@
                     (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) preds)])
               ; lots of duplicated code here, can this be improved?
               (if more-general-predecessor
-                  (let* ([cycle-node (cycle (cdr more-general-predecessor))]
-                         [updated-candidate
-                          (node
-                           (tree-label
-                            (tree-label-conjunction candidate-label)
-                            (none)
-                            (tree-label-substitution candidate-label)
-                            (tree-label-rule candidate-label)
-                            next-index)
-                           (list cycle-node))]
-                         [updated-top (replace-first-subtree tree candidate updated-candidate)])
-                    (begin
-                      (newline)
-                      (tree-display updated-candidate print-tree-label)
-                      (newline)
-                      (interactive-analysis
-                       updated-top clauses full-evaluations preprior (+ next-index 1))))
+                  (begin
+                    (println "Found a more general predecessor!")
+                    (let* ([cycle-node (cycle (cdr more-general-predecessor))]
+                                [updated-candidate
+                                 (node
+                                  (tree-label
+                                   (tree-label-conjunction candidate-label)
+                                   (none)
+                                   (tree-label-substitution candidate-label)
+                                   (tree-label-rule candidate-label)
+                                   next-index)
+                                  (list cycle-node))]
+                                [updated-top (replace-first-subtree tree candidate updated-candidate)])
+                           (begin
+                             (newline)
+                             (tree-display updated-candidate print-tree-label)
+                             (newline)
+                             (interactive-analysis
+                              updated-top clauses full-evaluations preprior (+ next-index 1)))))
                   (let* ([resolution-result
                           (abstract-resolve conjunction preprior clauses full-evaluations)]
                          [index-selection (car resolution-result)]

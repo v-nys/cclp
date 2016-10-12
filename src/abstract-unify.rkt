@@ -32,8 +32,12 @@
 (define (abstract-unify subst additional-g-offset)
   (match subst
     [(list) (some (list))]
-    [(list-rest (abstract-equality t1 t2) tail) #:when (equal? t1 t2) (abstract-unify tail additional-g-offset)]
-    [(list-rest (abstract-equality v t) tail) #:when (and (abstract-variable? v) (occurs v t)) (none)]
+    [(list-rest (abstract-equality t1 t2) tail)
+     #:when (equal? t1 t2)
+     (abstract-unify tail additional-g-offset)]
+    [(list-rest (abstract-equality v t) tail)
+     #:when (and (abstract-variable? v) (occurs v t))
+     (none)]
     [(list-rest (abstract-equality (a i) t) tail) #:when (abstract-term? t) ; we can't unify a conjunct or conjunction with a term
      (let* ([max-nested-g (maximum-var-index t g?)]
             [substituted (substitute-in-substitution t (a i) tail)]
@@ -47,6 +51,14 @@
      (if (and (equal? sym1 sym2) (equal? (length args1) (length args2)))
          (abstract-unify (append (for/list ([arg1 args1] [arg2 args2]) (abstract-equality arg1 arg2)) tail) additional-g-offset)
          (none))]
+    ; note: unification of conjunctions isn't explicitly mentioned in the paper, but this is it
+    [(list-rest (abstract-equality lst1 lst2) tail)
+     #:when (and (list? lst1) (list? lst2))
+     (abstract-unify
+      (for/list
+          ([atom1 lst1] [atom2 lst2])
+        (abstract-equality atom1 atom2))
+      additional-g-offset)]
     [(list-rest (abstract-equality (abstract-function sym1 args1) (abstract-function sym2 args2)) tail)
      (if (and (equal? sym1 sym2) (equal? (length args1) (length args2)))
          (abstract-unify (append (for/list ([arg1 args1] [arg2 args2]) (abstract-equality arg1 arg2)) tail) additional-g-offset)
