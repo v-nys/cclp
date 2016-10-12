@@ -22,7 +22,7 @@
      full-ai-rules))
   (if full-eval-index
       full-eval-index
-      (let* ([sexp-conjunction (abstract-conjunction->sexp conjunction)]
+      (let* ([sexp-conjunction (abstract-domain-elem->sexp conjunction)]
              [query (list 'member_reaches_or_includes_all_under_consistency 'X sexp-conjunction)]
              [outcomes (query-model-dynamic prior query)])
         (if (null? outcomes)

@@ -78,4 +78,4 @@
          (maximum-var-index (cons (abstract-rule-head abstraction) (abstract-rule-body abstraction)) right-variable-type?)]
         [(full-evaluation? abstraction)
          (maximum-var-index (list (full-evaluation-input-pattern abstraction) (full-evaluation-output-pattern abstraction)) right-variable-type?)]))
-(provide (contract-out [maximum-var-index (-> (or/c (listof abstract-domain-elem?) abstract-domain-elem? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
+(provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))

@@ -135,10 +135,8 @@
   apply-substitution
   (-> abstract-substitution?
       (or/c abstract-domain-elem?
-            abstract-knowledge?
-            (listof abstract-domain-elem?))
+            abstract-knowledge?)
       (or/c abstract-domain-elem?
-            abstract-knowledge?
-            (listof abstract-domain-elem?)))
+            abstract-knowledge?))
   (subst substitution-object)
   ("One documentation-time expression" "Another documentation-time expression")))

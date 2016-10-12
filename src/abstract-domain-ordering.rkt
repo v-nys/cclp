@@ -20,8 +20,7 @@
   >=-extension
   (-> abstract-domain-elem? abstract-domain-elem? boolean?)
   (domain-elem1 domain-elem2)
-  @{Checks whether abstract domain element @racket[domain-elem1] is at least as general as @racket[domain-elem2]}))
-
+  @{Checks whether @racket[domain-elem1] is at least as general as @racket[domain-elem2]}))
 
 (define (renames? domain-elem1 domain-elem2)
   (and (>=-extension domain-elem1 domain-elem2)

@@ -51,5 +51,5 @@
  (contract-out
   [rename-apart
    (-> (or/c abstract-domain-elem? abstract-knowledge?)
-       (or/c abstract-domain-elem? (listof abstract-atom?))
+       abstract-domain-elem?
        (or/c abstract-domain-elem? abstract-knowledge?))]))

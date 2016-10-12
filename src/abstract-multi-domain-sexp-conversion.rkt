@@ -9,7 +9,9 @@
     [(abstract-atom symbol args) (cons symbol (map abstract-domain-elem->sexp args))]
     [(abstract-function functor args) (if (number? functor)
                                           (list (positive-integer->symbol functor))
-                                          (cons functor (map abstract-domain-elem->sexp args)))]))
+                                          (cons functor (map abstract-domain-elem->sexp args)))]
+    [(list-rest lst)
+     (foldr (λ (atm acc) (list 'cons (abstract-domain-elem->sexp atm) acc)) '() lst)]))
 ; can the contract be made more strict?
 (provide (contract-out [abstract-domain-elem->sexp (-> abstract-domain-elem? list?)]))
 
@@ -24,7 +26,3 @@
   (abstract-atom (car sexp)
                  (map sexp->abstract-term (cdr sexp))))
 (provide (contract-out [sexp->abstract-atom (-> list? abstract-atom?)]))
-
-(define (abstract-conjunction->sexp con)
-  (foldr (λ (atm acc) (list 'cons (abstract-domain-elem->sexp atm) acc)) '() con))
-(provide (contract-out [abstract-conjunction->sexp (-> (listof abstract-atom?) list?)]))

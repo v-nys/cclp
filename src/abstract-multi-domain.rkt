@@ -83,5 +83,6 @@
 (define (abstract-term? elem) (or (abstract-variable? elem) (abstract-function? elem)))
 (provide abstract-term?)
 
-(define (abstract-domain-elem? elem) (or (abstract-atom? elem) (abstract-term? elem)))
+(define (abstract-domain-elem? elem)
+  (or (abstract-atom? elem) (abstract-term? elem) ((listof abstract-atom?) elem)))
 (provide abstract-domain-elem?)
