@@ -152,7 +152,7 @@
     [(node (tree-label c (none) s r #f) '())
      (cons (some (node (tree-label c (none) s r #f) '())) acc)]
     [(node (tree-label c (none) s r i) (list (node (cycle ci) '())))
-     (candidate-and-predecessors (node (cycle ci) '()) (cons (c i) acc))]
+     (candidate-and-predecessors (node (cycle ci) '()) (cons (cons c i) acc))]
     [(node (tree-label c (some v) _ _ i) children)
      (foldl
       (λ (child acc2)
