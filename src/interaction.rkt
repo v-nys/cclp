@@ -129,7 +129,7 @@
   cycle
   ([index exact-positive-integer?])
   @{A cycle detected during abstract analysis.
-     @racket[index] stands for the index of a previously handled conjunction which generalizes over the conjunction which introduces the @racket[cycle].
+     The field @racket[index] stands for the index of a previously handled conjunction which generalizes over the conjunction which introduces the @racket[cycle].
      The latter is normally represented as the parent of the @racket[cycle] in the abstract analysis tree.}))
 
 (define (print-tree-label t [out (current-output-port)])
