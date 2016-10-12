@@ -44,4 +44,12 @@
       (cdr (candidate-and-predecessors tree '()))
       (list
        (cons (list (abp:parse-abstract-atom "bar(γ1)")) 2)
-       (cons (list (abp:parse-abstract-atom "foo(γ1)")) 1))))))
+       (cons (list (abp:parse-abstract-atom "foo(γ1)")) 1)))))
+ (let* ([bottom-left (node (cycle 1) '())]
+        [above-bottom-left (node (tree-label (list (abp:parse-abstract-atom "a")) (none) (list) #f 3) (list bottom-left))]
+        [left-of-root (node (tree-label (list (abp:parse-abstract-atom "b")) (some 0) (list) #f 2) (list above-bottom-left))]
+        [bottom-right (node (tree-label (list (abp:parse-abstract-atom "c")) (none) (list) #f #f) '())]
+        [tree (node (tree-label (list (abp:parse-abstract-atom "a")) (some 0) (list) #f 1) (list left-of-root bottom-right))])
+   (check-equal?
+    (car (candidate-and-predecessors tree '()))
+    (some bottom-right))))

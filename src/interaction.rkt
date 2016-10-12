@@ -39,7 +39,7 @@
 
 (require (for-doc scribble/manual))
 
-(define use-color #f)
+(define use-color #t)
 
 (define (print-substitution s [out (current-output-port)])
   (display "{" out)
