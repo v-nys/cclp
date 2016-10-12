@@ -84,7 +84,8 @@
                     [just-mapped-args (car applied-to-args)]
                     [just-acc (cdr applied-to-args)])
                (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]
-        [(number? concrete-term) (error "TODO: implement abstraction of numbers")]
+        [(number? concrete-term)
+         (pre-abstract-aux-constant concrete-term existing-mapping)]
         [else (error "Missed a case")]))
 (provide pre-abstract-aux-term)
 

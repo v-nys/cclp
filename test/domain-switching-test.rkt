@@ -42,9 +42,9 @@
 
 (check-equal? (pre-abstract (variable "A")) (a 1) "single new variable case")
 (check-equal? (pre-abstract (function "dummy" '())) (g 1) "single new constant case")
-(check-equal? (pre-abstract-aux-term 5 (hash)) (g 1) "numbers are also constants")
 
 (check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash)) (cons (g 1) (hash (function "dummy" '()) (g 1))) "case of constant with no existing mapping")
+(check-equal? (pre-abstract-aux-constant 3 (hash)) (cons (g 1) (hash 3 (g 1))) "case of constant with no existing mapping")
 (check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash (function "dummy" '()) (g 1))) (cons (g 1) (hash (function "dummy" '()) (g 1))) "case of constant with an existing mapping")
 (check-equal? (pre-abstract-aux-constant (function "dummy2" '()) (hash (function "dummy1" '()) (g 1))) (cons (g 2) (hash (function "dummy1" '()) (g 1) (function "dummy2" '()) (g 2))) "case of constant when there is a mapping for another constant")
 
