@@ -33,4 +33,19 @@
  (>=-extension
   (parse-abstract-atom "sift([γ1|α1],α2)")
   (parse-abstract-atom "sift([γ2|α4],α1)"))) ; renaming should be implicit
-
+(check-true
+ (>=-extension
+  (list (parse-abstract-atom "sift([γ1|α1],α2)"))
+  (list (parse-abstract-atom "sift([γ2|α4],α1)"))))
+(check-false
+ (>=-extension
+  (list (parse-abstract-atom "sift([γ1|γ2],α2)"))
+  (list (parse-abstract-atom "sift([γ3|α4],α1)"))))
+(check-true
+ (>=-extension
+  (list (parse-abstract-atom "sift([γ1|α1],α2)") (parse-abstract-atom "filter(α2,α3)"))
+  (list (parse-abstract-atom "sift([γ2|α4],α1)") (parse-abstract-atom "filter(α1,α5)"))))
+(check-false
+ (>=-extension
+  (list (parse-abstract-atom "sift([γ1|α1],α2)") (parse-abstract-atom "filter(α2,α3)"))
+  (list (parse-abstract-atom "sift([γ2|α4],α1)") (parse-abstract-atom "filter(α6,α5)"))))
