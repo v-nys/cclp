@@ -38,11 +38,12 @@ plus(γ1,γ2,α1) -> α1/γ3.
 minus(γ1,γ2,α1) -> α1/γ3.
 
 {PREPRIOR}
+integers(γ1,α1),filter(γ1,α1,α2)
 integers(γ1,α1),sift(α1,α2)
 integers(γ1,α1),length(α1,γ2)
-sift([γ1|α1]),integers(γ1,α1)
+sift([γ1|α1],α2),integers(γ1,α1)
 filter(γ1,[γ2|α1],α2),integers(γ1,α1)
-length([γ1|α1]),integers(γ1,α1)
+length([γ1|α1],γ2),integers(γ1,α1)
 
 {QUERY}
 primes(γ1,α1)
