@@ -179,7 +179,7 @@
 (define-syntax-rule (abstract-number-term TERM) TERM)
 (provide abstract-number-term)
 
-(define-syntax-rule (number-term TERM) TERM)
+(define-syntax-rule (number-term TERM) (quote TERM))
 (provide number-term)
 
 (define-syntax (abstract-lplist stx)
