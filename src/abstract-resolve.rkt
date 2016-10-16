@@ -33,6 +33,7 @@
 (require "abstract-renaming.rkt")
 (require "abstraction-inspection-utils.rkt")
 (require (only-in parenlog model?))
+(require racket/logging)
 
 (define (write-resolvent obj port mode)
   (if (boolean? mode)
@@ -86,6 +87,7 @@
   (define conjunct (list-ref conjunction conjunct-index))
   (define abstract-knowledge (if (rule? knowledge) (pre-abstract-rule knowledge) knowledge))
   (define renamed-abstract-knowledge (rename-apart abstract-knowledge conjunction))
+  
   (define g-offset (let ([candidate (maximum-var-index conjunction g?)]) (if (some? candidate) (some-v candidate) 0)))
   (if (abstract-rule? renamed-abstract-knowledge)
       (let* ([in-subst (abstract-equality conjunct (abstract-rule-head renamed-abstract-knowledge))]
@@ -93,13 +95,14 @@
         (let*-values ([(before from) (split-at conjunction conjunct-index)]
                       [(stitched) (append before (abstract-rule-body renamed-abstract-knowledge) (cdr from))])
           (if (some? out-subst)
-              (resolvent (apply-substitution (some-v out-subst) stitched) (some-v out-subst) knowledge)
+              (begin (log-debug (format "Successfully resolved with renamed rule ~a" renamed-abstract-knowledge))
+                     (resolvent (apply-substitution (some-v out-subst) stitched) (some-v out-subst) knowledge))
               #f)))
       (if (>=-extension (full-evaluation-input-pattern renamed-abstract-knowledge) conjunct)
           (let* ([in-subst (abstract-equality conjunct (full-evaluation-output-pattern renamed-abstract-knowledge))]
                  [out-subst (abstract-unify (list in-subst) g-offset)]
                  [unspliced (let-values ([(before from) (split-at conjunction conjunct-index)]) (append before (cdr from)))])
-                  (if (some? out-subst)
-                      (resolvent (apply-substitution (some-v out-subst) unspliced) (some-v out-subst) knowledge)
-                      (error "input pattern matched, but output pattern could not be applied - full evaluation is wrong?")))
+            (if (some? out-subst)
+                (resolvent (apply-substitution (some-v out-subst) unspliced) (some-v out-subst) knowledge)
+                (error "input pattern matched, but output pattern could not be applied - full evaluation is wrong?")))
           #f)))

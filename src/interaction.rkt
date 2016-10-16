@@ -37,6 +37,7 @@
 (require terminal-color)
 (require "abstract-domain-ordering.rkt")
 
+(require racket/logging)
 (require (for-doc scribble/manual))
 
 (define use-color #f)
