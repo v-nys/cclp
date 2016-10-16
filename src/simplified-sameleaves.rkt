@@ -9,3 +9,6 @@ collect(tree(L,R),C) :- collect(L,CL), collect(R,CR), append(CL,CR,C).
 {PREPRIOR}
 collect(γ1,α1),eq(α1,α2)
 collect(γ1,α1),append(α1,α2,α3)
+
+{QUERY}
+sameleaves(γ1,γ2)
