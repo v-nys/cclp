@@ -54,7 +54,9 @@
             [atom c])
         (begin
           (if (and (some? ms) (eq? i (some-v ms)))
-              (if use-color (print-color atom out #:fg 'red) (print atom out))
+              (if use-color
+                  (print-color atom out #:fg 'red)
+                  (display (format "*~v*" atom) out))
               (print atom out))
           (when (< i last-i) (display "," out))))
       (if use-color
