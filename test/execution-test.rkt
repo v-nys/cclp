@@ -35,6 +35,10 @@
   (abp:parse-prior-relation
    "perm(γ1,α1),ord(α1) perm(γ1,α1),ord([γ1|α1]) ord([γ1,γ2|α1]),perm(γ1,α1)"))
 (define hypothetical-graph-for-consistency (abp:parse-prior-relation "foo(γ1,α1),bar(γ1,α1)"))
+(define
+  simplified-primes-graph
+  (abp:parse-prior-relation
+    "integers(γ1,α1),filter(γ1,α1,α2) integers(γ1,α1),sift(α1,α2) integers(γ1,α1),length(α1,γ2) sift([γ1|α1],α2),integers(γ1,α1) filter(γ1,[γ2|α1],α2),integers(γ1,α1) length([γ1|α1],γ2),integers(γ1,α1)"))
 
 (check-true (is-valid? non-looping-graph))
 (check-false (is-valid? looping-graph))
@@ -140,3 +144,12 @@
    permsort-graph
    (list))
   1))
+
+; bug trigger for simplified primes problem
+(check-equal?
+ (selected-index
+  (abp:parse-abstract-conjunction
+   "integers(γ22,α31),filter(γ4,α31,α32),filter(γ12,[γ20|α32],α24),sift(α24,α26),length(α26,γ18)")
+  simplified-primes-graph
+  (list))
+ 2)
