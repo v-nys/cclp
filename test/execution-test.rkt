@@ -145,7 +145,6 @@
    (list))
   1))
 
-; bug trigger for simplified primes problem
 (check-equal?
  (selected-index
   (abp:parse-abstract-conjunction

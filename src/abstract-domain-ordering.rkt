@@ -31,5 +31,5 @@
 
 (define (renames? domain-elem1 domain-elem2)
   (and (>=-extension domain-elem1 domain-elem2)
-       (>=-extension domain-elem2 domain-elem2)))
+       (>=-extension domain-elem2 domain-elem1)))
 (provide renames?)
