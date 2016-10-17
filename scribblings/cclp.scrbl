@@ -37,6 +37,7 @@ sort(γ1,α1)
 @include-section["interaction.scrbl"]
 @include-section["abstract-substitution.scrbl"]
 @include-section["abstract-domain-ordering.scrbl"]
+@include-section["generational-tree.scrbl"]
 
 @section{Limitations}
 

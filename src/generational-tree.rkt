@@ -20,12 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
+#lang at-exp racket
 (require racket-tree-utils/src/tree)
 (require "abstract-knowledge.rkt")
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
 (require "abstract-domain-ordering.rkt")
+(require scribble/srcdoc)
 
 (define (write-atom-with-generation obj port mode)
   (if (boolean? mode)
@@ -40,7 +41,12 @@
 ; selection-and-clause is an Opt pair of Integer, AbstractKnowledge, so (or/c none? (someof (cons/c Integer abstract-knowledge?))
 ;the Integer is at least 0 and lower than the list length
 ; note: should clause be renamed here or not? doesn't actually matter - we only consider the length and type (full ai or not)
-(provide (struct-out resolution-info))
+
+(provide
+ (struct*-doc resolution-info
+             ([conjunction (listof abstract-atom?)]
+              [selection-and-clause any/c]); TODO should be more accurate
+             @{Information on how resolution was performed...}))
 
 ; TODO add contract
 ; atom is just an abstract atom, generation is at least 0
@@ -70,14 +76,18 @@
 
 (define (generational-tree-skeleton branch)
   (match branch
-    [(list res-info) (map (λ (atom-in-conjunction) (node atom-in-conjunction '())) (resolution-info-conjunction res-info))]
+    [(list res-info)
+     (map
+      (λ (atom-in-conjunction) (node atom-in-conjunction '()))
+      (resolution-info-conjunction res-info))]
     [(list-rest (resolution-info res-conjunction (some (cons selected clause-used))) res-info-rest)
      (let* ([first-unselected (take res-conjunction selected)]
             [selected-atom (list-ref res-conjunction selected)]
             [last-unselected (drop res-conjunction (+ 1 selected))]
             [next-layer (generational-tree-skeleton res-info-rest)]
             [first-successors (take next-layer selected)]
-            [selected-successors (take (drop next-layer selected) (clause-output-length clause-used))]
+            [selected-successors
+             (take (drop next-layer selected) (clause-output-length clause-used))]
             [last-successors (drop next-layer (+ selected (clause-output-length clause-used)))])
        (append (map (λ (pre post) (node pre (list post))) first-unselected first-successors)
                (list (node selected-atom selected-successors))
