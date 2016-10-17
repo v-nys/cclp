@@ -283,7 +283,7 @@
                  (interactive-analysis (cdr rewound) clauses full-evaluations preprior (- next-index 1) filename))
                (displayln "Can't go back any further!")))]
         [(equal? choice save)
-         (let* ([out (open-output-file filename #:exists 'replace)]
+         (let* ([out (open-output-file filename #:exists 'truncate/replace)]
                 [serialized-tree (serialize tree)])
            (begin
              (write serialized-tree out)
