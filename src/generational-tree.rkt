@@ -27,6 +27,7 @@
 (require "data-utils.rkt")
 (require "abstract-domain-ordering.rkt")
 (require scribble/srcdoc)
+(require (for-doc scribble/manual))
 
 (define (write-atom-with-generation obj port mode)
   (if (boolean? mode)
@@ -36,17 +37,18 @@
              (fprintf port "~v" (atom-with-generation-generation obj)))))
 
 (struct resolution-info (conjunction selection-and-clause))
-; TODO add contract
 ; conjunction is a (non-empty-listof abstract-atom)
 ; selection-and-clause is an Opt pair of Integer, AbstractKnowledge, so (or/c none? (someof (cons/c Integer abstract-knowledge?))
 ;the Integer is at least 0 and lower than the list length
 ; note: should clause be renamed here or not? doesn't actually matter - we only consider the length and type (full ai or not)
 
 (provide
- (struct*-doc resolution-info
-             ([conjunction (listof abstract-atom?)]
-              [selection-and-clause any/c]); TODO should be more accurate
-             @{Information on how resolution was performed...}))
+ (struct*-doc
+  resolution-info
+  ([conjunction (listof abstract-atom?)]
+   [selection-and-clause any/c]); TODO should be more accurate
+  @{Information on how resolution was performed.
+     A @racket[list] of @racket[resolution-info] details how resolution was performed along a single branch of the analysis tree.}))
 
 ; TODO add contract
 ; atom is just an abstract atom, generation is at least 0
@@ -64,7 +66,15 @@
    (define (hash2-proc my-awg hash2-recur)
      (+ (hash2-recur (atom-with-generation-atom my-awg))
         (hash2-recur (atom-with-generation-generation my-awg))))])
-(provide (struct-out atom-with-generation))
+;(provide (struct-out atom-with-generation))
+(provide
+ (struct*-doc
+  atom-with-generation
+  ([atom abstract-atom?]
+   [generation exact-nonnegative-integer?])
+  @{The label of a node in a generational tree.
+     @racket[atom] is a single atom which, juxtaposed with other @racket[atom]s at the same depth, forms an abstract conjunction encountered during analysis.
+     @racket[generation] indicates how many recursive unfoldings of the target atom took place before @racket[atom] was introduced.}))
 
 ;(: clause-output-length (-> AbstractKnowledge Integer))
 ; could use define/contract for extra information
@@ -92,6 +102,13 @@
        (append (map (λ (pre post) (node pre (list post))) first-unselected first-successors)
                (list (node selected-atom selected-successors))
                (map (λ (pre post) (node pre (list post))) last-unselected last-successors)))]))
+(provide
+ (proc-doc/names
+  generational-tree-skeleton
+  (-> (listof resolution-info?) (listof node?)) ; more specifically: nodes of atoms
+  (branch)
+  @{Computes the lineage of each atom on a branch, without numbering the generations of atoms.
+ The result is a @racket[list], as each atom of the starting conjunction has its own lineage and lines are never joined --- they can only split.}))
 
 ; TODO test
 (define (annotate-generational-tree tree target-atom generation-acc live-depth depth-acc)
@@ -106,6 +123,8 @@
     [(node atom-label (list-rest h t))
      (node (atom-with-generation atom-label generation-acc)
            (map (λ (subtree) (annotate-generational-tree subtree target-atom generation-acc live-depth (+ depth-acc 1))) (cons h t)))]))
+; TODO document and provide a contract
+; does this simply change atoms into atom-with-generations?
 
 ; TODO test
 (define (multiple-live-descendants? my-node live-depth curr-depth)
@@ -125,5 +144,9 @@
 ; first resolution-info should have an atomic query
 ; not having a selection-and-clause and having a successor list element would also be a violation
 ; +vice versa
-(provide (contract-out
-          [generational-tree (-> (non-empty-listof resolution-info?) abstract-atom? node?)]))
+(provide
+ (proc-doc/names
+  generational-tree
+  (-> (non-empty-listof resolution-info?) abstract-atom? node?)
+  (branch target-atom)
+  @{Compute a generational tree for @racket[branch], under the assumption that instances of @racket[target-atom] cause a generation increment.}))
