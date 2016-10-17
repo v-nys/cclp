@@ -188,6 +188,14 @@
     #f) ; resolvents have not yet been visited
    (list)))
 
+(define (rewind t) t)
+(provide
+ (proc-doc/names
+  rewind
+  (-> node? (or/c #f node?))
+  (t)
+  @{Undo the latest unfolding or generalization that occurred in @racket[t]}))
+
 (define (interactive-analysis tree clauses full-evaluations preprior next-index)
   (define-values (show-top proceed go-back save end)
     (values "show top level" "proceed" "go back" "save analysis" "end analysis"))
