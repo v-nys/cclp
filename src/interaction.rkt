@@ -188,11 +188,30 @@
     #f) ; resolvents have not yet been visited
    (list)))
 
-(define (rewind t) t)
+(define (candidate-for-undo t)
+  (match t
+    [(node _ (list)) #f]
+    [(node l ch)
+     (if (andmap (compose empty? node-children) ch)
+         t
+         (candidate-for-undo (last (filter (compose not empty? node-children) ch))))]))
+(provide candidate-for-undo)
+
+(define (undo t)
+  (match t
+    [(node (tree-label con sel sub r i) ch)
+     (node (tree-label con (none) sub r #f) (list))]))
+
+(define (rewind t)
+  (let* ([candidate (candidate-for-undo t)]
+         [locally-rewound (if candidate (undo candidate) #f)])
+    (if candidate
+        (cons locally-rewound (replace-last-subtree t candidate locally-rewound))
+        #f)))
 (provide
  (proc-doc/names
   rewind
-  (-> node? (or/c #f node?))
+  (-> node? (or/c #f (cons/c node? node?)))
   (t)
   @{Undo the latest unfolding or generalization that occurred in @racket[t]}))
 
