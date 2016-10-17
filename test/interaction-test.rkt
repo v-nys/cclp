@@ -53,3 +53,40 @@
    (check-equal?
     (car (candidate-and-predecessors tree '()))
     (some bottom-right))))
+
+(test-case
+ "rewinding the most recent resolution step"
+ (let ([root-only-tree
+        (node
+         (tree-label
+          (abp:parse-abstract-conjunction "sameleaves(γ1,γ2)")
+          (none)
+          (list)
+          #f
+          #f) '())])
+   (check-equal? (rewind root-only-tree) #f))
+ (let ([unwound-leaf
+        (node
+         (tree-label
+          (abp:parse-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),eq(α1,α2)")
+          (none)
+          (list)
+          #f ; doesn't matter for purpose of this test
+          #f) '())]
+       [unwound-tree
+        (node
+         (tree-label
+          (abp:parse-abstract-conjunction "sameleaves(γ1,γ2)")
+          (some 0)
+          (list)
+          #f
+          1) (list unwound-leaf))]
+       [rewound-tree
+        (node
+         (tree-label
+          (abp:parse-abstract-conjunction "sameleaves(γ1,γ2)")
+          (none)
+          (list)
+          #f
+          #f) '())])
+   (check-equal? (rewind unwound-tree) rewound-tree)))
