@@ -83,30 +83,30 @@
        (tree-label-rule obj))))
 
 (serializable-struct tree-label (conjunction selection substitution rule index)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc l1 l2 equal?-recur)
-     (and (equal?-recur (tree-label-conjunction l1) (tree-label-conjunction l2))
-          (equal?-recur (tree-label-selection l1) (tree-label-selection l2))
-          (equal?-recur (tree-label-substitution l1) (tree-label-substitution l2))
-          (equal?-recur (tree-label-rule l1) (tree-label-rule l2))
-          (equal?-recur (tree-label-index l1) (tree-label-index l2))))
-   ; same hash function as in Racket docs, not too concerned about optimum here
-   (define (hash-proc l hash-recur)
-     (+ (hash-recur (tree-label-conjunction l))
-        (* 3 (hash-recur (tree-label-selection l)))
-        (* 7 (hash-recur (tree-label-substitution l)))
-        (* 11 (hash-recur (tree-label-rule l)))
-        (* 13 (hash-recur (tree-label-index l)))))
-   (define (hash2-proc l hash2-recur)
-     (+ (hash2-recur (tree-label-conjunction l))
-        (hash2-recur (tree-label-selection l))
-        (hash2-recur (tree-label-substitution l))
-        (hash2-recur (tree-label-rule l))
-        (hash2-recur (tree-label-index l))))]
-  #:methods
-  gen:custom-write
-  [(define write-proc write-tree-label)])
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc l1 l2 equal?-recur)
+                        (and (equal?-recur (tree-label-conjunction l1) (tree-label-conjunction l2))
+                             (equal?-recur (tree-label-selection l1) (tree-label-selection l2))
+                             (equal?-recur (tree-label-substitution l1) (tree-label-substitution l2))
+                             (equal?-recur (tree-label-rule l1) (tree-label-rule l2))
+                             (equal?-recur (tree-label-index l1) (tree-label-index l2))))
+                      ; same hash function as in Racket docs, not too concerned about optimum here
+                      (define (hash-proc l hash-recur)
+                        (+ (hash-recur (tree-label-conjunction l))
+                           (* 3 (hash-recur (tree-label-selection l)))
+                           (* 7 (hash-recur (tree-label-substitution l)))
+                           (* 11 (hash-recur (tree-label-rule l)))
+                           (* 13 (hash-recur (tree-label-index l)))))
+                      (define (hash2-proc l hash2-recur)
+                        (+ (hash2-recur (tree-label-conjunction l))
+                           (hash2-recur (tree-label-selection l))
+                           (hash2-recur (tree-label-substitution l))
+                           (hash2-recur (tree-label-rule l))
+                           (hash2-recur (tree-label-index l))))]
+                     #:methods
+                     gen:custom-write
+                     [(define write-proc write-tree-label)])
 (provide
  (struct*-doc
   tree-label
@@ -123,14 +123,14 @@
      It is an integer if the node has been visited and @racket[#f] if the node has not yet been visited.}))
 
 (serializable-struct cycle (index)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc c1 c2 equal?-recur)
-     (equal?-recur (cycle-index c1) (cycle-index c2)))
-   (define (hash-proc c hash-recur)
-     (hash-recur (cycle-index c)))
-   (define (hash2-proc c hash2-recur)
-     (hash2-recur (cycle-index c)))])
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc c1 c2 equal?-recur)
+                        (equal?-recur (cycle-index c1) (cycle-index c2)))
+                      (define (hash-proc c hash-recur)
+                        (hash-recur (cycle-index c)))
+                      (define (hash2-proc c hash2-recur)
+                        (hash2-recur (cycle-index c)))])
 
 (provide
  (struct*-doc
@@ -287,14 +287,30 @@
                 [serialized-tree (serialize tree)])
            (begin
              (write serialized-tree out)
+             (close-output-port out)
              (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
+(define (largest-node-index t)
+  (match t
+    [(node label (list)) #f]
+    [(node label children)
+     (or
+      (foldr
+       (λ (c acc)
+         (if (and (not acc) (tree-label? (node-label c)))
+             (largest-node-index c)
+             acc))
+       #f
+       children)
+      (tree-label-index label))]))
+
 ; TODO check if file exists
 (define (load-analysis clauses full-evaluations preprior filename)
   (let* ([loaded-tree (deserialize (read (open-input-file filename)))]
-         [fresh-index 100]) ; TODO quick test, use actual largest index + 1 (or 1)
+         [largest-index (largest-node-index loaded-tree)]
+         [fresh-index (if largest-index (+ largest-index 1) 1)])
     (interactive-analysis loaded-tree clauses full-evaluations preprior fresh-index filename)))
 
 (define (begin-analysis program-data filename)
