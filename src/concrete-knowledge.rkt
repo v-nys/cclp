@@ -22,7 +22,8 @@
 
 #lang racket
 (require "concrete-domain.rkt")
-(struct rule (head body)
+(require racket/serialize)
+(serializable-struct rule (head body)
   #:methods
   gen:equal+hash
   [(define (equal-proc r1 r2 equal?-recur)

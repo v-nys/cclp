@@ -21,7 +21,8 @@
 ; SOFTWARE.
 
 #lang racket
-(struct variable (name)
+(require racket/serialize)
+(serializable-struct variable (name)
   #:methods
   gen:equal+hash
   [(define (equal-proc v1 v2 equal?-recur)
@@ -32,7 +33,7 @@
      (hash2-recur (variable-name my-variable)))])
 (provide (struct-out variable))
 
-(struct function (functor args)
+(serializable-struct function (functor args)
   #:methods
   gen:equal+hash
   [(define (equal-proc f1 f2 equal?-recur)
@@ -50,7 +51,7 @@
   (or (variable? t) (function? t)))
 (provide term?)
 
-(struct atom (symbol args)
+(serializable-struct atom (symbol args)
   #:methods
   gen:equal+hash
   [(define (equal-proc a1 a2 equal?-recur)

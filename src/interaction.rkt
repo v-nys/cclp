@@ -216,7 +216,7 @@
   (t)
   @{Undo the latest unfolding or generalization that occurred in @racket[t]}))
 
-(define (interactive-analysis tree clauses full-evaluations preprior next-index)
+(define (interactive-analysis tree clauses full-evaluations preprior next-index filename)
   (define-values (show-top proceed go-back save end)
     (values "show top level" "proceed" "rewind last operation" "save analysis" "end analysis"))
   (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save end))
@@ -224,12 +224,12 @@
          (begin (newline)
                 (tree-display tree print-tree-label)
                 (newline)
-                (interactive-analysis tree clauses full-evaluations preprior next-index))]
+                (interactive-analysis tree clauses full-evaluations preprior next-index filename))]
         [(equal? choice proceed)
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
             (begin (display "There are no nodes left to analyze.")
-                   (interactive-analysis tree clauses full-evaluations preprior next-index))]
+                   (interactive-analysis tree clauses full-evaluations preprior next-index filename))]
            [(cons (some candidate) preds)
             (let* ([candidate-label (node-label candidate)]
                    [conjunction (tree-label-conjunction candidate-label)]
@@ -253,7 +253,7 @@
                       (tree-display updated-candidate print-tree-label)
                       (newline)
                       (interactive-analysis
-                       updated-top clauses full-evaluations preprior (+ next-index 1))))
+                       updated-top clauses full-evaluations preprior (+ next-index 1) filename)))
                   (let* ([resolution-result
                           (abstract-resolve conjunction preprior clauses full-evaluations)]
                          [index-selection (car resolution-result)]
@@ -274,22 +274,30 @@
                       (tree-display updated-candidate print-tree-label)
                       (newline)
                       (interactive-analysis
-                       updated-top clauses full-evaluations preprior (+ next-index 1))))))])]
+                       updated-top clauses full-evaluations preprior (+ next-index 1) filename)))))])]
         [(equal? choice go-back)
          (let ([rewound (rewind tree)])
            (if rewound
                (begin
                  (tree-display (car rewound) print-tree-label)
-                 (interactive-analysis (cdr rewound) clauses full-evaluations preprior (- next-index 1)))
+                 (interactive-analysis (cdr rewound) clauses full-evaluations preprior (- next-index 1) filename))
                (displayln "Can't go back any further!")))]
-        [(equal? choice save) (void)]
+        [(equal? choice save)
+         (let* ([out (open-output-file filename #:exists 'replace)]
+                [serialized-tree (serialize tree)])
+           (begin
+             (write serialized-tree out)
+             (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
-; interactie tijdens analyse vereist: huidige boom, KB, full evals, selectiemechanisme
-(define (load-analysis filename) (void))
+; TODO check if file exists
+(define (load-analysis clauses full-evaluations preprior filename)
+  (let* ([loaded-tree (deserialize (read (open-input-file filename)))]
+         [fresh-index 100]) ; TODO quick test, use actual largest index + 1 (or 1)
+    (interactive-analysis loaded-tree clauses full-evaluations preprior fresh-index filename)))
 
-(define (begin-analysis program-data)
+(define (begin-analysis program-data filename)
   (match program-data
     [(4-tuple clauses full-evaluations preprior initial-query)
      ; using none for selection because no selection will occur more often
@@ -297,7 +305,7 @@
      ; using #f for rule because this is the only case where there is no associated clause
      (begin (define initial-tree-label (tree-label (list (4-tuple-fourth program-data)) (none) (list) #f #f))
             (define initial-tree (node initial-tree-label (list)))
-            (interactive-analysis initial-tree clauses full-evaluations preprior 1))]))
+            (interactive-analysis initial-tree clauses full-evaluations preprior 1 filename))]))
 
 (define (cclp-run filename program-data)
   (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
@@ -317,10 +325,10 @@
      (4-tuple-first program-data) full-evaluations
      (4-tuple-third program-data) (4-tuple-fourth program-data)))
   (cond [(equal? choice analysis)
-         (begin (begin-analysis program-data-aux)
+         (begin (begin-analysis program-data-aux serialized-filename)
                 (cclp-run filename program-data))]
         [(equal? choice load)
-         (begin (load-analysis serialized-filename)
+         (begin (load-analysis (4-tuple-first program-data) full-evaluations (4-tuple-third program-data) serialized-filename)
                 (cclp-run filename program-data))]
         [(equal? choice quit) (void)]
         [else (error 'unsupported)]))

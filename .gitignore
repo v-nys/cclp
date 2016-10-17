@@ -3,6 +3,7 @@
 *~
 compiled
 doc
+*.serializedcclp
 
 *\#*\#
 *.1
