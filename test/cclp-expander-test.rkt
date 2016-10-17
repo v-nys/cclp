@@ -9,14 +9,13 @@
 (require syntax/macro-testing)
 
 ; concrete domain
-(check-equal? (exp:number-term (exp:concrete-number 4)) (cd:function 4 '()))
+(check-equal? (exp:number-term 4) (cd:function 4 '()))
 (check-equal? (exp:lplist "[" "]") (cd:function 'nil '()))
 
 ; abstract domain
 (check-equal? (exp:abstract-variable-a "α" 1) (ad:a 1))
 (check-equal? (exp:abstract-variable-g "γ" 2) (ad:g 2))
 (check-equal? (exp:abstract-number 3) (ad:abstract-function 3 '()))
-(check-equal? (exp:concrete-number 4) (cd:function 4 '()))
 (check-equal? (exp:abstract-variable (exp:abstract-variable-a "α" 1)) (ad:a 1))
 (check-equal? (exp:abstract-variable (exp:abstract-variable-g "γ" 2)) (ad:g 2))
 (check-equal? (exp:abstract-number-term (exp:abstract-number 3)) (ad:abstract-function 3 '()))

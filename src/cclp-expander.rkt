@@ -169,17 +169,14 @@
 (provide abstract-function-term)
 
 (define-syntax-rule (abstract-number NUMBER)
-  (ad:abstract-function NUMBER '()))
+  (ad:abstract-function (quote NUMBER) '()))
 (provide abstract-number)
-
-(define-syntax-rule (concrete-number NUMBER)
-  (cd:function NUMBER '()))
-(provide concrete-number)
 
 (define-syntax-rule (abstract-number-term TERM) TERM)
 (provide abstract-number-term)
 
-(define-syntax-rule (number-term TERM) (quote TERM))
+(define-syntax-rule (number-term TERM)
+  (cd:function (quote TERM) '()))
 (provide number-term)
 
 (define-syntax (abstract-lplist stx)
