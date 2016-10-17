@@ -126,4 +126,25 @@
            (list)
            #f
            #f) '())])
-   (check-equal? (rewind unwound-tree) (cons rewound-tree rewound-tree))))
+   (check-equal? (rewind unwound-tree) (cons rewound-tree rewound-tree)))
+ (let* ([leaf1 (node (tree-label (list) (none) (list) #f #f) (list))]
+        [leaf2 leaf1]
+        [grandchild1 (node (tree-label (abp:parse-abstract-conjunction "quux") 0 (list) #f 3) (list leaf1))]
+        [grandchild2 (node (tree-label (abp:parse-abstract-conjunction "zoom") 0 (list) #f 4) (list leaf2))]
+        [child (node (tree-label (abp:parse-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 grandchild2))]
+        [unwound-tree (node (tree-label (abp:parse-abstract-conjunction "foo") 0 (list) #f 1) (list child))]
+        [rewound-node (node (tree-label (abp:parse-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
+        [rewound-child (node (tree-label (abp:parse-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node))]
+        [rewound-tree (node (tree-label (abp:parse-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
+   (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
+ (let* ([leaf1 (node (tree-label (list) (none) (list) #f #f) (list))]
+        [leaf2 (node (cycle 3) (list))]
+        [grandchild1 (node (tree-label (abp:parse-abstract-conjunction "quux") 0 (list) #f 3) (list leaf1))]
+        [grandchild2 (node (tree-label (abp:parse-abstract-conjunction "zoom") 0 (list) #f 4) (list leaf2))]
+        [grandchild3 (node (tree-label (abp:parse-abstract-conjunction "baz") (none) (list) #f 4) (list))]
+        [child (node (tree-label (abp:parse-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 grandchild2 grandchild3))]
+        [unwound-tree (node (tree-label (abp:parse-abstract-conjunction "foo") 0 (list) #f 1) (list child))]
+        [rewound-node (node (tree-label (abp:parse-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
+        [rewound-child (node (tree-label (abp:parse-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node grandchild3))]
+        [rewound-tree (node (tree-label (abp:parse-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
+   (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree))))
