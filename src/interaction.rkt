@@ -36,6 +36,7 @@
 (require scribble/srcdoc)
 (require terminal-color)
 (require "abstract-domain-ordering.rkt")
+(require racket/serialize)
 
 (require racket/logging)
 (require (for-doc scribble/manual))
@@ -81,7 +82,7 @@
        (tree-label-substitution obj)
        (tree-label-rule obj))))
 
-(struct tree-label (conjunction selection substitution rule index)
+(serializable-struct tree-label (conjunction selection substitution rule index)
   #:methods
   gen:equal+hash
   [(define (equal-proc l1 l2 equal?-recur)
@@ -121,7 +122,7 @@
      The field @racket[index] is a unique label, assigned so that cycles can be clearly marked.
      It is an integer if the node has been visited and @racket[#f] if the node has not yet been visited.}))
 
-(struct cycle (index)
+(serializable-struct cycle (index)
   #:methods
   gen:equal+hash
   [(define (equal-proc c1 c2 equal?-recur)
@@ -281,6 +282,7 @@
                  (tree-display (car rewound) print-tree-label)
                  (interactive-analysis (cdr rewound) clauses full-evaluations preprior (- next-index 1)))
                (displayln "Can't go back any further!")))]
+        [(equal? choice save) (void)]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 

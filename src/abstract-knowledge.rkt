@@ -22,6 +22,7 @@
 
 #lang racket
 (require "abstract-multi-domain.rkt")
+(require racket/serialize)
 
 (define (write-rule obj port mode)
   (if (boolean? mode)
@@ -34,7 +35,7 @@
                    (fprintf port "~v" atom-or-comma)))
              (fprintf port "."))))
        
-(struct abstract-rule (head body)
+(serializable-struct abstract-rule (head body)
   #:methods gen:custom-write
   [(define write-proc write-rule)]
   #:methods gen:equal+hash
@@ -56,7 +57,7 @@
              (fprintf port "~v" (full-evaluation-output-pattern obj))
              (fprintf port "."))))
 
-(struct full-evaluation (input-pattern output-pattern) #:transparent #:methods gen:custom-write [(define write-proc write-full-eval)])
+(serializable-struct full-evaluation (input-pattern output-pattern) #:transparent #:methods gen:custom-write [(define write-proc write-full-eval)])
 (provide (struct-out full-evaluation))
 
 (define (abstract-knowledge? k) (or (abstract-rule? k) (full-evaluation? k)))

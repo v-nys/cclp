@@ -21,10 +21,11 @@
 ; SOFTWARE.
 
 #lang racket
+(require racket/serialize)
 
 (define (write-a obj port mode)
-  (if (eq? mode #t) (fprintf port "#(struct:a ~s)" (a-index obj)) (fprintf port "a~a" (a-index obj))))
-(struct a (index)
+  (if (eq? mode #t) (fprintf port "#<struct:a ~s>" (a-index obj)) (fprintf port "a~a" (a-index obj))))
+(serializable-struct a (index)
   #:methods
   gen:custom-write [(define write-proc write-a)]
   #:methods
@@ -38,8 +39,8 @@
 (provide (struct-out a))
 
 (define (write-g obj port mode)
-  (if (eq? mode #t) (fprintf port "#(struct:g ~s)" (g-index obj)) (fprintf port "g~a" (g-index obj))))
-(struct g (index)
+  (if (eq? mode #t) (fprintf port "#<struct:g ~s>" (g-index obj)) (fprintf port "g~a" (g-index obj))))
+(serializable-struct g (index)
   #:methods
   gen:custom-write [(define write-proc write-g)]
   #:methods
@@ -68,7 +69,7 @@
       (begin (fprintf port "~a(" (abstract-function-functor obj))
              (for ([arg-or-comma (add-between (abstract-function-args obj) ",")]) (if (string? arg-or-comma) (fprintf port arg-or-comma) (fprintf port "~v" arg-or-comma)))
              (fprintf port ")"))))
-(struct abstract-function (functor args) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-function)])
+(serializable-struct abstract-function (functor args) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-function)])
 (provide (struct-out abstract-function))
 
 (define (write-abstract-atom obj port mode)
@@ -77,7 +78,7 @@
       (begin (fprintf port "~a(" (abstract-atom-symbol obj))
              (for ([arg-or-comma (add-between (abstract-atom-args obj) ",")]) (if (string? arg-or-comma) (fprintf port arg-or-comma) (fprintf port "~v" arg-or-comma)))
              (fprintf port ")"))))
-(struct abstract-atom (symbol args) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-atom)])
+(serializable-struct abstract-atom (symbol args) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-atom)])
 (provide (struct-out abstract-atom))
 
 (define (abstract-term? elem) (or (abstract-variable? elem) (abstract-function? elem)))

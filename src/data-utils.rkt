@@ -1,8 +1,9 @@
 #lang racket
 
-(require racket/string) ; for string-append
+(require racket/serialize)
+(require racket/string)
 
-(struct none ()
+(serializable-struct none ()
   #:methods
   gen:equal+hash
   [(define (equal-proc n1 n2 equal?-recur) #t)
@@ -10,7 +11,7 @@
    (define (hash2-proc my-none hash2-recur) 729)])
 (provide (struct-out none))
 
-(struct some (v)
+(serializable-struct some (v)
   #:methods
   gen:equal+hash
   [(define (equal-proc s1 s2 equal?-recur) (equal?-recur s1 s2))

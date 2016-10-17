@@ -26,6 +26,7 @@
 (require "abstraction-inspection-utils.rkt")
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
+(require racket/serialize)
 
 (require scribble/srcdoc)
 
@@ -35,7 +36,7 @@
       (fprintf port "~v/~v" (abstract-equality-term1 obj) (abstract-equality-term2 obj))))
 
 ; terms are really any abstract domain elements
-(struct abstract-equality (term1 term2) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-equality)])
+(serializable-struct abstract-equality (term1 term2) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-equality)])
 (provide (struct-out abstract-equality))
 
 (define (abstract-substitution? l) (andmap abstract-equality? l))
