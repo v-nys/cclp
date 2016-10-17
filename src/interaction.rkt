@@ -217,7 +217,7 @@
 
 (define (interactive-analysis tree clauses full-evaluations preprior next-index)
   (define-values (show-top proceed go-back save end)
-    (values "show top level" "proceed" "go back" "save analysis" "end analysis"))
+    (values "show top level" "proceed" "rewind last operation" "save analysis" "end analysis"))
   (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save end))
   (cond [(equal? choice show-top)
          (begin (newline)
@@ -274,6 +274,13 @@
                       (newline)
                       (interactive-analysis
                        updated-top clauses full-evaluations preprior (+ next-index 1))))))])]
+        [(equal? choice go-back)
+         (let ([rewound (rewind tree)])
+           (if rewound
+               (begin
+                 (tree-display (car rewound) print-tree-label)
+                 (interactive-analysis (cdr rewound) clauses full-evaluations preprior (- next-index 1)))
+               (displayln "Can't go back any further!")))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
