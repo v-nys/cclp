@@ -105,6 +105,10 @@
   @{Computes the lineage of each atom on a branch, without numbering the generations of atoms.
  The result is a @racket[list], as each atom of the starting conjunction has its own lineage and lines are never joined --- they can only split.}))
 
+(define (annotate-generational-trees skeleton-tree live-depth)
+  (let ([candidates (candidate-target-atoms skeleton-tree live-depth)])
+    (map (λ (c) (annotate-generational-tree skeleton-tree c 0 live-depth 0)) candidates)))
+
 (define (annotate-generational-tree tree target-atom generation-acc live-depth depth-acc)
   (match tree
     [(node atom-label (list))
@@ -114,8 +118,10 @@
            (list
             (annotate-generational-tree single-elem target-atom generation-acc live-depth (+ depth-acc 1))))]
     [(node atom-label (list-rest h t))
+     ; TODO is >=-extension hier wel beste keuze? misschien renames?...
+     ;zal eerst bekijken wat voorbeelden opleveren, dan theorie afwerken
      #:when (and (>=-extension target-atom atom-label)
-                 (multiple-live-descendants? (node atom-label (cons h t)) live-depth depth-acc))
+                 (multiple-direct-live-lines? (node atom-label (cons h t)) live-depth depth-acc))
      (node (atom-with-generation atom-label generation-acc)
            (map
             (λ (subtree)
@@ -140,8 +146,29 @@
  }))
 ; TODO should use default arguments 0 for gen-acc and depth-acc
 
+; TODO test candidate-target-atoms
+
+(define (descendant-renames? n atom)
+  (or (ormap (λ (c) (renames? atom (node-label c))) (node-children n))
+      (ormap (λ (c) (descendant-renames? c atom)) (node-children n))))  
+
+(define (candidate-target-atoms skeleton live-depth [depth-acc 0])
+  (if (>= depth-acc live-depth)
+      (list)
+      (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
+               (descendant-renames? skeleton))
+          (list (node-label skeleton))
+          (foldl
+           (λ (c candidate-acc)
+             (append candidate-acc (candidate-target-atoms c live-depth (+ depth-acc 1))))
+           (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
+                    (descendant-renames? skeleton (node-label skeleton)))
+               (list (node-label skeleton))
+               (list))
+           (node-children skeleton)))))
+
 ; TODO test
-(define (multiple-live-descendants? my-node live-depth curr-depth)
+(define (multiple-direct-live-lines? my-node live-depth curr-depth)
   (let ([children-reaching-live-depth
          (filter
           (λ (c) (can-reach-depth? c live-depth (+ curr-depth 1)))
@@ -156,14 +183,11 @@
           (λ (c) can-reach-depth? c target-depth (+ curr-depth) 1)
           (node-children my-node))]))
 
-(define (generational-tree branch target-atom)
+(define (generational-trees branch)
   (define skeleton (generational-tree-skeleton branch))
-  (annotate-generational-tree
+  (annotate-generational-trees
    (car skeleton) ; the assumption here is that the branch starts with a single atom
-   target-atom
-   0
-   (- (length branch) 1)
-   0))
+   (- (length branch) 1)))
 
 ; can refine this further:
 ; first resolution-info should have an atomic query
@@ -171,7 +195,7 @@
 ; +vice versa
 (provide
  (proc-doc/names
-  generational-tree
-  (-> (non-empty-listof resolution-info?) abstract-atom? node?)
-  (branch target-atom)
+  generational-trees
+  (-> (non-empty-listof resolution-info?) node?)
+  (branch)
   @{Compute a generational tree for @racket[branch], under the assumption that instances of @racket[target-atom] cause a generation increment.}))
