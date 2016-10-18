@@ -37,7 +37,6 @@
              (fprintf port "~v" (atom-with-generation-generation obj)))))
 
 (struct resolution-info (conjunction selection-and-clause))
-; conjunction is a (non-empty-listof abstract-atom)
 ; selection-and-clause is an Opt pair of Integer, AbstractKnowledge, so (or/c none? (someof (cons/c Integer abstract-knowledge?))
 ;the Integer is at least 0 and lower than the list length
 ; note: should clause be renamed here or not? doesn't actually matter - we only consider the length and type (full ai or not)
@@ -45,13 +44,11 @@
 (provide
  (struct*-doc
   resolution-info
-  ([conjunction (listof abstract-atom?)]
+  ([conjunction (non-empty-listof abstract-atom?)]
    [selection-and-clause any/c]); TODO should be more accurate
   @{Information on how resolution was performed.
      A @racket[list] of @racket[resolution-info] details how resolution was performed along a single branch of the analysis tree.}))
 
-; TODO add contract
-; atom is just an abstract atom, generation is at least 0
 (struct atom-with-generation (atom generation)
   #:methods
   gen:custom-write [(define write-proc write-atom-with-generation)]
@@ -66,15 +63,14 @@
    (define (hash2-proc my-awg hash2-recur)
      (+ (hash2-recur (atom-with-generation-atom my-awg))
         (hash2-recur (atom-with-generation-generation my-awg))))])
-;(provide (struct-out atom-with-generation))
 (provide
  (struct*-doc
   atom-with-generation
   ([atom abstract-atom?]
    [generation exact-nonnegative-integer?])
   @{The label of a node in a generational tree.
-     @racket[atom] is a single atom which, juxtaposed with other @racket[atom]s at the same depth, forms an abstract conjunction encountered during analysis.
-     @racket[generation] indicates how many recursive unfoldings of the target atom took place before @racket[atom] was introduced.}))
+     The field @racket[atom] is a single atom which, juxtaposed with other @racket[atom]s at the same depth, forms an abstract conjunction encountered during analysis.
+     The field @racket[generation] indicates how many recursive unfoldings of the target atom took place before @racket[atom] was introduced.}))
 
 ;(: clause-output-length (-> AbstractKnowledge Integer))
 ; could use define/contract for extra information
@@ -82,7 +78,6 @@
   (match clause
     [(abstract-rule h b) (length b)]
     [(full-evaluation i o) 0]))
-
 
 (define (generational-tree-skeleton branch)
   (match branch
@@ -110,35 +105,65 @@
   @{Computes the lineage of each atom on a branch, without numbering the generations of atoms.
  The result is a @racket[list], as each atom of the starting conjunction has its own lineage and lines are never joined --- they can only split.}))
 
-; TODO test
 (define (annotate-generational-tree tree target-atom generation-acc live-depth depth-acc)
   (match tree
-    [(node atom-label (list)) (node (atom-with-generation atom-label generation-acc) (list))]
-    [(node atom-label (list single-elem)) (node (atom-with-generation atom-label generation-acc)
-                                                (list (annotate-generational-tree single-elem target-atom generation-acc live-depth (+ depth-acc 1))))]
-    [(node atom-label (list-rest h t))
-     #:when (and (>=-extension target-atom atom-label) (multiple-live-descendants? (node atom-label (cons h t)) live-depth depth-acc))
+    [(node atom-label (list))
+     (node (atom-with-generation atom-label generation-acc) (list))]
+    [(node atom-label (list single-elem))
      (node (atom-with-generation atom-label generation-acc)
-           (map (λ (subtree) (annotate-generational-tree subtree target-atom (+ generation-acc 1) live-depth (+ depth-acc 1))) (cons h t)))]
+           (list
+            (annotate-generational-tree single-elem target-atom generation-acc live-depth (+ depth-acc 1))))]
+    [(node atom-label (list-rest h t))
+     #:when (and (>=-extension target-atom atom-label)
+                 (multiple-live-descendants? (node atom-label (cons h t)) live-depth depth-acc))
+     (node (atom-with-generation atom-label generation-acc)
+           (map
+            (λ (subtree)
+              (annotate-generational-tree subtree target-atom (+ generation-acc 1) live-depth (+ depth-acc 1)))
+            (cons h t)))]
     [(node atom-label (list-rest h t))
      (node (atom-with-generation atom-label generation-acc)
-           (map (λ (subtree) (annotate-generational-tree subtree target-atom generation-acc live-depth (+ depth-acc 1))) (cons h t)))]))
-; TODO document and provide a contract
-; does this simply change atoms into atom-with-generations?
+           (map
+            (λ (subtree)
+              (annotate-generational-tree subtree target-atom generation-acc live-depth (+ depth-acc 1)))
+            (cons h t)))]))
+(provide
+ (proc-doc/names
+  annotate-generational-tree
+  (-> node? abstract-atom? exact-nonnegative-integer? exact-nonnegative-integer? exact-nonnegative-integer? node?)
+  (raw-tree target-atom gen-acc live-depth depth-acc)
+  @{Assign generation numbers to each atom in an unnumbered generational tree @racket[raw-tree].
+ The generation is incremented on unfolding (a renaming of) @racket[target-atom].
+ The generation is tracked using @racket[gen-acc].
+ If an atom is still present at depth @racket[live-depth], the analysis does not provide proof that it will be dealt with in the future.
+ The value @racket[depth-acc] is used to track the depth at which atoms occur.
+ }))
+; TODO should use default arguments 0 for gen-acc and depth-acc
 
 ; TODO test
 (define (multiple-live-descendants? my-node live-depth curr-depth)
-  (let ([children-reaching-live-depth (filter (λ (c) (can-reach-depth? c live-depth (+ curr-depth 1))) (node-children my-node))])
+  (let ([children-reaching-live-depth
+         (filter
+          (λ (c) (can-reach-depth? c live-depth (+ curr-depth 1)))
+          (node-children my-node))])
     (>= (length children-reaching-live-depth) 2)))
 
 (define (can-reach-depth? my-node target-depth curr-depth)
   (cond [(= curr-depth target-depth) #t]
         [(null? (node-children my-node)) #f]
-        [else (ormap (λ (c) can-reach-depth? c target-depth (+ curr-depth) 1) (node-children my-node))]))
+        [else
+         (ormap
+          (λ (c) can-reach-depth? c target-depth (+ curr-depth) 1)
+          (node-children my-node))]))
 
 (define (generational-tree branch target-atom)
   (define skeleton (generational-tree-skeleton branch))
-  (annotate-generational-tree (car skeleton) target-atom 0 (- (length branch) 1) 0))
+  (annotate-generational-tree
+   (car skeleton) ; the assumption here is that the branch starts with a single atom
+   target-atom
+   0
+   (- (length branch) 1)
+   0))
 
 ; can refine this further:
 ; first resolution-info should have an atomic query
