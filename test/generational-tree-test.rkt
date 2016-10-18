@@ -90,7 +90,7 @@
         [actual (generational-tree-skeleton branch)])
    (check-equal? actual (list expected0))
    (check-equal? (candidate-target-atoms expected0 4 0)
-                 (list atom2a))))
+                 (list atom1b))))
 
 ; TODO test finding candidates
 ; TODO test annotating for a specific target atom

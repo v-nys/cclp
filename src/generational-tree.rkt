@@ -162,7 +162,7 @@
   (if (>= depth-acc live-depth)
       (list)
       (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
-               (descendant-renames? skeleton))
+               (descendant-renames? skeleton (node-label skeleton)))
           (list (node-label skeleton))
           (foldl
            (λ (c candidate-acc)
