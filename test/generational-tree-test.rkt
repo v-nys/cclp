@@ -38,9 +38,11 @@
 (define (node-display tree out)
   (print (node-label tree) out))
 
+; TODO need to have information up to the point where second sift would be selected
+; only then does first sift have a) live descendants b) a renaming
 (test-case
  "the skeleton is computed correctly based on a branch of several nodes"
- (define-values (atom0 atom1a atom1b atom1c atom2a atom2b atom2c atom2d atom3a atom3b atom3c atom4a atom4b atom4c atom4d)
+ (define-values (atom0 atom1a atom1b atom1c atom2a atom2b atom2c atom2d atom3a atom3b atom3c atom4a atom4b atom4c atom4d atom5a atom5b atom5c atom5d atom5e atom6a atom6b atom6c atom6d atom7a atom7b atom7c atom7d atom8a atom8b atom8c atom8d)
    (values (abp:parse-abstract-atom "primes(γ1,α1)")
            
            (abp:parse-abstract-atom "integers(γ2,α2)")
@@ -59,7 +61,9 @@
            (abp:parse-abstract-atom "integers(γ4,α4)")
            (abp:parse-abstract-atom "filter(γ2,α4,α5)")
            (abp:parse-abstract-atom "sift(α5,α6)")
-           (abp:parse-abstract-atom "length([γ2|α6],γ1)")))
+           (abp:parse-abstract-atom "length([γ2|α6],γ1)")
+
+           ))
  (define-values (clause1 clause2 full-ai1 clause3)
    (values (pre-abstract-rule (cbp:parse-rule "primes(X,Y) :- integers(2,Z), sift(Z,Y), length(Y,X)"))
            (pre-abstract-rule (cbp:parse-rule "integers(N,[N|I]) :- plus(N,1,M), integers(M,I)"))
@@ -71,7 +75,7 @@
            (resolution-info (list atom2a atom2b atom2c atom2d) (some (cons 0 full-ai1)))
            (resolution-info (list atom3a atom3b atom3c) (some (cons 1 clause3)))
            (resolution-info (list atom4a atom4b atom4c atom4d) (none))))
- (let* ([branch (list branch-node1 branch-node2 branch-node3 branch-node4 branch-node5)]
+ (let* ([branch (list branch-node1 branch-node2 branch-node3 branch-node4 branch-node5 branch-node6 branch-node7 branch-node8 branch-node9)]
         [expected4a (node atom4a (list))]
         [expected4b (node atom4b (list))]
         [expected4c (node atom4c (list))]
@@ -89,8 +93,8 @@
         [expected0 (node atom0 (list expected1a expected1b expected1c))]
         [actual (generational-tree-skeleton branch)])
    (check-equal? actual (list expected0))
-   (check-equal? (candidate-target-atoms expected0 4 0)
-                 (list atom1b))))
+   (check-equal? (candidate-target-atoms expected0 8 0)
+                 (list atom3b))))
 
 ; TODO test finding candidates
 ; TODO test annotating for a specific target atom
