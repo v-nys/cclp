@@ -150,7 +150,13 @@
 
 (define (descendant-renames? n atom)
   (or (ormap (λ (c) (renames? atom (node-label c))) (node-children n))
-      (ormap (λ (c) (descendant-renames? c atom)) (node-children n))))  
+      (ormap (λ (c) (descendant-renames? c atom)) (node-children n))))
+(provide
+ (proc-doc/names
+  descendant-renames?
+  (-> node? abstract-atom? boolean?)
+  (node abstract-atom)
+  @{Checks whether any descendant of @racket[node] (not node @racket[node] itself) has a label which renames @racket[abstract-atom].}))
 
 (define (candidate-target-atoms skeleton live-depth [depth-acc 0])
   (if (>= depth-acc live-depth)
