@@ -172,6 +172,15 @@
                (list (node-label skeleton))
                (list))
            (node-children skeleton)))))
+(provide
+ (proc-doc/names
+  candidate-target-atoms
+  (-> node? exact-positive-integer? exact-nonnegative-integer? (listof abstract-atom?))
+  (skeleton live-depth depth-acc)
+  @{Finds potential target atoms for recursion analysis.
+ The parameter @racket[skeleton] is a non-annotated recursion analysis,
+ @racket[live-depth] indicates depth from which an atom may survive indefinitely,
+ @racket[depth-acc] is the depth at which the root of @racket[skeleton] is found.}))
 
 ; TODO test
 (define (multiple-direct-live-lines? my-node live-depth curr-depth)

@@ -58,7 +58,7 @@
            
            (abp:parse-abstract-atom "integers(γ4,α4)")
            (abp:parse-abstract-atom "filter(γ2,α4,α5)")
-           (abp:parse-abstract-atom "sift(α5,[γ2|α6])")
+           (abp:parse-abstract-atom "sift(α5,α6)")
            (abp:parse-abstract-atom "length([γ2|α6],γ1)")))
  (define-values (clause1 clause2 full-ai1 clause3)
    (values (pre-abstract-rule (cbp:parse-rule "primes(X,Y) :- integers(2,Z), sift(Z,Y), length(Y,X)"))
@@ -88,12 +88,9 @@
         [expected1c (node atom1c (list expected2d))]
         [expected0 (node atom0 (list expected1a expected1b expected1c))]
         [actual (generational-tree-skeleton branch)])
-   (when (not (equal? actual (list expected0)))
-     (begin (displayln "actual:")
-            (tree-display (car actual) node-display)
-            (displayln "expected:")
-            (tree-display expected0 node-display)
-            (check-equal? actual expected0)))))
+   (check-equal? actual (list expected0))
+   (check-equal? (candidate-target-atoms expected0 4 0)
+                 (list atom2a))))
 
 ; TODO test finding candidates
 ; TODO test annotating for a specific target atom
@@ -120,7 +117,7 @@
 ;           
 ;           (abp:parse-abstract-atom "integers(γ4,α4)")
 ;           (abp:parse-abstract-atom "filter(γ2,α4,α5)")
-;           (abp:parse-abstract-atom "sift(α5,[γ2|α6])")
+;           (abp:parse-abstract-atom "sift(α5,α6)")
 ;           (abp:parse-abstract-atom "length([γ2|α6],γ1)")))
 ; (define-values (clause1 clause2 full-ai1 clause3)
 ;   (values (pre-abstract-rule (cbp:parse-rule "primes(X,Y) :- integers(2,Z), sift(Z,Y), length(Y,X)"))
