@@ -28,6 +28,7 @@
 (require "abstract-domain-ordering.rkt")
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
+(require "interaction.rkt")
 
 (define (write-atom-with-generation obj port mode)
   (if (boolean? mode)
@@ -36,7 +37,7 @@
              (fprintf port ";")
              (fprintf port "~v" (atom-with-generation-generation obj)))))
 
-(struct resolution-info (conjunction selection-and-clause))
+(struct resolution-info (conjunction selection-and-clause) #:transparent)
 ; selection-and-clause is an Opt pair of Integer, AbstractKnowledge, so (or/c none? (someof (cons/c Integer abstract-knowledge?))
 ;the Integer is at least 0 and lower than the list length
 ; note: should clause be renamed here or not? doesn't actually matter - we only consider the length and type (full ai or not)
@@ -109,7 +110,19 @@
   (let ([candidates (candidate-target-atoms skeleton-tree live-depth)])
     (map (λ (c) (annotate-generational-tree skeleton-tree c 0 live-depth 0)) candidates)))
 
-(define (active-branch-info t) (list))
+(define (active-branch-info t)
+  (match t
+    [(node (tree-label (list) _ _ _ _) '()) #f]
+    [(node 'fail '()) #f]
+    [(node (cycle _) '()) #f]
+    [(node (tree-label c (none) s r #f) '())
+     (list (resolution-info c (none)))]
+    [(node (tree-label c sel s r i) ch)
+     (let ([first-child-branch (foldl (λ (c acc) (if acc acc (active-branch-info c))) #f ch)])
+       (if first-child-branch
+           (cons (resolution-info c (some (cons (some-v sel) r))) first-child-branch)
+           #f))]))
+
 (provide
  (proc-doc/names
   active-branch-info

@@ -55,7 +55,7 @@
           (list completed-leaf))]
         [active-leaf
          (node
-          (tree-label (abp:parse-abstract-conjunction "baz") (none) '() (pre-abstract-rule (cbp:parse-rule "quux :- baz")))
+          (tree-label (abp:parse-abstract-conjunction "baz") (none) '() (pre-abstract-rule (cbp:parse-rule "quux :- baz")) #f)
           '())]
         [right-child
          (node
