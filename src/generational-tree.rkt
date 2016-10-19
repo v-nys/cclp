@@ -28,16 +28,23 @@
 (require "abstract-domain-ordering.rkt")
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
-(require "interaction.rkt")
+(require "interaction.rkt") ; TODO this dependency has to go or we will end up with a cycle
 
-(define (write-atom-with-generation obj port mode)
-  (if (boolean? mode)
-      (fprintf port "#(struct:atom-with-generation ~s ~s)" (atom-with-generation-atom obj) (atom-with-generation-generation obj))
-      (begin (fprintf port "~v" (atom-with-generation-atom obj))
-             (fprintf port ";")
-             (fprintf port "~v" (atom-with-generation-generation obj)))))
-
-(struct resolution-info (conjunction selection-and-clause) #:transparent)
+(struct resolution-info
+  (conjunction selection-and-clause)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc ri1 ri2 equal?-recur)
+     (and (equal?-recur (resolution-info-conjunction ri1)
+                        (resolution-info-conjunction ri2))
+          (equal?-recur (resolution-info-selection-and-clause ri1)
+                        (resolution-info-selection-and-clause ri2))))
+   (define (hash-proc ri hash-recur)
+     (+ (* (hash-recur (resolution-info-conjunction ri)) 3)
+        (* (hash-recur (resolution-info-selection-and-clause ri)) 7)))
+   (define (hash2-proc ri hash2-recur)
+     (+ (hash2-recur (resolution-info-conjunction ri))
+        (hash2-recur (resolution-info-selection-and-clause ri))))])
 ; selection-and-clause is an Opt pair of Integer, AbstractKnowledge, so (or/c none? (someof (cons/c Integer abstract-knowledge?))
 ;the Integer is at least 0 and lower than the list length
 ; note: should clause be renamed here or not? doesn't actually matter - we only consider the length and type (full ai or not)
@@ -47,9 +54,16 @@
   resolution-info
   ([conjunction (non-empty-listof abstract-atom?)]
    [selection-and-clause any/c]); TODO should be more accurate
-  @{Information on how resolution was performed.
-     A @racket[list] of @racket[resolution-info] details how resolution was performed along a single branch of the analysis tree.}))
+  @{Details how resolution was performed at an abstract level.
+     A @racket[list] of @racket[resolution-info] details how resolution was performed along a single branch of the analysis tree.
+     It contains all the information required to synthesize a corresponding concrete branch.}))
 
+(define (write-atom-with-generation obj port mode)
+  (if (boolean? mode)
+      (fprintf port "#(struct:atom-with-generation ~s ~s)" (atom-with-generation-atom obj) (atom-with-generation-generation obj))
+      (begin (fprintf port "~v" (atom-with-generation-atom obj))
+             (fprintf port ";")
+             (fprintf port "~v" (atom-with-generation-generation obj)))))
 (struct atom-with-generation (atom generation)
   #:methods
   gen:custom-write [(define write-proc write-atom-with-generation)]
@@ -73,12 +87,16 @@
      The field @racket[atom] is a single atom which, juxtaposed with other @racket[atom]s at the same depth, forms an abstract conjunction encountered during analysis.
      The field @racket[generation] indicates how many recursive unfoldings of the target atom took place before @racket[atom] was introduced.}))
 
-;(: clause-output-length (-> AbstractKnowledge Integer))
-; could use define/contract for extra information
-(define (clause-output-length clause)
-  (match clause
+(define (knowledge-output-length knowledge)
+  (match knowledge
     [(abstract-rule h b) (length b)]
     [(full-evaluation i o) 0]))
+(provide
+ (proc-doc/names
+  knowledge-output-length
+  (-> abstract-knowledge? exact-nonnegative-integer?)
+  (knowledge)
+  @{Computes how many conjuncts will be introduced when @racket[knowledge] is applied.}))
 
 (define (generational-tree-skeleton branch)
   (match branch
@@ -93,8 +111,8 @@
             [next-layer (generational-tree-skeleton res-info-rest)]
             [first-successors (take next-layer selected)]
             [selected-successors
-             (take (drop next-layer selected) (clause-output-length clause-used))]
-            [last-successors (drop next-layer (+ selected (clause-output-length clause-used)))])
+             (take (drop next-layer selected) (knowledge-output-length clause-used))]
+            [last-successors (drop next-layer (+ selected (knowledge-output-length clause-used)))])
        (append (map (λ (pre post) (node pre (list post))) first-unselected first-successors)
                (list (node selected-atom selected-successors))
                (map (λ (pre post) (node pre (list post))) last-unselected last-successors)))]))
@@ -212,6 +230,12 @@
           (λ (c) (can-reach-depth? c live-depth (+ curr-depth 1)))
           (node-children my-node))])
     (>= (length children-reaching-live-depth) 2)))
+(provide
+ (proc-doc/names
+  multiple-direct-live-lines?
+  (-> node? exact-nonnegative-integer? exact-nonnegative-integer? boolean?)
+  (node live-depth current-depth)
+  @{Tests whether @racket[node] has at least two children and whether both children have descendants at depth @racket[live-depth], when @racket[node] is at @racket[current-depth].}))
 
 (define (can-reach-depth? my-node target-depth curr-depth)
   (cond [(= curr-depth target-depth) #t]
