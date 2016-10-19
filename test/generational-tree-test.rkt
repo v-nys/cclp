@@ -34,12 +34,44 @@
 (require "printed-test-results.rkt")
 (require "../src/abstract-knowledge.rkt")
 (require "../src/abstract-multi-domain.rkt")
+(require "../src/interaction.rkt")
 
 (define (node-display tree out)
   (print (node-label tree) out))
 
-; TODO need to have information up to the point where second sift would be selected
-; only then does first sift have a) live descendants b) a renaming
+(test-case
+ "Converting from a tree to a list representing resolution info for the active branch."
+ (let* ([completed-leaf (node (tree-label '() (none) '() (pre-abstract-rule (cbp:parse-rule "foo")) #f) '())]
+        [parent
+         (node
+          (tree-label (abp:parse-abstract-conjunction "foo") (some 0) '() #f 1)
+          (list completed-leaf completed-leaf))])
+   (check-equal? (active-branch-info parent) #f "all branches have been completed"))
+ (let* ([completed-leaf (node (tree-label '() (none) '() (pre-abstract-rule (cbp:parse-rule "bar")) #f) '())]
+        [left-child
+         (node
+          (tree-label
+           (abp:parse-abstract-conjunction "bar") (some 0) '() (pre-abstract-rule (cbp:parse-rule "foo :- bar")) 2)
+          (list completed-leaf))]
+        [active-leaf
+         (node
+          (tree-label (abp:parse-abstract-conjunction "baz") (none) '() (pre-abstract-rule (cbp:parse-rule "quux :- baz")))
+          '())]
+        [right-child
+         (node
+          (tree-label
+           (abp:parse-abstract-conjunction "quux") (some 0) '() (pre-abstract-rule (cbp:parse-rule "foo :- quux")) 3)
+          (list active-leaf))]
+        [root
+         (node
+          (tree-label
+           (abp:parse-abstract-conjunction "foo") (some 0) '() #f 1)
+          (list left-child right-child))]
+        [info1 (resolution-info (abp:parse-abstract-conjunction "foo") (some (cons 0 (cbp:parse-rule "foo :- quux"))))]
+        [info2 (resolution-info (abp:parse-abstract-conjunction "quux") (some (cons 0 (cbp:parse-rule "quux :- baz"))))]
+        [info3 (resolution-info (abp:parse-abstract-conjunction "baz") (none))])
+   (check-equal? (active-branch-info root) (list info1 info2 info3))))
+
 (test-case
  "the skeleton is computed correctly based on a branch of several nodes"
  (define-values (atom0
@@ -161,7 +193,6 @@
    (check-equal? (candidate-target-atoms expected0 9 0)
                  (list atom3b))))
 
-; TODO test finding candidates
 ; TODO test annotating for a specific target atom
 ; TODO test annotating without a specific target atom
 

@@ -109,6 +109,16 @@
   (let ([candidates (candidate-target-atoms skeleton-tree live-depth)])
     (map (λ (c) (annotate-generational-tree skeleton-tree c 0 live-depth 0)) candidates)))
 
+(define (active-branch-info t) (list))
+(provide
+ (proc-doc/names
+  active-branch-info
+  (-> node? (or/c #f (listof resolution-info?)))
+  (tree)
+  @{Returns the information required to synthesize a clause corresponding to the active branch in @racket[tree].
+ The active branch is the first branch, considered from left to right, with a leaf node eligible for further unfolding.
+ If there is no such leaf node in the tree, the result is @racket[#f].}))
+
 (define (annotate-generational-tree tree target-atom generation-acc live-depth depth-acc)
   (match tree
     [(node atom-label (list))
