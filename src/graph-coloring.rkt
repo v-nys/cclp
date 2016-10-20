@@ -43,11 +43,11 @@ color(α1) -> α1/γ1.
 test(γ1,γ2,γ3,γ4).
 
 {PREPRIOR}
-coloring(α1),safe(γ1,α1)
-coloring(α1),safe(γ1,[γ2|α1])
+coloring(α1),safe([γ1|γ2],[γ2|α1])
+coloring(α1),allsafe(γ1,γ2,γ3,α1)
 safe(γ1,[γ2,γ3|α1]),coloring(α1)
-allsafe(g15,g2,cons(g16,g17),cons(g3,a14)),safe(cons(g16,g17),cons(g3,a14))
-allsafe(g15,g2,cons(g16,g17),coloring(a14)
+allsafe(γ1,γ2,γ3,[γ4|α1]),coloring(α1)
+allsafe(γ1,γ2,γ3,[γ4|α1]),safe([γ1|γ2],[γ3,γ4|α1])
 
 {QUERY}
 safe_coloring(γ1,α1)

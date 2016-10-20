@@ -49,9 +49,8 @@ integers(γ1,α1),sift(α1,α2)
 integers(γ1,α1),length(α1,γ2)
 sift([γ1|α1],α2),integers(γ1,α1)
 filter(γ1,[γ2|α1],α2),integers(γ1,α1)
-length([γ1|α1],γ2),integers(γ1,α1)
-length([γ1|γ2],γ3),integers(γ1,γ2)
-length(γ1,γ2),integers(γ1,γ2)
+length([γ1|α1],γ2),integers(γ1,γ2)
+length(γ1,γ2),integers(γ1,[γ2|γ3])
 
 {QUERY}
 primes(γ1,α1)
