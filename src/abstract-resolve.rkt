@@ -34,6 +34,7 @@
 (require "abstraction-inspection-utils.rkt")
 (require (only-in parenlog model?))
 (require racket/logging)
+(require scribble/srcdoc)
 
 (define (write-resolvent obj port mode)
   (if (boolean? mode)

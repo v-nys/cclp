@@ -134,17 +134,17 @@
     [(node 'fail '()) #f]
     [(node (cycle _) '()) #f]
     [(node (tree-label c (none) s r #f) '())
-     (list (resolution-info c (none)))]
+     (list (tree-label c (none) s r #f))]
     [(node (tree-label c sel s r i) ch)
      (let ([first-child-branch (foldl (λ (c acc) (if acc acc (active-branch-info c))) #f ch)])
        (if first-child-branch
-           (cons (resolution-info c (some (cons (some-v sel) r))) first-child-branch)
+           (cons (tree-label c sel s r i) first-child-branch)
            #f))]))
 
 (provide
  (proc-doc/names
   active-branch-info
-  (-> node? (or/c #f (listof resolution-info?)))
+  (-> node? (or/c #f (listof tree-label?)))
   (tree)
   @{Returns the information required to synthesize a clause corresponding to the active branch in @racket[tree].
  The active branch is the first branch, considered from left to right, with a leaf node eligible for further unfolding.

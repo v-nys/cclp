@@ -40,36 +40,39 @@
   (print (node-label tree) out))
 
 (test-case
- "Converting from a tree to a list representing resolution info for the active branch."
- (let* ([completed-leaf (node (tree-label '() (none) '() (pre-abstract-rule (cbp:parse-rule "foo")) #f) '())]
+ "Extracting the active branch from a tree."
+ (let* ([completed-leaf (node (tree-label '() (none) '() (cbp:parse-rule "foo") #f) '())]
         [parent
          (node
           (tree-label (abp:parse-abstract-conjunction "foo") (some 0) '() #f 1)
           (list completed-leaf completed-leaf))])
    (check-equal? (active-branch-info parent) #f "all branches have been completed"))
- (let* ([completed-leaf (node (tree-label '() (none) '() (pre-abstract-rule (cbp:parse-rule "bar")) #f) '())]
+ (let* ([completed-leaf (node (tree-label '() (none) '() (cbp:parse-rule "bar") #f) '())]
         [left-child
          (node
           (tree-label
-           (abp:parse-abstract-conjunction "bar") (some 0) '() (pre-abstract-rule (cbp:parse-rule "foo :- bar")) 2)
+           (abp:parse-abstract-conjunction "bar") (some 0) '() (cbp:parse-rule "foo :- bar") 2)
           (list completed-leaf))]
         [active-leaf
          (node
-          (tree-label (abp:parse-abstract-conjunction "baz") (none) '() (pre-abstract-rule (cbp:parse-rule "quux :- baz")) #f)
+          (tree-label (abp:parse-abstract-conjunction "baz") (none) '() (cbp:parse-rule "quux :- baz") #f)
           '())]
         [right-child
          (node
           (tree-label
-           (abp:parse-abstract-conjunction "quux") (some 0) '() (pre-abstract-rule (cbp:parse-rule "foo :- quux")) 3)
+           (abp:parse-abstract-conjunction "quux") (some 0) '() (cbp:parse-rule "foo :- quux") 3)
           (list active-leaf))]
         [root
          (node
           (tree-label
            (abp:parse-abstract-conjunction "foo") (some 0) '() #f 1)
           (list left-child right-child))]
-        [info1 (resolution-info (abp:parse-abstract-conjunction "foo") (some (cons 0 (cbp:parse-rule "foo :- quux"))))]
-        [info2 (resolution-info (abp:parse-abstract-conjunction "quux") (some (cons 0 (cbp:parse-rule "quux :- baz"))))]
-        [info3 (resolution-info (abp:parse-abstract-conjunction "baz") (none))])
+        [info1
+         (tree-label (abp:parse-abstract-conjunction "foo") (some 0) (list) #f 1)]
+        [info2
+         (tree-label (abp:parse-abstract-conjunction "quux") (some 0) (list) (cbp:parse-rule "foo :- quux") 3)]
+        [info3
+         (tree-label (abp:parse-abstract-conjunction "baz") (none) (list) (cbp:parse-rule "quux :- baz") #f)])
    (check-equal? (active-branch-info root) (list info1 info2 info3))))
 
 (test-case
