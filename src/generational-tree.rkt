@@ -28,7 +28,7 @@
 (require "abstract-domain-ordering.rkt")
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
-(require "interaction.rkt") ; needed for tree-label, cycles, etc. TODO this dependency has to go or we will end up with a cycle
+(require "abstract-analysis.rkt")
 
 (struct resolution-info
   (conjunction selection-and-clause)

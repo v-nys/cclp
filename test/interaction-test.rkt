@@ -4,6 +4,7 @@
 (require (prefix-in abp: "abstract-domain-boilerplate.rkt"))
 (require "../src/data-utils.rkt")
 (require racket-tree-utils/src/tree)
+(require "../src/abstract-analysis.rkt")
 
 (test-case
  "candidate and predecessors for various scenarios"

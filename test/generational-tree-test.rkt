@@ -34,7 +34,7 @@
 (require "printed-test-results.rkt")
 (require "../src/abstract-knowledge.rkt")
 (require "../src/abstract-multi-domain.rkt")
-(require "../src/interaction.rkt")
+(require "../src/abstract-analysis.rkt")
 
 (define (node-display tree out)
   (print (node-label tree) out))
