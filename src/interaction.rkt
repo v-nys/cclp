@@ -77,7 +77,10 @@
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out)
-       (when ((compose not null?) sub) (begin (display " " out) (print-substitution sub out))))]
+       ;(when
+       ;    ((compose not null?) sub)
+       ;  (begin (display " " out) (print-substitution sub out)))
+       )]
     [(cycle i)
      (if use-color
          (display-color (format "cycle back to node ~a" i) out #:fg 'green)
@@ -159,7 +162,7 @@
         [(equal? choice proceed)
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
-            (begin (display "There are no nodes left to analyze.")
+            (begin (displayln "There are no nodes left to analyze.")
                    (interactive-analysis tree clauses full-evaluations preprior next-index filename))]
            [(cons (some candidate) preds)
             (let* ([candidate-label (node-label candidate)]
@@ -221,10 +224,13 @@
              (close-output-port out)
              (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
         [(equal? choice genealogy)
-         (let ([active-branch (active-branch-info tree)])
+         (let* ([active-branch (active-branch-info tree)]
+                [outputs (if active-branch (generational-trees active-branch) #f)])
            (begin
              (if active-branch
-                 (map (λ (t) (tree-display t print-atom-with-generation-node)) (generational-trees active-branch))
+                 (if (empty? outputs)
+                     (displayln "There are no target atoms for recursion analysis.")
+                     (map (λ (t) (tree-display t print-atom-with-generation-node)) outputs))
                  (displayln "There is no active branch."))
              (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
         [(equal? choice end) (void)]
