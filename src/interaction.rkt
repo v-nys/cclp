@@ -38,6 +38,7 @@
 (require "abstract-domain-ordering.rkt")
 (require racket/serialize)
 (require "abstract-analysis.rkt")
+(require "generational-tree.rkt")
 
 (require racket/logging)
 (require (for-doc scribble/manual))
@@ -48,6 +49,11 @@
   (display "{" out)
   (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between s ";"))
   (display "}" out))
+
+(define (print-atom-with-generation-node n [out (current-output-port)])
+  (match n
+    [(node ag _)
+     (fprintf out "~v {~v}" (atom-with-generation-atom ag) (atom-with-generation-generation ag))]))
 
 (define (print-conjunction c ms [out (current-output-port)])
   (define last-i (- (length c) 1))
@@ -214,7 +220,13 @@
              (write serialized-tree out)
              (close-output-port out)
              (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
-        [(equal? choice genealogy) (void)]
+        [(equal? choice genealogy)
+         (let ([active-branch (active-branch-info tree)])
+           (begin
+             (if active-branch
+                 (map (λ (t) (tree-display t print-atom-with-generation-node)) (generational-trees active-branch))
+                 (displayln "There is no active branch."))
+             (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
