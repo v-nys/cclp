@@ -119,7 +119,7 @@
 (provide
  (proc-doc/names
   generational-tree-skeleton
-  (-> (listof resolution-info?) (listof node?)) ; more specifically: nodes of resolution-info
+  (-> (listof resolution-info?) (listof node?)) ; more specifically: nodes of abstract-atoms
   (branch)
   @{Computes the lineage of each atom on a branch, without numbering the generations of atoms.
  The result is a @racket[list], as each atom of the starting conjunction has its own lineage and lines are never joined --- they can only split.}))
