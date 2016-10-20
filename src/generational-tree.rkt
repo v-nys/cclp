@@ -29,34 +29,7 @@
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 (require "abstract-analysis.rkt")
-
-(struct resolution-info
-  (conjunction selection-and-clause)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc ri1 ri2 equal?-recur)
-     (and (equal?-recur (resolution-info-conjunction ri1)
-                        (resolution-info-conjunction ri2))
-          (equal?-recur (resolution-info-selection-and-clause ri1)
-                        (resolution-info-selection-and-clause ri2))))
-   (define (hash-proc ri hash-recur)
-     (+ (* (hash-recur (resolution-info-conjunction ri)) 3)
-        (* (hash-recur (resolution-info-selection-and-clause ri)) 7)))
-   (define (hash2-proc ri hash2-recur)
-     (+ (hash2-recur (resolution-info-conjunction ri))
-        (hash2-recur (resolution-info-selection-and-clause ri))))])
-; selection-and-clause is an Opt pair of Integer, AbstractKnowledge, so (or/c none? (someof (cons/c Integer abstract-knowledge?))
-;the Integer is at least 0 and lower than the list length
-; note: should clause be renamed here or not? doesn't actually matter - we only consider the length and type (full ai or not)
-
-(provide
- (struct*-doc
-  resolution-info
-  ([conjunction (non-empty-listof abstract-atom?)]
-   [selection-and-clause any/c]); TODO should be more accurate
-  @{Details how resolution was performed at an abstract level.
-     A @racket[list] of @racket[resolution-info] details how resolution was performed along a single branch of the analysis tree.
-     It contains all the information required to synthesize a corresponding concrete branch.}))
+(require (prefix-in ck: "concrete-knowledge.rkt"))
 
 (define (write-atom-with-generation obj port mode)
   (if (boolean? mode)
@@ -89,37 +62,37 @@
 
 (define (knowledge-output-length knowledge)
   (match knowledge
-    [(abstract-rule h b) (length b)]
+    [(ck:rule h b) (length b)]
     [(full-evaluation i o) 0]))
 (provide
  (proc-doc/names
   knowledge-output-length
-  (-> abstract-knowledge? exact-nonnegative-integer?)
+  (-> (or/c ck:rule? full-evaluation?) exact-nonnegative-integer?)
   (knowledge)
   @{Computes how many conjuncts will be introduced when @racket[knowledge] is applied.}))
 
 (define (generational-tree-skeleton branch)
   (match branch
-    [(list res-info)
+    [(list label)
      (map
       (λ (atom-in-conjunction) (node atom-in-conjunction '()))
-      (resolution-info-conjunction res-info))]
-    [(list-rest (resolution-info res-conjunction (some (cons selected clause-used))) res-info-rest)
-     (let* ([first-unselected (take res-conjunction selected)]
-            [selected-atom (list-ref res-conjunction selected)]
-            [last-unselected (drop res-conjunction (+ 1 selected))]
-            [next-layer (generational-tree-skeleton res-info-rest)]
+      (tree-label-conjunction label))]
+    [(list-rest (tree-label tl-con (some selected) tl-subst tl-r tl-i) tl-rest)
+     (let* ([first-unselected (take tl-con selected)]
+            [selected-atom (list-ref tl-con selected)]
+            [last-unselected (drop tl-con (+ 1 selected))]
+            [next-layer (generational-tree-skeleton tl-rest)]
             [first-successors (take next-layer selected)]
             [selected-successors
-             (take (drop next-layer selected) (knowledge-output-length clause-used))]
-            [last-successors (drop next-layer (+ selected (knowledge-output-length clause-used)))])
+             (take (drop next-layer selected) (knowledge-output-length (tree-label-rule (car tl-rest))))]
+            [last-successors (drop next-layer (+ selected (knowledge-output-length (tree-label-rule (car tl-rest)))))])
        (append (map (λ (pre post) (node pre (list post))) first-unselected first-successors)
                (list (node selected-atom selected-successors))
                (map (λ (pre post) (node pre (list post))) last-unselected last-successors)))]))
 (provide
  (proc-doc/names
   generational-tree-skeleton
-  (-> (listof resolution-info?) (listof node?)) ; more specifically: nodes of abstract-atoms
+  (-> (listof tree-label?) (listof node?)) ; more specifically: nodes of abstract-atoms
   (branch)
   @{Computes the lineage of each atom on a branch, without numbering the generations of atoms.
  The result is a @racket[list], as each atom of the starting conjunction has its own lineage and lines are never joined --- they can only split.}))
@@ -257,7 +230,7 @@
 (provide
  (proc-doc/names
   generational-trees
-  (-> (non-empty-listof resolution-info?) node?)
+  (-> (non-empty-listof tree-label?) node?)
   (branch)
   @{Computes all potentially interesting generational trees for @racket[branch].
  All generational trees for a branch have the same skeleton, but potentially interesting ones are those for which a target atom can be found which is recursively evaluated.}))
