@@ -28,7 +28,7 @@
 (require "abstract-domain-ordering.rkt")
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
-(require "interaction.rkt") ; TODO this dependency has to go or we will end up with a cycle
+(require "interaction.rkt") ; needed for tree-label, cycles, etc. TODO this dependency has to go or we will end up with a cycle
 
 (struct resolution-info
   (conjunction selection-and-clause)
@@ -250,7 +250,6 @@
   (annotate-generational-trees
    (car skeleton) ; the assumption here is that the branch starts with a single atom
    (- (length branch) 1)))
-
 ; can refine this further:
 ; first resolution-info should have an atomic query
 ; not having a selection-and-clause and having a successor list element would also be a violation
@@ -260,4 +259,5 @@
   generational-trees
   (-> (non-empty-listof resolution-info?) node?)
   (branch)
-  @{Compute a generational tree for @racket[branch], under the assumption that instances of @racket[target-atom] cause a generation increment.}))
+  @{Computes all potentially interesting generational trees for @racket[branch].
+ All generational trees for a branch have the same skeleton, but potentially interesting ones are those for which a target atom can be found which is recursively evaluated.}))
