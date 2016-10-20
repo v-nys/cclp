@@ -230,7 +230,7 @@
 (provide
  (proc-doc/names
   generational-trees
-  (-> (non-empty-listof tree-label?) node?)
+  (-> (non-empty-listof tree-label?) (listof node?))
   (branch)
   @{Computes all potentially interesting generational trees for @racket[branch].
  All generational trees for a branch have the same skeleton, but potentially interesting ones are those for which a target atom can be found which is recursively evaluated.}))

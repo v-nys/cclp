@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
+#lang at-exp racket
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")
 (require "abstract-unify.rkt")
@@ -34,7 +34,9 @@
 (require "abstraction-inspection-utils.rkt")
 (require (only-in parenlog model?))
 (require racket/logging)
+
 (require scribble/srcdoc)
+(require (for-doc scribble/manual))
 
 (define (write-resolvent obj port mode)
   (if (boolean? mode)
@@ -48,7 +50,6 @@
                (resolvent-conjunction obj)
                (resolvent-knowledge obj)
                (resolvent-substitution obj))))
-
 (struct resolvent (conjunction substitution knowledge)
   #:methods
   gen:custom-write
@@ -67,7 +68,13 @@
      (+ (hash2-recur (resolvent-conjunction my-r))
         (hash2-recur (resolvent-substitution my-r))
         (hash2-recur (resolvent-knowledge my-r))))])
-(provide (struct-out resolvent))
+(provide
+ (struct*-doc
+  resolvent
+  ([conjunction (listof abstract-atom?)]
+   [substitution (listof abstract-equality?)]
+   [knowledge (or/c rule? full-evaluation?)])
+  @{Summarizes the result of a resolution step.}))
 
 (define (abstract-resolve conjunction prior concrete-clauses full-evaluations)
   (let* ([conjunct-index (selected-index conjunction prior full-evaluations)]
@@ -82,28 +89,58 @@
                    acc)))
            (list)
            all-knowledge))))
-(provide (contract-out [abstract-resolve (-> (listof abstract-atom?) model? (listof rule?) (listof full-evaluation?) (cons/c exact-nonnegative-integer? (listof resolvent?)))]))
+(provide
+ (proc-doc/names
+  abstract-resolve
+  (-> (listof abstract-atom?)
+      model?
+      (listof rule?)
+      (listof full-evaluation?)
+      (cons/c exact-nonnegative-integer? (listof resolvent?)))
+  (conjunction prior concrete-clauses full-evaluations)
+  @{Resolves the next abstract atom selected from @racket[conjunction]
+ by partial order @racket[prior] with every applicable rule in both
+ @racket[concrete-clauses] and @racket[full-evaluations].
+ The result is a @racket[pair] consisting of the index of the selected
+ abstract atom and a list of outcomes for every possible resolution step.}))
 
 (define (abstract-step conjunct-index conjunction knowledge)
   (define conjunct (list-ref conjunction conjunct-index))
   (define abstract-knowledge (if (rule? knowledge) (pre-abstract-rule knowledge) knowledge))
   (define renamed-abstract-knowledge (rename-apart abstract-knowledge conjunction))
-  
-  (define g-offset (let ([candidate (maximum-var-index conjunction g?)]) (if (some? candidate) (some-v candidate) 0)))
+  (define g-offset
+    (let ([candidate (maximum-var-index conjunction g?)])
+      (if (some? candidate) (some-v candidate) 0)))
   (if (abstract-rule? renamed-abstract-knowledge)
-      (let* ([in-subst (abstract-equality conjunct (abstract-rule-head renamed-abstract-knowledge))]
+      (let* ([in-subst (abstract-equality
+                        conjunct
+                        (abstract-rule-head renamed-abstract-knowledge))]
              [out-subst (abstract-unify (list in-subst) g-offset)])
         (let*-values ([(before from) (split-at conjunction conjunct-index)]
-                      [(stitched) (append before (abstract-rule-body renamed-abstract-knowledge) (cdr from))])
+                      [(stitched)
+                       (append before
+                               (abstract-rule-body renamed-abstract-knowledge)
+                               (cdr from))])
           (if (some? out-subst)
-              (begin (log-debug (format "Successfully resolved with renamed rule ~a" renamed-abstract-knowledge))
-                     (resolvent (apply-substitution (some-v out-subst) stitched) (some-v out-subst) knowledge))
+              (begin
+                (log-debug (format "Successfully resolved with ~a" renamed-abstract-knowledge))
+                (resolvent
+                 (apply-substitution (some-v out-subst) stitched)
+                 (some-v out-subst)
+                 knowledge))
               #f)))
       (if (>=-extension (full-evaluation-input-pattern renamed-abstract-knowledge) conjunct)
-          (let* ([in-subst (abstract-equality conjunct (full-evaluation-output-pattern renamed-abstract-knowledge))]
+          (let* ([in-subst
+                  (abstract-equality
+                   conjunct
+                   (full-evaluation-output-pattern renamed-abstract-knowledge))]
                  [out-subst (abstract-unify (list in-subst) g-offset)]
-                 [unspliced (let-values ([(before from) (split-at conjunction conjunct-index)]) (append before (cdr from)))])
+                 [unspliced
+                  (let-values ([(before from) (split-at conjunction conjunct-index)])
+                    (append before (cdr from)))])
             (if (some? out-subst)
-                (resolvent (apply-substitution (some-v out-subst) unspliced) (some-v out-subst) knowledge)
-                (error "input pattern matched, but output pattern could not be applied - full evaluation is wrong?")))
+                (resolvent (apply-substitution (some-v out-subst) unspliced)
+                           (some-v out-subst)
+                           knowledge)
+                (error "output pattern could not be applied - full evaluation is wrong?")))
           #f)))
