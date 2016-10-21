@@ -77,18 +77,21 @@
   @{Summarizes the result of a resolution step.}))
 
 (define (abstract-resolve conjunction prior concrete-clauses full-evaluations)
+  (define (fold-over-knowledge i kb)
+    (foldl
+     (λ (k acc)
+       (let ([step-outcome (abstract-step i conjunction k)])
+         (if step-outcome
+             (cons step-outcome acc)
+             acc)))
+     (list)
+     kb))
   (let* ([conjunct-index (selected-index conjunction prior full-evaluations)]
          [conjunct (list-ref conjunction conjunct-index)]
          [all-knowledge (append concrete-clauses full-evaluations)])
     (cons conjunct-index
-          (foldl
-           (λ (k acc)
-             (let ([step-outcome (abstract-step conjunct-index conjunction k)])
-               (if step-outcome
-                   (cons step-outcome acc)
-                   acc)))
-           (list)
-           all-knowledge))))
+          ((curry fold-over-knowledge conjunct-index) all-knowledge))))
+
 (provide
  (proc-doc/names
   abstract-resolve
