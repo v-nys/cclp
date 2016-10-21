@@ -38,7 +38,7 @@
 (define
   simplified-primes-graph
   (abp:parse-prior-relation
-    "integers(γ1,α1),filter(γ1,α1,α2) integers(γ1,α1),sift(α1,α2) integers(γ1,α1),length(α1,γ2) sift([γ1|α1],α2),integers(γ1,α1) filter(γ1,[γ2|α1],α2),integers(γ1,α1) length([γ1|α1],γ2),integers(γ1,α1)"))
+   "integers(γ1,α1),filter(γ1,α1,α2) integers(γ1,α1),sift(α1,α2) integers(γ1,α1),length(α1,γ2) sift([γ1|α1],α2),integers(γ1,α1) filter(γ1,[γ2|α1],α2),integers(γ1,α1) length([γ1|α1],γ2),integers(γ1,α1)"))
 (define
   full-primes-graph
   (abp:parse-prior-relation
@@ -100,10 +100,10 @@
  (check-equal?
   (query-model permsort-graph
                (before X Y))
-               (list
-                (hasheq 'X '(perm (γ sym1) (α sym1)) 'Y '(ord (α sym1)))
-                (hasheq 'X '(perm (γ sym1) (α sym1)) 'Y '(ord (cons (γ sym1) (α sym1))))
-                (hasheq 'X '(ord (cons (γ sym1) (cons (γ sym2) (α sym1)))) 'Y '(perm (γ sym1) (α sym1)))))
+  (list
+   (hasheq 'X '(perm (γ sym1) (α sym1)) 'Y '(ord (α sym1)))
+   (hasheq 'X '(perm (γ sym1) (α sym1)) 'Y '(ord (cons (γ sym1) (α sym1))))
+   (hasheq 'X '(ord (cons (γ sym1) (cons (γ sym2) (α sym1)))) 'Y '(perm (γ sym1) (α sym1)))))
  (check-equal? (query-model
                 permsort-graph
                 (reaches_under_consistency
@@ -158,10 +158,58 @@
  2)
 
 ; bug trigger test for full primes
+;(check-equal?
+; (selected-index
+;  (abp:parse-abstract-conjunction
+;   "integers(γ6,α10),filter(γ4,α10,α12),sift(α12,α11),length([γ4|α11],γ1)")
+;  full-primes-graph
+;  (list))
+; 3)
+
 (check-equal?
- (selected-index
-  (abp:parse-abstract-conjunction
-   "integers(γ6,α10),filter(γ4,α10,α12),sift(α12,α11),length([γ4|α11],γ1)")
+ (query-model
   full-primes-graph
-  (list))
- 3)
+  (member_reaches_or_includes_all_under_consistency
+   X
+   (cons (integers (γ sym6) (α sym10)) ())))
+ (list 'abc))
+
+(check-equal?
+ (query-model
+  full-primes-graph
+  (member_reaches_or_includes_all_under_consistency
+   X
+   (cons (integers (γ sym6) (α sym10))
+         (cons (filter (γ sym4) (α sym10) (α sym12)) ()))))
+ (list 'abc))
+
+(check-equal?
+ (query-model
+  full-primes-graph
+  (member_reaches_or_includes_all_under_consistency
+   X
+   (cons (integers (γ sym6) (α sym10))
+         (cons (filter (γ sym4) (α sym10) (α sym12))
+               (cons (sift (α sym12) (α sym11)) ())))))
+ (list 'abc))
+
+(check-equal?
+ (query-model
+  full-primes-graph
+  (member_reaches_or_includes_all_under_consistency
+   X
+   (cons (integers (γ sym6) (α sym10))
+        (cons (filter (γ sym4) (α sym10) (α sym12))
+              (cons (sift (α sym12) (α sym11))
+                    (cons (length (cons (γ sym4) (α sym11)) (γ sym1))
+                          ()))))))
+ (list 'abc))
+
+(check-equal?
+ (query-model
+  full-primes-graph
+  (member_reaches_or_includes_all_under_consistency
+   X
+   (cons (integers (γ sym6) (α sym10))
+         (cons (length (cons (γ sym4) (α sym11)) (γ sym1)) ()))))
+ (list 'abc))
