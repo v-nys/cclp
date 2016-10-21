@@ -88,9 +88,11 @@
      kb))
   (let* ([conjunct-index (selected-index conjunction prior full-evaluations)]
          [conjunct (list-ref conjunction conjunct-index)]
-         [all-knowledge (append concrete-clauses full-evaluations)])
+         [outcomes-full-eval ((curry fold-over-knowledge conjunct-index) full-evaluations)])
     (cons conjunct-index
-          ((curry fold-over-knowledge conjunct-index) all-knowledge))))
+          (if (null? outcomes-full-eval)
+              ((curry fold-over-knowledge conjunct-index) concrete-clauses)
+              outcomes-full-eval))))
 
 (provide
  (proc-doc/names

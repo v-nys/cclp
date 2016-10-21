@@ -39,6 +39,10 @@
   simplified-primes-graph
   (abp:parse-prior-relation
     "integers(γ1,α1),filter(γ1,α1,α2) integers(γ1,α1),sift(α1,α2) integers(γ1,α1),length(α1,γ2) sift([γ1|α1],α2),integers(γ1,α1) filter(γ1,[γ2|α1],α2),integers(γ1,α1) length([γ1|α1],γ2),integers(γ1,α1)"))
+(define
+  full-primes-graph
+  (abp:parse-prior-relation
+   "integers(γ1,α1),filter(γ1,α1,α2) integers(γ1,α1),sift(α1,α2) integers(γ1,α1),length(α1,γ2) sift([γ1|α1],α2),integers(γ1,α1) sift(γ1,α1),length(α1,γ1) filter(γ1,[γ2|α1],α2),integers(γ1,α1) length([γ1|α1],γ2),integers(γ1,γ2) length(γ1,γ2),integers(γ1,[γ2|γ3])"))
 
 (check-true (is-valid? non-looping-graph))
 (check-false (is-valid? looping-graph))
@@ -152,3 +156,12 @@
   simplified-primes-graph
   (list))
  2)
+
+; bug trigger test for full primes
+(check-equal?
+ (selected-index
+  (abp:parse-abstract-conjunction
+   "integers(γ6,α10),filter(γ4,α10,α12),sift(α12,α11),length([γ4|α11],γ1)")
+  full-primes-graph
+  (list))
+ 3)

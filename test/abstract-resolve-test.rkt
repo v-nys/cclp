@@ -59,3 +59,5 @@
       (abp:parse-abstract-conjunction "perm(γ23,α13),ord([γ3,γ22|α13])")
       (abp:parse-abstract-substitution "α12/γ22,γ18/γ20,γ19/γ21,α14/γ23")
       full-eval)))))
+
+; TODO test whether single-step unfolding does not take place when full eval is applied
