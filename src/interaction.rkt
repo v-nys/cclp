@@ -151,9 +151,9 @@
   @{Undo the latest unfolding or generalization that occurred in @racket[t]}))
 
 (define (interactive-analysis tree clauses full-evaluations preprior next-index filename)
-  (define-values (show-top proceed go-back save genealogy end)
-    (values "show top level" "proceed" "rewind last operation" "save analysis" "show genealogical analysis" "end analysis"))
-  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save genealogy end))
+  (define-values (show-top proceed go-back save genealogy similarity end)
+    (values "show top level" "proceed" "rewind last operation" "save analysis" "show genealogical analysis" "check S-similarity" "end analysis"))
+  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save genealogy similarity end))
   (cond [(equal? choice show-top)
          (begin (newline)
                 (tree-display tree print-tree-label)
@@ -233,8 +233,21 @@
                      (map (λ (t) (tree-display t print-atom-with-generation-node)) outputs))
                  (displayln "There is no active branch."))
              (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
+        [(equal? choice similarity)
+         (begin
+           (check-s-similarity tree)
+           (interactive-analysis tree clauses full-evaluations preprior next-index filename))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
+
+(define (check-s-similarity t)
+  (displayln "Please supply the index of the first node.")
+  (define node-index-1 (prompt-for-integer))
+  (displayln "Please supply the index of the second node.")
+  (define node-index-2 (prompt-for-integer))
+  ; TODO find branch ending in the more recent node
+  ; check if the older one is on the same branch
+  (void))
 
 (define (largest-node-index t)
   (match t

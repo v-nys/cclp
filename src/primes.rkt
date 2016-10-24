@@ -46,7 +46,7 @@ integers(γ1,γ2).
 length(γ1,γ2).
 % this only occurs for the empty list
 % program analysis should be correct this way
-% widening or more intelligent use of concrete constants would be better, though
+% widening or more intelligent use of concrete constants would be better, though5
 filter(γ1,α1,γ2) -> α1/γ2.
 
 {PREPRIOR}

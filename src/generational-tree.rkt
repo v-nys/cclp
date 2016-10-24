@@ -218,6 +218,16 @@
           (λ (c) can-reach-depth? c target-depth (+ curr-depth) 1)
           (node-children my-node))]))
 
+(define (horizontal-level t l)
+  (list))
+(provide
+ (proc-doc/names
+  horizontal-level
+  (-> node? exact-nonnegative-integer? (listof atom-with-generation?))
+  (tree level)
+  @{Returns the annotated atoms at level @racket[l] of tree @racket[t] as a @racket[list],
+ where the leftmost atom at level @racket[l] corresponds to the first item in the @racket[list], and so on.}))
+
 (define (generational-trees branch)
   (define skeleton (generational-tree-skeleton branch))
   (annotate-generational-trees

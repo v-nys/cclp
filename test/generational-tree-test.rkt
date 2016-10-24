@@ -153,33 +153,45 @@
         (generational-trees (active-branch-info level-1))
         (list annotated-lv-1)
         "check if analysis without a target atom is correct")))))
-  
-  (let* ([a-atom (abstract-atom 'a '())]
-         [b-atom (abstract-atom 'b '())]
-         [nc1 (node b-atom '())]
-         [nc2 (node a-atom '())]
-         [n (node a-atom (list nc1 nc2))])
-    (check-equal? (descendant-renames? n a-atom) #t))
-  
-  (let* ([a-atom (abstract-atom 'a '())]
-         [b-atom (abstract-atom 'b '())]
-         [nc1 (node b-atom '())]
-         [nc2 (node a-atom '())]
-         [n (node b-atom (list nc1 nc2))])
-    (check-equal? (descendant-renames? n a-atom) #t))
-  
-  (let* ([a-atom (abstract-atom 'a '())]
-         [b-atom (abstract-atom 'b '())]
-         [nc1 (node a-atom '())]
-         [nc2 (node a-atom '())]
-         [n (node b-atom (list nc1 nc2))])
-    (check-equal? (descendant-renames? n b-atom) #f))
-  
-  (let* ([a-atom (abstract-atom 'a '())]
-         [b-atom (abstract-atom 'b '())]
-         [c-atom (abstract-atom 'c '())]
-         [nc1 (node b-atom '())]
-         [ncc (node a-atom '())]
-         [nc2 (node c-atom (list ncc))]
-         [n (node a-atom (list nc1 nc2))])
-    (check-equal? (descendant-renames? n a-atom) #t))
+
+(test-case
+ "horizontal reading of a generational tree"
+ (let ([a-0 (atom-with-generation (abp:parse-abstract-atom "a") 0)]
+       [a-1 (atom-with-generation (abp:parse-abstract-atom "a") 1)]
+       [a-2 (atom-with-generation (abp:parse-abstract-atom "a") 2)]
+       [b-1 (atom-with-generation (abp:parse-abstract-atom "b") 1)]
+       [b-2 (atom-with-generation (abp:parse-abstract-atom "b") 2)])
+   ; TODO test with 2 and 3 levels
+   (check-equal?
+    (horizontal-level (node a-0 '()) 0)
+    (list a-0))))
+
+(let* ([a-atom (abstract-atom 'a '())]
+       [b-atom (abstract-atom 'b '())]
+       [nc1 (node b-atom '())]
+       [nc2 (node a-atom '())]
+       [n (node a-atom (list nc1 nc2))])
+  (check-equal? (descendant-renames? n a-atom) #t))
+
+(let* ([a-atom (abstract-atom 'a '())]
+       [b-atom (abstract-atom 'b '())]
+       [nc1 (node b-atom '())]
+       [nc2 (node a-atom '())]
+       [n (node b-atom (list nc1 nc2))])
+  (check-equal? (descendant-renames? n a-atom) #t))
+
+(let* ([a-atom (abstract-atom 'a '())]
+       [b-atom (abstract-atom 'b '())]
+       [nc1 (node a-atom '())]
+       [nc2 (node a-atom '())]
+       [n (node b-atom (list nc1 nc2))])
+  (check-equal? (descendant-renames? n b-atom) #f))
+
+(let* ([a-atom (abstract-atom 'a '())]
+       [b-atom (abstract-atom 'b '())]
+       [c-atom (abstract-atom 'c '())]
+       [nc1 (node b-atom '())]
+       [ncc (node a-atom '())]
+       [nc2 (node c-atom (list ncc))]
+       [n (node a-atom (list nc1 nc2))])
+  (check-equal? (descendant-renames? n a-atom) #t))
