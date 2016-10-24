@@ -172,7 +172,7 @@
   (member_reaches_or_includes_all_under_consistency
    X
    (cons (integers (γ sym6) (α sym10)) ())))
- (list 'abc))
+ (list (hasheq 'X '(integers (γ sym6) (α sym10)))))
 
 (check-equal?
  (query-model
@@ -181,7 +181,8 @@
    X
    (cons (integers (γ sym6) (α sym10))
          (cons (filter (γ sym4) (α sym10) (α sym12)) ()))))
- (list 'abc))
+ (list (hasheq 'X '(integers (γ sym6) (α sym10))))
+ "integers explicitly precedes filter")
 
 (check-equal?
  (query-model
@@ -191,7 +192,7 @@
    (cons (integers (γ sym6) (α sym10))
          (cons (filter (γ sym4) (α sym10) (α sym12))
                (cons (sift (α sym12) (α sym11)) ())))))
- (list 'abc))
+ (list (hasheq 'X '(integers (γ sym6) (α sym10)))))
 
 (check-equal?
  (query-model
@@ -203,7 +204,8 @@
               (cons (sift (α sym12) (α sym11))
                     (cons (length (cons (γ sym4) (α sym11)) (γ sym1))
                           ()))))))
- (list 'abc))
+ (list (hasheq 'X '(length (cons (γ sym4) (α sym11)) (γ sym1))))
+ "length, by transitivity, precedes all of these atoms")
 
 (check-equal?
  (query-model
@@ -212,4 +214,48 @@
    X
    (cons (integers (γ sym6) (α sym10))
          (cons (length (cons (γ sym4) (α sym11)) (γ sym1)) ()))))
- (list 'abc))
+ (list (hasheq 'X '(length (cons (γ sym4) (α sym11)) (γ sym1))))
+ "length explicitly precedes more general instance of integers")
+
+(check-equal?
+ (query-model
+  full-primes-graph
+  (member_reaches_or_includes_all_under_consistency
+   X
+   (cons (filter (γ sym4) (α sym10) (α sym12))
+         (cons (length (cons (γ sym4) (α sym11)) (γ sym1)) ()))))
+ (list (hasheq 'X '(length (cons (γ sym4) (α sym11)) (γ sym1))))
+ "length explicitly precedes integers, which explicitly precedes filter")
+
+(check-equal?
+ (query-model
+  full-primes-graph
+  (member_reaches_or_includes_all_under_consistency
+   X
+   (cons (sift (α sym12) (α sym11))
+         (cons (length (cons (γ sym4) (α sym11)) (γ sym1)) ()))))
+ (list (hasheq 'X '(length (cons (γ sym4) (α sym11)) (γ sym1))))
+ "length explicitly precedes integers, which precedes sift")
+
+(check-equal?
+ (query-model
+  full-primes-graph
+  (reaches_under_consistency
+   (length (cons (γ sym4) (α sym11)) (γ sym1))
+   (sift (α sym12) (α sym11))))
+ (list (hasheq))
+ "length does not specify sift, but reaches it")
+
+; bug trigger
+; this fails because:
+; length reaches integers(g1,g2)
+; integers(g1,a1) reaches sift
+; but implicit precedence of integers(g1,g2) over integers(g1,a1) is not encoded
+(check-equal?
+ (query-model
+  full-primes-graph
+  (reaches_loopfree
+   (length (cons (γ sym1) (α sym1)) (γ sym2))
+   (sift (α sym1) (α sym2))))
+ (list (hasheq))
+ "normalized representation")
