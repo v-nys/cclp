@@ -217,6 +217,7 @@
               (map expand-syntax-while-bound (syntax->list #'(pair ...))))])
          #`((λ () (define-model prior
                     expanded-pair ...
+                    ; standard list membership
                     (member X (cons X Y))
                     (:- (member X (cons Y Z))
                         (member X Z))
@@ -224,13 +225,30 @@
                     (:- (not_a_member X (cons A B))
                         (,(compose not equal?) X A)
                         (not_a_member X B))
+                    ; to avoid dealing with generalizations/specifications not in the graph
+                    (:- (relevant_atom X)
+                        (before X Y))
+                    (:- (relevant_atom X)
+                        (before Y X))
+                    
                     (:- (reaches_without_encountering X Y Path)
-                        (before X Y)
-                        (not_a_member Y Path))
+                        (before X1 Y1)
+                        (not_a_member Y1 Path)
+                        (relevant_atom X)
+                        (before X A)
+                        (sexp_gt_extension X1 X)
+                        (relevant_atom Y)
+                        (sexp_gt_extension Y Y1))
+                    
                     (:- (reaches_without_encountering X Z Path)
-                        (before X Y)
+                        (relevant_atom X)
+                        (before X1 Y)
+                        (sexp_gt_extension X1 X)
                         (not_a_member Y Path)
-                        (reaches_without_encountering Y Z (cons Y Path)))
+                        (reaches_without_encountering Y Z1 (cons Y Path))
+                        (relevant_atom Z)
+                        (sexp_gt_extension Z Z1))
+                    
                     (:- (reaches_loopfree X Y)
                         (reaches_without_encountering X Y (cons X ())))
                     (:- (violates_partial_order)
@@ -250,6 +268,7 @@
                         (reaches_under_consistency X Destination)
                         (reaches_or_includes_all_under_consistency X Ds))
                     (:- (reaches_under_consistency X Y)
+                        ; note: reaches_loopfree has output pattern + + because reaches_without_encountering does
                         (reaches_loopfree X1 Y1)
                         (sexp_gt_extension X1 X)
                         (sexp_gt_extension Y Y1))

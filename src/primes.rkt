@@ -48,7 +48,7 @@ length(γ1,γ2).
 {PREPRIOR}
 integers(γ1,α1),filter(γ1,α1,α2)
 integers(γ1,α1),sift(α1,α2)
-integers(γ1,α1),length(α1,γ2)
+integers(γ1,α1),length(α1,γ1)
 sift([γ1|α1],α2),integers(γ1,α1)
 sift(γ1,α1),length(α1,γ1)
 filter(γ1,[γ2|α1],α2),integers(γ1,α1)
