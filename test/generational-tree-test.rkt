@@ -161,10 +161,21 @@
        [a-2 (atom-with-generation (abp:parse-abstract-atom "a") 2)]
        [b-1 (atom-with-generation (abp:parse-abstract-atom "b") 1)]
        [b-2 (atom-with-generation (abp:parse-abstract-atom "b") 2)])
-   ; TODO test with 2 and 3 levels
    (check-equal?
     (horizontal-level (node a-0 '()) 0)
-    (list a-0))))
+    (list a-0))
+   (check-equal?
+    (horizontal-level (node a-0 (list (node b-1 '()) (node a-1 '()))) 1)
+    (list b-1 a-1))
+   (let* ([leaf-1 (node b-1 '())]
+          [leaf-2 (node b-2 '())]
+          [leaf-3 (node a-2 '())]
+          [mid-1 (node b-1 (list leaf-1))]
+          [mid-2 (node a-1 (list leaf-2 leaf-3))]
+          [root (node a-0 (list mid-1 mid-2))])
+     (check-equal?
+      (horizontal-level root 2)
+      (list b-1 b-2 a-2)))))
 
 (let* ([a-atom (abstract-atom 'a '())]
        [b-atom (abstract-atom 'b '())]
