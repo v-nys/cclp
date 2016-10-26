@@ -219,7 +219,11 @@
           (node-children my-node))]))
 
 (define (horizontal-level t l)
-  (list))
+  (define (h-level-aux t l acc)
+    (if (equal? l acc)
+        (list (node-label t))
+        (apply append (map (λ (c) (h-level-aux c l (+ acc 1))) (node-children t)))))
+  (h-level-aux t l 0))
 (provide
  (proc-doc/names
   horizontal-level
