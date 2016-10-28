@@ -91,6 +91,7 @@
     [(node (tree-label '() _ _ _ _) '()) (cons (none) acc)]
     [(node 'fail '()) (cons (none) acc)]
     [(node (cycle _) '()) (cons (none) acc)]
+    ; TODO add the option of a widening as a candidate
     [(node (tree-label c (none) s r #f) '())
      (cons (some (node (tree-label c (none) s r #f) '())) acc)]
     [(node (tree-label c (none) s r i) (list (node (cycle ci) '())))
@@ -151,9 +152,9 @@
   @{Undo the latest unfolding or generalization that occurred in @racket[t]}))
 
 (define (interactive-analysis tree clauses full-evaluations preprior next-index filename)
-  (define-values (show-top proceed go-back save genealogy similarity end)
-    (values "show top level" "proceed" "rewind last operation" "save analysis" "show genealogical analysis" "check S-similarity" "end analysis"))
-  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save genealogy similarity end))
+  (define-values (show-top proceed go-back save widen genealogy similarity end)
+    (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "show genealogical analysis" "check S-similarity" "end analysis"))
+  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen genealogy similarity end))
   (cond [(equal? choice show-top)
          (begin (newline)
                 (tree-display tree print-tree-label)
@@ -223,6 +224,30 @@
              (write serialized-tree out)
              (close-output-port out)
              (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
+        [(equal? choice widen)
+         (match (candidate-and-predecessors tree '())
+           [(cons (none) _)
+            (interactive-analysis tree clauses full-evaluations preprior next-index filename)]
+           ; candidate can be either a tree-label? or a widening?
+           [(cons (some candidate) _)
+            (begin
+              (displayln "Please enter a conjunction with an equal or greater extension.")
+              (define read-conjunction (read))
+              (define widened-conjunction (list))
+              (displayln "Please enter a reason why widening was applied.")
+              (define read-reason (read))
+              (define updated-label
+                (match (node-label candidate)
+                  [(tree-label c se su r #f) (tree-label c se su r next-index)]
+                  [(widening c msg #f) (widening c msg next-index)]
+                  [_ (error "candidate type unaccounted for")]))
+              (define updated-top
+                (replace-first-subtree
+                 tree
+                 candidate
+                 (node updated-label (list (node (widening widened-conjunction read-reason #f) '())))))
+              (let ([updated-top tree])
+                (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1) filename)))])]
         [(equal? choice genealogy)
          (let* ([active-branch (active-branch-info tree)]
                 [outputs (if active-branch (generational-trees active-branch) #f)])
