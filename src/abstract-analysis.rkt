@@ -84,3 +84,24 @@
   @{A cycle detected during abstract analysis.
      The field @racket[index] stands for the index of a previously handled conjunction which generalizes over the conjunction which introduces the @racket[cycle].
      The latter is normally represented as the parent of the @racket[cycle] in the abstract analysis tree.}))
+
+(serializable-struct widening (conjunction message)
+                     ; message has no bearing on the semantics
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc w1 w2 equal?-recur)
+                        (equal?-recur (widening-conjunction w1) (widening-conjunction w2)))
+                      (define (hash-proc w hash-recur)
+                        (hash-recur (widening-conjunction w)))
+                      (define (hash2-proc w hash2-recur)
+                        (hash2-recur (widening-conjunction w)))])
+(provide
+ (struct*-doc
+  widening
+  ([conjunction (listof abstract-atom?)]
+   [message (or/c #f string?)])
+  @{An application of widening during abstract analysis.
+     This can be either automatic (due to depth-k abstraction being enabled) or specified by the user.
+     The field @racket[conjunction] contains the result of the widening operation.
+     The @racket[message] field is optional and is used to explain why widening was applied.}))
+
