@@ -156,3 +156,5 @@
         [rewound-child (node (tree-label (abp:parse-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node grandchild3))]
         [rewound-tree (node (tree-label (abp:parse-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
    (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree))))
+
+(check-equal? #t #f "add tests for widening nodes")

@@ -206,3 +206,5 @@
        [nc2 (node c-atom (list ncc))]
        [n (node a-atom (list nc1 nc2))])
   (check-equal? (descendant-renames? n a-atom) #t))
+
+(check-equal? #t #f "add tests for widening nodes")
