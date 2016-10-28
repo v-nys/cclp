@@ -9,25 +9,15 @@
 (require (prefix-in ad: "../src/abstract-multi-domain.rkt"))
 (require syntax/parse)
 
-(define-syntax (parse-abstract-atom stx)
-  (define atom-parse (make-rule-parser abstract-atom))
-  (syntax-case stx ()
-    [(_ THE-ATOM)
-     (with-syntax
-         ([PARSE-TREE
-           (replace-context #'() (atom-parse (all-tokens (syntax->datum #'THE-ATOM))))])
-       #'PARSE-TREE)]))
-(provide parse-abstract-atom)
-
-(define (interpret-abstract-term term-stx)
-  (syntax-parse term-stx
-    [((~literal abstract-variable) NESTED-VAR)
-     (interpret-abstract-variable #'NESTED-VAR)]))
-
-(define (interpret-abstract-variable var-stx)
-  (syntax-parse var-stx
-    [((~literal abstract-variable-a) A-SYMBOL A-INDEX)
-     (ad:a (syntax->datum #'A-INDEX))]))
+;(define-syntax (parse-abstract-atom stx)
+;  (define atom-parse (make-rule-parser abstract-atom))
+;  (syntax-case stx ()
+;    [(_ THE-ATOM)
+;     (with-syntax
+;         ([PARSE-TREE
+;           (replace-context #'() (atom-parse (all-tokens (syntax->datum #'THE-ATOM))))])
+;       #'PARSE-TREE)]))
+;(provide parse-abstract-atom)
 
 (define-syntax (parse-abstract-term stx)
   (define term-parse (make-rule-parser abstract-term))

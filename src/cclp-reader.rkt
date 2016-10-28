@@ -53,7 +53,6 @@
     (get-token input-port))
   next-token)
 
-; for easy testing
 (define (all-tokens str)
   (define (exhaust t)
     (let ([next (t)])
