@@ -6,6 +6,25 @@
 (require "../src/cclp-interpreter.rkt")
 
 (check-equal?
+ (interpret-abstract-atom "safe")
+ (abstract-atom 'safe (list)))
+
+(check-equal?
+ (interpret-abstract-atom "safe([γ1])")
+ (abstract-atom
+  'safe
+  (list (abstract-function 'cons (list (g 1) (abstract-function 'nil (list)))))))
+
+(check-equal?
+ (interpret-abstract-atom "safe([γ1,γ2])")
+ (abstract-atom
+  'safe
+  (list
+   (abstract-function
+    'cons
+    (list (g 1) (abstract-function 'cons (list (g 2) (abstract-function 'nil (list)))))))))
+
+(check-equal?
  (interpret-abstract-atom "safe([γ1,γ2|α1])")
  (abstract-atom
   'safe

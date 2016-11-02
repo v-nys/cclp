@@ -27,9 +27,9 @@
 
 (require syntax/parse)
 (require (only-in "cclp-parser.rkt" make-rule-parser))
-(require (only-in "cclp-reader.rkt" tokenize))
+(require (only-in "cclp-reader.rkt" all-tokens))
 
-(require "abstract-multi-domain.rkt")
+(require (prefix-in ad: "abstract-multi-domain.rkt"))
 
 ;abstract-atom-with-args : SYMBOL OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
 
@@ -41,71 +41,71 @@
 
 (define (interpret-abstract-atom str)
   (define atom-parse (make-rule-parser abstract-atom))
-  (define string-port (open-input-string str))
-  (interpret-abstract-atom-syntax (tokenize string-port)))
+  (define parsed (atom-parse (all-tokens str)))
+  (interpret-abstract-atom-syntax parsed))
 
 (define (interpret-abstract-atom-syntax atom-stx)
   (syntax-parse atom-stx
-    [((~literal abstract-atom-without-args) SYMBOL)
-     (abstract-atom (syntax->datum #'SYMBOL) (list))]
-    [((~literal abstract-atom-with-args) SYMBOL "(" ARG-OR-SEP ... ")")
-     (abstract-atom
-      (syntax->datum #'SYMBOL)
+    [((~literal abstract-atom) ((~literal abstract-atom-without-args) SYMBOL))
+     (ad:abstract-atom (string->symbol (syntax->datum #'SYMBOL)) (list))]
+    [((~literal abstract-atom) ((~literal abstract-atom-with-args) SYMBOL "(" ARG-OR-SEP ... ")"))
+     (ad:abstract-atom
+      (string->symbol (syntax->datum #'SYMBOL))
       (map interpret-abstract-term-syntax (syntax->list #'(ARG-OR-SEP ...))))]))
 (provide
  (proc-doc/names
   interpret-abstract-atom
-  (-> string? abstract-atom?)
+  (-> string? ad:abstract-atom?)
   (str)
   @{Interpret an abstract atom from a string @racket[str] (in Prolog-style notation, but with abstract variables) to a data structure for the control compiler.}))
 
 (define (interpret-abstract-term str)
   (define term-parse (make-rule-parser abstract-term))
-  (define string-port (open-input-string str))
-  (interpret-abstract-term-syntax (tokenize string-port)))
+  (interpret-abstract-term-syntax (term-parse (all-tokens str))))
 
 (define (interpret-abstract-term-syntax term-stx)
   (syntax-parse term-stx
-    [((~literal abstract-variable) NESTED-VAR)
+    [((~literal abstract-term) ((~literal abstract-variable) NESTED-VAR))
      (interpret-abstract-variable-syntax #'NESTED-VAR)]
-    [((~literal abstract-function-term)
+    [((~literal abstract-term) ((~literal abstract-function-term)
       ((~literal abstract-number-term)
-       ((~literal abstract-number) NUM)))
+       ((~literal abstract-number) NUM))))
      (syntax->datum #'NUM)]
-    [((~literal abstract-function-term) FUNCTOR)
-     (abstract-function (syntax->datum #'FUNCTOR) '())]
-    [((~literal abstract-function-term) FUNCTOR "(" ARG-OR-SEP ... ")")
-     (abstract-function
+    [((~literal abstract-term) ((~literal abstract-function-term) FUNCTOR))
+     (ad:abstract-function (syntax->datum #'FUNCTOR) '())]
+    [((~literal abstract-term) ((~literal abstract-function-term) FUNCTOR "(" ARG-OR-SEP ... ")"))
+     (ad:abstract-function
       (syntax->datum #'FUNCTOR)
       (map interpret-abstract-term-syntax (syntax->list #'(ARG-OR-SEP ...))))]
-    [((~literal abstract-lplist) "[]")
-     (abstract-function 'nil '())]
-    [((~literal abstract-lplist) "[" TERM "]")
-     (abstract-function
+    [((~literal abstract-term) ((~literal abstract-lplist) "[]"))
+     (ad:abstract-function 'nil '())]
+    [((~literal abstract-term) ((~literal abstract-lplist) "[" TERM "]"))
+     (ad:abstract-function
       'cons
-      (list (interpret-abstract-term-syntax #'TERM) (abstract-function 'nil '())))]
-    [((~literal abstract-lplist) "[" TERM0 "," REST ... "]")
-     (abstract-function
+      (list (interpret-abstract-term-syntax #'TERM) (ad:abstract-function 'nil '())))]
+
+    [((~literal abstract-term) ((~literal abstract-lplist) "[" TERM0 "," REST ... "]"))
+     (ad:abstract-function
       'cons
       (list
        (interpret-abstract-term-syntax #'TERM0)
-       (interpret-abstract-term-syntax #'(abstract-lplist "[" REST ... "]"))))]
-    [((~literal abstract-lplist) "[" TERM0 "|" REST "]")
-     (abstract-function
+       (interpret-abstract-term-syntax #'(abstract-term (abstract-lplist "[" REST ... "]")))))]
+    [((~literal abstract-term) ((~literal abstract-lplist) "[" TERM0 "|" REST "]"))
+     (ad:abstract-function
       'cons
       (list (interpret-abstract-term-syntax #'TERM0)
-            (interpret-abstract-term-syntax #'REST)))]))
+            (interpret-abstract-term-syntax #'(abstract-term REST))))]))
 
 (provide
  (proc-doc/names
   interpret-abstract-term
-  (-> string? abstract-term?)
+  (-> string? ad:abstract-term?)
   (str)
   @{Interpret an abstract term from a string @racket[str] (in Prolog-style notation, but with abstract variables) to a data structure for the control compiler.}))
 
 (define (interpret-abstract-variable-syntax var-stx)
   (syntax-parse var-stx
     [((~literal abstract-variable-a) A-SYMBOL A-INDEX)
-     (a (syntax->datum #'A-INDEX))]
+     (ad:a (syntax->datum #'A-INDEX))]
     [((~literal abstract-variable-g) G-SYMBOL G-INDEX)
-     (g (syntax->datum #'G-INDEX))]))
+     (ad:g (syntax->datum #'G-INDEX))]))
