@@ -9,16 +9,6 @@
 (require (prefix-in ad: "../src/abstract-multi-domain.rkt"))
 (require syntax/parse)
 
-(define-syntax (parse-abstract-atom stx)
-  (define atom-parse (make-rule-parser abstract-atom))
-  (syntax-case stx ()
-    [(_ THE-ATOM)
-     (with-syntax
-         ([PARSE-TREE
-           (replace-context #'() (atom-parse (all-tokens (syntax->datum #'THE-ATOM))))])
-       #'PARSE-TREE)]))
-(provide parse-abstract-atom)
-
 (define-syntax (parse-abstract-term stx)
   (define term-parse (make-rule-parser abstract-term))
   (syntax-case stx ()
@@ -27,7 +17,6 @@
          ([PARSE-TREE
            (replace-context #'() (term-parse (all-tokens (syntax->datum #'THE-TERM))))])
        #'PARSE-TREE)]))
-(provide parse-abstract-term)
 
 (define-syntax (parse-abstract-substitution stx)
   (define substitution-parse (make-rule-parser abstract-substitution))

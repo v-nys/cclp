@@ -45,6 +45,10 @@
  (abstract-function 'foo (list (g 1))))
 
 (check-equal?
+ (interpret-abstract-term "[]")
+ (abstract-function 'nil (list)))
+
+(check-equal?
  (interpret-abstract-conjunction "safe([γ1,γ2|α1]),perm(γ1,α1)")
  (list
   (abstract-atom

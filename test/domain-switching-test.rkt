@@ -28,7 +28,8 @@
          "../src/data-utils.rkt"
          "abstract-domain-boilerplate.rkt"
          "concrete-domain-boilerplate.rkt"
-         (prefix-in ak: "../src/abstract-knowledge.rkt"))
+         (prefix-in ak: "../src/abstract-knowledge.rkt")
+         "../src/cclp-interpreter.rkt")
 
 (check-equal?
  (get-maximum-abstract-var
@@ -54,4 +55,4 @@
      (check-equal? (pre-abstract (function "dummy" concrete-args)) (abstract-function "dummy" abstract-args) "abstracting a complex term"))
 
 (check-equal? (pre-abstract-rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)"))
-              (ak:abstract-rule (parse-abstract-atom "collect(tree(α1,α2),α3)") (list (parse-abstract-atom "collect(α1,α4)") (parse-abstract-atom "collect(α2,α5)") (parse-abstract-atom "append(α4,α5,α3)"))))
+              (ak:abstract-rule (interpret-abstract-atom "collect(tree(α1,α2),α3)") (list (interpret-abstract-atom "collect(α1,α4)") (interpret-abstract-atom "collect(α2,α5)") (interpret-abstract-atom "append(α4,α5,α3)"))))

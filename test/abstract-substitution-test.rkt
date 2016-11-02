@@ -6,38 +6,39 @@
 (require "../src/abstraction-inspection-utils.rkt")
 (require "../src/abstract-substitution.rkt")
 (require (prefix-in ak: "../src/abstract-knowledge.rkt"))
+(require "../src/cclp-interpreter.rkt")
 
-(check-equal? (maximum-var-index (parse-abstract-term "γ1") g?) (some 1))
-(check-equal? (maximum-var-index (parse-abstract-term "γ1") a?) (none))
-(check-equal? (maximum-var-index (parse-abstract-term "α2") a?) (some 2))
-(check-equal? (maximum-var-index (parse-abstract-term "α2") g?) (none))
+(check-equal? (maximum-var-index (interpret-abstract-term "γ1") g?) (some 1))
+(check-equal? (maximum-var-index (interpret-abstract-term "γ1") a?) (none))
+(check-equal? (maximum-var-index (interpret-abstract-term "α2") a?) (some 2))
+(check-equal? (maximum-var-index (interpret-abstract-term "α2") g?) (none))
 
-(check-equal? (maximum-var-index (parse-abstract-term "foo(γ1,α2)") g?) (some 1))
-(check-equal? (maximum-var-index (parse-abstract-term "foo(γ1,α2)") a?) (some 2))
-(check-equal? (maximum-var-index (parse-abstract-term "foo(γ1,γ2)") a?) (none))
-(check-equal? (maximum-var-index (parse-abstract-term "foo(α1,α2)") g?) (none))
+(check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,α2)") g?) (some 1))
+(check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,α2)") a?) (some 2))
+(check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,γ2)") a?) (none))
+(check-equal? (maximum-var-index (interpret-abstract-term "foo(α1,α2)") g?) (none))
 
-(check-equal? (maximum-var-index (parse-abstract-atom "foo(γ1,α2)") g?) (some 1))
-(check-equal? (maximum-var-index (parse-abstract-atom "foo(γ1,α2)") a?) (some 2))
-(check-equal? (maximum-var-index (parse-abstract-atom "foo(γ1,γ2)") a?) (none))
-(check-equal? (maximum-var-index (parse-abstract-atom "foo(α1,α2)") g?) (none))
+(check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,α2)") g?) (some 1))
+(check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,α2)") a?) (some 2))
+(check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,γ2)") a?) (none))
+(check-equal? (maximum-var-index (interpret-abstract-atom "foo(α1,α2)") g?) (none))
 
-(check-equal? (substitute-in-substitution (parse-abstract-term "γ5") (parse-abstract-term "α1") (list (abstract-equality (parse-abstract-term "α4") (parse-abstract-term "foo(bar(α3,α1,α2))"))))
-              (list (abstract-equality (parse-abstract-term "α4") (parse-abstract-term "foo(bar(α3,γ5,α2))"))))
-(check-equal? (substitute-in-substitution (parse-abstract-term "γ5") (parse-abstract-term "α4") (list (abstract-equality (parse-abstract-term "α4") (parse-abstract-term "foo(bar(α3,α1,α2))"))))
-              (list (abstract-equality (parse-abstract-term "γ5") (parse-abstract-term "foo(bar(α3,α1,α2))"))))
+(check-equal? (substitute-in-substitution (interpret-abstract-term "γ5") (interpret-abstract-term "α1") (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
+              (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,γ5,α2))"))))
+(check-equal? (substitute-in-substitution (interpret-abstract-term "γ5") (interpret-abstract-term "α4") (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
+              (list (abstract-equality (interpret-abstract-term "γ5") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
 
-(check-equal? (apply-substitution-to-term (list (abstract-equality (g 1) (parse-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
-                                          (parse-abstract-term "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
-              (parse-abstract-term "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
+(check-equal? (apply-substitution-to-term (list (abstract-equality (g 1) (interpret-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
+                                          (interpret-abstract-term "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
+              (interpret-abstract-term "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
 
-(check-equal? (apply-substitution-to-conjunct (list (abstract-equality (g 1) (parse-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
-                                              (parse-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
-              (parse-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
+(check-equal? (apply-substitution-to-conjunct (list (abstract-equality (g 1) (interpret-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
+                                              (interpret-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
+              (interpret-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
 
-(check-equal? (apply-substitution-to-conjunction (list (abstract-equality (g 1) (parse-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
-                                                 (list (parse-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))") (parse-abstract-atom "zip(zoom(γ1,α1),kweh(α2,γ2,α5))")))
-              (list (parse-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))") (parse-abstract-atom "zip(zoom(quux,α1),kweh(γ4,γ2,α5))")))
+(check-equal? (apply-substitution-to-conjunction (list (abstract-equality (g 1) (interpret-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
+                                                 (list (interpret-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))") (interpret-abstract-atom "zip(zoom(γ1,α1),kweh(α2,γ2,α5))")))
+              (list (interpret-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))") (interpret-abstract-atom "zip(zoom(quux,α1),kweh(γ4,γ2,α5))")))
 
 (check-equal? (apply-substitution-to-full-evaluation
                (list (abstract-equality (a 2) (a 16))
@@ -45,11 +46,11 @@
                      (abstract-equality (g 2) (g 21))
                      (abstract-equality (g 1) (g 20)))
                (ak:full-evaluation
-                (parse-abstract-atom "del(α1,[γ1|γ2],α2)")
-                (parse-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
+                (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
+                (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
               (ak:full-evaluation
-                (parse-abstract-atom "del(α15,[γ20|γ21],α16)")
-                (parse-abstract-atom "del(γ3,[γ20|γ21],γ4)")))
+                (interpret-abstract-atom "del(α15,[γ20|γ21],α16)")
+                (interpret-abstract-atom "del(γ3,[γ20|γ21],γ4)")))
                                                      
 
 ;  describe "substitution for abstract constants in terms" $ do

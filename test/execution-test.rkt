@@ -26,6 +26,7 @@
 (require (prefix-in abp: "abstract-domain-boilerplate.rkt"))
 (require "../src/fullai-domain.rkt")
 (require "../src/abstract-knowledge.rkt")
+(require "../src/cclp-interpreter.rkt")
 (require parenlog)
 
 (define looping-graph (abp:parse-prior-relation "a,b b,c c,a"))
@@ -77,8 +78,8 @@
   hypothetical-graph-for-consistency
   (list
    (full-evaluation
-    (abp:parse-abstract-atom "quux(γ1,γ2)")
-    (abp:parse-abstract-atom "quux(γ1,γ2)"))))
+    (interpret-abstract-atom "quux(γ1,γ2)")
+    (interpret-abstract-atom "quux(γ1,γ2)"))))
  2)
 
 (test-case

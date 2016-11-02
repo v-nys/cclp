@@ -30,25 +30,26 @@
 (require "../src/abstract-substitution.rkt")
 
 (require "abstract-domain-boilerplate.rkt")
+(require "../src/cclp-interpreter.rkt")
 
 ; the occurs check
-(check-true (occurs (g 1) (parse-abstract-term "γ1")))
-(check-false (occurs (g 1) (parse-abstract-term "γ2")))
-(check-true (occurs (a 1) (parse-abstract-term "α1")))
-(check-false (occurs (a 1) (parse-abstract-term "α2")))
+(check-true (occurs (g 1) (interpret-abstract-term "γ1")))
+(check-false (occurs (g 1) (interpret-abstract-term "γ2")))
+(check-true (occurs (a 1) (interpret-abstract-term "α1")))
+(check-false (occurs (a 1) (interpret-abstract-term "α2")))
 
-(check-false (occurs (a 1) (parse-abstract-term "someconstant")))
-(check-false (occurs (g 1) (parse-abstract-term "someconstant")))
+(check-false (occurs (a 1) (interpret-abstract-term "someconstant")))
+(check-false (occurs (g 1) (interpret-abstract-term "someconstant")))
 
-(check-true (occurs (a 1) (parse-abstract-term "foo(bar(α1))")))
-(check-false (occurs (a 1) (parse-abstract-term "foo(bar(α2))")))
-(check-true (occurs (g 1) (parse-abstract-term "foo(bar(γ1))")))
-(check-false (occurs (g 1) (parse-abstract-term "foo(bar(γ2))")))
+(check-true (occurs (a 1) (interpret-abstract-term "foo(bar(α1))")))
+(check-false (occurs (a 1) (interpret-abstract-term "foo(bar(α2))")))
+(check-true (occurs (g 1) (interpret-abstract-term "foo(bar(γ1))")))
+(check-false (occurs (g 1) (interpret-abstract-term "foo(bar(γ2))")))
 
-(check-true (occurs (a 1) (parse-abstract-atom "foo(bar(α1))")))
-(check-false (occurs (a 1) (parse-abstract-atom "foo(bar(α2))")))
-(check-true (occurs (g 1) (parse-abstract-atom "foo(bar(γ1))")))
-(check-false (occurs (g 1) (parse-abstract-atom "foo(bar(γ2))")))
+(check-true (occurs (a 1) (interpret-abstract-atom "foo(bar(α1))")))
+(check-false (occurs (a 1) (interpret-abstract-atom "foo(bar(α2))")))
+(check-true (occurs (g 1) (interpret-abstract-atom "foo(bar(γ1))")))
+(check-false (occurs (g 1) (interpret-abstract-atom "foo(bar(γ2))")))
 
 (check-equal? (abstract-unify (term-equality-list ("foo" "bar")) 0) (none) "unification of different functions")
 (check-equal? (abstract-unify (term-equality-list ("foo" "foo")) 0) (some (list)) "unification of identical functions")

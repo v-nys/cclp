@@ -35,6 +35,7 @@
 (require "../src/abstract-knowledge.rkt")
 (require "../src/abstract-multi-domain.rkt")
 (require "../src/abstract-analysis.rkt")
+(require "../src/cclp-interpreter.rkt")
 
 (define (node-display tree out)
   (print (node-label tree) out))
@@ -78,12 +79,12 @@
 (test-case
  "the skeleton is computed correctly based on a branch of several nodes"
  (define-values (atom-a atom-b atom-c atom-d atom-e atom-f)
-   (values (abp:parse-abstract-atom "a")
-           (abp:parse-abstract-atom "b")
-           (abp:parse-abstract-atom "c")
-           (abp:parse-abstract-atom "d")
-           (abp:parse-abstract-atom "e")
-           (abp:parse-abstract-atom "f")))
+   (values (interpret-abstract-atom "a")
+           (interpret-abstract-atom "b")
+           (interpret-abstract-atom "c")
+           (interpret-abstract-atom "d")
+           (interpret-abstract-atom "e")
+           (interpret-abstract-atom "f")))
  (define-values (a-clause b-clause c-clause)
    (values (cbp:parse-rule "a :- b, c")
            (cbp:parse-rule "b :- d, e")
@@ -146,7 +147,7 @@
           [annotated-lv-1 (node (atom-with-generation (abstract-atom 'a '()) 0) (list annotated-lv-2-1 annotated-lv-2-2))])
      (begin
        (check-equal?
-        (annotate-generational-tree skeleton-lv-1 (abp:parse-abstract-atom "a") 0 2 0)
+        (annotate-generational-tree skeleton-lv-1 (interpret-abstract-atom "a") 0 2 0)
         annotated-lv-1
         "check if annotation for target atom is correct")
        (check-equal?
@@ -156,11 +157,11 @@
 
 (test-case
  "horizontal reading of a generational tree"
- (let ([a-0 (atom-with-generation (abp:parse-abstract-atom "a") 0)]
-       [a-1 (atom-with-generation (abp:parse-abstract-atom "a") 1)]
-       [a-2 (atom-with-generation (abp:parse-abstract-atom "a") 2)]
-       [b-1 (atom-with-generation (abp:parse-abstract-atom "b") 1)]
-       [b-2 (atom-with-generation (abp:parse-abstract-atom "b") 2)])
+ (let ([a-0 (atom-with-generation (interpret-abstract-atom "a") 0)]
+       [a-1 (atom-with-generation (interpret-abstract-atom "a") 1)]
+       [a-2 (atom-with-generation (interpret-abstract-atom "a") 2)]
+       [b-1 (atom-with-generation (interpret-abstract-atom "b") 1)]
+       [b-2 (atom-with-generation (interpret-abstract-atom "b") 2)])
    (check-equal?
     (horizontal-level (node a-0 '()) 0)
     (list a-0))

@@ -85,7 +85,7 @@
      (ad:abstract-function
       (string->symbol (syntax->datum #'FUNCTOR))
       (map interpret-abstract-term-syntax (odd-elems (syntax->list #'(ARG-OR-SEP ...)))))]
-    [((~literal abstract-term) ((~literal abstract-lplist) "[]"))
+    [((~literal abstract-term) ((~literal abstract-lplist) "[" "]"))
      (ad:abstract-function 'nil '())]
     [((~literal abstract-term) ((~literal abstract-lplist) "[" TERM "]"))
      (ad:abstract-function
