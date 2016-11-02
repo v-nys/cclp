@@ -33,7 +33,7 @@
 (require (for-syntax syntax/parse))
 (require (only-in "interaction.rkt" cclp-run))
 (require racket/contract)
-(require (only-in "data-utils.rkt" 4-tuple))
+(require (only-in "data-utils.rkt" 5-tuple))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 (require (for-syntax (only-in "data-utils.rkt" positive-integer->symbol)))
 
@@ -45,18 +45,29 @@
 
 ; PUTTING THE THREE PARTS TOGETHER
 
+; can I make this more modular?
 (define-syntax (cclp-program stx)
   (syntax-parse stx
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(4-tuple _PROGRAM-SECTION (list) (list) _QUERY-SECTION)]
+     #'(5-tuple _PROGRAM-SECTION (list) (list) (list) _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
         _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION)]
+     #'(5-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) (list) _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(4-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _QUERY-SECTION)]
+     #'(5-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION (list) _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
         _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(4-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _QUERY-SECTION)]))
+     #'(5-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION (list) _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(5-tuple _PROGRAM-SECTION (list) (list) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
+        _FULL-EVALUATION-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(5-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(5-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
+        _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
+     #'(5-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]))
 (provide cclp-program)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
@@ -361,26 +372,7 @@
      #'(list 'cons term0 rest)]))
 (provide sexp-abstract-lplist)
 
-(define my-model
-  (preprior-section
-   (preprior-pair
-    (sexp-abstract-atom
-     (sexp-abstract-atom-with-args
-      "ord"
-      "("
-      (sexp-abstract-term
-       (sexp-abstract-variable
-        (sexp-abstract-variable-a "α" 1)))
-      ")"))
-    ","
-    (sexp-abstract-atom
-     (sexp-abstract-atom-with-args
-      "perm"
-      "("
-      (sexp-abstract-term
-       (sexp-abstract-variable
-        (sexp-abstract-variable-g "γ" 2)))
-      ")")))))
+
 
 ; expand-syntax expands preprior-pairs too far
 ; it tries to expand the resulting unbound identifiers (e.g. the identifier before)
@@ -452,6 +444,11 @@
      (with-syntax ([gamma-symbol (datum->syntax #'() 'γ)]
                    [index-symbol (datum->syntax #'index (positive-integer->symbol (syntax->datum #'index)))])
        #'(gamma-symbol index-symbol))]))
+
+(define-syntax (concrete-constants-section stx)
+  ; TODO expand the syntax components as concrete constants
+  #'(list))
+(provide concrete-constants-section)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization

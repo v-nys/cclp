@@ -11,7 +11,7 @@
  "the right abstract rule should be obtained"
  (let* ([rule (parse-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)")]
         [abstract-conjunction (list (interpret-abstract-atom "collect(γ1,α1)"))]
-        [abstract-rule (pre-abstract-rule rule)]
+        [abstract-rule (pre-abstract-rule rule (list))]
         [renamed-abstract-rule (rename-apart abstract-rule abstract-conjunction)]
         [expected
          (ak:abstract-rule (interpret-abstract-atom "collect(tree(α6,α7),α8)")

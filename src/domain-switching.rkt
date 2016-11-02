@@ -61,64 +61,69 @@
           [(some val) (cons (a (+ val 1)) (hash-set existing-mapping var (a (+ val 1))))]))))
 
 ;(: pre-abstract-aux-constant (-> function (HashTable Term AbstractVariable) (Pair AbstractVariable (HashTable Term AbstractVariable))))
-(define (pre-abstract-aux-constant constant existing-mapping)
+(define (pre-abstract-aux-constant constant existing-mapping concrete-constants)
   (if (hash-has-key? existing-mapping constant)
       (cons (hash-ref existing-mapping constant) existing-mapping)
-      (let ([max-g (get-maximum-abstract-var g? avar-index (hash-values existing-mapping))])
+      (if (member constant concrete-constants)
+          (cons (abstract-function (function-functor constant) '()) existing-mapping)
+       (let ([max-g (get-maximum-abstract-var g? avar-index (hash-values existing-mapping))])
         (match max-g [(none) (cons (g 1) (hash-set existing-mapping constant (g 1)))]
-          [(some index) (cons (g (+ index 1)) (hash-set existing-mapping constant (g (+ index 1))))]))))
+          [(some index) (cons (g (+ index 1)) (hash-set existing-mapping constant (g (+ index 1))))])))))
 (provide pre-abstract-aux-constant)
 
 ;(: pre-abstract-aux-term (-> Term (HashTable Term AbstractVariable) (Pair AbstractTerm (HashTable Term AbstractVariable))))
-(define (pre-abstract-aux-term concrete-term existing-mapping)
+(define (pre-abstract-aux-term concrete-constants concrete-term existing-mapping)
   (cond [(variable? concrete-term)
          (pre-abstract-aux-variable concrete-term existing-mapping)]
         [(function? concrete-term)
          (if (null? (function-args concrete-term))
-             (pre-abstract-aux-constant concrete-term existing-mapping)
+             (pre-abstract-aux-constant concrete-term existing-mapping concrete-constants)
              (let* ([applied-to-args
                      (map-accumulatel
-                      pre-abstract-aux-term
+                      (curry pre-abstract-aux-term concrete-constants)
                       existing-mapping
                       (function-args concrete-term))]
                     [just-mapped-args (car applied-to-args)]
                     [just-acc (cdr applied-to-args)])
                (cons (abstract-function (function-functor concrete-term) just-mapped-args) just-acc)))]
+        
         [(number? concrete-term)
-         (pre-abstract-aux-constant concrete-term existing-mapping)]
+         (pre-abstract-aux-constant concrete-term existing-mapping concrete-constants)]
         [else (error "Missed a case")]))
 (provide pre-abstract-aux-term)
 
 ; note: there is some duplication here, solely due to Conjunctions...
 ;(: pre-abstract-aux-atom (-> atom (HashTable Term AbstractVariable) (Pair abstract-atom (HashTable Term AbstractVariable))))
-(define (pre-abstract-aux-atom concrete-atom existing-mapping)
+(define (pre-abstract-aux-atom concrete-constants concrete-atom existing-mapping)
   (if (null? (atom-args concrete-atom))
       (cons (abstract-atom (atom-symbol concrete-atom) '()) existing-mapping)
-      (let* ([applied-to-args (map-accumulatel pre-abstract-aux-term existing-mapping (atom-args concrete-atom))]
+      (let* ([applied-to-args (map-accumulatel (curry pre-abstract-aux-term concrete-constants) existing-mapping (atom-args concrete-atom))]
              [just-mapped-args (car applied-to-args)]
              [just-acc (cdr applied-to-args)])
         (cons (abstract-atom (atom-symbol concrete-atom) just-mapped-args) just-acc))))
 
 ;(: pre-abstract-rule (-> ck:rule ak:rule))
-(define (pre-abstract-rule concrete-rule)
+(define (pre-abstract-rule concrete-rule concrete-constants)
+  ; TODO: use info in concrete constants
   (let* ([rule-as-conjunction (cons (ck:rule-head concrete-rule) (ck:rule-body concrete-rule))]
-         [abstracted-conjunction (pre-abstract-conjunction rule-as-conjunction)])
+         [abstracted-conjunction (pre-abstract-conjunction rule-as-conjunction concrete-constants)])
     (ak:abstract-rule (car abstracted-conjunction) (cdr abstracted-conjunction))))
 (provide pre-abstract-rule)
 
 ;(: pre-abstract-conjunction (-> Conjunction AbstractConjunction))
-(define (pre-abstract-conjunction conjunction)
-  (car (map-accumulatel pre-abstract-aux-atom (hash) conjunction)))
+(define (pre-abstract-conjunction conjunction concrete-constants)
+  (car (map-accumulatel (curry pre-abstract-aux-atom concrete-constants) (hash) conjunction)))
 
 (define (pre-abstract concrete-domain-elem)
   (cond [(atom? concrete-domain-elem)
          (abstract-atom
           (atom-symbol concrete-domain-elem)
-          (car (map-accumulatel pre-abstract-aux-term (hash) (atom-args concrete-domain-elem))))]
+          ; we only care about retaining concrete constants in the specific case of clauses
+          (car (map-accumulatel (curry pre-abstract-aux-term (list)) (hash) (atom-args concrete-domain-elem))))]
         [(list? concrete-domain-elem)
-         (pre-abstract-conjunction concrete-domain-elem)]
+         (pre-abstract-conjunction concrete-domain-elem (list))]
         [(term? concrete-domain-elem)
-         (car (pre-abstract-aux-term concrete-domain-elem (hash)))]))
+         (car (pre-abstract-aux-term (list) concrete-domain-elem (hash)))]))
 (provide
  (proc-doc/names
   pre-abstract

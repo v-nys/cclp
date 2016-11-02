@@ -30,17 +30,18 @@
          "../src/cclp-interpreter.rkt")
 
 (check-equal?
- (abstract-resolve (abp:parse-abstract-conjunction "perm(γ1,α1),ord(α1)")
+ (abstract-resolve (interpret-abstract-conjunction "perm(γ1,α1),ord(α1)")
                    (abp:parse-prior-relation "perm(γ1,α1),ord(α1)")
                    (list (cbp:parse-rule "perm([],[])")
                          (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
+                   (list)
                    (list))
  (cons
   0
-  (list (resolvent (abp:parse-abstract-conjunction "del(α8,[γ8|γ9],α10),perm(α10,α9),ord([α8|α9])")
+  (list (resolvent (interpret-abstract-conjunction "del(α8,[γ8|γ9],α10),perm(α10,α9),ord([α8|α9])")
                    (abp:parse-abstract-substitution "α6/γ8,α7/γ9,γ1/[γ8|γ9],α1/[α8|α9]")
                    (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
-        (resolvent (abp:parse-abstract-conjunction "ord(γ2)")
+        (resolvent (interpret-abstract-conjunction "ord(γ2)")
                    (abp:parse-abstract-substitution "γ1/γ2,α1/γ2")
                    (cbp:parse-rule "perm([],[])")))))
 
@@ -49,15 +50,16 @@
                         (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)"))])
   (check-equal?
    (abstract-resolve
-    (abp:parse-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")
+    (interpret-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")
     (abp:parse-prior-relation "perm(γ1,α1),ord(α1)")
     '()
-    (list full-eval))
+    (list full-eval)
+    (list))
    (cons
     0
     (list
      (resolvent
-      (abp:parse-abstract-conjunction "perm(γ23,α13),ord([γ3,γ22|α13])")
+      (interpret-abstract-conjunction "perm(γ23,α13),ord([γ3,γ22|α13])")
       (abp:parse-abstract-substitution "α12/γ22,γ18/γ20,γ19/γ21,α14/γ23")
       full-eval)))))
 

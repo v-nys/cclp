@@ -44,10 +44,6 @@ divides(γ1,γ2).
 does_not_divide(γ1,γ2).
 integers(γ1,γ2).
 length(γ1,γ2).
-% this only occurs for the empty list
-% program analysis should be correct this way
-% widening or more intelligent use of concrete constants would be better, though5
-filter(γ1,α1,γ2) -> α1/γ2.
 
 {PREPRIOR}
 integers(γ1,α1),filter(γ1,α1,α2)
@@ -58,6 +54,9 @@ sift(γ1,α1),length(α1,γ1)
 filter(γ1,[γ2|α1],α2),integers(γ1,α1)
 length([γ1|α1],γ2),integers(γ1,γ2)
 length(γ1,γ2),integers(γ1,[γ2|γ3])
+
+{CONCRETE CONSTANTS}
+nil
 
 {QUERY}
 primes(γ1,α1)

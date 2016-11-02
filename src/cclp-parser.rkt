@@ -27,7 +27,7 @@
 ; should prohibit constants of the form symXYZ, where XYZ is a natural number
 
 #lang brag
-cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PREPRIOR-DELIMITER preprior-section] QUERY-DELIMITER abstract-atom
+cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PREPRIOR-DELIMITER preprior-section] [CONCRETE-CONSTANTS-DELIMITER concrete-constants-section] QUERY-DELIMITER abstract-atom
 
 program-section : (rule PERIOD)*
 atom : SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]
@@ -72,3 +72,5 @@ sexp-abstract-lplist : OPEN-LIST-PAREN [sexp-abstract-term (COMMA sexp-abstract-
 sexp-abstract-function-term : (SYMBOL [OPEN-PAREN sexp-abstract-term (COMMA sexp-abstract-term)* CLOSE-PAREN]) | sexp-abstract-number-term
 sexp-abstract-number-term : sexp-abstract-number
 sexp-abstract-number : NUMBER
+
+concrete-constants-section : SYMBOL+

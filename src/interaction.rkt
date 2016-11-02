@@ -26,7 +26,7 @@
 (require "data-utils.rkt")
 (require (only-in "concrete-knowledge.rkt" rule?))
 (require "fullai-domain.rkt")
-(require (only-in "abstract-multi-domain.rkt" abstract-atom?))
+(require (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-function?))
 (require racket-tree-utils/src/tree (only-in racket-tree-utils/src/printer tree-display))
 (require (only-in parenlog model?))
 (require (only-in "execution.rkt" selected-index))
@@ -39,6 +39,7 @@
 (require racket/serialize)
 (require "abstract-analysis.rkt")
 (require "generational-tree.rkt")
+(require (only-in "concrete-domain.rkt" function?))
 
 (require racket/logging)
 (require (for-doc scribble/manual))
@@ -151,7 +152,7 @@
   (t)
   @{Undo the latest unfolding or generalization that occurred in @racket[t]}))
 
-(define (interactive-analysis tree clauses full-evaluations preprior next-index filename)
+(define (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)
   (define-values (show-top proceed go-back save widen genealogy similarity end)
     (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "show genealogical analysis" "check S-similarity" "end analysis"))
   (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen genealogy similarity end))
@@ -159,12 +160,12 @@
          (begin (newline)
                 (tree-display tree print-tree-label)
                 (newline)
-                (interactive-analysis tree clauses full-evaluations preprior next-index filename))]
+                (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
         [(equal? choice proceed)
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
             (begin (displayln "There are no nodes left to analyze.")
-                   (interactive-analysis tree clauses full-evaluations preprior next-index filename))]
+                   (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
            [(cons (some candidate) preds)
             (let* ([candidate-label (node-label candidate)]
                    [conjunction (tree-label-conjunction candidate-label)]
@@ -188,7 +189,7 @@
                       (tree-display updated-candidate print-tree-label)
                       (newline)
                       (interactive-analysis
-                       updated-top clauses full-evaluations preprior (+ next-index 1) filename)))
+                       updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))
                   (let* ([resolution-result
                           (abstract-resolve conjunction preprior clauses full-evaluations)]
                          [index-selection (car resolution-result)]
@@ -209,13 +210,13 @@
                       (tree-display updated-candidate print-tree-label)
                       (newline)
                       (interactive-analysis
-                       updated-top clauses full-evaluations preprior (+ next-index 1) filename)))))])]
+                       updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))))])]
         [(equal? choice go-back)
          (let ([rewound (rewind tree)])
            (if rewound
                (begin
                  (tree-display (car rewound) print-tree-label)
-                 (interactive-analysis (cdr rewound) clauses full-evaluations preprior (- next-index 1) filename))
+                 (interactive-analysis (cdr rewound) clauses full-evaluations preprior (- next-index 1) filename concrete-constants))
                (displayln "Can't go back any further!")))]
         [(equal? choice save)
          (let* ([out (open-output-file filename #:exists 'truncate/replace)]
@@ -223,11 +224,11 @@
            (begin
              (write serialized-tree out)
              (close-output-port out)
-             (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
+             (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)))]
         [(equal? choice widen)
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
-            (interactive-analysis tree clauses full-evaluations preprior next-index filename)]
+            (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)]
            ; candidate can be either a tree-label? or a widening?
            [(cons (some candidate) _)
             (begin
@@ -247,7 +248,7 @@
                  candidate
                  (node updated-label (list (node (widening widened-conjunction read-reason #f) '())))))
               (let ([updated-top tree])
-                (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1) filename)))])]
+                (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))])]
         [(equal? choice genealogy)
          (let* ([active-branch (active-branch-info tree)]
                 [outputs (if active-branch (generational-trees active-branch) #f)])
@@ -257,11 +258,11 @@
                      (displayln "There are no target atoms for recursion analysis.")
                      (map (λ (t) (tree-display t print-atom-with-generation-node)) outputs))
                  (displayln "There is no active branch."))
-             (interactive-analysis tree clauses full-evaluations preprior next-index filename)))]
+             (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)))]
         [(equal? choice similarity)
          (begin
            (check-s-similarity tree)
-           (interactive-analysis tree clauses full-evaluations preprior next-index filename))]
+           (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
 
@@ -289,21 +290,21 @@
       (tree-label-index label))]))
 
 ; TODO check if file exists
-(define (load-analysis clauses full-evaluations preprior filename)
+(define (load-analysis clauses full-evaluations preprior filename concrete-constants)
   (let* ([loaded-tree (deserialize (read (open-input-file filename)))]
          [largest-index (largest-node-index loaded-tree)]
          [fresh-index (if largest-index (+ largest-index 1) 1)])
-    (interactive-analysis loaded-tree clauses full-evaluations preprior fresh-index filename)))
+    (interactive-analysis loaded-tree clauses full-evaluations preprior fresh-index filename concrete-constants)))
 
 (define (begin-analysis program-data filename)
   (match program-data
-    [(4-tuple clauses full-evaluations preprior initial-query)
+    [(5-tuple clauses full-evaluations preprior concrete-constants initial-query)
      ; using none for selection because no selection will occur more often
      ; using list for substitution because it is not wrong and is consistent
      ; using #f for rule because this is the only case where there is no associated clause
-     (begin (define initial-tree-label (tree-label (list (4-tuple-fourth program-data)) (none) (list) #f #f))
+     (begin (define initial-tree-label (tree-label (list (5-tuple-fifth program-data)) (none) (list) #f #f))
             (define initial-tree (node initial-tree-label (list)))
-            (interactive-analysis initial-tree clauses full-evaluations preprior 1 filename))]))
+            (interactive-analysis initial-tree clauses full-evaluations preprior 1 filename concrete-constants))]))
 
 (define (cclp-run filename program-data)
   (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
@@ -317,21 +318,21 @@
     (full-evaluation
      (full-ai-rule-input-pattern r)
      (apply-substitution (full-ai-rule-output-substitution r) (full-ai-rule-input-pattern r))))
-  (define full-evaluations (map full-ai-rule->full-evaluation (4-tuple-second program-data)))
+  (define full-evaluations (map full-ai-rule->full-evaluation (5-tuple-second program-data)))
   (define program-data-aux
-    (4-tuple
-     (4-tuple-first program-data) full-evaluations
-     (4-tuple-third program-data) (4-tuple-fourth program-data)))
+    (5-tuple
+     (5-tuple-first program-data) full-evaluations
+     (5-tuple-third program-data) (5-tuple-fourth program-data) (5-tuple-fifth program-data)))
   (cond [(equal? choice analysis)
          (begin (begin-analysis program-data-aux serialized-filename)
                 (cclp-run filename program-data))]
         [(equal? choice load)
-         (begin (load-analysis (4-tuple-first program-data) full-evaluations (4-tuple-third program-data) serialized-filename)
+         (begin (load-analysis (5-tuple-first program-data) full-evaluations (5-tuple-third program-data) serialized-filename (5-tuple-fourth program-data))
                 (cclp-run filename program-data))]
         [(equal? choice quit) (void)]
         [else (error 'unsupported)]))
 (provide (contract-out
           [cclp-run
            (-> path?
-               (4-tupleof (listof rule?) (listof full-ai-rule?) model? abstract-atom?)
+               (5-tupleof (listof rule?) (listof full-ai-rule?) model? (listof function?) abstract-atom?)
                void?)]))

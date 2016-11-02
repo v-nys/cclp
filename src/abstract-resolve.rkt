@@ -34,6 +34,7 @@
 (require "abstraction-inspection-utils.rkt")
 (require (only-in parenlog model?))
 (require racket/logging)
+(require (only-in "concrete-domain.rkt" function?))
 
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
@@ -76,11 +77,11 @@
    [knowledge (or/c rule? full-evaluation?)])
   @{Summarizes the result of a resolution step.}))
 
-(define (abstract-resolve conjunction prior concrete-clauses full-evaluations)
+(define (abstract-resolve conjunction prior concrete-clauses full-evaluations concrete-constants)
   (define (fold-over-knowledge i kb)
     (foldl
      (λ (k acc)
-       (let ([step-outcome (abstract-step i conjunction k)])
+       (let ([step-outcome (abstract-step i conjunction k concrete-constants)])
          (if step-outcome
              (cons step-outcome acc)
              acc)))
@@ -101,17 +102,18 @@
       model?
       (listof rule?)
       (listof full-evaluation?)
+      (listof function?)
       (cons/c exact-nonnegative-integer? (listof resolvent?)))
-  (conjunction prior concrete-clauses full-evaluations)
+  (conjunction prior concrete-clauses full-evaluations concrete-constants)
   @{Resolves the next abstract atom selected from @racket[conjunction]
  by partial order @racket[prior] with every applicable rule in both
  @racket[concrete-clauses] and @racket[full-evaluations].
  The result is a @racket[pair] consisting of the index of the selected
  abstract atom and a list of outcomes for every possible resolution step.}))
 
-(define (abstract-step conjunct-index conjunction knowledge)
+(define (abstract-step conjunct-index conjunction knowledge concrete-constants)
   (define conjunct (list-ref conjunction conjunct-index))
-  (define abstract-knowledge (if (rule? knowledge) (pre-abstract-rule knowledge) knowledge))
+  (define abstract-knowledge (if (rule? knowledge) (pre-abstract-rule knowledge concrete-constants) knowledge))
   (define renamed-abstract-knowledge (rename-apart abstract-knowledge conjunction))
   (define g-offset
     (let ([candidate (maximum-var-index conjunction g?)])
