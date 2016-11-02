@@ -187,8 +187,8 @@
      #'(ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '())))]
     [(_ "[" term0 "," rest ... "]")
      #'(ad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]")))]
-    [(_ "[" term0 "|" rest ... "]")
-     #'(ad:abstract-function 'cons (list term0 rest ...))]))
+    [(_ "[" term0 "|" rest "]")
+     #'(ad:abstract-function 'cons (list term0 rest))]))
 (provide abstract-lplist)
 
 ; empty substitutions make sense if we can just scratch the abstract atom

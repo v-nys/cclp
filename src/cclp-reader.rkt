@@ -52,6 +52,7 @@
        [(eof) eof]))
     (get-token input-port))
   next-token)
+(provide tokenize)
 
 (define (all-tokens str)
   (define (exhaust t)

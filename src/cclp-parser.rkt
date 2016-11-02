@@ -44,6 +44,7 @@ fullai-rule-with-body : abstract-atom-with-args LEADS-TO abstract-substitution P
 fullai-rule-without-body : abstract-atom-with-args PERIOD
 abstract-atom-with-args : SYMBOL OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
 abstract-atom-without-args : SYMBOL
+
 abstract-term : abstract-variable | abstract-function-term | abstract-lplist
 abstract-variable : abstract-variable-a | abstract-variable-g
 abstract-variable-a : AVAR-SYMBOL-A NUMBER
@@ -51,6 +52,7 @@ abstract-variable-g : AVAR-SYMBOL-G NUMBER
 abstract-number-term : abstract-number
 abstract-number : NUMBER
 abstract-function-term : (SYMBOL [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]) | abstract-number-term
+
 abstract-lplist : OPEN-LIST-PAREN [abstract-term (COMMA abstract-term)* [LIST-SEPARATOR (abstract-lplist | abstract-variable)]] CLOSE-LIST-PAREN
 abstract-substitution : abstract-substitution-pair (COMMA abstract-substitution-pair)*
 abstract-substitution-pair : abstract-variable SLASH abstract-term
