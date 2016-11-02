@@ -53,28 +53,28 @@
 
 (check-equal?
  (selected-index
-  (abp:parse-abstract-conjunction "c,b,d,a,e")
+  (interpret-abstract-conjunction "c,b,d,a,e")
   non-looping-graph
   (list))
  3)
 
 (check-equal?
  (selected-index
-  (abp:parse-abstract-conjunction "bar(γ1,α1),foo(γ1,γ2)")
+  (interpret-abstract-conjunction "bar(γ1,α1),foo(γ1,γ2)")
   hypothetical-graph-for-consistency
   (list))
  1)
 
 (check-equal?
  (selected-index
-  (abp:parse-abstract-conjunction "bar(α1,α2),foo(γ1,α2)")
+  (interpret-abstract-conjunction "bar(α1,α2),foo(γ1,α2)")
   hypothetical-graph-for-consistency
   (list))
  1)
 
 (check-equal?
  (selected-index
-  (abp:parse-abstract-conjunction "bar(α1,α2),foo(γ1,α2),quux(γ3,γ4)")
+  (interpret-abstract-conjunction "bar(α1,α2),foo(γ1,α2),quux(γ3,γ4)")
   hypothetical-graph-for-consistency
   (list
    (full-evaluation
@@ -146,14 +146,14 @@
   (list (hasheq 'X '(ord (cons (γ sym12) (cons (γ sym40) (α sym13)))))))
  (check-equal?
   (selected-index
-   (abp:parse-abstract-conjunction "perm(γ41,α13),ord([γ12,γ40|α13])")
+   (interpret-abstract-conjunction "perm(γ41,α13),ord([γ12,γ40|α13])")
    permsort-graph
    (list))
   1))
 
 (check-equal?
  (selected-index
-  (abp:parse-abstract-conjunction
+  (interpret-abstract-conjunction
    "integers(γ22,α31),filter(γ4,α31,α32),filter(γ12,[γ20|α32],α24),sift(α24,α26),length(α26,γ18)")
   simplified-primes-graph
   (list))
@@ -161,7 +161,7 @@
 
 (check-equal?
  (selected-index
-  (abp:parse-abstract-conjunction
+  (interpret-abstract-conjunction
    "integers(γ6,α10),filter(γ4,α10,α12),sift(α12,α11),length([γ4|α11],γ1)")
   full-primes-graph
   (list))

@@ -8,15 +8,9 @@
   "../src/cclp-expander.rkt")
 (require (prefix-in ad: "../src/abstract-multi-domain.rkt"))
 (require syntax/parse)
+(require "../src/cclp-interpreter.rkt")
 
-(define-syntax (parse-abstract-term stx)
-  (define term-parse (make-rule-parser abstract-term))
-  (syntax-case stx ()
-    [(_ THE-TERM)
-     (with-syntax
-         ([PARSE-TREE
-           (replace-context #'() (term-parse (all-tokens (syntax->datum #'THE-TERM))))])
-       #'PARSE-TREE)]))
+; TODO: move the others to the interpreter?
 
 (define-syntax (parse-abstract-substitution stx)
   (define substitution-parse (make-rule-parser abstract-substitution))
@@ -29,18 +23,6 @@
             (substitution-parse (all-tokens (syntax->datum #'THE-SUBSTITUTION))))])
        #'PARSE-TREE)]))
 (provide parse-abstract-substitution)
-
-(define-syntax (parse-abstract-conjunction stx)
-  (define conjunction-parse (make-rule-parser abstract-conjunction))
-  (syntax-case stx ()
-    [(_ THE-CONJUNCTION)
-     (with-syntax
-         ([PARSE-TREE
-           (replace-context
-            #'()
-            (conjunction-parse (all-tokens (syntax->datum #'THE-CONJUNCTION))))])
-       #'PARSE-TREE)]))
-(provide parse-abstract-conjunction)
 
 (define-syntax (parse-prior-relation stx)
   (define prior-section-parse (make-rule-parser preprior-section))
@@ -57,6 +39,6 @@
   (syntax-case stx ()
     [(_) #'(list)]
     [(_ (t1 t2) rest ...)
-     #'(cons (abstract-equality (parse-abstract-term t1) (parse-abstract-term t2))
+     #'(cons (abstract-equality (interpret-abstract-term t1) (interpret-abstract-term t2))
              (term-equality-list rest ...))]))
 (provide term-equality-list)

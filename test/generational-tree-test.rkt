@@ -45,35 +45,35 @@
  (let* ([completed-leaf (node (tree-label '() (none) '() (cbp:parse-rule "foo") #f) '())]
         [parent
          (node
-          (tree-label (abp:parse-abstract-conjunction "foo") (some 0) '() #f 1)
+          (tree-label (interpret-abstract-conjunction "foo") (some 0) '() #f 1)
           (list completed-leaf completed-leaf))])
    (check-equal? (active-branch-info parent) #f "all branches have been completed"))
  (let* ([completed-leaf (node (tree-label '() (none) '() (cbp:parse-rule "bar") #f) '())]
         [left-child
          (node
           (tree-label
-           (abp:parse-abstract-conjunction "bar") (some 0) '() (cbp:parse-rule "foo :- bar") 2)
+           (interpret-abstract-conjunction "bar") (some 0) '() (cbp:parse-rule "foo :- bar") 2)
           (list completed-leaf))]
         [active-leaf
          (node
-          (tree-label (abp:parse-abstract-conjunction "baz") (none) '() (cbp:parse-rule "quux :- baz") #f)
+          (tree-label (interpret-abstract-conjunction "baz") (none) '() (cbp:parse-rule "quux :- baz") #f)
           '())]
         [right-child
          (node
           (tree-label
-           (abp:parse-abstract-conjunction "quux") (some 0) '() (cbp:parse-rule "foo :- quux") 3)
+           (interpret-abstract-conjunction "quux") (some 0) '() (cbp:parse-rule "foo :- quux") 3)
           (list active-leaf))]
         [root
          (node
           (tree-label
-           (abp:parse-abstract-conjunction "foo") (some 0) '() #f 1)
+           (interpret-abstract-conjunction "foo") (some 0) '() #f 1)
           (list left-child right-child))]
         [info1
-         (tree-label (abp:parse-abstract-conjunction "foo") (some 0) (list) #f 1)]
+         (tree-label (interpret-abstract-conjunction "foo") (some 0) (list) #f 1)]
         [info2
-         (tree-label (abp:parse-abstract-conjunction "quux") (some 0) (list) (cbp:parse-rule "foo :- quux") 3)]
+         (tree-label (interpret-abstract-conjunction "quux") (some 0) (list) (cbp:parse-rule "foo :- quux") 3)]
         [info3
-         (tree-label (abp:parse-abstract-conjunction "baz") (none) (list) (cbp:parse-rule "quux :- baz") #f)])
+         (tree-label (interpret-abstract-conjunction "baz") (none) (list) (cbp:parse-rule "quux :- baz") #f)])
    (check-equal? (active-branch-info root) (list info1 info2 info3))))
 
 (test-case
@@ -91,18 +91,18 @@
            (cbp:parse-rule "c :- f")))
  (let* ([level-3-analysis
          (node
-          (tree-label (abp:parse-abstract-conjunction "d,e,f") (none) (list) c-clause #f) '())]
+          (tree-label (interpret-abstract-conjunction "d,e,f") (none) (list) c-clause #f) '())]
         [level-2-analysis
          (node
-          (tree-label (abp:parse-abstract-conjunction "d,e,c") (some 2) (list) b-clause 3)
+          (tree-label (interpret-abstract-conjunction "d,e,c") (some 2) (list) b-clause 3)
           (list level-3-analysis))]
         [level-1-analysis
          (node
-          (tree-label (abp:parse-abstract-conjunction "b,c") (some 0) (list) a-clause 2)
+          (tree-label (interpret-abstract-conjunction "b,c") (some 0) (list) a-clause 2)
           (list level-2-analysis))]
         [level-0-analysis
          (node
-          (tree-label (abp:parse-abstract-conjunction "a") (some 0) (list) #f 1)
+          (tree-label (interpret-abstract-conjunction "a") (some 0) (list) #f 1)
           (list level-1-analysis))]
         [branch (active-branch-info level-0-analysis)]
         [level-2-skeleton-1 (node atom-d (list (node atom-d '())))]
@@ -117,16 +117,16 @@
 (let* ([level-3
         (node
          (tree-label
-          (abp:parse-abstract-conjunction "b,b,a") (none) (list) (cbp:parse-rule "a :- b,a") #f)
+          (interpret-abstract-conjunction "b,b,a") (none) (list) (cbp:parse-rule "a :- b,a") #f)
          '())]
        [level-2
         (node
          (tree-label
-          (abp:parse-abstract-conjunction "b,a") (some 1) (list) (cbp:parse-rule "a :- b,a") 2)
+          (interpret-abstract-conjunction "b,a") (some 1) (list) (cbp:parse-rule "a :- b,a") 2)
          (list level-3))]
        [level-1
         (node
-         (tree-label (abp:parse-abstract-conjunction "a") (some 0) (list) #f 1)
+         (tree-label (interpret-abstract-conjunction "a") (some 0) (list) #f 1)
          (list level-2))]
        [skeleton-lv-3-1 (node (abstract-atom 'b '()) '())]
        [skeleton-lv-3-2 (node (abstract-atom 'a '()) '())]
