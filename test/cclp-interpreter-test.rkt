@@ -31,6 +31,16 @@
   (list (abstract-function 'cons (list (g 1) (abstract-function 'cons (list (g 2) (a 1))))))))
 
 (check-equal?
+ (interpret-abstract-atom "safe([γ1,γ2|α1],γ3)")
+ (abstract-atom
+  'safe
+  (list
+   (abstract-function
+    'cons
+    (list (g 1) (abstract-function 'cons (list (g 2) (a 1)))))
+   (g 3))))
+
+(check-equal?
  (interpret-abstract-term "foo(γ1)")
  (abstract-function 'foo (list (g 1))))
 

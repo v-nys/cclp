@@ -28,15 +28,23 @@
 (require syntax/parse)
 (require (only-in "cclp-parser.rkt" make-rule-parser))
 (require (only-in "cclp-reader.rkt" all-tokens))
-
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
+(require (only-in racket-list-utils/utils odd-elems))
 
-;abstract-atom-with-args : SYMBOL OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
 
 ; the "interpret" functions are all basically the same thing
 ; could use macros to avoid boilerplate?
 
-(define (interpret-abstract-conjunction str) '())
+(define (interpret-abstract-conjunction str)
+  (define conjunction-parse (make-rule-parser abstract-conjunction))
+  (define parsed (conjunction-parse (all-tokens str)))
+  (interpret-abstract-conjunction-syntax parsed))
+
+(define (interpret-abstract-conjunction-syntax con-stx)
+  (syntax-parse con-stx
+    [((~literal abstract-conjunction) ATOM0 ATOM-OR-COMMA ...)
+     (map interpret-abstract-atom-syntax (odd-elems (syntax->list #'(ATOM0 ATOM-OR-COMMA ...))))]))
+
 (provide interpret-abstract-conjunction)
 
 (define (interpret-abstract-atom str)
@@ -51,7 +59,7 @@
     [((~literal abstract-atom) ((~literal abstract-atom-with-args) SYMBOL "(" ARG-OR-SEP ... ")"))
      (ad:abstract-atom
       (string->symbol (syntax->datum #'SYMBOL))
-      (map interpret-abstract-term-syntax (syntax->list #'(ARG-OR-SEP ...))))]))
+      (map interpret-abstract-term-syntax (odd-elems (syntax->list #'(ARG-OR-SEP ...)))))]))
 (provide
  (proc-doc/names
   interpret-abstract-atom
@@ -72,11 +80,11 @@
        ((~literal abstract-number) NUM))))
      (syntax->datum #'NUM)]
     [((~literal abstract-term) ((~literal abstract-function-term) FUNCTOR))
-     (ad:abstract-function (syntax->datum #'FUNCTOR) '())]
+     (ad:abstract-function (string->symbol (syntax->datum #'FUNCTOR)) '())]
     [((~literal abstract-term) ((~literal abstract-function-term) FUNCTOR "(" ARG-OR-SEP ... ")"))
      (ad:abstract-function
-      (syntax->datum #'FUNCTOR)
-      (map interpret-abstract-term-syntax (syntax->list #'(ARG-OR-SEP ...))))]
+      (string->symbol (syntax->datum #'FUNCTOR))
+      (map interpret-abstract-term-syntax (odd-elems (syntax->list #'(ARG-OR-SEP ...)))))]
     [((~literal abstract-term) ((~literal abstract-lplist) "[]"))
      (ad:abstract-function 'nil '())]
     [((~literal abstract-term) ((~literal abstract-lplist) "[" TERM "]"))
