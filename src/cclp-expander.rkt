@@ -445,9 +445,17 @@
                    [index-symbol (datum->syntax #'index (positive-integer->symbol (syntax->datum #'index)))])
        #'(gamma-symbol index-symbol))]))
 
+(define-syntax (concrete-constant stx)
+  (syntax-parse stx
+    [(_ _CONSTANT-SYMBOL)
+     (with-syntax
+         ([CON-SYM (datum->syntax #'_CONSTANT-SYMBOL (string->symbol (syntax->datum #'_CONSTANT-SYMBOL)))])
+       #'(cd:function (quote CON-SYM) (list)))]))
+(provide concrete-constant)
+
 (define-syntax (concrete-constants-section stx)
-  ; TODO expand the syntax components as concrete constants
-  #'(list))
+  (syntax-parse stx
+    [(_ _CONCRETE-CONSTANT ...) #'(list _CONCRETE-CONSTANT ...)]))
 (provide concrete-constants-section)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION

@@ -42,8 +42,6 @@ plus(γ1,γ2,α1) -> α1/γ3.
 minus(γ1,γ2,α1) -> α1/γ3.
 divides(γ1,γ2).
 does_not_divide(γ1,γ2).
-integers(γ1,γ2).
-length(γ1,γ2).
 
 {PREPRIOR}
 integers(γ1,α1),filter(γ1,α1,α2)
@@ -55,6 +53,7 @@ filter(γ1,[γ2|α1],α2),integers(γ1,α1)
 length([γ1|α1],γ2),integers(γ1,γ2)
 length(γ1,γ2),integers(γ1,[γ2|γ3])
 
+% if this is enabled, full evaluation of integers and length is not needed
 {CONCRETE CONSTANTS}
 nil
 

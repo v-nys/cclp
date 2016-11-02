@@ -40,6 +40,7 @@
 (require "abstract-analysis.rkt")
 (require "generational-tree.rkt")
 (require (only-in "concrete-domain.rkt" function?))
+(require "cclp-interpreter.rkt")
 
 (require racket/logging)
 (require (for-doc scribble/manual))
@@ -85,19 +86,40 @@
     [(cycle i)
      (if use-color
          (display-color (format "cycle back to node ~a" i) out #:fg 'green)
-         (display (format "cycle back to node ~a" i) out))]))
+         (display (format "cycle back to node ~a" i) out))]
+    [(widening con sel msg idx)
+     (begin
+       (display "[widening]")
+       (when idx (display (format "~v:" idx)))
+       (print-conjunction con sel out))]))
 
 (define (candidate-and-predecessors t acc)
   (match t
     [(node (tree-label '() _ _ _ _) '()) (cons (none) acc)]
     [(node 'fail '()) (cons (none) acc)]
     [(node (cycle _) '()) (cons (none) acc)]
-    ; TODO add the option of a widening as a candidate
+    [(node (widening '() _ _ _) '()) (cons (none) acc)]
     [(node (tree-label c (none) s r #f) '())
      (cons (some (node (tree-label c (none) s r #f) '())) acc)]
-    [(node (tree-label c (none) s r i) (list (node (cycle ci) '())))
-     (candidate-and-predecessors (node (cycle ci) '()) (cons (cons c i) acc))]
+    [(node (widening c (none) msg i) '())
+     (cons (some (node (widening c (none) msg i) '())) acc)]
+    ; children but no selection = widening or cycle
+    [(node (tree-label c (none) s r i) (list single-child))
+     (candidate-and-predecessors single-child (cons (cons c i) acc))]
+    [(node (widening c (none) msg i) (list single-child))
+     (candidate-and-predecessors single-child (cons (cons c i) acc))]
+    ; next two cases are basically the same...
     [(node (tree-label c (some v) _ _ i) children)
+     (foldl
+      (λ (child acc2)
+        (if (some? (car acc2))
+            acc2
+            (candidate-and-predecessors
+             child
+             (cdr acc2))))
+      (cons (none) (cons (cons c i) acc))
+      (node-children t))]
+    [(node (widening c (some v) msg i) children)
      (foldl
       (λ (child acc2)
         (if (some? (car acc2))
@@ -168,7 +190,11 @@
                    (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
            [(cons (some candidate) preds)
             (let* ([candidate-label (node-label candidate)]
-                   [conjunction (tree-label-conjunction candidate-label)]
+                   [conjunction-selector
+                    (cond
+                      [(tree-label? candidate-label) tree-label-conjunction]
+                      [(widening? candidate-label) widening-conjunction])]
+                   [conjunction (conjunction-selector candidate-label)]
                    [more-general-predecessor
                     (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) preds)])
               ; lots of duplicated code here, can this be improved?
@@ -176,12 +202,16 @@
                   (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
                          [updated-candidate
                           (node
-                           (tree-label
-                            (tree-label-conjunction candidate-label)
-                            (none)
-                            (tree-label-substitution candidate-label)
-                            (tree-label-rule candidate-label)
-                            next-index)
+                           (cond
+                             [(tree-label? candidate-label)
+                              (tree-label
+                               (tree-label-conjunction candidate-label)
+                               (none)
+                               (tree-label-substitution candidate-label)
+                               (tree-label-rule candidate-label)
+                               next-index)]
+                             [(widening? candidate-label)
+                              (widening (widening-conjunction candidate-label) (none) (widening-message candidate-label) next-index)])
                            (list cycle-node))]
                          [updated-top (replace-first-subtree tree candidate updated-candidate)])
                     (begin
@@ -191,18 +221,25 @@
                       (interactive-analysis
                        updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))
                   (let* ([resolution-result
-                          (abstract-resolve conjunction preprior clauses full-evaluations)]
+                          (abstract-resolve conjunction preprior clauses full-evaluations concrete-constants)]
                          [index-selection (car resolution-result)]
                          [resolvents (cdr resolution-result)]
                          [child-trees (map resolvent->node resolvents)]
                          [updated-candidate
                           (node
-                           (tree-label
-                            (tree-label-conjunction candidate-label)
-                            (some index-selection)
-                            (tree-label-substitution candidate-label)
-                            (tree-label-rule candidate-label)
-                            next-index)
+                           (cond [(tree-label? candidate-label) 
+                                  (tree-label
+                                   (tree-label-conjunction candidate-label)
+                                   (some index-selection)
+                                   (tree-label-substitution candidate-label)
+                                   (tree-label-rule candidate-label)
+                                   next-index)]
+                                 [(widening? candidate-label) 
+                                  (widening
+                                   (widening-conjunction candidate-label)
+                                   (some index-selection)
+                                   (widening-message candidate-label)
+                                   next-index)])
                            child-trees)]
                          [updated-top (replace-first-subtree tree candidate updated-candidate)])
                     (begin
@@ -234,21 +271,20 @@
             (begin
               (displayln "Please enter a conjunction with an equal or greater extension.")
               (define read-conjunction (read))
-              (define widened-conjunction (list))
+              (define widened-conjunction (interpret-abstract-conjunction read-conjunction))
               (displayln "Please enter a reason why widening was applied.")
               (define read-reason (read))
               (define updated-label
                 (match (node-label candidate)
                   [(tree-label c se su r #f) (tree-label c se su r next-index)]
-                  [(widening c msg #f) (widening c msg next-index)]
+                  [(widening c se msg #f) (widening c se msg next-index)]
                   [_ (error "candidate type unaccounted for")]))
               (define updated-top
                 (replace-first-subtree
                  tree
                  candidate
-                 (node updated-label (list (node (widening widened-conjunction read-reason #f) '())))))
-              (let ([updated-top tree])
-                (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))])]
+                 (node updated-label (list (node (widening widened-conjunction (none) read-reason #f) '())))))
+              (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants))])]
         [(equal? choice genealogy)
          (let* ([active-branch (active-branch-info tree)]
                 [outputs (if active-branch (generational-trees active-branch) #f)])

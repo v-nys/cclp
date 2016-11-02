@@ -73,4 +73,5 @@ sexp-abstract-function-term : (SYMBOL [OPEN-PAREN sexp-abstract-term (COMMA sexp
 sexp-abstract-number-term : sexp-abstract-number
 sexp-abstract-number : NUMBER
 
-concrete-constants-section : SYMBOL+
+concrete-constants-section : concrete-constant+
+concrete-constant: SYMBOL
