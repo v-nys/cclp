@@ -41,7 +41,8 @@
 
 (define (interpret-abstract-atom str)
   (define atom-parse (make-rule-parser abstract-atom))
-  (interpret-abstract-atom-syntax (tokenize str)))
+  (define string-port (open-input-string str))
+  (interpret-abstract-atom-syntax (tokenize string-port)))
 
 (define (interpret-abstract-atom-syntax atom-stx)
   (syntax-parse atom-stx
@@ -60,7 +61,8 @@
 
 (define (interpret-abstract-term str)
   (define term-parse (make-rule-parser abstract-term))
-  (interpret-abstract-term-syntax (tokenize str)))
+  (define string-port (open-input-string str))
+  (interpret-abstract-term-syntax (tokenize string-port)))
 
 (define (interpret-abstract-term-syntax term-stx)
   (syntax-parse term-stx
