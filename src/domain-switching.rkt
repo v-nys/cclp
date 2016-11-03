@@ -102,13 +102,18 @@
              [just-acc (cdr applied-to-args)])
         (cons (abstract-atom (atom-symbol concrete-atom) just-mapped-args) just-acc))))
 
-;(: pre-abstract-rule (-> ck:rule ak:rule))
 (define (pre-abstract-rule concrete-rule concrete-constants)
-  ; TODO: use info in concrete constants
   (let* ([rule-as-conjunction (cons (ck:rule-head concrete-rule) (ck:rule-body concrete-rule))]
          [abstracted-conjunction (pre-abstract-conjunction rule-as-conjunction concrete-constants)])
     (ak:abstract-rule (car abstracted-conjunction) (cdr abstracted-conjunction))))
-(provide pre-abstract-rule)
+(provide
+ (proc-doc/names
+  pre-abstract-rule
+  (-> ck:rule? (listof function?) ak:abstract-rule?)
+  (concrete-rule concrete-constants)
+  @{Takes a concrete rule @racket[concrete-rule] and abstracts it so that abstract resolution can be applied.
+ Abstraction assumes that all ground terms become @racket[g?] values,
+ but concrete constants listed in @racket[concrete-constants] are mapped to abstract constants with the same functor.}))
 
 ;(: pre-abstract-conjunction (-> Conjunction AbstractConjunction))
 (define (pre-abstract-conjunction conjunction concrete-constants)

@@ -156,6 +156,8 @@
         [rewound-node (node (tree-label (interpret-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
         [rewound-child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node grandchild3))]
         [rewound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
-   (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree))))
-
-(check-equal? #t #f "add tests for widening nodes")
+   (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
+ (let* ([leaf (node (widening (interpret-abstract-conjunction "foo(γ1)") #f "some message" #f) '())]
+        [root-before (node (tree-label (interpret-abstract-conjunction "foo(nil)") 0 (list) #f 1) (list leaf))]
+        [root-after (node (tree-label (interpret-abstract-conjunction "foo(nil)") #f (list) #f #f) (list))])
+   (check-equal? (rewind root-before) (cons root-after root-after))))

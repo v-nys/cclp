@@ -108,6 +108,10 @@
   @{Resolves the next abstract atom selected from @racket[conjunction]
  by partial order @racket[prior] with every applicable rule in both
  @racket[concrete-clauses] and @racket[full-evaluations].
+ The rules in @racket[concrete-clauses] themselves are concrete,
+ but they are abstracted to apply resolution.
+ Concrete constants in @racket[concrete-constants] are mapped to abstract constants,
+ rather than abstract variables.
  The result is a @racket[pair] consisting of the index of the selected
  abstract atom and a list of outcomes for every possible resolution step.}))
 
