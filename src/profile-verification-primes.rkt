@@ -15,6 +15,7 @@
 (require "domain-switching.rkt")
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require "concrete-domain.rkt")
+(require (only-in "interaction.rkt" candidate-and-predecessors))
 
 (define top-level-tree
   (deserialize (read (open-input-file "primes.serializedcclp"))))
@@ -62,6 +63,9 @@
   (node (tree-label candidate-conjunction #f candidate-substitution candidate-rule #f) '()))
 
 (displayln "defined candidate")
+
+(define computed-candidate (candidate-and-predecessors top-level-tree (list)))
+(displayln "computed candidate")
 
 (displayln (replace-first-subtree top-level-tree candidate-tree bogus-tree))
 

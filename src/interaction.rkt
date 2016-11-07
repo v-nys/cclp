@@ -42,6 +42,9 @@
 (require (only-in "concrete-domain.rkt" function?))
 (require "cclp-interpreter.rkt")
 
+(define optimized-replace-first-subtree replace-first-subtree)
+(define optimized-replace-last-subtree replace-last-subtree)
+
 (require racket/logging)
 (require (for-doc scribble/manual))
 
@@ -165,7 +168,7 @@
   (let* ([candidate (candidate-for-undo t)]
          [locally-rewound (if candidate (undo candidate) #f)])
     (if candidate
-        (cons locally-rewound (replace-last-subtree t candidate locally-rewound))
+        (cons locally-rewound (optimized-replace-last-subtree t candidate locally-rewound))
         #f)))
 (provide
  (proc-doc/names
@@ -215,7 +218,7 @@
                              [(widening? candidate-label)
                               (widening (widening-conjunction candidate-label) (none) (widening-message candidate-label) next-index)])
                            (list cycle-node))]
-                         [updated-top (replace-first-subtree tree candidate updated-candidate)])
+                         [updated-top (optimized-replace-first-subtree tree candidate updated-candidate)])
                     (begin
                       (newline)
                       (tree-display updated-candidate print-tree-label)
@@ -243,7 +246,7 @@
                                    (widening-message candidate-label)
                                    next-index)])
                            child-trees)]
-                         [updated-top (replace-first-subtree tree candidate updated-candidate)])
+                         [updated-top (optimized-replace-first-subtree tree candidate updated-candidate)])
                     (begin
                       (newline)
                       (tree-display updated-candidate print-tree-label)
@@ -282,7 +285,7 @@
                   [(widening c se msg #f) (widening c se msg next-index)]
                   [_ (error "candidate type unaccounted for")]))
               (define updated-top
-                (replace-first-subtree
+                (optimized-replace-first-subtree
                  tree
                  candidate
                  (node updated-label (list (node (widening widened-conjunction (none) read-reason #f) '())))))
