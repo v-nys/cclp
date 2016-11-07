@@ -172,7 +172,9 @@
   rewind
   (-> node? (or/c #f (cons/c node? node?)))
   (t)
-  @{Undo the latest unfolding or generalization that occurred in @racket[t]}))
+  @{Undo the latest unfolding or generalization that occurred in @racket[t].
+ The result is a @racket[pair] containing the node on which the operation has been applied
+ and the top-level tree to which this node belongs, or @racket[#f].}))
 
 (define (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)
   (define-values (show-top proceed go-back save widen genealogy similarity end)
