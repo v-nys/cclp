@@ -311,26 +311,36 @@
   (define node-index-2 (prompt-for-integer))
   (define
     branch
-    (shortest-branch-containing-indices (list node-index-1 node-index-2) t))
+    (shortest-branch-with-indices (list node-index-1 node-index-2) t))
   (if branch
       (void)
       (displayln "Could not find a branch with bost indices (in the correct order)")))
 
-(define (shortest-branch-containing-indices indices t)
+(define (shortest-branch-with-indices indices t)
   (match indices
     [(list) (list)]
     [(list-rest i1 is)
      (let* ([t-label (node-label t)]
             [t-index (cond [(tree-label? t-label) (tree-label-index t-label)]
                            [(widening? t-label) (widening-index t-label)]
-                           [else #f])])
-       (cond [(not t-index) #f] ; as nodes without index do not have descendants with indices
-             [(equal? i1 t-index)
-              ; TODO: next two long expressions are nearly identical
-              ; can I consolidate them?
-              (let ([child-result (foldl (λ (el acc) (if acc acc (shortest-branch-containing-indices is el))) #f (node-children t))]) (if child-result (cons t-label child-result) #f))]
-             [else (let ([child-result (foldl (λ (el acc) (if acc acc (shortest-branch-containing-indices (cons i1 is) el))) #f (node-children t))]) (if child-result (cons t-label child-result) #f))]))]
+                           [else #f])]
+            [rest-indices (if (equal? i1 t-index) is indices)])
+       (if (not t-index)
+           #f ; children will not have indices either
+           (let ([child-result
+                  (foldl
+                   (λ (el acc) (if acc acc (shortest-branch-with-indices rest-indices el)))
+                   #f
+                   (node-children t))])
+             (if child-result (cons t-label child-result) #f))))]
     [_ #f]))
+(provide
+ (proc-doc/names
+  shortest-branch-with-indices
+  (-> (listof exact-nonnegative-integer?) node? (listof (or/c tree-label? widening?)))
+  (indices tree)
+  @{Find the shortest branch in @racket[tree]
+ which has nodes with all indices in @racket[indices], in the correct order.}))
 
 (define (largest-node-index t)
   (match t

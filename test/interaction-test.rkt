@@ -161,3 +161,18 @@
         [root-before (node (tree-label (interpret-abstract-conjunction "foo(nil)") 0 (list) #f 1) (list leaf))]
         [root-after (node (tree-label (interpret-abstract-conjunction "foo(nil)") #f (list) #f #f) (list))])
    (check-equal? (rewind root-before) (cons root-after root-after))))
+
+(let* ([bottom-left (node (cycle 1) '())]
+       [bottom-right (node (tree-label (list) #f (list) #f #f) '())]
+       [near-bottom-right-contents
+        (widening (interpret-abstract-conjunction "b(α1)") #f "test" 3)]
+       [near-bottom-right (node near-bottom-right-contents (list bottom-right))]
+       [near-top-right-contents
+        (tree-label (interpret-abstract-conjunction "b(γ1)") 0 (list) #f 2)]
+       [near-top-right (node near-top-right-contents (list near-bottom-right))]
+       [top-right-contents
+        (widening (interpret-abstract-conjunction "a(α1)") #f "test" 1)]
+       [top-right (node top-right-contents (list bottom-left near-top-right))])
+  (check-equal?
+   (shortest-branch-with-indices (list 1 3) top-right)
+   (list top-right-contents near-top-right-contents near-bottom-right-contents)))
