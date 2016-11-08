@@ -329,10 +329,10 @@
 (define (find-dp-zero-subtrees-and-depths dp gen-tree)
   (define (find-aux dp gt acc)
     (match gt
-      [(node (atom-with-generation dp 0) ch)
+      [(node (atom-with-generation at 0) ch) #:when (equal? dp at)
        (list (cons gt acc))]
       [(node (atom-with-generation _ 0) ch)
-       (append (map (λ (c) (find-aux dp c (+ acc 1))) ch))]
+       (apply append (map (λ (c) (find-aux dp c (+ acc 1))) ch))]
       [_ (list)]))
   (find-aux dp gen-tree 0))
 (provide

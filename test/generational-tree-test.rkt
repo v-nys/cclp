@@ -161,29 +161,6 @@
         (list annotated-lv-1)
         "check if analysis without a target atom is correct")))))
 
-(test-case
- "horizontal reading of a generational tree"
- (let ([a-0 (atom-with-generation (interpret-abstract-atom "a") 0)]
-       [a-1 (atom-with-generation (interpret-abstract-atom "a") 1)]
-       [a-2 (atom-with-generation (interpret-abstract-atom "a") 2)]
-       [b-1 (atom-with-generation (interpret-abstract-atom "b") 1)]
-       [b-2 (atom-with-generation (interpret-abstract-atom "b") 2)])
-   (check-equal?
-    (horizontal-level (node a-0 '()) 0)
-    (list a-0))
-   (check-equal?
-    (horizontal-level (node a-0 (list (node b-1 '()) (node a-1 '()))) 1)
-    (list b-1 a-1))
-   (let* ([leaf-1 (node b-1 '())]
-          [leaf-2 (node b-2 '())]
-          [leaf-3 (node a-2 '())]
-          [mid-1 (node b-1 (list leaf-1))]
-          [mid-2 (node a-1 (list leaf-2 leaf-3))]
-          [root (node a-0 (list mid-1 mid-2))])
-     (check-equal?
-      (horizontal-level root 2)
-      (list b-1 b-2 a-2)))))
-
 (let* ([a-atom (abstract-atom 'a '())]
        [b-atom (abstract-atom 'b '())]
        [nc1 (node b-atom '())]
