@@ -44,12 +44,38 @@
 (check-equal? (pre-abstract (variable "A")) (a 1) "single new variable case")
 (check-equal? (pre-abstract (function "dummy" '())) (g 1) "single new constant case")
 
-(check-equal? (pre-abstract-aux-constant (function 'dummy '()) (hash) (list)) (cons (g 1) (hash (function 'dummy '()) (g 1))) "case of constant with no existing mapping")
-(check-equal? (pre-abstract-aux-constant (function 'dummy '()) (hash) (list (function 'dummy '()))) (cons (abstract-function 'dummy '()) (hash)) "case of constant in the abstract domain with no existing mapping")
-(check-equal? (pre-abstract-aux-constant 3 (hash) (list)) (cons (g 1) (hash 3 (g 1))) "case of constant with no existing mapping")
-(check-equal? (pre-abstract-aux-constant (function "dummy" '()) (hash (function "dummy" '()) (g 1)) (list)) (cons (g 1) (hash (function "dummy" '()) (g 1))) "case of constant with an existing mapping")
-(check-equal? (pre-abstract-aux-constant (function "dummy2" '()) (hash (function "dummy1" '()) (g 1)) (list)) (cons (g 2) (hash (function "dummy1" '()) (g 1) (function "dummy2" '()) (g 2))) "case of constant when there is a mapping for another constant")
-(check-equal? #t #f) ; need some tests involving concrete constants
+(check-equal?
+ (pre-abstract-aux-constant
+  (function 'dummy '())
+  (hash)
+  (list))
+ (cons (g 1) (hash (function 'dummy '()) (g 1)))
+ "case of constant with no existing mapping")
+(check-equal?
+ (pre-abstract-aux-constant
+  (function 'dummy '())
+  (hash)
+  (list (function 'dummy '())))
+ (cons (abstract-function 'dummy '()) (hash))
+ "case of constant in the abstract domain with no existing mapping")
+(check-equal?
+ (pre-abstract-aux-constant 3 (hash) (list))
+ (cons (g 1) (hash 3 (g 1)))
+ "case of constant with no existing mapping")
+(check-equal?
+ (pre-abstract-aux-constant
+  (function "dummy" '())
+  (hash (function "dummy" '()) (g 1))
+  (list))
+ (cons (g 1) (hash (function "dummy" '()) (g 1)))
+ "case of constant with an existing mapping")
+(check-equal?
+ (pre-abstract-aux-constant
+  (function "dummy2" '())
+  (hash (function "dummy1" '()) (g 1))
+  (list))
+ (cons (g 2) (hash (function "dummy1" '()) (g 1) (function "dummy2" '()) (g 2)))
+ "case of constant when there is a mapping for another constant")
 
 (let ([abstract-args (list (a 1) (a 1) (a 2) (g 1) (g 2) (g 1))]
       ; should be able to do this more concisely using #lang lp building blocks, roughly as (expand (parse 'function "dummy(A,A,dummy2,dummy3,dummy2)"))

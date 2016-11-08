@@ -159,8 +159,9 @@
    (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
  (let* ([leaf (node (widening (interpret-abstract-conjunction "foo(γ1)") #f "some message" #f) '())]
         [root-before (node (tree-label (interpret-abstract-conjunction "foo(nil)") 0 (list) #f 1) (list leaf))]
-        [root-after (node (tree-label (interpret-abstract-conjunction "foo(nil)") #f (list) #f #f) (list))])
-   (check-equal? (rewind root-before) (cons root-after root-after))))
+        [root-after (node (tree-label (interpret-abstract-conjunction "foo(nil)") (none) (list) #f #f) (list))])
+   (check-equal? (car (rewind root-before)) root-after)
+   (check-equal? (cdr (rewind root-before)) root-after)))
 
 (let* ([bottom-left (node (cycle 1) '())]
        [bottom-right (node (tree-label (list) #f (list) #f #f) '())]
