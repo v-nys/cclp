@@ -28,6 +28,7 @@
 (require "fullai-domain.rkt")
 (require (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-function?))
 (require racket-tree-utils/src/tree (only-in racket-tree-utils/src/printer tree-display))
+(require (only-in racket-list-utils/utils findf-index))
 (require (only-in parenlog model?))
 (require (only-in "execution.rkt" selected-index))
 (require "abstract-resolve.rkt")
@@ -56,6 +57,7 @@
   (match n
     [(node ag _)
      (fprintf out "~v {~v}" (atom-with-generation-atom ag) (atom-with-generation-generation ag))]))
+(provide print-atom-with-generation-node)
 
 (define (print-conjunction c ms [out (current-output-port)])
   (define last-i (- (length c) 1))
@@ -313,8 +315,41 @@
     branch
     (shortest-branch-with-indices (list node-index-1 node-index-2) t))
   (if branch
-      (void)
+      (begin
+        (displayln (sa1-renames-sa2? branch node-index-1 node-index-2))
+        (let* ([skeleton (generational-tree-skeleton branch)]
+               [candidate-targets (candidate-target-atoms skeleton (- (length branch) 1))]
+               [generational-trees (generational-trees branch)]
+               [ls1 (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch)]
+               [ls2 (findf-index (λ (l) (equal? (label-index l) node-index-2)) branch)])
+          ((displayln (ormap (λ (dp gt) (let ([dp-zero-subtrees-and-depths (find-dp-zero-subtrees-and-depths dp gt)]) (#f))) candidate-targets generational-trees))))
+        (displayln "More conditions left to be checked."))
       (displayln "Could not find a branch with bost indices (in the correct order)")))
+
+(define (find-dp-zero-subtrees-and-depths dp gen-tree)
+  (define (find-aux dp gt acc)
+    (match gt
+      [(node (atom-with-generation dp 0) ch)
+       (list (cons gt acc))]
+      [(node (atom-with-generation _ 0) ch)
+       (append (map (λ (c) (find-aux dp c (+ acc 1))) ch))]
+      [_ (list)]))
+  (find-aux dp gen-tree 0))
+(provide
+ (proc-doc/names
+  find-dp-zero-subtrees-and-depths
+  (-> abstract-atom? node? (listof (cons/c node? exact-nonnegative-integer?)))
+  (dp generational-tree)
+  @{Find all subtrees of the generational tree @racket[generational-tree] with an exact occurrence
+ of abstract atom @racket[dp] of generation 0 at their root, along with the depth of this root
+ in @racket[generational-tree].}))
+
+(define (sa1-renames-sa2? branch i1 i2)
+  (let* ([label-i1 (findf (λ (n) (equal? i1 (label-index n))) branch)]
+         [label-i2 (findf (λ (n) (equal? i2 (label-index n))) branch)])
+    (renames?
+     (list-ref (label-conjunction label-i1) (some-v (label-selection label-i1)))
+     (list-ref (label-conjunction label-i2) (some-v (label-selection label-i2))))))
 
 (define (shortest-branch-with-indices indices t)
   (match indices

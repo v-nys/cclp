@@ -29,6 +29,25 @@
 (require racket/serialize)
 (require (for-doc scribble/manual))
 
+(define (label-index l)
+  (if (tree-label? l)
+      (tree-label-index l)
+      (widening-index l)))
+(provide label-index)
+
+(define (label-conjunction l)
+  (if (tree-label? l)
+      (tree-label-conjunction l)
+      (widening-conjunction l)))
+(provide label-conjunction)
+
+(define (label-selection l)
+  (if (tree-label? l)
+      (tree-label-selection l)
+      (widening-selection l)))
+(provide label-selection)
+
+
 (define (write-tree-label obj port mode)
   (if (eq? mode #t)
       (fprintf
