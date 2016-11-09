@@ -67,32 +67,35 @@
   @{Find the shortest branch in @racket[tree]
  which has nodes with all indices in @racket[indices], in the correct order.}))
 
-(define (find-dp-zero-subtrees-and-depths dp gen-tree)
-  (define (find-aux dp gt acc)
-    (match gt
-      [(node (atom-with-generation at 0) ch) #:when (equal? dp at)
-       (list (cons gt acc))]
-      [(node (atom-with-generation _ 0) ch)
-       (apply append (map (λ (c) (find-aux dp c (+ acc 1))) ch))]
-      [_ (list)]))
-  (find-aux dp gen-tree 0))
+(define (dp-zero-subtree-depth-complement-at-level dp gen-tree lvl)
+  (define gen-tree-lvl (horizontal-level gen-tree lvl))
+  (list))
+
+(define (find-dp-zero-subtrees-depths-complements dp gen-tree)
+  (define gt-depth (node-depth gen-tree))
+  (define levels (range 0 (+ gt-depth 1)))
+  (apply append (map (curry dp-zero-subtree-depth-complement-at-level dp gen-tree) levels)))
 (provide
  (proc-doc/names
-  find-dp-zero-subtrees-and-depths
-  (-> abstract-atom? node? (listof (cons/c node? exact-nonnegative-integer?)))
+  find-dp-zero-subtrees-depths-complements
+  (-> abstract-atom? node? list?)
   (dp generational-tree)
-  @{Find all subtrees of the generational tree @racket[generational-tree] with an exact occurrence
- of abstract atom @racket[dp] of generation 0 at their root, along with the depth of this root
- in @racket[generational-tree].}))
+  @{Find subtrees of the generational tree @racket[generational-tree] with an exact occurrence
+ of abstract atom @racket[dp] of generation 0 at their root, along with the depth of this root and
+ with subtrees at the same level in @racket[generational-tree].
+ Note that the latter may theoretically contain a subtree with an exact occurrence, as well.}))
 
 ; subtrees: dp subtree with generation 0 at given depth
-(define (checks-involving-generations ls1 ls2 gs1 gs2 subtree-at-depth)
-  (define subtree-depth (cdr subtree-at-depth))
-  (define subset-s1-with-gen (horizontal-level (car subtree-at-depth) (- ls1 subtree-depth)))
-  (define subset-s2-with-gen (horizontal-level (car subtree-at-depth) (- ls2 subtree-depth)))
-  (and
-   (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
-   #f))
+(define (checks-involving-generations ls1 ls2 gs1 gs2 subtree-depth-complement)
+  ; note that complement means all trees at the same depth as that for dp!
+  (match subtree-depth-complement
+    [(list subtree depth complement)
+     (begin
+       (define subset-s1-with-gen (horizontal-level subtree (- ls1 depth)))
+       (define subset-s2-with-gen (horizontal-level subtree (- ls2 depth)))
+       (and
+         (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
+         #f))]))
 
 (define (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
   (define
@@ -126,7 +129,7 @@
     (λ (dp gt)
       (let* ([annotated-s1 (horizontal-level gt ls1)]
              [annotated-s2 (horizontal-level gt ls2)]
-             [dp-zero-subtrees-and-depths (find-dp-zero-subtrees-and-depths dp gt)]
+             [dp-zero-subtrees-depths-complements (find-dp-zero-subtrees-depths-complements dp gt)]
              [gs1
               (atom-with-generation-generation
                (list-ref annotated-s1 (some-v (label-selection (list-ref branch ls1)))))]
@@ -135,7 +138,7 @@
                (list-ref annotated-s2 (some-v (label-selection (list-ref branch ls2)))))])
         (ormap
           (curry checks-involving-generations ls1 ls2 gs1 gs2)
-          dp-zero-subtrees-and-depths)))
+          dp-zero-subtrees-depths-complements)))
     candidate-targets
     all-generational-trees)))
 (provide
