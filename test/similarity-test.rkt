@@ -43,7 +43,7 @@
 (test-case
  "finding subtrees which begin with a particular atom, as well as their depth"
  (check-equal?
-  (find-dp-zero-subtrees-and-depths
+  (find-dp-zero-subtrees-depths-complements
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0
@@ -56,40 +56,55 @@
               (f 1)
               (g 1))))))
   (list
-   (cons
+   (list
     (generational-tree-bp
      (dp 0
          (f 1)
          (g 1)))
-    1)
-   (cons
+    1
+    (list
+     (generational-tree-bp
+      (b 0
+         (c 0)
+         (dp 0
+             (f 1)
+             (g 1))))))
+   (list
     (generational-tree-bp
      (dp 0
          (f 1)
          (g 1)))
-    2)))
+    2
+    (list
+     (generational-tree-bp (f 1))
+     (generational-tree-bp (g 1))
+     (generational-tree-bp (c 0))))))
+ 
  (check-equal?
-  (find-dp-zero-subtrees-and-depths
+  (find-dp-zero-subtrees-depths-complements
    (abstract-atom 'dp '())
    (generational-tree-bp
     (dp 0
         (a 1)
         (b 1))))
   (list
-   (cons
+   (list
     (generational-tree-bp
      (dp 0
          (a 1)
          (b 1)))
-    0)))
+    0
+    (list))))
+ 
  (check-equal?
-  (find-dp-zero-subtrees-and-depths
+  (find-dp-zero-subtrees-depths-complements
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0)))
   (list))
+ 
  (check-equal?
-  (find-dp-zero-subtrees-and-depths
+  (find-dp-zero-subtrees-depths-complements
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0
@@ -105,9 +120,9 @@
        [near-top-right-contents
         (tree-label (interpret-abstract-conjunction "b(γ1)") 0 (list) #f 2)]
        [near-top-right (node near-top-right-contents (list near-bottom-right))]
-       [top-right-contents
+       [top-contents
         (widening (interpret-abstract-conjunction "a(α1)") #f "test" 1)]
-       [top-right (node top-right-contents (list bottom-left near-top-right))])
+       [top (node top-contents (list bottom-left near-top-right))])
   (check-equal?
-   (shortest-branch-with-indices (list 1 3) top-right)
-   (list top-right-contents near-top-right-contents near-bottom-right-contents)))
+   (shortest-branch-with-indices (list 1 3) top)
+   (list top-contents near-top-right-contents near-bottom-right-contents)))

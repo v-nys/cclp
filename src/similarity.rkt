@@ -24,6 +24,7 @@
 
 (require (only-in racket-list-utils/utils findf-index))
 (require racket-tree-utils/src/tree)
+(require racket-list-utils/utils)
 
 (require "abstract-multi-domain.rkt")
 (require "abstract-analysis.rkt")
@@ -68,8 +69,15 @@
  which has nodes with all indices in @racket[indices], in the correct order.}))
 
 (define (dp-zero-subtree-depth-complement-at-level dp gen-tree lvl)
-  (define gen-tree-lvl (horizontal-level gen-tree lvl))
-  (list))
+  (define gen-tree-lvl (horizontal-level gen-tree lvl #t))
+  (define
+    lvl-splits
+    (all-splits-on
+     (λ (st) (equal? (node-label st) (atom-with-generation dp 0)))
+     gen-tree-lvl))
+  (map
+   (λ (a-split) (match a-split [(list left target right) (list target lvl (append left right))]))
+   lvl-splits))
 
 (define (find-dp-zero-subtrees-depths-complements dp gen-tree)
   (define gt-depth (node-depth gen-tree))
