@@ -36,15 +36,7 @@
 (require "../src/abstract-multi-domain.rkt")
 (require "../src/abstract-analysis.rkt")
 (require "../src/cclp-interpreter.rkt")
-(require (only-in "../src/interaction.rkt" print-atom-with-generation-node find-dp-zero-subtrees-and-depths))
-
-; makes defining non-degenerated trees (with atoms without args) much easier
-(define-syntax (generational-tree-bp stx)
-  (syntax-case stx ()
-    [(_ (SYM GEN S-EXP ...))
-     #'(node
-        (atom-with-generation (abstract-atom 'SYM '()) GEN)
-        (list (generational-tree-bp S-EXP) ...))]))
+(require (only-in "../src/interaction.rkt" print-atom-with-generation-node))
 
 (test-case
  "Extracting the active branch from a tree."
@@ -190,60 +182,3 @@
        [nc2 (node c-atom (list ncc))]
        [n (node a-atom (list nc1 nc2))])
   (check-equal? (descendant-renames? n a-atom) #t))
-
-(test-case
- "finding subtrees which begin with a particular atom, as well as their depth"
- (check-equal?
-  (find-dp-zero-subtrees-and-depths
-   (abstract-atom 'dp '())
-   (generational-tree-bp
-    (a 0
-       (dp 0
-           (f 1)
-           (g 1))
-       (b 0
-          (c 0)
-          (dp 0
-              (f 1)
-              (g 1))))))
-  (list
-   (cons
-    (generational-tree-bp
-     (dp 0
-         (f 1)
-         (g 1)))
-    1)
-   (cons
-    (generational-tree-bp
-     (dp 0
-         (f 1)
-         (g 1)))
-    2)))
- (check-equal?
-  (find-dp-zero-subtrees-and-depths
-   (abstract-atom 'dp '())
-   (generational-tree-bp
-    (dp 0
-        (a 1)
-        (b 1))))
-  (list
-   (cons
-    (generational-tree-bp
-     (dp 0
-         (a 1)
-         (b 1)))
-    0)))
- (check-equal?
-  (find-dp-zero-subtrees-and-depths
-   (abstract-atom 'dp '())
-   (generational-tree-bp
-    (a 0)))
-  (list))
- (check-equal?
-  (find-dp-zero-subtrees-and-depths
-   (abstract-atom 'dp '())
-   (generational-tree-bp
-    (a 0
-       (b 0)
-       (c 0))))
-  (list)))

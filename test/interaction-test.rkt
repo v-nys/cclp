@@ -1,3 +1,25 @@
+; MIT License
+;
+; Copyright (c) 2016 Vincent Nys
+; 
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+; 
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+; 
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
 #lang racket
 (require rackunit)
 (require "../src/interaction.rkt")
@@ -162,18 +184,3 @@
         [root-after (node (tree-label (interpret-abstract-conjunction "foo(nil)") (none) (list) #f #f) (list))])
    (check-equal? (car (rewind root-before)) root-after)
    (check-equal? (cdr (rewind root-before)) root-after)))
-
-(let* ([bottom-left (node (cycle 1) '())]
-       [bottom-right (node (tree-label (list) #f (list) #f #f) '())]
-       [near-bottom-right-contents
-        (widening (interpret-abstract-conjunction "b(α1)") #f "test" 3)]
-       [near-bottom-right (node near-bottom-right-contents (list bottom-right))]
-       [near-top-right-contents
-        (tree-label (interpret-abstract-conjunction "b(γ1)") 0 (list) #f 2)]
-       [near-top-right (node near-top-right-contents (list near-bottom-right))]
-       [top-right-contents
-        (widening (interpret-abstract-conjunction "a(α1)") #f "test" 1)]
-       [top-right (node top-right-contents (list bottom-left near-top-right))])
-  (check-equal?
-   (shortest-branch-with-indices (list 1 3) top-right)
-   (list top-right-contents near-top-right-contents near-bottom-right-contents)))

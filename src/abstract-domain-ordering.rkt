@@ -27,9 +27,14 @@
   >=-extension
   (-> abstract-domain-elem? abstract-domain-elem? boolean?)
   (domain-elem1 domain-elem2)
-  @{Checks whether @racket[domain-elem1] is at least as general as @racket[domain-elem2]}))
+  @{Checks whether @racket[domain-elem1] is at least as general as @racket[domain-elem2].}))
 
 (define (renames? domain-elem1 domain-elem2)
   (and (>=-extension domain-elem1 domain-elem2)
        (>=-extension domain-elem2 domain-elem1)))
-(provide renames?)
+(provide
+ (proc-doc/names
+  renames?
+  (-> abstract-domain-elem? abstract-domain-elem? boolean?)
+  (domain-elem1 domain-elem2)
+  @{Checks whether @racket[domain-elem1] is equivalent to @racket[domain-elem2].}))

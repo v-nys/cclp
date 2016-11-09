@@ -42,10 +42,10 @@
 (require "generational-tree.rkt")
 (require (only-in "concrete-domain.rkt" function?))
 (require "cclp-interpreter.rkt")
+(require "similarity.rkt")
 
 (require racket/logging)
 (require (for-doc scribble/manual))
-
 (define use-color #f)
 
 (define (print-substitution s [out (current-output-port)])
@@ -81,9 +81,9 @@
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out)
-       ;(when
-       ;    ((compose not null?) sub)
-       ;  (begin (display " " out) (print-substitution sub out)))
+       (when
+           ((compose not null?) sub)
+         (begin (display " " out) (print-substitution sub out)))
        )]
     [(cycle i)
      (if use-color
@@ -270,7 +270,7 @@
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
             (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)]
-           ; candidate can be either a tree-label? or a widening?
+           ; candidate can be either a tree-label or a widening
            [(cons (some candidate) _)
             (begin
               (displayln "Please enter a conjunction with an equal or greater extension.")
@@ -311,71 +311,11 @@
   (define node-index-1 (prompt-for-integer))
   (displayln "Please supply the index of the second node.")
   (define node-index-2 (prompt-for-integer))
-  (define
-    branch
-    (shortest-branch-with-indices (list node-index-1 node-index-2) t))
-  (if branch
-      (begin
-        (displayln (sa1-renames-sa2? branch node-index-1 node-index-2))
-        (let* ([skeleton (generational-tree-skeleton branch)]
-               [candidate-targets (candidate-target-atoms skeleton (- (length branch) 1))]
-               [generational-trees (generational-trees branch)]
-               [ls1 (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch)]
-               [ls2 (findf-index (λ (l) (equal? (label-index l) node-index-2)) branch)])
-          ((displayln (ormap (λ (dp gt) (let ([dp-zero-subtrees-and-depths (find-dp-zero-subtrees-and-depths dp gt)]) (#f))) candidate-targets generational-trees))))
-        (displayln "More conditions left to be checked."))
-      (displayln "Could not find a branch with bost indices (in the correct order)")))
-
-(define (find-dp-zero-subtrees-and-depths dp gen-tree)
-  (define (find-aux dp gt acc)
-    (match gt
-      [(node (atom-with-generation at 0) ch) #:when (equal? dp at)
-       (list (cons gt acc))]
-      [(node (atom-with-generation _ 0) ch)
-       (apply append (map (λ (c) (find-aux dp c (+ acc 1))) ch))]
-      [_ (list)]))
-  (find-aux dp gen-tree 0))
-(provide
- (proc-doc/names
-  find-dp-zero-subtrees-and-depths
-  (-> abstract-atom? node? (listof (cons/c node? exact-nonnegative-integer?)))
-  (dp generational-tree)
-  @{Find all subtrees of the generational tree @racket[generational-tree] with an exact occurrence
- of abstract atom @racket[dp] of generation 0 at their root, along with the depth of this root
- in @racket[generational-tree].}))
-
-(define (sa1-renames-sa2? branch i1 i2)
-  (let* ([label-i1 (findf (λ (n) (equal? i1 (label-index n))) branch)]
-         [label-i2 (findf (λ (n) (equal? i2 (label-index n))) branch)])
-    (renames?
-     (list-ref (label-conjunction label-i1) (some-v (label-selection label-i1)))
-     (list-ref (label-conjunction label-i2) (some-v (label-selection label-i2))))))
-
-(define (shortest-branch-with-indices indices t)
-  (match indices
-    [(list) (list)]
-    [(list-rest i1 is)
-     (let* ([t-label (node-label t)]
-            [t-index (cond [(tree-label? t-label) (tree-label-index t-label)]
-                           [(widening? t-label) (widening-index t-label)]
-                           [else #f])]
-            [rest-indices (if (equal? i1 t-index) is indices)])
-       (if (not t-index)
-           #f ; children will not have indices either
-           (let ([child-result
-                  (foldl
-                   (λ (el acc) (if acc acc (shortest-branch-with-indices rest-indices el)))
-                   #f
-                   (node-children t))])
-             (if child-result (cons t-label child-result) #f))))]
-    [_ #f]))
-(provide
- (proc-doc/names
-  shortest-branch-with-indices
-  (-> (listof exact-nonnegative-integer?) node? (listof (or/c tree-label? widening?)))
-  (indices tree)
-  @{Find the shortest branch in @racket[tree]
- which has nodes with all indices in @racket[indices], in the correct order.}))
+  (if (not (shortest-branch-with-indices (list node-index-1 node-index-2) t))
+      (displayln "Could not find a branch with supplied indices (in the correct order).")
+      (if (s-similar? node-index-1 node-index-2 t)
+          (displayln "Nodes are s-similar.")
+          (displayln "Nodes are not s-similar."))))
 
 (define (largest-node-index t)
   (match t

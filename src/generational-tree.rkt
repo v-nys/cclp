@@ -189,8 +189,11 @@
 (provide
  (proc-doc/names
   candidate-target-atoms
-  (-> node? exact-positive-integer? exact-nonnegative-integer? (listof abstract-atom?))
-  (skeleton live-depth depth-acc)
+  (->*
+   (node? exact-positive-integer?)
+   (exact-nonnegative-integer?)
+   (listof abstract-atom?))
+  ((skeleton live-depth) ((depth-acc 0)))
   @{Finds potential target atoms for recursion analysis.
  The parameter @racket[skeleton] is a non-annotated recursion analysis,
  @racket[live-depth] indicates depth from which an atom may survive indefinitely,

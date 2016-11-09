@@ -28,6 +28,7 @@
 (require scribble/srcdoc)
 (require racket/serialize)
 (require (for-doc scribble/manual))
+(require (only-in "abstract-domain-ordering.rkt" renames?))
 
 (define (label-index l)
   (if (tree-label? l)
@@ -46,7 +47,6 @@
       (tree-label-selection l)
       (widening-selection l)))
 (provide label-selection)
-
 
 (define (write-tree-label obj port mode)
   (if (eq? mode #t)
