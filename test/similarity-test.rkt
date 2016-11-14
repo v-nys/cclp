@@ -41,9 +41,9 @@
         (list (generational-tree-bp TREE) ...))]))
 
 (test-case
- "finding subtrees which begin with a particular atom, as well as their depth"
+ "finding level-0 instances of a target, and their complement, at a particular level"
  (check-equal?
-  (find-dp-zero-subtrees-depths-complements
+  (dp-zero-subtree-depth-complement-at-level
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0
@@ -54,48 +54,81 @@
           (c 0)
           (dp 0
               (f 1)
+              (g 1)))))
+   1)
+  (list
+   (generational-tree-bp
+    (dp 0
+        (f 1)
+        (g 1)))
+   1
+   (list
+    (generational-tree-bp
+     (b 0
+        (c 0)
+        (dp 0
+            (f 1)
+            (g 1))))))))
+
+(test-case
+ "finding subtrees which begin with a particular atom, as well as their depth and complement"
+ (check-equal?
+  (find-dp-zero-subtree-depth-complement
+   (abstract-atom 'dp '())
+   (generational-tree-bp
+    (a 0
+       (dp 0
+           (f 1)
+           (g 1))
+       (b 0
+          (c 0)
+          ; note: this occurrence is ignored
+          ; real trees should only contain one exact instance of dp
+          ; may want to guarantee this later on with UID
+          (dp 0
+              (f 1)
               (g 1))))))
   (list
-   (cons
+   (generational-tree-bp
+    (dp 0
+        (f 1)
+        (g 1)))
+   1
+   (list
     (generational-tree-bp
-     (dp 0
-         (f 1)
-         (g 1)))
-    1)
-   (cons
-    (generational-tree-bp
-     (dp 0
-         (f 1)
-         (g 1)))
-    2)))
+     (b 0
+        (c 0)
+        (dp 0
+            (f 1)
+            (g 1)))))))
  (check-equal?
-  (find-dp-zero-subtrees-depths-complements
+  (find-dp-zero-subtree-depth-complement
    (abstract-atom 'dp '())
    (generational-tree-bp
     (dp 0
         (a 1)
         (b 1))))
   (list
-   (cons
-    (generational-tree-bp
+   (generational-tree-bp
      (dp 0
          (a 1)
          (b 1)))
-    0)))
+    0
+    (list)))
  (check-equal?
-  (find-dp-zero-subtrees-depths-complements
+  (find-dp-zero-subtree-depth-complement
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0)))
-  (list))
+  #f)
  (check-equal?
-  (find-dp-zero-subtrees-depths-complements
+  (find-dp-zero-subtree-depth-complement
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0
        (b 0)
        (c 0))))
-  (list)))
+  #f))
 
 (let* ([bottom-left (node (cycle 1) '())]
        [bottom-right (node (tree-label (list) #f (list) #f #f) '())]
@@ -111,3 +144,4 @@
   (check-equal?
    (shortest-branch-with-indices (list 1 3) top-right)
    (list top-right-contents near-top-right-contents near-bottom-right-contents)))
+
