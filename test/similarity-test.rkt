@@ -43,7 +43,7 @@
 (test-case
  "finding subtrees which begin with a particular atom, as well as their depth"
  (check-equal?
-  (find-dp-zero-subtrees-and-depths
+  (find-dp-zero-subtrees-depths-complements
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0
@@ -69,7 +69,7 @@
          (g 1)))
     2)))
  (check-equal?
-  (find-dp-zero-subtrees-and-depths
+  (find-dp-zero-subtrees-depths-complements
    (abstract-atom 'dp '())
    (generational-tree-bp
     (dp 0
@@ -83,13 +83,13 @@
          (b 1)))
     0)))
  (check-equal?
-  (find-dp-zero-subtrees-and-depths
+  (find-dp-zero-subtrees-depths-complements
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0)))
   (list))
  (check-equal?
-  (find-dp-zero-subtrees-and-depths
+  (find-dp-zero-subtrees-depths-complements
    (abstract-atom 'dp '())
    (generational-tree-bp
     (a 0

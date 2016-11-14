@@ -97,7 +97,7 @@
     (apply
      append
      (map
-      (compose atom-with-generation-atom (λ (comp) (horizontal-level com (- ls1 depth))))
+      (compose atom-with-generation-atom (λ (comp) (horizontal-level comp (- ls1 depth))))
       dp-complement)))
   (define big-l2 (max (map atom-with-generation-generation subset-s2-with-gen)))
   (define ls2-1-dp
@@ -108,7 +108,7 @@
     (apply
      append
      (map
-      (compose atom-with-generation-atom (λ (comp) (horizontal-level com (- ls2 depth))))
+      (compose atom-with-generation-atom (λ (comp) (horizontal-level comp (- ls2 depth))))
       dp-complement)))
   (renames?
    (append ls1-1-dp ls1-L-dp full-complement-at-ls1)
