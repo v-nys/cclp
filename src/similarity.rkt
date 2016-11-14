@@ -85,6 +85,35 @@
  with subtrees at the same level in @racket[generational-tree].
  Note that the latter may theoretically contain a subtree with an exact occurrence, as well.}))
 
+(define (context-and-ends-match subset-s1-with-gen subset-s2-with-gen dp-complement depth ls1 ls2)
+  (define big-l1 (max (map atom-with-generation-generation subset-s1-with-gen)))
+  ; see paper for cryptic names
+  ; TODO: cut down on nearly identical code using define-values or something?
+  (define ls1-1-dp
+    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s1-with-gen))
+  (define ls1-L-dp
+    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l1)) subset-s1-with-gen))
+  (define full-complement-at-ls1
+    (apply
+     append
+     (map
+      (compose atom-with-generation-atom (λ (comp) (horizontal-level com (- ls1 depth))))
+      dp-complement)))
+  (define big-l2 (max (map atom-with-generation-generation subset-s2-with-gen)))
+  (define ls2-1-dp
+    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s2-with-gen))
+  (define ls2-L-dp
+    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l2)) subset-s2-with-gen))
+  (define full-complement-at-ls2
+    (apply
+     append
+     (map
+      (compose atom-with-generation-atom (λ (comp) (horizontal-level com (- ls2 depth))))
+      dp-complement)))
+  (renames?
+   (append ls1-1-dp ls1-L-dp full-complement-at-ls1)
+   (append ls1-1-dp ls1-L-dp full-complement-at-ls1)))
+
 ; subtrees: dp subtree with generation 0 at given depth
 (define (checks-involving-generations ls1 ls2 gs1 gs2 subtree-depth-complement)
   ; note that complement means all trees at the same depth as that for dp!
@@ -95,7 +124,22 @@
        (define subset-s2-with-gen (horizontal-level subtree (- ls2 depth)))
        (and
          (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
-         #f))]))
+         (context-and-ends-match subset-s1-with-gen subset-s2-with-gen complement depth ls1 ls2)
+         (invertible-function-f gs1 gs2)
+         (invertible-function-g)
+         (last-gen-split)))]))
+
+(define (invertible-function-f gs1 gs2)
+  (or (< gs1 3)
+      ; next step: get the mapping between gen one and two, see if it is systematic
+      ; return that function as a result of this call -> need it for last-gen-split
+      ; define it before the 'and'
+      ; just test for truthiness before last-gen-split
+      #f))
+
+(define (invertible-function-g) #f)
+
+(define (last-gen-split) #f)
 
 (define (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
   (define
