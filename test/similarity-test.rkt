@@ -166,19 +166,57 @@
  "extracting the invertible function f from two related conjunctions"
  (check-equal?
   (extract-f-mapping
-   9
+   3
    (cons
-    ; TODO need to complete the tree
     (generational-tree-bp
-     (sift
-      ((cons (g 1) (a 1)) (a 2))
+     (collect
+      ((g 1) (a 1))
       0
-      (filter
-       ()
-       1)
-      (sift
-       ()
-       1)))
+      (collect
+       ((g 2) (a 2))
+       1
+       (collect
+        ((g 4) (a 4))
+        2
+        (collect
+         ((g 6) (a 6))
+         3)
+        (collect
+         ((g 7) (a 7))
+         3)
+        (append
+         ((a 6) (a 7) (a 4))
+         3))
+       (collect
+        ((g 5) (a 5))
+        2
+        (collect
+         ((g 5) (a 5))
+         2))
+       (append
+        ((a 4) (a 5) (a 2))
+        2
+        (append
+         ((a 4) (a 5) (a 2))
+         2)))
+      (collect
+       ((g 3) (a 3))
+       1
+       (collect
+        ((g 3) (a 3))
+        1
+        (collect
+         ((g 3) (a 3))
+         1)))
+      (append
+       ((a 2) (a 3) (a 1))
+       1
+       (append
+        ((a 2) (a 3) (a 1))
+        1
+        (append
+         ((a 2) (a 3) (a 1))
+         1)))))
     0))
   (list 'fresh (identity-constraint 3) 'fresh)))
 
