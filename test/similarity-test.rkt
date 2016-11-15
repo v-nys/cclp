@@ -32,28 +32,7 @@
 (require "../src/generational-tree.rkt")
 (require "../src/similarity.rkt")
 
-(define-syntax (generational-tree-bp stx)
-  (syntax-case stx ()
-    ; we often don't need args for the tests and they involve more boilerplate, so there are two patterns
-    [(_ (SYM (ARG ...) GEN TREE ...))
-     #'(node
-        (atom-with-generation (ad:abstract-atom 'SYM (list (generational-atom-arg-bp ARG) ...)) GEN)
-        (list (generational-tree-bp TREE) ...))]
-    [(_ (SYM GEN TREE ...))
-     #'(node
-        (atom-with-generation (ad:abstract-atom 'SYM '()) GEN)
-        (list (generational-tree-bp TREE) ...))]))
-
-(define-syntax (generational-atom-arg-bp stx)
-  (syntax-case stx (a g)
-    [(_ (a IDX))
-     #'(ad:a IDX)]
-    [(_ (g IDX))
-     #'(ad:g IDX)]
-    [(_ SYM)
-     #'(ad:abstract-function 'SYM '())]
-    [(_ (SYM ARG ...))
-     #'(ad:abstract-function 'SYM (list (generational-atom-arg-bp ARG) ...))]))
+(require (only-in "generational-tree-test.rkt" generational-tree-bp))
 
 (test-case
  "finding level-0 instances of a target, and their complement, at a particular level"

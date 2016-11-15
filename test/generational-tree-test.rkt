@@ -33,10 +33,40 @@
 (require "../src/data-utils.rkt")
 (require "printed-test-results.rkt")
 (require "../src/abstract-knowledge.rkt")
-(require "../src/abstract-multi-domain.rkt")
+(require (prefix-in ad: "../src/abstract-multi-domain.rkt"))
 (require "../src/abstract-analysis.rkt")
 (require "../src/cclp-interpreter.rkt")
 (require (only-in "../src/interaction.rkt" print-atom-with-generation-node))
+
+(define-syntax (skeleton-bp stx)
+  (syntax-case stx ()
+    [(_ (SYM (ARG ...) TREE ...))
+     #'(node
+        (ad:abstract-atom 'SYM (list (generational-atom-arg-bp ARG) ...))
+        (list (skeleton-bp TREE) ...))]))
+
+(define-syntax (generational-tree-bp stx)
+  (syntax-case stx ()
+    [(_ (SYM (ARG ...) GEN TREE ...))
+     #'(node
+        (atom-with-generation (ad:abstract-atom 'SYM (list (generational-atom-arg-bp ARG) ...)) GEN)
+        (list (generational-tree-bp TREE) ...))]
+    [(_ (SYM GEN TREE ...))
+     #'(node
+        (atom-with-generation (ad:abstract-atom 'SYM '()) GEN)
+        (list (generational-tree-bp TREE) ...))]))
+(provide generational-tree-bp)
+
+(define-syntax (generational-atom-arg-bp stx)
+  (syntax-case stx (a g)
+    [(_ (a IDX))
+     #'(ad:a IDX)]
+    [(_ (g IDX))
+     #'(ad:g IDX)]
+    [(_ SYM)
+     #'(ad:abstract-function 'SYM '())]
+    [(_ (SYM ARG ...))
+     #'(ad:abstract-function 'SYM (list (generational-atom-arg-bp ARG) ...))]))
 
 (test-case
  "Extracting the active branch from a tree."
@@ -125,60 +155,118 @@
        [level-1
         (node
          (tree-label (interpret-abstract-conjunction "a") (some 0) (list) #f 1)
-         (list level-2))]
-       [skeleton-lv-3-1 (node (abstract-atom 'b '()) '())]
-       [skeleton-lv-3-2 (node (abstract-atom 'a '()) '())]
-       [skeleton-lv-2-1 (node (abstract-atom 'b '()) (list skeleton-lv-3-1))]
-       [skeleton-lv-2-2 (node (abstract-atom 'a '()) (list skeleton-lv-3-1 skeleton-lv-3-2))]
-       [skeleton-lv-1 (node (abstract-atom 'a '()) (list skeleton-lv-2-1 skeleton-lv-2-2))])
+         (list level-2))])
   (test-case
    "generational tree for analysis tree a - b,a - b,b,a"
    (check-equal?
     (generational-tree-skeleton (active-branch-info level-1))
-    (list skeleton-lv-1)
+    (list
+     (skeleton-bp
+      (a ()
+         (b ()
+            (b ()))
+         (a ()
+            (b ())
+            (a ())))))
     "check if the skeleton is correct")
-   (let* ([annotated-lv-3-1 (node (atom-with-generation (abstract-atom 'b '()) 1) '())]
-          [annotated-lv-3-2 (node (atom-with-generation (abstract-atom 'b '()) 2) '())]
-          [annotated-lv-3-3 (node (atom-with-generation (abstract-atom 'a '()) 2) '())]
-          [annotated-lv-2-1 (node (atom-with-generation (abstract-atom 'b '()) 1) (list annotated-lv-3-1))]
-          [annotated-lv-2-2 (node (atom-with-generation (abstract-atom 'a '()) 1) (list annotated-lv-3-2 annotated-lv-3-3))]
-          [annotated-lv-1 (node (atom-with-generation (abstract-atom 'a '()) 0) (list annotated-lv-2-1 annotated-lv-2-2))])
-     (begin
-       (check-equal?
-        (annotate-generational-tree skeleton-lv-1 (interpret-abstract-atom "a") 0 2 0)
-        annotated-lv-1
-        "check if annotation for target atom is correct")
-       (check-equal?
-        (generational-trees (active-branch-info level-1))
-        (list annotated-lv-1)
-        "check if analysis without a target atom is correct")))))
+   (check-equal?
+    (generational-trees (active-branch-info level-1))
+    (list
+     (generational-tree-bp
+      (a 0
+         (b 1
+            (b 1))
+         (a 1
+            (b 2)
+            (a 2)))))
+    "check if analysis without a target atom is correct")))
 
-(let* ([a-atom (abstract-atom 'a '())]
-       [b-atom (abstract-atom 'b '())]
-       [nc1 (node b-atom '())]
-       [nc2 (node a-atom '())]
-       [n (node a-atom (list nc1 nc2))])
-  (check-equal? (descendant-renames? n a-atom) #t))
+(check-equal?
+ (descendant-renames?
+  (skeleton-bp
+   (a ()
+      (b ())
+      (a ())))
+  (ad:abstract-atom 'a '()))
+ #t)
 
-(let* ([a-atom (abstract-atom 'a '())]
-       [b-atom (abstract-atom 'b '())]
-       [nc1 (node b-atom '())]
-       [nc2 (node a-atom '())]
-       [n (node b-atom (list nc1 nc2))])
-  (check-equal? (descendant-renames? n a-atom) #t))
+(check-equal?
+ (descendant-renames?
+  (skeleton-bp
+   (b ()
+      (b ())
+      (a ())))
+  (ad:abstract-atom 'a '()))
+ #t)
 
-(let* ([a-atom (abstract-atom 'a '())]
-       [b-atom (abstract-atom 'b '())]
-       [nc1 (node a-atom '())]
-       [nc2 (node a-atom '())]
-       [n (node b-atom (list nc1 nc2))])
-  (check-equal? (descendant-renames? n b-atom) #f))
+(check-equal?
+ (descendant-renames?
+  (skeleton-bp
+   (b ()
+      (a ())
+      (a ())))
+  (ad:abstract-atom 'b '()))
+ #f)
 
-(let* ([a-atom (abstract-atom 'a '())]
-       [b-atom (abstract-atom 'b '())]
-       [c-atom (abstract-atom 'c '())]
-       [nc1 (node b-atom '())]
-       [ncc (node a-atom '())]
-       [nc2 (node c-atom (list ncc))]
-       [n (node a-atom (list nc1 nc2))])
-  (check-equal? (descendant-renames? n a-atom) #t))
+(check-equal?
+ (descendant-renames?
+  (skeleton-bp
+   (a ()
+      (b ())
+      (c ()
+         (a ()))))
+  (ad:abstract-atom 'a '()))
+ #t)
+
+(test-case
+ "annotating skeletons"
+ (check-equal?
+  (annotate-generational-tree
+   (skeleton-bp
+    (collect ((g 1) (a 1))
+             (collect ((g 2) (a 2))
+                      (collect ((g 4) (a 4))
+                               (collect ((g 6) (a 6)))
+                               (collect ((g 7) (a 7)))
+                               (append ((a 6) (a 7) (a 4))))
+                      (collect ((g 5) (a 5))
+                               (collect ((g 5) (a 5))))
+                      (append ((a 4) (a 5) (a 2))
+                              (append ((a 4) (a 5) (a 2)))))
+             (collect ((g 3) (a 3))
+                      (collect ((g 3) (a 3))
+                               (collect ((g 3) (a 3)))))
+             (append ((a 2) (a 3) (a 1))
+                     (append ((a 2) (a 3) (a 1))
+                             (append ((a 2) (a 3) (a 1)))))))
+   (ad:abstract-atom 'collect (list (ad:g 2) (ad:a 2)))
+   0
+   2
+   0)
+  (generational-tree-bp
+   (collect ((g 1) (a 1))
+            0
+            (collect ((g 2) (a 2))
+                     0
+                     (collect ((g 4) (a 4))
+                              1
+                              (collect ((g 6) (a 6)) 2)
+                              (collect ((g 7) (a 7)) 2)
+                              (append ((a 6) (a 7) (a 4)) 2))
+                     (collect ((g 5) (a 5))
+                              1
+                              (collect ((g 5) (a 5)) 1))
+                     (append ((a 4) (a 5) (a 2))
+                             1
+                             (append ((a 4) (a 5) (a 2)) 1)))
+            (collect ((g 3) (a 3))
+                     0
+                     (collect ((g 3) (a 3))
+                              0
+                              (collect ((g 3) (a 3)) 0)))
+            (append ((a 2) (a 3) (a 1))
+                    0
+                    (append ((a 2) (a 3) (a 1))
+                            0
+                            (append ((a 2) (a 3) (a 1)) 0)))))
+  "generational increase begins with first *literal* occurrence of dp"))
