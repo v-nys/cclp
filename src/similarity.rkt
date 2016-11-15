@@ -28,12 +28,6 @@
 (struct identity-constraint (arg-number))
 (provide (struct-out identity-constraint))
 
-(struct wrapper-constraint (symbol arg-number))
-(provide (struct-out wrapper-constraint))
-
-(struct unwrapper-constraint (symbol arg-number))
-(provide (struct-out unwrapper-constraint))
-
 (require "abstract-multi-domain.rkt")
 (require "abstract-analysis.rkt")
 (require "generational-tree.rkt")
@@ -174,8 +168,46 @@
         (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth))
       #f))
 
-(define (extract-f-mapping ls subtree-and-depth) #f)
-(provide extract-f-mapping)
+(define
+  (extract-f-mapping ls subtree-and-depth)
+  ; TODO implement
+  ; consider the first two generations in the subtree
+  ; e.g. filter(g1,a1,a2), filter(g2,a2,a3)
+  ; for each argument in the second generation (so, a map operation...):
+  ; if it is a raw abstract variable and it does not occur in generation 1, it is fresh (wrt to the previous generation)
+  ; if it is a raw abstract variable and it occurs in position(s) n_i in generation 1, there is an identity constraint
+  ; if it is a wrapped abstract variable, it should not occur in the preceding generation
+  ; (due to the assumption that the number of abstract atoms is finite, enforced by depth-k abstraction)
+  #f
+  )
+
+(provide
+ (proc-doc/names
+  extract-f-mapping
+  (-> exact-nonnegative-integer? (cons/c node? exact-nonnegative-integer?) list?)
+  (ls subtree-and-depth)
+  @{Extract a mapping describing the relation between subsequent conjunctions of different
+ generations with respect to the genealogical tree, after the selected atom.
+ The argument @racket[ls] represents the level of the top-level genealogical tree to which the
+ selected atom belongs.
+ The argument @racket[subtree-and-depth] is a pair consisting of a subtree with a target atom
+ at its root, and the depth at which this subtree is found in the top-level genealogical tree.}))
+
+(define
+  (extract-g-mapping ls subtree-and-depth)
+  #f)
+
+(provide
+ (proc-doc/names
+  extract-g-mapping
+  (-> exact-nonnegative-integer? (cons/c node? exact-nonnegative-integer?) list?)
+  (ls subtree-and-depth)
+  @{Extract a mapping describing the relation between subsequent conjunctions of different
+ generations with respect to the genealogical tree, before the selected atom.
+ The argument @racket[ls] represents the level of the top-level genealogical tree to which the
+ selected atom belongs.
+ The argument @racket[subtree-and-depth] is a pair consisting of a subtree with a target atom
+ at its root, and the depth at which this subtree is found in the top-level genealogical tree.}))
 
 (define (invertible-function-g-applies) #f)
 

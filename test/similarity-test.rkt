@@ -163,9 +163,9 @@
 ; TODO still need a test for "wrap"
 ; does queens have this? maybe some other problem?
 (test-case
- "extracting the invertible function f from two related conjunctions"
+ "extracting the invertible function g from two related conjunctions"
  (check-equal?
-  (extract-f-mapping
+  (extract-g-mapping
    3
    (cons
     (generational-tree-bp
@@ -218,7 +218,12 @@
          ((a 2) (a 3) (a 1))
          1)))))
     0))
-  (list 'fresh (identity-constraint 3) 'fresh)))
+  ; note: fresh is w.r.t. previous generation
+  ; argument number is flattened
+  ; is this sufficiently accurate?
+  ; what happens when there is a wrap constraint and subsequent conjunctions are not renamings?
+  ; this cannot happen under depth-k abstraction - so subsequent conjunctions have to be renamings
+  (list 'fresh 'fresh (identity-constraint 5) 'fresh 'fresh)))
 
 (test-case
  "inverting a function which expresses the relation between two conjunctions"
