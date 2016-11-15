@@ -26,6 +26,9 @@
 (require racket-tree-utils/src/tree)
 (require racket-list-utils/utils)
 
+(struct identity-constraint (arg-number))
+(provide (struct-out identity-constraint))
+
 (require "abstract-multi-domain.rkt")
 (require "abstract-analysis.rkt")
 (require "generational-tree.rkt")
@@ -69,29 +72,77 @@
  which has nodes with all indices in @racket[indices], in the correct order.}))
 
 (define (dp-zero-subtree-depth-complement-at-level dp gen-tree lvl)
-  (define gen-tree-lvl (horizontal-level gen-tree lvl #t))
+  (define gen-tree-lvl-subforest (horizontal-level gen-tree lvl #t))
   (define
-    lvl-splits
-    (all-splits-on
-     (λ (st) (equal? (node-label st) (atom-with-generation dp 0)))
-     gen-tree-lvl))
-  (map
-   (λ (a-split) (match a-split [(list left target right) (list target lvl (append left right))]))
-   lvl-splits))
-
-(define (find-dp-zero-subtrees-depths-complements dp gen-tree)
-  (define gt-depth (node-depth gen-tree))
-  (define levels (range 0 (+ gt-depth 1)))
-  (apply append (map (curry dp-zero-subtree-depth-complement-at-level dp gen-tree) levels)))
+    dp-zero-index
+    (findf-index
+     (λ (t) (equal? (node-label t) (atom-with-generation dp 0)))
+     gen-tree-lvl-subforest))
+  (if
+   dp-zero-index
+   (list
+    (list-ref gen-tree-lvl-subforest dp-zero-index)
+    lvl
+    (append
+     (take gen-tree-lvl-subforest dp-zero-index)
+     (drop gen-tree-lvl-subforest (+ 1 dp-zero-index))))
+   #f))
 (provide
  (proc-doc/names
-  find-dp-zero-subtrees-depths-complements
-  (-> abstract-atom? node? list?)
+  dp-zero-subtree-depth-complement-at-level
+  (-> abstract-atom? node? exact-nonnegative-integer? (or/c #f list?))
+  (dp generational-tree lvl)
+  @{Find a subtree of the generational tree @racket[generational-tree] with an exact occurrence
+ of abstract atom @racket[dp] of generation 0 at its root at the level @racket[lvl].
+ Additionally, track the level and find the complement at this level.
+ This assumes there is only one exact occurrence of @racket[dp].}))
+
+(define (find-dp-zero-subtree-depth-complement dp gen-tree)
+  (define gt-depth (node-depth gen-tree))
+  (define levels (range 0 (+ gt-depth 1)))
+  (foldl
+   (λ (l acc) (if acc acc (dp-zero-subtree-depth-complement-at-level dp gen-tree l)))
+   #f
+   levels))
+(provide
+ (proc-doc/names
+  find-dp-zero-subtree-depth-complement
+  (-> abstract-atom? node? (or/c #f list?))
   (dp generational-tree)
-  @{Find subtrees of the generational tree @racket[generational-tree] with an exact occurrence
- of abstract atom @racket[dp] of generation 0 at their root, along with the depth of this root and
- with subtrees at the same level in @racket[generational-tree].
- Note that the latter may theoretically contain a subtree with an exact occurrence, as well.}))
+  @{Find a subtree of the generational tree @racket[generational-tree] with an exact occurrence
+ of abstract atom @racket[dp] of generation 0 at its root, along with the depth of this root and
+ with subtrees at the same level in @racket[generational-tree], i.e. the complement at that level.
+ This assumes that there is only one exact occurrence of @racket[dp].
+ In case there is no exact occurrence of @racket[dp], the result is @racket[#f].}))
+
+(define (context-and-ends-match subset-s1-with-gen subset-s2-with-gen dp-complement depth ls1 ls2)
+  (define big-l1 (max (map atom-with-generation-generation subset-s1-with-gen)))
+  ; see paper for cryptic names
+  ; TODO: cut down on nearly identical code using define-values or something?
+  (define ls1-1-dp
+    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s1-with-gen))
+  (define ls1-L-dp
+    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l1)) subset-s1-with-gen))
+  (define full-complement-at-ls1
+    (apply
+     append
+     (map
+      (compose atom-with-generation-atom (λ (comp) (horizontal-level comp (- ls1 depth))))
+      dp-complement)))
+  (define big-l2 (max (map atom-with-generation-generation subset-s2-with-gen)))
+  (define ls2-1-dp
+    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s2-with-gen))
+  (define ls2-L-dp
+    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l2)) subset-s2-with-gen))
+  (define full-complement-at-ls2
+    (apply
+     append
+     (map
+      (compose atom-with-generation-atom (λ (comp) (horizontal-level comp (- ls2 depth))))
+      dp-complement)))
+  (renames?
+   (append ls1-1-dp ls1-L-dp full-complement-at-ls1)
+   (append ls1-1-dp ls1-L-dp full-complement-at-ls1)))
 
 ; subtrees: dp subtree with generation 0 at given depth
 (define (checks-involving-generations ls1 ls2 gs1 gs2 subtree-depth-complement)
@@ -102,8 +153,71 @@
        (define subset-s1-with-gen (horizontal-level subtree (- ls1 depth)))
        (define subset-s2-with-gen (horizontal-level subtree (- ls2 depth)))
        (and
-         (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
-         #f))]))
+        (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
+        (context-and-ends-match subset-s1-with-gen subset-s2-with-gen complement depth ls1 ls2)
+        (invertible-function-f-applies gs1 gs2)
+        (invertible-function-g-applies)
+        (last-gen-split)))]))
+
+(define (invertible-function-f-applies ls1 ls2 gs1 gs2 subtree-and-depth)
+  (or (< gs1 3)
+      ; next step: get the mapping between gen one and two, see if it is systematic
+      ; return that function as a result of this call -> need it for last-gen-split
+      ; define it before the 'and'
+      ; just test for truthiness before last-gen-split
+      (let ([f-mapping (extract-f-mapping ls1 subtree-and-depth)])
+        (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth))
+      #f))
+
+(define
+  (extract-f-mapping ls subtree-and-depth)
+  ; TODO implement
+  ; consider the first two generations in the subtree
+  ; e.g. filter(g1,a1,a2), filter(g2,a2,a3)
+  ; for each argument in the second generation (so, a map operation...):
+  ; if it is a raw abstract variable and it does not occur in generation 1, it is fresh (wrt to the previous generation)
+  ; if it is a raw abstract variable and it occurs in position(s) n_i in generation 1, there is an identity constraint
+  ; if it is a wrapped abstract variable, it should not occur in the preceding generation
+  ; (due to the assumption that the number of abstract atoms is finite, enforced by depth-k abstraction)
+  #f
+  )
+
+(provide
+ (proc-doc/names
+  extract-f-mapping
+  (-> exact-nonnegative-integer? (cons/c node? exact-nonnegative-integer?) list?)
+  (ls subtree-and-depth)
+  @{Extract a mapping describing the relation between subsequent conjunctions of different
+ generations with respect to the genealogical tree, after the selected atom.
+ The argument @racket[ls] represents the level of the top-level genealogical tree to which the
+ selected atom belongs.
+ The argument @racket[subtree-and-depth] is a pair consisting of a subtree with a target atom
+ at its root, and the depth at which this subtree is found in the top-level genealogical tree.}))
+
+(define
+  (extract-g-mapping ls subtree-and-depth)
+  #f)
+
+(provide
+ (proc-doc/names
+  extract-g-mapping
+  (-> exact-nonnegative-integer? (cons/c node? exact-nonnegative-integer?) list?)
+  (ls subtree-and-depth)
+  @{Extract a mapping describing the relation between subsequent conjunctions of different
+ generations with respect to the genealogical tree, before the selected atom.
+ The argument @racket[ls] represents the level of the top-level genealogical tree to which the
+ selected atom belongs.
+ The argument @racket[subtree-and-depth] is a pair consisting of a subtree with a target atom
+ at its root, and the depth at which this subtree is found in the top-level genealogical tree.}))
+
+(define (invertible-function-g-applies) #f)
+
+(define (last-gen-split) #f)
+
+(define (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth) #f)
+
+(define (invert-relation r) (reverse r))
+(provide invert-relation)
 
 (define (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
   (define
@@ -137,16 +251,16 @@
     (λ (dp gt)
       (let* ([annotated-s1 (horizontal-level gt ls1)]
              [annotated-s2 (horizontal-level gt ls2)]
-             [dp-zero-subtrees-depths-complements (find-dp-zero-subtrees-depths-complements dp gt)]
+             [dp-zero-subtree-depth-complement
+              (find-dp-zero-subtree-depth-complement dp gt)]
              [gs1
               (atom-with-generation-generation
                (list-ref annotated-s1 (some-v (label-selection (list-ref branch ls1)))))]
              [gs2
               (atom-with-generation-generation
                (list-ref annotated-s2 (some-v (label-selection (list-ref branch ls2)))))])
-        (ormap
-          (curry checks-involving-generations ls1 ls2 gs1 gs2)
-          dp-zero-subtrees-depths-complements)))
+        ; again: assumes that there is only one literal occurrence of dp
+        (checks-involving-generations ls1 ls2 gs1 gs2 dp-zero-subtree-depth-complement)))
     candidate-targets
     all-generational-trees)))
 (provide
