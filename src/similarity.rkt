@@ -25,6 +25,15 @@
 (require (only-in racket-list-utils/utils findf-index))
 (require racket-tree-utils/src/tree)
 
+(struct identity-constraint (arg-number))
+(provide (struct-out identity-constraint))
+
+(struct wrapper-constraint (symbol arg-number))
+(provide (struct-out wrapper-constraint))
+
+(struct unwrapper-constraint (symbol arg-number))
+(provide (struct-out unwrapper-constraint))
+
 (require "abstract-multi-domain.rkt")
 (require "abstract-analysis.rkt")
 (require "generational-tree.rkt")
@@ -151,21 +160,31 @@
        (and
         (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
         (context-and-ends-match subset-s1-with-gen subset-s2-with-gen complement depth ls1 ls2)
-        (invertible-function-f gs1 gs2)
-        (invertible-function-g)
+        (invertible-function-f-applies gs1 gs2)
+        (invertible-function-g-applies)
         (last-gen-split)))]))
 
-(define (invertible-function-f gs1 gs2)
+(define (invertible-function-f-applies ls1 ls2 gs1 gs2 subtree-and-depth)
   (or (< gs1 3)
       ; next step: get the mapping between gen one and two, see if it is systematic
       ; return that function as a result of this call -> need it for last-gen-split
       ; define it before the 'and'
       ; just test for truthiness before last-gen-split
+      (let ([f-mapping (extract-f-mapping ls1 subtree-and-depth)])
+        (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth))
       #f))
 
-(define (invertible-function-g) #f)
+(define (extract-f-mapping ls subtree-and-depth) #f)
+(provide extract-f-mapping)
+
+(define (invertible-function-g-applies) #f)
 
 (define (last-gen-split) #f)
+
+(define (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth) #f)
+
+(define (invert-relation r) (reverse r))
+(provide invert-relation)
 
 (define (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
   (define

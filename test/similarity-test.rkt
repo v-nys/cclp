@@ -26,25 +26,40 @@
 
 (require racket-tree-utils/src/tree)
 
-(require "../src/abstract-multi-domain.rkt")
+(require (prefix-in ad: "../src/abstract-multi-domain.rkt"))
 (require "../src/abstract-analysis.rkt")
 (require "../src/cclp-interpreter.rkt")
 (require "../src/generational-tree.rkt")
 (require "../src/similarity.rkt")
 
-; makes defining non-degenerated trees (with atoms without args) much easier
 (define-syntax (generational-tree-bp stx)
   (syntax-case stx ()
+    ; we often don't need args for the tests and they involve more boilerplate, so there are two patterns
+    [(_ (SYM (ARG ...) GEN TREE ...))
+     #'(node
+        (atom-with-generation (ad:abstract-atom 'SYM (list (generational-atom-arg-bp ARG) ...)) GEN)
+        (list (generational-tree-bp TREE) ...))]
     [(_ (SYM GEN TREE ...))
      #'(node
-        (atom-with-generation (abstract-atom 'SYM '()) GEN)
+        (atom-with-generation (ad:abstract-atom 'SYM '()) GEN)
         (list (generational-tree-bp TREE) ...))]))
+
+(define-syntax (generational-atom-arg-bp stx)
+  (syntax-case stx (a g)
+    [(_ (a IDX))
+     #'(ad:a IDX)]
+    [(_ (g IDX))
+     #'(ad:g IDX)]
+    [(_ SYM)
+     #'(ad:abstract-function 'SYM '())]
+    [(_ (SYM ARG ...))
+     #'(ad:abstract-function 'SYM (list (generational-atom-arg-bp ARG) ...))]))
 
 (test-case
  "finding level-0 instances of a target, and their complement, at a particular level"
  (check-equal?
   (dp-zero-subtree-depth-complement-at-level
-   (abstract-atom 'dp '())
+   (ad:abstract-atom 'dp '())
    (generational-tree-bp
     (a 0
        (dp 0
@@ -74,7 +89,7 @@
  "finding subtrees which begin with a particular atom, as well as their depth and complement"
  (check-equal?
   (find-dp-zero-subtree-depth-complement
-   (abstract-atom 'dp '())
+   (ad:abstract-atom 'dp '())
    (generational-tree-bp
     (a 0
        (dp 0
@@ -103,27 +118,27 @@
             (g 1)))))))
  (check-equal?
   (find-dp-zero-subtree-depth-complement
-   (abstract-atom 'dp '())
+   (ad:abstract-atom 'dp '())
    (generational-tree-bp
     (dp 0
         (a 1)
         (b 1))))
   (list
    (generational-tree-bp
-     (dp 0
-         (a 1)
-         (b 1)))
-    0
-    (list)))
+    (dp 0
+        (a 1)
+        (b 1)))
+   0
+   (list)))
  (check-equal?
   (find-dp-zero-subtree-depth-complement
-   (abstract-atom 'dp '())
+   (ad:abstract-atom 'dp '())
    (generational-tree-bp
     (a 0)))
   #f)
  (check-equal?
   (find-dp-zero-subtree-depth-complement
-   (abstract-atom 'dp '())
+   (ad:abstract-atom 'dp '())
    (generational-tree-bp
     (a 0
        (b 0)
@@ -145,3 +160,39 @@
    (shortest-branch-with-indices (list 1 3) top-right)
    (list top-right-contents near-top-right-contents near-bottom-right-contents)))
 
+; TODO still need a test for "wrap"
+; does queens have this? maybe some other problem?
+(test-case
+ "extracting the invertible function f from two related conjunctions"
+ (check-equal?
+  (extract-f-mapping
+   9
+   (cons
+    ; TODO need to complete the tree
+    (generational-tree-bp
+     (sift
+      ((cons (g 1) (a 1)) (a 2))
+      0
+      (filter
+       ()
+       1)
+      (sift
+       ()
+       1)))
+    0))
+  (list 'fresh (identity-constraint 3) 'fresh)))
+
+(test-case
+ "inverting a function which expresses the relation between two conjunctions"
+ (check-equal?
+  (invert-relation (list 'fresh (identity-constraint 3) 'fresh))
+  (list 'fresh 'fresh (identity-constraint 2)))
+ (check-equal?
+  (invert-relation (list 'fresh (wrapper-constraint 'successor 3) 'fresh))
+  (list 'fresh 'fresh (unwrapper-constraint 'successor 2))))
+
+(test-case
+ "checking whether f expresses exactly the desired mapping, across all related conjunctions"
+ (check-equal?
+  #t
+  #f))
