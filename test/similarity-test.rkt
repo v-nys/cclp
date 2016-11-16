@@ -76,9 +76,6 @@
            (g 1))
        (b 0
           (c 0)
-          ; note: this occurrence is ignored
-          ; real trees should only contain one exact instance of dp
-          ; may want to guarantee this later on with UID
           (dp 0
               (f 1)
               (g 1))))))
@@ -136,15 +133,13 @@
         (widening (interpret-abstract-conjunction "a(α1)") #f "test" 1)]
        [top (node top-contents (list bottom-left near-top-right))])
   (check-equal?
-   (shortest-branch-with-indices (list 1 3) top-right)
-   (list top-right-contents near-top-right-contents near-bottom-right-contents)))
+   (shortest-branch-with-indices (list 1 3) top)
+   (list top-contents near-top-right-contents near-bottom-right-contents)))
 
-; TODO still need a test for "wrap"
-; does queens have this? maybe some other problem?
 (test-case
- "extracting the invertible function g from two related conjunctions"
+ "extracting the invertible function f from two related conjunctions"
  (check-equal?
-  (extract-g-mapping
+  (extract-f-mapping
    3
    (cons
     (generational-tree-bp
@@ -197,21 +192,8 @@
          ((a 2) (a 3) (a 1))
          1)))))
     0))
-  ; note: fresh is w.r.t. previous generation
-  ; argument number is flattened
-  ; is this sufficiently accurate?
-  ; what happens when there is a wrap constraint and subsequent conjunctions are not renamings?
-  ; this cannot happen under depth-k abstraction - so subsequent conjunctions have to be renamings
+  ; i.e. 3rd argument of gen i is fifth argument of gen i + 1
   (list 'fresh 'fresh (identity-constraint 5) 'fresh 'fresh)))
-
-(test-case
- "inverting a function which expresses the relation between two conjunctions"
- (check-equal?
-  (invert-relation (list 'fresh (identity-constraint 3) 'fresh))
-  (list 'fresh 'fresh (identity-constraint 2)))
- (check-equal?
-  (invert-relation (list 'fresh (wrapper-constraint 'successor 3) 'fresh))
-  (list 'fresh 'fresh (unwrapper-constraint 'successor 2))))
 
 (test-case
  "checking whether f expresses exactly the desired mapping, across all related conjunctions"

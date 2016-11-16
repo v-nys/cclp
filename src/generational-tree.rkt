@@ -132,9 +132,9 @@
            (list
             (annotate-generational-tree single-elem target-atom generation-acc live-depth (+ depth-acc 1))))]
     [(node atom-label (list-rest h t))
-     ; TODO is >=-extension hier wel beste keuze? misschien renames?...
-     ;zal eerst bekijken wat voorbeelden opleveren, dan theorie afwerken
-     #:when (and (>=-extension target-atom atom-label)
+     #:when (and (or (equal? target-atom atom-label)
+                     (and (renames? target-atom atom-label)
+                          (> generation-acc 0)))
                  (multiple-direct-live-lines? (node atom-label (cons h t)) live-depth depth-acc))
      (node (atom-with-generation atom-label generation-acc)
            (map
@@ -214,7 +214,7 @@
   @{Tests whether @racket[node] has at least two children and whether both children have descendants at depth @racket[live-depth], when @racket[node] is at @racket[current-depth].}))
 
 (define (can-reach-depth? my-node target-depth curr-depth)
-  (cond [(= curr-depth target-depth) #t]
+  (cond [(>= curr-depth target-depth) #t]
         [(null? (node-children my-node)) #f]
         [else
          (ormap

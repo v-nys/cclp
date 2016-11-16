@@ -20,10 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
+#lang at-exp racket
 (require "abstract-multi-domain.rkt")
 (require "abstract-knowledge.rkt")
 (require "data-utils.rkt")
+
+(require scribble/srcdoc)
+(require (for-doc scribble/manual))
 
 (define (assemble-var-indices right-variable-type? abstract-data)
   (cond [(abstract-variable? abstract-data)
@@ -79,3 +82,18 @@
         [(full-evaluation? abstraction)
          (maximum-var-index (list (full-evaluation-input-pattern abstraction) (full-evaluation-output-pattern abstraction)) right-variable-type?)]))
 (provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
+
+(define (contains-subterm? abstraction subterm)
+  (match abstraction
+    [(list) #f]
+    [(list-rest h t) (ormap (λ (elem) (contains-subterm? elem subterm)) (cons h t))]
+    [(abstract-atom sym args) (ormap (λ (arg) (contains-subterm? arg subterm)) args)]
+    [(abstract-function sym args)
+     (or (equal? abstraction subterm) (ormap (λ (arg) (contains-subterm? arg subterm)) args))]
+    [other (equal? other subterm)]))
+(provide
+ (proc-doc/names
+  contains-subterm?
+  (-> abstract-domain-elem? abstract-term? boolean?)
+  (abstraction subterm)
+  @{Checks whether @racket[subterm] occurs anywhere in @racket[abstraction].}))

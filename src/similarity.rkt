@@ -26,10 +26,11 @@
 (require racket-tree-utils/src/tree)
 (require racket-list-utils/utils)
 
-(struct identity-constraint (arg-number))
+(struct identity-constraint (arg-number) #:transparent)
 (provide (struct-out identity-constraint))
 
 (require "abstract-multi-domain.rkt")
+(require "abstraction-inspection-utils.rkt")
 (require "abstract-analysis.rkt")
 (require "generational-tree.rkt")
 (require (only-in "abstract-domain-ordering.rkt" renames?))
@@ -156,32 +157,19 @@
         (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
         (context-and-ends-match subset-s1-with-gen subset-s2-with-gen complement depth ls1 ls2)
         (invertible-function-f-applies gs1 gs2)
-        (invertible-function-g-applies)
-        (last-gen-split)))]))
+        (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))
+        (last-gen-renaming) ; replaces last-gen-split (that is too strict and excludes 'intermediate' atoms in last gen)
+        ))]))
+
+(define last-gen-renaming #f)
 
 (define (invertible-function-f-applies ls1 ls2 gs1 gs2 subtree-and-depth)
   (or (< gs1 3)
-      ; next step: get the mapping between gen one and two, see if it is systematic
-      ; return that function as a result of this call -> need it for last-gen-split
-      ; define it before the 'and'
-      ; just test for truthiness before last-gen-split
       (let ([f-mapping (extract-f-mapping ls1 subtree-and-depth)])
-        (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth))
-      #f))
+        (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth))))
 
-(define
-  (extract-f-mapping ls subtree-and-depth)
-  ; TODO implement
-  ; consider the first two generations in the subtree
-  ; e.g. filter(g1,a1,a2), filter(g2,a2,a3)
-  ; for each argument in the second generation (so, a map operation...):
-  ; if it is a raw abstract variable and it does not occur in generation 1, it is fresh (wrt to the previous generation)
-  ; if it is a raw abstract variable and it occurs in position(s) n_i in generation 1, there is an identity constraint
-  ; if it is a wrapped abstract variable, it should not occur in the preceding generation
-  ; (due to the assumption that the number of abstract atoms is finite, enforced by depth-k abstraction)
-  #f
-  )
-
+(define (extract-f-mapping ls subtree-and-depth)
+  (subsequent-gen-mapping ls subtree-and-depth 1))
 (provide
  (proc-doc/names
   extract-f-mapping
@@ -194,30 +182,93 @@
  The argument @racket[subtree-and-depth] is a pair consisting of a subtree with a target atom
  at its root, and the depth at which this subtree is found in the top-level genealogical tree.}))
 
-(define
-  (extract-g-mapping ls subtree-and-depth)
-  #f)
+(define (subsequent-gen-mapping ls subtree-and-depth i)
+  (define (atoms-of-generation gen)
+    (compose
+     (curry map atom-with-generation-atom)
+     (curry filter (compose (curry equal? gen) atom-with-generation-generation))))
+  (define subtree (car subtree-and-depth))
+  (define horizontal-reading (horizontal-level subtree (- ls (cdr subtree-and-depth))))
+  (define gen-i-plus-one ((atoms-of-generation (+ i 1)) horizontal-reading))
+  (define gen-i ((atoms-of-generation i) horizontal-reading))
+  (define gen-i-plus-one-args (apply append (map abstract-atom-args gen-i-plus-one)))
+  (define gen-i-args (apply append (map abstract-atom-args gen-i)))
+  (map (λ (x) (if (and (abstract-variable? x) (findf-index (λ (pa) (equal? x pa)) gen-i-plus-one-args)) (identity-constraint (+ 1 (findf-index (λ (pa) (equal? x pa)) gen-i-plus-one-args))) 'fresh)) gen-i-args))
 
+(define (extract-g-mapping ls subtree-and-depth max-gen-1)
+  (subsequent-gen-mapping ls subtree-and-depth (- max-gen-1 2)))
 (provide
  (proc-doc/names
   extract-g-mapping
-  (-> exact-nonnegative-integer? (cons/c node? exact-nonnegative-integer?) list?)
-  (ls subtree-and-depth)
+  (-> exact-nonnegative-integer? (cons/c node? exact-nonnegative-integer?) exact-nonnegative-integer? list?)
+  (ls subtree-and-depth max-gen-1)
   @{Extract a mapping describing the relation between subsequent conjunctions of different
  generations with respect to the genealogical tree, before the selected atom.
+ The mapping describes how each argument of a conjunction of a particular generation is linked
+ to some argument of the next generation.
  The argument @racket[ls] represents the level of the top-level genealogical tree to which the
  selected atom belongs.
  The argument @racket[subtree-and-depth] is a pair consisting of a subtree with a target atom
- at its root, and the depth at which this subtree is found in the top-level genealogical tree.}))
+ at its root, and the depth at which this subtree is found in the top-level genealogical tree.
+ The argument @racket[max-gen-1] gives the maximum generation at level @racket[ls].}))
 
-(define (invertible-function-g-applies) #f)
+(define (invertible-function-g-applies gs1 gs2 ls1 ls2 subtree-and-depth)
+  (define subtree (car subtree-and-depth))
+  (define tree-of-generations (node-map atom-with-generation-generation subtree))
+  (define max-gen-1 (node-max tree-of-generations))
+  (or (> gs1 (- max-gen-1 3))
+      (let ([g-mapping (extract-g-mapping ls1 subtree max-gen-1)])
+        (applies-beyond-gs g-mapping ls1 ls2 gs1 gs2 subtree-and-depth))))
 
-(define (last-gen-split) #f)
+(define (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth)
+  (define subtree (car subtree-and-depth))
+  (define subtree-depth (cdr subtree-and-depth))
+  (define h-level-1 (horizontal-level subtree (- ls1 subtree-depth)))
+  (define h-level-2 (horizontal-level subtree (- ls2 subtree-depth)))
+  (define atoms-gens-level-1
+    (group-by atom-with-generation-generation h-level-1))
+  (define atoms-gens-level-2
+    (group-by atom-with-generation-generation h-level-2))
+  ; indices are slightly different here, everything else is the same
+  (define relevant-groups-level-1
+    (map atom-with-generation-atom
+         (filter
+          (λ (a-g)
+            (and (>= (atom-with-generation-generation a-g) 1)
+                 (< (atom-with-generation-generation a-g) gs1)))
+          atoms-gens-level-1)))
+  (define relevant-groups-level-2
+    (map atom-with-generation-atom
+         (filter
+          (λ (a-g)
+            (and (>= (atom-with-generation-generation a-g) 1)
+                 (< (atom-with-generation-generation a-g) gs1)))
+          atoms-gens-level-2)))
+  (and (andmap
+        (curry mapping-applies f-mapping)
+        (drop-right relevant-groups-level-1 1)
+        (drop relevant-groups-level-1 1))
+       (andmap
+        (curry mapping-applies f-mapping)
+        (drop-right relevant-groups-level-2 1)
+        (drop relevant-groups-level-2 1))))
 
-(define (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth) #f)
+(define (mapping-applies mapping gen-i gen-i-plus-one)
+  (define gen-i-args (apply append (map abstract-atom-args gen-i)))
+  (define gen-i-plus-one-args (apply append (map abstract-atom-args gen-i-plus-one)))
+  (and (renames? gen-i gen-i-plus-one)
+       (andmap (λ (constraint idx)
+                 (cond [(equal? constraint 'fresh)
+                        ((compose not contains-subterm?)
+                         gen-i-plus-one
+                         (list-ref gen-i-args (- idx 1)))]
+                       [(identity-constraint? constraint)
+                        (equal? (list-ref gen-i-plus-one-args (- (identity-constraint-arg-number) 1))
+                                (list-ref gen-i-args (- idx 1)))]))
+               mapping
+               (range 1 (length mapping)))))
 
-(define (invert-relation r) (reverse r))
-(provide invert-relation)
+(define (applies-beyond-gs g-mapping ls1 ls2 gs1 gs2 subtree-and-depth) #f)
 
 (define (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
   (define
@@ -259,7 +310,6 @@
              [gs2
               (atom-with-generation-generation
                (list-ref annotated-s2 (some-v (label-selection (list-ref branch ls2)))))])
-        ; again: assumes that there is only one literal occurrence of dp
         (checks-involving-generations ls1 ls2 gs1 gs2 dp-zero-subtree-depth-complement)))
     candidate-targets
     all-generational-trees)))

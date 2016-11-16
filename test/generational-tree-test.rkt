@@ -241,7 +241,7 @@
                              (append ((a 2) (a 3) (a 1)))))))
    (ad:abstract-atom 'collect (list (ad:g 2) (ad:a 2)))
    0
-   2
+   3
    0)
   (generational-tree-bp
    (collect ((g 1) (a 1))
