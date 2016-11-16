@@ -332,3 +332,9 @@
          (append ((a 2) (a 9) (a 1)) 1))))))
     0))
   #t))
+
+(test-case
+ "checking for correspondence between generations around and including selected one"
+ (check-equal?
+  (three-generation-correspondence 4 5 horizontal-level-4 horizontal-level-5)
+  #t))
