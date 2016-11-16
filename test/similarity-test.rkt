@@ -198,5 +198,137 @@
 (test-case
  "checking whether f expresses exactly the desired mapping, across all related conjunctions"
  (check-equal?
-  #t
-  #f))
+  (invertible-function-f-applies
+   3
+   4
+   3
+   4
+   (cons
+    (generational-tree-bp
+     (collect
+      ((g 1) (a 1))
+      0
+      (collect
+       ((g 2) (a 2))
+       1
+       (collect
+        ((g 3) (a 3))
+        2
+        (collect
+         ((g 4) (a 4))
+         3
+         (collect ((g 5) (a 5)) 4)
+         (collect ((g 6) (a 6)) 4)
+         (append ((a 5) (a 6) (a 4)) 4))
+        (collect
+         ((g 7) (a 7))
+         3
+         (collect ((g 7) (a 7)) 3))
+        (append
+         ((a 4) (a 7) (a 3))
+         3
+         (append ((a 4) (a 7) (a 3)) 3)))
+       (collect
+        ((g 8) (a 8))
+        2
+        (collect
+         ((g 8) (a 8))
+         2
+         (collect ((g 8) (a 8)) 2)))
+       (append
+        ((a 3) (a 8) (a 2))
+        2
+        (append
+         ((a 3) (a 8) (a 2))
+         2
+         (append ((a 3) (a 8) (a 2)) 2))))
+      (collect
+       ((g 9) (a 9))
+       1
+       (collect
+        ((g 9) (a 9))
+        1
+        (collect
+         ((g 9) (a 9))
+         1
+         (collect ((g 9) (a 9)) 1))))
+      (append
+       ((a 2) (a 9) (a 1))
+       1
+       (append
+        ((a 2) (a 9) (a 1))
+        1
+        (append
+         ((a 2) (a 9) (a 1))
+         1
+         (append ((a 2) (a 9) (a 1)) 1))))))
+    0))
+  #t)
+ (check-equal?
+  (invertible-function-f-applies
+   3
+   4
+   3
+   4
+   (cons
+    (generational-tree-bp
+     (collect
+      ((g 1) (a 1))
+      0
+      (collect
+       ((g 2) (a 2))
+       1
+       (collect
+        ((g 3) (a 3))
+        2
+        (collect
+         ((g 4) (a 4))
+         3
+         (collect ((g 5) (a 5)) 4)
+         (collect ((g 6) (a 6)) 4)
+         (append ((a 5) (a 6) (a 4)) 4))
+        (collect
+         ((g 7) (a 7))
+         3
+         (collect ((g 7) (a 7)) 3))
+        (append
+         ((a 4) (a 7) (a 3))
+         3
+         (append ((a 4) (a 7) (a 3)) 3)))
+       (collect
+        ((g 8) (a 8))
+        2
+        (collect
+         ((g 8) (a 8))
+         2
+         (collect ((g 8) (a 8)) 2)))
+       (append
+        ; not properly aliased with gen 3
+        ((a 1000) (a 8) (a 2))
+        2
+        (append
+         ((a 3) (a 8) (a 2))
+         2
+         (append ((a 3) (a 8) (a 2)) 2))))
+      (collect
+       ((g 9) (a 9))
+       1
+       (collect
+        ((g 9) (a 9))
+        1
+        (collect
+         ((g 9) (a 9))
+         1
+         (collect ((g 9) (a 9)) 1))))
+      (append
+       ((a 2) (a 9) (a 1))
+       1
+       (append
+        ((a 2) (a 9) (a 1))
+        1
+        (append
+         ((a 2) (a 9) (a 1))
+         1
+         (append ((a 2) (a 9) (a 1)) 1))))))
+    0))
+  #t))

@@ -48,3 +48,8 @@
   (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
                    (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
  (set 1 2 3 4))
+
+(check-equal?
+ (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 7)) #t)
+(check-equal?
+ (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f)

@@ -117,7 +117,7 @@
  In case there is no exact occurrence of @racket[dp], the result is @racket[#f].}))
 
 (define (context-and-ends-match subset-s1-with-gen subset-s2-with-gen dp-complement depth ls1 ls2)
-  (define big-l1 (max (map atom-with-generation-generation subset-s1-with-gen)))
+  (define big-l1 (apply max (map atom-with-generation-generation subset-s1-with-gen)))
   ; see paper for cryptic names
   ; TODO: cut down on nearly identical code using define-values or something?
   (define ls1-1-dp
@@ -130,7 +130,7 @@
      (map
       (compose atom-with-generation-atom (λ (comp) (horizontal-level comp (- ls1 depth))))
       dp-complement)))
-  (define big-l2 (max (map atom-with-generation-generation subset-s2-with-gen)))
+  (define big-l2 (apply max (map atom-with-generation-generation subset-s2-with-gen)))
   (define ls2-1-dp
     (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s2-with-gen))
   (define ls2-L-dp
@@ -154,19 +154,25 @@
        (define subset-s1-with-gen (horizontal-level subtree (- ls1 depth)))
        (define subset-s2-with-gen (horizontal-level subtree (- ls2 depth)))
        (and
+        ; TODO test each of these!
         (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
         (context-and-ends-match subset-s1-with-gen subset-s2-with-gen complement depth ls1 ls2)
-        (invertible-function-f-applies gs1 gs2)
+        (invertible-function-f-applies gs1 gs2 ls1 ls2 (cons subtree depth))
         (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))
-        (last-gen-renaming) ; replaces last-gen-split (that is too strict and excludes 'intermediate' atoms in last gen)
-        ))]))
+        (last-gen-renaming ls1 ls2 subtree depth)))]))
 
-(define last-gen-renaming #f)
+(define (last-gen-renaming ls1 ls2 subtree depth)
+  (define max-gen-1 (max-gen subtree (- ls1 depth)))
+  (define max-gen-2 (max-gen subtree (- ls2 depth)))
+  (renames?
+   ((atoms-of-generation max-gen-1) (horizontal-level subtree (- ls1 depth)))
+   ((atoms-of-generation max-gen-2) (horizontal-level subtree (- ls2 depth)))))
 
 (define (invertible-function-f-applies ls1 ls2 gs1 gs2 subtree-and-depth)
   (or (< gs1 3)
       (let ([f-mapping (extract-f-mapping ls1 subtree-and-depth)])
         (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth))))
+(provide invertible-function-f-applies)
 
 (define (extract-f-mapping ls subtree-and-depth)
   (subsequent-gen-mapping ls subtree-and-depth 1))
@@ -182,11 +188,12 @@
  The argument @racket[subtree-and-depth] is a pair consisting of a subtree with a target atom
  at its root, and the depth at which this subtree is found in the top-level genealogical tree.}))
 
+(define (atoms-of-generation gen)
+  (compose
+   (curry map atom-with-generation-atom)
+   (curry filter (compose (curry equal? gen) atom-with-generation-generation))))
+
 (define (subsequent-gen-mapping ls subtree-and-depth i)
-  (define (atoms-of-generation gen)
-    (compose
-     (curry map atom-with-generation-atom)
-     (curry filter (compose (curry equal? gen) atom-with-generation-generation))))
   (define subtree (car subtree-and-depth))
   (define horizontal-reading (horizontal-level subtree (- ls (cdr subtree-and-depth))))
   (define gen-i-plus-one ((atoms-of-generation (+ i 1)) horizontal-reading))
@@ -214,13 +221,15 @@
 
 (define (invertible-function-g-applies gs1 gs2 ls1 ls2 subtree-and-depth)
   (define subtree (car subtree-and-depth))
-  (define tree-of-generations (node-map atom-with-generation-generation subtree))
-  (define max-gen-1 (node-max tree-of-generations))
+  (define max-gen-1 (max-gen subtree (- ls1 (cdr subtree-and-depth))))
   (or (> gs1 (- max-gen-1 3))
       (let ([g-mapping (extract-g-mapping ls1 subtree max-gen-1)])
         (applies-beyond-gs g-mapping ls1 ls2 gs1 gs2 subtree-and-depth))))
 
-(define (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth)
+(define (max-gen gen-tree level)
+  (apply max (horizontal-level (node-map atom-with-generation-generation gen-tree) level)))
+
+(define (applies-in-range mapping ls1 ls2 gs1 gs2 from-start subtree-and-depth)
   (define subtree (car subtree-and-depth))
   (define subtree-depth (cdr subtree-and-depth))
   (define h-level-1 (horizontal-level subtree (- ls1 subtree-depth)))
@@ -229,29 +238,37 @@
     (group-by atom-with-generation-generation h-level-1))
   (define atoms-gens-level-2
     (group-by atom-with-generation-generation h-level-2))
-  ; indices are slightly different here, everything else is the same
+  (define max-gen-1 (max-gen subtree (- ls1 subtree-depth)))
+  (define max-gen-2 (max-gen subtree (- ls2 subtree-depth)))
   (define relevant-groups-level-1
-    (map atom-with-generation-atom
-         (filter
-          (λ (a-g)
-            (and (>= (atom-with-generation-generation a-g) 1)
-                 (< (atom-with-generation-generation a-g) gs1)))
-          atoms-gens-level-1)))
+    (filter
+     (λ (group)
+       (and (>= (atom-with-generation-generation (car group)) (if from-start 1 (+ gs1 1)))
+            (< (atom-with-generation-generation (car group)) (if from-start gs1 (- max-gen-1 1)))))
+     atoms-gens-level-1))
   (define relevant-groups-level-2
-    (map atom-with-generation-atom
-         (filter
-          (λ (a-g)
-            (and (>= (atom-with-generation-generation a-g) 1)
-                 (< (atom-with-generation-generation a-g) gs1)))
-          atoms-gens-level-2)))
+    (filter
+     (λ (group)
+       (and (>= (atom-with-generation-generation (car group)) (if from-start 1 (+ gs2 1)))
+            (< (atom-with-generation-generation (car group)) (if from-start gs2 (- max-gen-2 1)))))
+     atoms-gens-level-2))
   (and (andmap
-        (curry mapping-applies f-mapping)
-        (drop-right relevant-groups-level-1 1)
-        (drop relevant-groups-level-1 1))
+        (curry mapping-applies mapping)
+        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-1 (- gs1 1)))
+        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-1 1)))
        (andmap
-        (curry mapping-applies f-mapping)
-        (drop-right relevant-groups-level-2 1)
-        (drop relevant-groups-level-2 1))))
+        (curry mapping-applies mapping)
+        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-2 (- gs2 1)))
+        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-2 1)))))
+
+(define (drop-gen-group lst gen)
+  (foldr
+   (λ (g acc) (if (equal? (atom-with-generation-generation (car g)) gen) acc (cons g acc)))
+   '()
+   lst))
+
+(define (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth)
+  (applies-in-range f-mapping ls1 ls2 gs1 gs2 #t subtree-and-depth))
 
 (define (mapping-applies mapping gen-i gen-i-plus-one)
   (define gen-i-args (apply append (map abstract-atom-args gen-i)))
@@ -263,12 +280,13 @@
                          gen-i-plus-one
                          (list-ref gen-i-args (- idx 1)))]
                        [(identity-constraint? constraint)
-                        (equal? (list-ref gen-i-plus-one-args (- (identity-constraint-arg-number) 1))
+                        (equal? (list-ref gen-i-plus-one-args (- (identity-constraint-arg-number constraint) 1))
                                 (list-ref gen-i-args (- idx 1)))]))
                mapping
-               (range 1 (length mapping)))))
+               (range 1 (+ (length mapping) 1)))))
 
-(define (applies-beyond-gs g-mapping ls1 ls2 gs1 gs2 subtree-and-depth) #f)
+(define (applies-beyond-gs g-mapping ls1 ls2 gs1 gs2 subtree-and-depth)
+  (applies-in-range g-mapping ls1 ls2 gs1 gs2 #f subtree-and-depth))
 
 (define (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
   (define

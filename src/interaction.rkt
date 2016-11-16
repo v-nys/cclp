@@ -81,9 +81,9 @@
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out)
-       (when
-           ((compose not null?) sub)
-         (begin (display " " out) (print-substitution sub out)))
+;       (when
+;           ((compose not null?) sub)
+;         (begin (display " " out) (print-substitution sub out)))
        )]
     [(cycle i)
      (if use-color
