@@ -225,7 +225,7 @@
   (define subtree (car subtree-and-depth))
   (define max-gen-1 (max-gen subtree (- ls1 (cdr subtree-and-depth))))
   (or (> gs1 (- max-gen-1 3))
-      (let ([g-mapping (extract-g-mapping ls1 subtree max-gen-1)])
+      (let ([g-mapping (extract-g-mapping ls1 subtree-and-depth max-gen-1)])
         (applies-beyond-gs g-mapping ls1 ls2 gs1 gs2 subtree-and-depth))))
 
 (define (max-gen gen-tree level)
@@ -256,12 +256,12 @@
      atoms-gens-level-2))
   (and (andmap
         (curry mapping-applies mapping)
-        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-1 (- gs1 1)))
-        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-1 1)))
+        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-1 (if from-start (- gs1 1) (- max-gen-1 2))))
+        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-1 (if from-start 1 (+ gs1 1)))))
        (andmap
         (curry mapping-applies mapping)
-        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-2 (- gs2 1)))
-        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-2 1)))))
+        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-2 (if from-start (- gs2 1) (- max-gen-2 2))))
+        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-2 (if from-start 1 (+ gs2 1)))))))
 
 (define (drop-gen-group lst gen)
   (foldr
