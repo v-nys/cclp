@@ -232,6 +232,7 @@
   (apply max (horizontal-level (node-map atom-with-generation-generation gen-tree) level)))
 
 (define (applies-in-range mapping ls1 ls2 gs1 gs2 from-start subtree-and-depth)
+  (log-debug "checking whether mapping ~v applies (from start: ~v)" mapping from-start)
   (define subtree (car subtree-and-depth))
   (define subtree-depth (cdr subtree-and-depth))
   (define h-level-1 (horizontal-level subtree (- ls1 subtree-depth)))
@@ -273,9 +274,11 @@
   (applies-in-range f-mapping ls1 ls2 gs1 gs2 #t subtree-and-depth))
 
 (define (mapping-applies mapping gen-i gen-i-plus-one)
+  (log-debug "checking mapping between ~v and ~v" gen-i gen-i-plus-one)
   (define gen-i-args (apply append (map abstract-atom-args gen-i)))
   (define gen-i-plus-one-args (apply append (map abstract-atom-args gen-i-plus-one)))
-  (and (renames? gen-i gen-i-plus-one)
+  (and (equal? (map abstract-atom-symbol gen-i) (map abstract-atom-symbol gen-i-plus-one))
+       (equal? (length gen-i-args) (length gen-i-plus-one-args))
        (andmap (λ (constraint idx)
                  (cond [(equal? constraint 'fresh)
                         ((compose not contains-subterm?)
