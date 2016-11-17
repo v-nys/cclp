@@ -99,50 +99,6 @@
        (when idx (display (format "~v:" idx)))
        (print-conjunction con sel out))]))
 
-(define (candidate-and-predecessors t acc)
-  (match t
-    [(node (tree-label '() _ _ _ _) '()) (cons (none) acc)]
-    [(node 'fail '()) (cons (none) acc)]
-    [(node (cycle _) '()) (cons (none) acc)]
-    [(node (similarity-cycle _) '()) (cons (none) acc)]
-    [(node (widening '() _ _ _) '()) (cons (none) acc)]
-    [(node (tree-label c (none) s r #f) '())
-     (cons (some (node (tree-label c (none) s r #f) '())) acc)]
-    [(node (widening c (none) msg i) '())
-     (cons (some (node (widening c (none) msg i) '())) acc)]
-    ; children but no selection = widening or cycle
-    [(node (tree-label c (none) s r i) (list single-child))
-     (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    [(node (widening c (none) msg i) (list single-child))
-     (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    ; next two cases are basically the same...
-    [(node (tree-label c (some v) _ _ i) children)
-     (foldl
-      (λ (child acc2)
-        (if (some? (car acc2))
-            acc2
-            (candidate-and-predecessors
-             child
-             (cdr acc2))))
-      (cons (none) (cons (cons c i) acc))
-      (node-children t))]
-    [(node (widening c (some v) msg i) children)
-     (foldl
-      (λ (child acc2)
-        (if (some? (car acc2))
-            acc2
-            (candidate-and-predecessors
-             child
-             (cdr acc2))))
-      (cons (none) (cons (cons c i) acc))
-      (node-children t))]))
-(provide
- (proc-doc/names
-  candidate-and-predecessors
-  (-> node? list? (cons/c any/c (listof (cons/c (listof abstract-atom?) exact-positive-integer?))))
-  (tree accumulator)
-  ("Find the next candidate for unfolding and conjunctions which have already been dealt with.")))
-
 (define (resolvent->node res)
   (node
    (tree-label
@@ -183,16 +139,15 @@
  and the top-level tree to which this node belongs, or @racket[#f].}))
 
 (define (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)
-  (define-values (show-top proceed go-back save widen genealogy similarity end)
-    (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "show genealogical analysis" "check S-similarity" "end analysis"))
-  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen genealogy similarity end))
+  (define-values (show-top proceed go-back save widen genealogy end)
+    (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "show genealogical analysis" "end analysis"))
+  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen genealogy end))
   (cond [(equal? choice show-top)
          (begin (newline)
                 (tree-display tree print-tree-label)
                 (newline)
                 (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
         [(equal? choice proceed)
-         ; TODO: don't just check for cycle to a predecessor, but s-similarity as well
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
             (begin (displayln "There are no nodes left to analyze.")
@@ -205,8 +160,15 @@
                       [(widening? candidate-label) widening-conjunction])]
                    [conjunction (conjunction-selector candidate-label)]
                    [more-general-predecessor
-                    (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) preds)])
+                    (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) preds)]
+                   [similar-predecessor
+                    (if
+                     ; avoid computing when possible
+                     (not more-general-predecessor)
+                     (findf (λ (p-and-i) (s-similar? (cdr p-and-i) (node-label candidate) tree)) preds)
+                     #f)])
               ; lots of duplicated code here, can this be improved?
+              ; will only get worse with introduction of similarity cycle
               (if more-general-predecessor
                   (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
                          [updated-candidate
@@ -304,23 +266,8 @@
                      (map (λ (t) (tree-display t print-atom-with-generation-node)) outputs))
                  (displayln "There is no active branch."))
              (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)))]
-        [(equal? choice similarity)
-         (begin
-           (check-s-similarity tree)
-           (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
         [(equal? choice end) (void)]
         [else (error 'unsupported)]))
-
-(define (check-s-similarity t)
-  (displayln "Please supply the index of the first node.")
-  (define node-index-1 (prompt-for-integer))
-  (displayln "Please supply the index of the second node.")
-  (define node-index-2 (prompt-for-integer))
-  (if (not (shortest-branch-with-indices (list node-index-1 node-index-2) t))
-      (displayln "Could not find a branch with supplied indices (in the correct order).")
-      (if (s-similar? node-index-1 node-index-2 t)
-          (displayln "Nodes are s-similar.")
-          (displayln "Nodes are not s-similar."))))
 
 (define (largest-node-index t)
   (match t

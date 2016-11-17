@@ -29,6 +29,8 @@
 (require racket/serialize)
 (require (for-doc scribble/manual))
 (require (only-in "abstract-domain-ordering.rkt" renames?))
+(require racket-tree-utils/src/tree)
+(require "data-utils.rkt")
 
 (define (label-index l)
   (if (tree-label? l)
@@ -47,6 +49,15 @@
       (tree-label-selection l)
       (widening-selection l)))
 (provide label-selection)
+
+(define (label-with-conjunction? l)
+  (or (tree-label? l) (widening? l)))
+(provide
+ (proc-doc/names
+  label-with-conjunction?
+  (-> any/c boolean?)
+  (label)
+  @{Checks whether the supplied value is a type of tree label which contains a conjunction.}))
 
 (define (write-tree-label obj port mode)
   (if (eq? mode #t)
@@ -171,3 +182,47 @@
      The field @racket[selection] works the same way as in a @racket[tree-label].
      The @racket[message] field is optional and is used to explain why widening was applied.
      The @racket[index] field serves the same purpose as that of @racket[tree-label].}))
+
+(define (candidate-and-predecessors t acc)
+  (match t
+    [(node (tree-label '() _ _ _ _) '()) (cons (none) acc)]
+    [(node 'fail '()) (cons (none) acc)]
+    [(node (cycle _) '()) (cons (none) acc)]
+    [(node (similarity-cycle _) '()) (cons (none) acc)]
+    [(node (widening '() _ _ _) '()) (cons (none) acc)]
+    [(node (tree-label c (none) s r #f) '())
+     (cons (some (node (tree-label c (none) s r #f) '())) acc)]
+    [(node (widening c (none) msg i) '())
+     (cons (some (node (widening c (none) msg i) '())) acc)]
+    ; children but no selection = widening or cycle
+    [(node (tree-label c (none) s r i) (list single-child))
+     (candidate-and-predecessors single-child (cons (cons c i) acc))]
+    [(node (widening c (none) msg i) (list single-child))
+     (candidate-and-predecessors single-child (cons (cons c i) acc))]
+    ; next two cases are basically the same...
+    [(node (tree-label c (some v) _ _ i) children)
+     (foldl
+      (λ (child acc2)
+        (if (some? (car acc2))
+            acc2
+            (candidate-and-predecessors
+             child
+             (cdr acc2))))
+      (cons (none) (cons (cons c i) acc))
+      (node-children t))]
+    [(node (widening c (some v) msg i) children)
+     (foldl
+      (λ (child acc2)
+        (if (some? (car acc2))
+            acc2
+            (candidate-and-predecessors
+             child
+             (cdr acc2))))
+      (cons (none) (cons (cons c i) acc))
+      (node-children t))]))
+(provide
+ (proc-doc/names
+  candidate-and-predecessors
+  (-> node? list? (cons/c any/c (listof (cons/c (listof abstract-atom?) exact-positive-integer?))))
+  (tree accumulator)
+  ("Find the next candidate for unfolding and conjunctions which have already been dealt with.")))

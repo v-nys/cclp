@@ -141,7 +141,7 @@
         (widening (interpret-abstract-conjunction "a(α1)") #f "test" 1)]
        [top (node top-contents (list bottom-left near-top-right))])
   (check-equal?
-   (shortest-branch-with-indices (list 1 3) top)
+   (shortest-branch-containing 1 3 top)
    (list top-contents near-top-right-contents near-bottom-right-contents)))
 
 (test-case

@@ -40,38 +40,46 @@
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 
-(define (sa1-renames-sa2? branch i1 i2)
+(define (sa1-renames-sa2? branch i1 i2-or-conjunction)
   (let* ([label-i1 (findf (λ (n) (equal? i1 (label-index n))) branch)]
-         [label-i2 (findf (λ (n) (equal? i2 (label-index n))) branch)])
+         [label-i2 (findf (λ (n) (equal? i2-or-conjunction (label-index n))) branch)])
     (renames?
      (list-ref (label-conjunction label-i1) (some-v (label-selection label-i1)))
-     (list-ref (label-conjunction label-i2) (some-v (label-selection label-i2))))))
+     (if label-i2 (list-ref (label-conjunction label-i2) (some-v (label-selection label-i2))) i2-or-conjunction))))
 
-(define (shortest-branch-with-indices indices t)
-  (match indices
-    [(list) (list)]
-    [(list-rest i1 is)
-     (let* ([t-label (node-label t)]
-            [t-index (cond [(tree-label? t-label) (tree-label-index t-label)]
-                           [(widening? t-label) (widening-index t-label)]
-                           [else #f])]
-            [rest-indices (if (equal? i1 t-index) is indices)])
-       (if (not t-index)
-           #f ; children will not have indices either
-           (let ([child-result
-                  (foldl
-                   (λ (el acc) (if acc acc (shortest-branch-with-indices rest-indices el)))
-                   #f
-                   (node-children t))])
-             (if child-result (cons t-label child-result) #f))))]
+(define (shortest-branch-containing index1 index2-or-conjunction t)
+  (define (reversed-shortest-branch-ending-in ending t acc)
+    (match t
+      [(node l ch)
+       #:when (and (label-with-conjunction? l)
+                   (or (equal? (label-conjunction l) ending) (equal? (label-index l) ending)))
+       (cons l acc)]
+      [(node l ch)
+       #:when (label-with-conjunction? l)
+       (foldl (λ (c acc2) (if acc2 acc2 (reversed-shortest-branch-ending-in ending c (cons l acc))))
+        #f
+        ch)]
+      [_ #f]))
+  (match t
+    [(node l ch)
+     #:when (and (label-with-conjunction? l) (equal? (label-index l) index1))
+     (let ([tail (foldl (λ (c acc) (if acc acc (reversed-shortest-branch-ending-in index2-or-conjunction c '()))) #f ch)])
+       (if tail (cons l (reverse tail)) #f))]
+    [(node l ch)
+     #:when (label-with-conjunction? l)
+     (foldl
+      (λ (c acc)
+        (if acc acc (shortest-branch-containing index1 index2-or-conjunction c)))
+      #f
+      ch)]
     [_ #f]))
 (provide
  (proc-doc/names
-  shortest-branch-with-indices
-  (-> (listof exact-nonnegative-integer?) node? (or/c #f (listof (or/c tree-label? widening?))))
-  (indices tree)
+  shortest-branch-containing
+  (-> exact-nonnegative-integer? (or/c exact-nonnegative-integer? (listof abstract-atom?)) node? (or/c #f (listof (or/c tree-label? widening?))))
+  (index1 index2-or-conjunction tree)
   @{Find the shortest branch in @racket[tree]
- which has nodes with all indices in @racket[indices], in the correct order.
+ which begins with a node with index @racket[index1] and ends with a node with index or conjunction @racket[index2-or-conjunction].
  If there is no such branch, the result is @racket[#f].}))
 
 (define (dp-zero-subtree-depth-complement-at-level dp gen-tree lvl)
@@ -322,39 +330,41 @@
  along with the the preceding generation and the following generation consitutes a renamed instance of @racket[gs2]
  (and surrounding generations) at level @racket[level-2].}))
 
-(define (s-similar? node-index-1 node-index-2 tree)
+(define (s-similar? node-index-1 node-index-2-or-abstract-conjunction tree)
   (log-debug "checking for s-similarity")
-  (define branch (shortest-branch-with-indices (list node-index-1 node-index-2) tree))
-  (define skeleton (car (generational-tree-skeleton branch))) ; top-level is an atom anyway
-  (define candidate-targets (candidate-target-atoms skeleton (- (length branch) 1)))
-  (define all-generational-trees (generational-trees branch))
-  (define ls1 (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch))
-  (define ls2 (findf-index (λ (l) (equal? (label-index l) node-index-2)) branch))
+  (define branch (shortest-branch-containing node-index-1 node-index-2-or-abstract-conjunction tree))
+  (define skeleton (if branch (car (generational-tree-skeleton branch)) #f)) ; top-level is an atom anyway
+  (define candidate-targets (if branch (candidate-target-atoms skeleton (- (length branch) 1)) #f))
+  (define all-generational-trees (if branch (generational-trees branch) #f))
+  (define ls1 (if branch (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch) #f))
+  (define ls2 (if branch (findf-index (λ (l) (or (equal? (label-index l) node-index-2-or-abstract-conjunction) (equal? (label-conjunction l) node-index-2-or-abstract-conjunction))) branch) #f))
   (log-debug
-   (format "selected atom 1 renames selected atom 2: ~a" (sa1-renames-sa2? branch node-index-1 node-index-2)))
-  (and
-   (sa1-renames-sa2? branch node-index-1 node-index-2)
-   (ormap ; s-similarity for any candidate target atom is enough
-    (λ (dp gt)
-      (let* ([annotated-s1 (horizontal-level gt ls1)]
-             [annotated-s2 (horizontal-level gt ls2)]
-             [dp-zero-subtree-depth-complement
-              (find-dp-zero-subtree-depth-complement dp gt)]
-             [gs1
-              (atom-with-generation-generation
-               (list-ref annotated-s1 (some-v (label-selection (list-ref branch ls1)))))]
-             [gs2
-              (atom-with-generation-generation
-               (list-ref annotated-s2 (some-v (label-selection (list-ref branch ls2)))))])
-        (checks-involving-generations ls1 ls2 gs1 gs2 dp-zero-subtree-depth-complement)))
-    candidate-targets
-    all-generational-trees)))
+   ; TODO: update to work with abstract conjunction
+   (format "selected atom 1 renames selected atom 2: ~a" (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction)))
+  (if branch
+      (and
+       (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction)
+       (ormap ; s-similarity for any candidate target atom is enough
+        (λ (dp gt)
+          (let* ([annotated-s1 (horizontal-level gt ls1)]
+                 [annotated-s2 (horizontal-level gt ls2)]
+                 [dp-zero-subtree-depth-complement
+                  (find-dp-zero-subtree-depth-complement dp gt)]
+                 [gs1
+                  (atom-with-generation-generation
+                   (list-ref annotated-s1 (some-v (label-selection (list-ref branch ls1)))))]
+                 [gs2
+                  (atom-with-generation-generation
+                   (list-ref annotated-s2 (some-v (label-selection (list-ref branch ls2)))))])
+            (checks-involving-generations ls1 ls2 gs1 gs2 dp-zero-subtree-depth-complement)))
+        candidate-targets
+        all-generational-trees)) #f))
 (provide
  (proc-doc/names
   s-similar?
   (->
    exact-positive-integer?
-   exact-positive-integer?
+   (or/c (listof abstract-atom?) exact-positive-integer?)
    node?
    boolean?)
   (node-index-1 node-index-2 analysis-tree)
