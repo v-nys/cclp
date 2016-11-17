@@ -174,6 +174,7 @@
               ; lots of duplicated code here, can this be improved?
               ; will only get worse with introduction of similarity cycle
               (if more-general-predecessor
+                  ; the actual 'proceed' step
                   (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
                          [updated-candidate
                           (node
@@ -189,6 +190,7 @@
                               (widening (widening-conjunction candidate-label) (none) (widening-message candidate-label) next-index)])
                            (list cycle-node))]
                          [updated-top (replace-first-subtree tree candidate updated-candidate)])
+                    ; showing the updated tree - which is identical to how it happens after resolution or similarity cycle
                     (begin
                       (newline)
                       (tree-display updated-candidate print-tree-label)
