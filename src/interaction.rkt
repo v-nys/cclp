@@ -89,6 +89,10 @@
      (if use-color
          (display-color (format "cycle back to node ~a" i) out #:fg 'green)
          (display (format "cycle back to node ~a" i) out))]
+    [(similarity-cycle i)
+     (if use-color
+         (display-color (format "similarity cycle back to node ~a" i) out #:fg 'green)
+         (display (format "similarity cycle back to node ~a" i) out))]
     [(widening con sel msg idx)
      (begin
        (display "[widening]")
@@ -100,6 +104,7 @@
     [(node (tree-label '() _ _ _ _) '()) (cons (none) acc)]
     [(node 'fail '()) (cons (none) acc)]
     [(node (cycle _) '()) (cons (none) acc)]
+    [(node (similarity-cycle _) '()) (cons (none) acc)]
     [(node (widening '() _ _ _) '()) (cons (none) acc)]
     [(node (tree-label c (none) s r #f) '())
      (cons (some (node (tree-label c (none) s r #f) '())) acc)]
@@ -131,11 +136,10 @@
              (cdr acc2))))
       (cons (none) (cons (cons c i) acc))
       (node-children t))]))
-; contract could be a bit more specific...
 (provide
  (proc-doc/names
   candidate-and-predecessors
-  (-> node? list? (cons/c any/c list?))
+  (-> node? list? (cons/c any/c (listof (cons/c (listof abstract-atom?) exact-positive-integer?))))
   (tree accumulator)
   ("Find the next candidate for unfolding and conjunctions which have already been dealt with.")))
 
@@ -188,6 +192,7 @@
                 (newline)
                 (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
         [(equal? choice proceed)
+         ; TODO: don't just check for cycle to a predecessor, but s-similarity as well
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
             (begin (displayln "There are no nodes left to analyze.")
