@@ -32,6 +32,7 @@
 (require "abstract-multi-domain.rkt")
 (require "abstraction-inspection-utils.rkt")
 (require "abstract-analysis.rkt")
+(require "execution.rkt")
 (require "generational-tree.rkt")
 (require (only-in "abstract-domain-ordering.rkt" renames?))
 (require (only-in "data-utils.rkt" some-v))
@@ -40,12 +41,15 @@
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 
-(define (sa1-renames-sa2? branch i1 i2-or-conjunction)
+(define (sa1-renames-sa2? branch i1 i2-or-conjunction prior full-evaluations)
   (let* ([label-i1 (findf (λ (n) (equal? i1 (label-index n))) branch)]
          [label-i2 (findf (λ (n) (equal? i2-or-conjunction (label-index n))) branch)])
     (renames?
      (list-ref (label-conjunction label-i1) (some-v (label-selection label-i1)))
-     (if label-i2 (list-ref (label-conjunction label-i2) (some-v (label-selection label-i2))) i2-or-conjunction))))
+     (if
+      label-i2
+      (list-ref (label-conjunction label-i2) (some-v (label-selection label-i2)))
+      (list-ref i2-or-conjunction (selected-index i2-or-conjunction prior full-evaluations))))))
 
 (define (shortest-branch-containing index1 index2-or-conjunction t)
   (define (reversed-shortest-branch-ending-in ending t acc)
@@ -332,27 +336,20 @@
  along with the the preceding generation and the following generation consitutes a renamed instance of @racket[gs2]
  (and surrounding generations) at level @racket[level-2].}))
 
-(define (s-similar? node-index-1 node-index-2-or-abstract-conjunction tree)
-  ;(define (display-skeleton-node n out) (print (node-label n) out))
+(define (s-similar? node-index-1 node-index-2-or-abstract-conjunction-with-selection)
   (log-debug "checking for s-similarity between ~v and ~v" node-index-1 node-index-2-or-abstract-conjunction)
   (define branch (shortest-branch-containing node-index-1 node-index-2-or-abstract-conjunction tree))
-  ; is there a problem with the skeleton?
-  ; seems unlikely
-  (define skeleton (if branch (car (generational-tree-skeleton branch)) #f)) ; top-level is an atom anyway
-;  (define sp (open-output-string))
-;  (tree-display skeleton display-skeleton-node sp)
-;  (log-debug (get-output-string sp))
-  ; the problem is probably related to the length here
+  (define skeleton (if branch (car (generational-tree-skeleton branch)) #f))
   (define candidate-targets (if branch (candidate-target-atoms skeleton (- (length branch) 1)) #f))
   (log-debug "candidate targets are: ~v" candidate-targets)
   (define all-generational-trees (if branch (generational-trees branch) #f))
   (define ls1 (if branch (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch) #f))
   (define ls2 (if branch (findf-index (λ (l) (or (equal? (label-index l) node-index-2-or-abstract-conjunction) (equal? (label-conjunction l) node-index-2-or-abstract-conjunction))) branch) #f))
   (when (and branch (not (null? candidate-targets)))
-    (log-debug "selected atom 1 renames selected atom 2: ~a" (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction)))
+    (log-debug "selected atom 1 renames selected atom 2: ~a" (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction prior full-evaluations)))
   (if branch
       (and
-       (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction)
+       (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction prior full-evaluations)
        (ormap ; s-similarity for any candidate target atom is enough
         (λ (dp gt)
           (let* ([annotated-s1 (horizontal-level gt ls1)]
@@ -376,7 +373,7 @@
    (or/c (listof abstract-atom?) exact-positive-integer?)
    node?
    boolean?)
-  (node-index-1 node-index-2 analysis-tree)
+  (node-index-1 node-index-2 analysis-tree prior full-evaluations)
   @{Determines whether the node with index @racket[node-index-2] is s-similar
  to the node with index @racket[node-index-1] in @racket[analysis-tree].
  The caller is responsible for checking that tree has a branch with the supplied indices.}))

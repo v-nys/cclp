@@ -147,6 +147,9 @@
                 (tree-display tree print-tree-label)
                 (newline)
                 (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
+
+
+
         [(equal? choice proceed)
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
@@ -161,11 +164,12 @@
                    [conjunction (conjunction-selector candidate-label)]
                    [more-general-predecessor
                     (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) preds)]
+                   ; TODO: this is in the wrong place if we want to avoid checking the partial order when it is not necessary
+                   ; we should check only if there is definitely no more general predecessor
                    [similar-predecessor
                     (if
-                     ; avoid computing when possible
                      (not more-general-predecessor)
-                     (findf (λ (p-and-i) (s-similar? (cdr p-and-i) (label-conjunction (node-label candidate)) tree)) preds)
+                     (findf (λ (p-and-i) (s-similar? (cdr p-and-i) (label-conjunction (node-label candidate)) tree preprior full-evaluations)) preds)
                      #f)])
               ; lots of duplicated code here, can this be improved?
               ; will only get worse with introduction of similarity cycle
@@ -219,6 +223,8 @@
                       (newline)
                       (interactive-analysis
                        updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))))])]
+
+        
         [(equal? choice go-back)
          (let ([rewound (rewind tree)])
            (if rewound

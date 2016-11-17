@@ -48,12 +48,9 @@
              [query (list 'member_reaches_or_includes_all_under_consistency 'X sexp-conjunction)]
              [outcomes (query-model-dynamic prior query)])
         (begin
-          (log-debug (format "Conjunction for selection: ~a" sexp-conjunction))
-          (log-debug (format "Query for selection: ~a" query))
           (if (null? outcomes)
               (error "Partial order is underspecified.")
               (begin
-                (log-debug (format "Outcomes of partial ordering check: ~a" outcomes))
                 (let ([sexp-renaming-of-selection (hash-ref (car outcomes) 'X)])
                 (findf-index
                  (λ (atom) (renames? atom (sexp->abstract-atom sexp-renaming-of-selection)))
