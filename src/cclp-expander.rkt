@@ -31,7 +31,7 @@
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (for-syntax syntax/parse))
-(require (only-in "interaction.rkt" cclp-run))
+(require (only-in "interaction.rkt" cclp-top))
 (require racket/contract)
 (require (only-in "data-utils.rkt" 5-tuple))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
@@ -461,5 +461,5 @@
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
 (define #'(cclp-module-begin _PARSE-TREE ...)
-  #'(#%module-begin (cclp-run current-contract-region _PARSE-TREE ...)))
+  #'(#%module-begin (cclp-top current-contract-region _PARSE-TREE ...)))
 (provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)

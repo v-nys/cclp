@@ -34,6 +34,14 @@
 
 (require (only-in "generational-tree-test.rkt" generational-tree-bp))
 
+(define (horizontal-level-bp . strings-and-levels)
+  (match strings-and-levels
+    [(list) (list)]
+    [(list-rest h1 h2 t)
+     (cons
+      (atom-with-generation (interpret-abstract-atom h1) h2)
+      (apply horizontal-level-bp t))]))
+
 (test-case
  "finding level-0 instances of a target, and their complement, at a particular level"
  (check-equal?
@@ -336,5 +344,82 @@
 (test-case
  "checking for correspondence between generations around and including selected one"
  (check-equal?
-  (three-generation-correspondence 4 5 horizontal-level-4 horizontal-level-5)
-  #t))
+  (three-generation-correspondence
+   2
+   3
+   (horizontal-level-bp
+    "integers(γ1,α1)" 0
+    "filter(γ2,α1,α2)" 1
+    "filter(γ3,[γ4|α2],α3)" 2
+    "filter(γ5,α3,α4)" 3
+    "sift(α4,α5)" 3
+    "length(α5,γ6)" 0)
+   (horizontal-level-bp
+    "integers(γ1,α1)" 0
+    "filter(γ2,α1,α2)" 1
+    "filter(γ3,α2,α3)" 2
+    "filter(γ4,[γ5|α3],α4)" 3
+    "filter(γ6,α4,α5)" 4
+    "sift(α5,α6)" 4
+    "length(α6,γ7)" 0))
+  #t)
+ (check-equal?
+  (three-generation-correspondence
+   1
+   1
+   (horizontal-level-bp
+    "integers(γ1,α1)" 0
+    "filter(γ2,[γ3|α1],α2)" 1
+    "filter(γ4,α2,α3)" 2
+    "filter(γ5,α3,α4)" 3
+    "sift(α4,α5)" 3
+    "length(α5,γ6)" 0)
+   (horizontal-level-bp
+    "integers(γ1,α1)" 0
+    "filter(γ2,[γ3|α1],α2)" 1
+    "filter(γ4,α2,α3)" 2
+    "filter(γ5,α3,α4)" 3
+    "filter(γ6,α4,α5)" 4
+    "sift(α5,α6)" 4
+    "length(α6,γ7)" 0))
+  #t)
+ (check-equal?
+  (three-generation-correspondence
+   1
+   1
+   (horizontal-level-bp
+    "integers(γ1,α1)" 0
+    "filter(γ2,[γ3|α1],α2)" 1
+    "filter(γ4,α2,α3)" 2
+    "filter(γ5,α3,α4)" 3
+    "sift(α4,α5)" 3
+    "length(α5,γ6)" 0)
+   (horizontal-level-bp
+    "integers(γ1,α1)" 0
+    "filter(γ2,[γ3|α1],α2)" 1
+    "filter(γ4,α2,α3)" 2
+    "filter(γ5,α3,α4)" 3
+    "filter(γ6,α4,α5)" 4
+    "sift(α5,α6)" 4
+    "length(γ6,γ7)" 0)) ; difference in preceding generation
+  #f)
+ (check-equal?
+  (three-generation-correspondence
+   1
+   1
+   (horizontal-level-bp
+    "integers(γ1,α1)" 0
+    "filter(γ2,[γ3|α1],α2)" 1
+    "filter(γ4,α2,α3)" 2
+    "filter(γ5,α3,α4)" 3
+    "sift(α4,α5)" 3
+    "length(α5,γ6)" 0)
+   (horizontal-level-bp
+    "integers(γ1,α1)" 0
+    "filter(γ2,[γ3|α1],α2)" 1
+    "filter(γ4,α2,γ3)" 2 ; difference in subsequent generation
+    "filter(γ5,α3,α4)" 3
+    "filter(γ6,α4,α5)" 4
+    "sift(α5,α6)" 4
+    "length(α6,γ7)" 0))
+  #f))

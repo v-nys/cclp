@@ -81,9 +81,9 @@
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out)
-;       (when
-;           ((compose not null?) sub)
-;         (begin (display " " out) (print-substitution sub out)))
+       ;       (when
+       ;           ((compose not null?) sub)
+       ;         (begin (display " " out) (print-substitution sub out)))
        )]
     [(cycle i)
      (if use-color
@@ -348,9 +348,23 @@
             (define initial-tree (node initial-tree-label (list)))
             (interactive-analysis initial-tree clauses full-evaluations preprior 1 filename concrete-constants))]))
 
+(define (cclp-top filename program-data)
+  (define logger (make-logger 'cc #f))
+  (current-logger logger)
+  (with-logging-to-port (current-error-port)
+    (λ () (cclp-run filename program-data))
+    'debug))
+(provide
+ (proc-doc/names
+  cclp-top
+  (-> path?
+      (5-tupleof (listof rule?) (listof full-ai-rule?) model? (listof function?) abstract-atom?)
+      void?)
+  (filename program-data)
+  @{Top-level function used to run a compiling control logic program.}))
+
 (define (cclp-run filename program-data)
   (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
-  
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
   (define-values (analysis load quit)
@@ -373,8 +387,3 @@
                 (cclp-run filename program-data))]
         [(equal? choice quit) (void)]
         [else (error 'unsupported)]))
-(provide (contract-out
-          [cclp-run
-           (-> path?
-               (5-tupleof (listof rule?) (listof full-ai-rule?) model? (listof function?) abstract-atom?)
-               void?)]))

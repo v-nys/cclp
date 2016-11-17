@@ -36,6 +36,7 @@
 (require (only-in "abstract-domain-ordering.rkt" renames?))
 (require (only-in "data-utils.rkt" some-v))
 
+(require racket/logging)
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 
@@ -118,12 +119,11 @@
 
 (define (context-and-ends-match subset-s1-with-gen subset-s2-with-gen dp-complement depth ls1 ls2)
   (define big-l1 (apply max (map atom-with-generation-generation subset-s1-with-gen)))
-  ; see paper for cryptic names
-  ; TODO: cut down on nearly identical code using define-values or something?
   (define ls1-1-dp
     (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s1-with-gen))
   (define ls1-L-dp
     (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l1)) subset-s1-with-gen))
+  ; FIXME is the following use of atom-with-generation causing an error?
   (define full-complement-at-ls1
     (apply
      append
@@ -154,12 +154,14 @@
        (define subset-s1-with-gen (horizontal-level subtree (- ls1 depth)))
        (define subset-s2-with-gen (horizontal-level subtree (- ls2 depth)))
        (and
-        ; TODO test each of these!
+        (begin (log-debug "checking three-generation-correspondence") #t)
         (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
+        (begin (log-debug "checking whether context and ends match") #t)
         (context-and-ends-match subset-s1-with-gen subset-s2-with-gen complement depth ls1 ls2)
+        (begin (log-debug "checking whether invertible function f applies (or is not needed)") #t)
         (invertible-function-f-applies gs1 gs2 ls1 ls2 (cons subtree depth))
-        (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))
-        (last-gen-renaming ls1 ls2 subtree depth)))]))
+        (begin (log-debug "checking whether invertible function g applies (or is not needed)") #t)
+        (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))))]))
 
 (define (last-gen-renaming ls1 ls2 subtree depth)
   (define max-gen-1 (max-gen subtree (- ls1 depth)))
@@ -306,14 +308,25 @@
    (equal?
     (map (compose (curry - gs1) atom-with-generation-generation) three-generation-conjunction-1)
     (map (compose (curry - gs2) atom-with-generation-generation) three-generation-conjunction-2))))
+(provide
+ (proc-doc/names
+  three-generation-correspondence
+  (-> exact-nonnegative-integer? exact-nonnegative-integer? (listof atom-with-generation?) (listof atom-with-generation?) boolean?)
+  (gs1 gs2 level-1 level-2)
+  @{Checks whether the selected generation @racket[gs1] at level @racket[level-1] (of a genealogical tree),
+ along with the the preceding generation and the following generation consitutes a renamed instance of @racket[gs2]
+ (and surrounding generations) at level @racket[level-2].}))
 
 (define (s-similar? node-index-1 node-index-2 tree)
+  (log-debug "checking for s-similarity")
   (define branch (shortest-branch-with-indices (list node-index-1 node-index-2) tree))
   (define skeleton (car (generational-tree-skeleton branch))) ; top-level is an atom anyway
   (define candidate-targets (candidate-target-atoms skeleton (- (length branch) 1)))
   (define all-generational-trees (generational-trees branch))
   (define ls1 (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch))
   (define ls2 (findf-index (λ (l) (equal? (label-index l) node-index-2)) branch))
+  (log-debug
+   (format "selected atom 1 renames selected atom 2: ~a" (sa1-renames-sa2? branch node-index-1 node-index-2)))
   (and
    (sa1-renames-sa2? branch node-index-1 node-index-2)
    (ormap ; s-similarity for any candidate target atom is enough
