@@ -277,6 +277,8 @@
   (log-debug "checking mapping between ~v and ~v" gen-i gen-i-plus-one)
   (define gen-i-args (apply append (map abstract-atom-args gen-i)))
   (define gen-i-plus-one-args (apply append (map abstract-atom-args gen-i-plus-one)))
+  ; may be able to strengthen the requirement to renaming for all but the first instance of the mapping
+  ; (see primes, nodes 24 and 35, when plus is fully evaluated and the first filter is more instantiated than the rest)
   (and (equal? (map abstract-atom-symbol gen-i) (map abstract-atom-symbol gen-i-plus-one))
        (equal? (length gen-i-args) (length gen-i-plus-one-args))
        (andmap (λ (constraint idx)
