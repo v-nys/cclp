@@ -68,10 +68,11 @@
 (provide
  (proc-doc/names
   shortest-branch-with-indices
-  (-> (listof exact-nonnegative-integer?) node? (listof (or/c tree-label? widening?)))
+  (-> (listof exact-nonnegative-integer?) node? (or/c #f (listof (or/c tree-label? widening?))))
   (indices tree)
   @{Find the shortest branch in @racket[tree]
- which has nodes with all indices in @racket[indices], in the correct order.}))
+ which has nodes with all indices in @racket[indices], in the correct order.
+ If there is no such branch, the result is @racket[#f].}))
 
 (define (dp-zero-subtree-depth-complement-at-level dp gen-tree lvl)
   (define gen-tree-lvl-subforest (horizontal-level gen-tree lvl #t))
@@ -120,26 +121,25 @@
 (define (context-and-ends-match subset-s1-with-gen subset-s2-with-gen dp-complement depth ls1 ls2)
   (define big-l1 (apply max (map atom-with-generation-generation subset-s1-with-gen)))
   (define ls1-1-dp
-    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s1-with-gen))
+    (map atom-with-generation-atom (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s1-with-gen)))
   (define ls1-L-dp
-    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l1)) subset-s1-with-gen))
-  ; FIXME is the following use of atom-with-generation causing an error?
+    (map atom-with-generation-atom (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l1)) subset-s1-with-gen)))
   (define full-complement-at-ls1
     (apply
      append
      (map
-      (compose atom-with-generation-atom (λ (comp) (horizontal-level comp (- ls1 depth))))
+      (compose (curry map atom-with-generation-atom) (λ (comp) (horizontal-level comp (- ls1 depth))))
       dp-complement)))
   (define big-l2 (apply max (map atom-with-generation-generation subset-s2-with-gen)))
   (define ls2-1-dp
-    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s2-with-gen))
+    (map atom-with-generation-atom (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s2-with-gen)))
   (define ls2-L-dp
-    (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l2)) subset-s2-with-gen))
+    (map atom-with-generation-atom (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l2)) subset-s2-with-gen)))
   (define full-complement-at-ls2
     (apply
      append
      (map
-      (compose atom-with-generation-atom (λ (comp) (horizontal-level comp (- ls2 depth))))
+      (compose (curry map atom-with-generation-atom) (λ (comp) (horizontal-level comp (- ls2 depth))))
       dp-complement)))
   (renames?
    (append ls1-1-dp ls1-L-dp full-complement-at-ls1)
@@ -170,7 +170,7 @@
    ((atoms-of-generation max-gen-1) (horizontal-level subtree (- ls1 depth)))
    ((atoms-of-generation max-gen-2) (horizontal-level subtree (- ls2 depth)))))
 
-(define (invertible-function-f-applies ls1 ls2 gs1 gs2 subtree-and-depth)
+(define (invertible-function-f-applies gs1 gs2 ls1 ls2 subtree-and-depth)
   (or (< gs1 3)
       (let ([f-mapping (extract-f-mapping ls1 subtree-and-depth)])
         (applies-until-gs f-mapping ls1 ls2 gs1 gs2 subtree-and-depth))))
