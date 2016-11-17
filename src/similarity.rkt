@@ -23,7 +23,7 @@
 #lang at-exp racket
 
 (require (only-in racket-list-utils/utils findf-index))
-(require racket-tree-utils/src/tree)
+(require racket-tree-utils/src/tree (only-in racket-tree-utils/src/printer tree-display))
 (require racket-list-utils/utils)
 
 (struct identity-constraint (arg-number) #:transparent)
@@ -57,8 +57,8 @@
       [(node l ch)
        #:when (label-with-conjunction? l)
        (foldl (λ (c acc2) (if acc2 acc2 (reversed-shortest-branch-ending-in ending c (cons l acc))))
-        #f
-        ch)]
+              #f
+              ch)]
       [_ #f]))
   (match t
     [(node l ch)
@@ -69,7 +69,7 @@
      #:when (label-with-conjunction? l)
      (foldl
       (λ (c acc)
-        (if acc acc (shortest-branch-containing index1 index2-or-conjunction c)))
+        (if acc acc (let ([rooted-at-child (shortest-branch-containing index1 index2-or-conjunction c)]) (if rooted-at-child (cons l rooted-at-child) #f))))
       #f
       ch)]
     [_ #f]))
@@ -78,8 +78,9 @@
   shortest-branch-containing
   (-> exact-nonnegative-integer? (or/c exact-nonnegative-integer? (listof abstract-atom?)) node? (or/c #f (listof (or/c tree-label? widening?))))
   (index1 index2-or-conjunction tree)
-  @{Find the shortest branch in @racket[tree]
- which begins with a node with index @racket[index1] and ends with a node with index or conjunction @racket[index2-or-conjunction].
+  @{Find the shortest branch in @racket[tree] which contains a node with index @racket[index1]
+ and ends with a node with index or conjunction @racket[index2-or-conjunction].
+ The branch alsways starts at the root of the tree.
  If there is no such branch, the result is @racket[#f].}))
 
 (define (dp-zero-subtree-depth-complement-at-level dp gen-tree lvl)
@@ -169,7 +170,8 @@
         (begin (log-debug "checking whether invertible function f applies (or is not needed)") #t)
         (invertible-function-f-applies gs1 gs2 ls1 ls2 (cons subtree depth))
         (begin (log-debug "checking whether invertible function g applies (or is not needed)") #t)
-        (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))))]))
+        (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))
+        (begin (log-debug "all conditions for s-similarity are met") #t)))]))
 
 (define (last-gen-renaming ls1 ls2 subtree depth)
   (define max-gen-1 (max-gen subtree (- ls1 depth)))
@@ -331,16 +333,23 @@
  (and surrounding generations) at level @racket[level-2].}))
 
 (define (s-similar? node-index-1 node-index-2-or-abstract-conjunction tree)
-  (log-debug "checking for s-similarity")
+  ;(define (display-skeleton-node n out) (print (node-label n) out))
+  (log-debug "checking for s-similarity between ~v and ~v" node-index-1 node-index-2-or-abstract-conjunction)
   (define branch (shortest-branch-containing node-index-1 node-index-2-or-abstract-conjunction tree))
+  ; is there a problem with the skeleton?
+  ; seems unlikely
   (define skeleton (if branch (car (generational-tree-skeleton branch)) #f)) ; top-level is an atom anyway
+;  (define sp (open-output-string))
+;  (tree-display skeleton display-skeleton-node sp)
+;  (log-debug (get-output-string sp))
+  ; the problem is probably related to the length here
   (define candidate-targets (if branch (candidate-target-atoms skeleton (- (length branch) 1)) #f))
+  (log-debug "candidate targets are: ~v" candidate-targets)
   (define all-generational-trees (if branch (generational-trees branch) #f))
   (define ls1 (if branch (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch) #f))
   (define ls2 (if branch (findf-index (λ (l) (or (equal? (label-index l) node-index-2-or-abstract-conjunction) (equal? (label-conjunction l) node-index-2-or-abstract-conjunction))) branch) #f))
-  (log-debug
-   ; TODO: update to work with abstract conjunction
-   (format "selected atom 1 renames selected atom 2: ~a" (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction)))
+  (when (and branch (not (null? candidate-targets)))
+    (log-debug "selected atom 1 renames selected atom 2: ~a" (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction)))
   (if branch
       (and
        (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction)

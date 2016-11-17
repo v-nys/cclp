@@ -165,7 +165,7 @@
                     (if
                      ; avoid computing when possible
                      (not more-general-predecessor)
-                     (findf (λ (p-and-i) (s-similar? (cdr p-and-i) (node-label candidate) tree)) preds)
+                     (findf (λ (p-and-i) (s-similar? (cdr p-and-i) (label-conjunction (node-label candidate)) tree)) preds)
                      #f)])
               ; lots of duplicated code here, can this be improved?
               ; will only get worse with introduction of similarity cycle

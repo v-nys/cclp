@@ -77,6 +77,7 @@
      (map
       (λ (atom-in-conjunction) (node atom-in-conjunction '()))
       (tree-label-conjunction label))]
+    ; FIXME: this is missing code for widening?
     [(list-rest (tree-label tl-con (some selected) tl-subst tl-r tl-i) tl-rest)
      (let* ([first-unselected (take tl-con selected)]
             [selected-atom (list-ref tl-con selected)]
@@ -88,7 +89,8 @@
             [last-successors (drop next-layer (+ selected (knowledge-output-length (tree-label-rule (car tl-rest)))))])
        (append (map (λ (pre post) (node pre (list post))) first-unselected first-successors)
                (list (node selected-atom selected-successors))
-               (map (λ (pre post) (node pre (list post))) last-unselected last-successors)))]))
+               (map (λ (pre post) (node pre (list post))) last-unselected last-successors)))]
+    [_ (error "unforeseen pattern for generational-tree-skeleton")]))
 (provide
  (proc-doc/names
   generational-tree-skeleton
