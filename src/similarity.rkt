@@ -158,12 +158,14 @@
    (append ls1-1-dp ls1-L-dp full-complement-at-ls1)
    (append ls1-1-dp ls1-L-dp full-complement-at-ls1)))
 
-; subtrees: dp subtree with generation 0 at given depth
 (define (checks-involving-generations ls1 ls2 gs1 gs2 subtree-depth-complement)
   ; note that complement means all trees at the same depth as that for dp!
   (match subtree-depth-complement
     [(list subtree depth complement)
      (begin
+       (log-debug "ls1 is ~v" ls1)
+       (log-debug "ls2 is ~v" ls2)
+       (log-debug "depth is ~v" depth) ; this depth is that at which dp starts
        (define subset-s1-with-gen (horizontal-level subtree (- ls1 depth)))
        (define subset-s2-with-gen (horizontal-level subtree (- ls2 depth)))
        (and
@@ -176,13 +178,6 @@
         (begin (log-debug "checking whether invertible function g applies (or is not needed)") #t)
         (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))
         (begin (log-debug "all conditions for s-similarity are met") #t)))]))
-
-(define (last-gen-renaming ls1 ls2 subtree depth)
-  (define max-gen-1 (max-gen subtree (- ls1 depth)))
-  (define max-gen-2 (max-gen subtree (- ls2 depth)))
-  (renames?
-   ((atoms-of-generation max-gen-1) (horizontal-level subtree (- ls1 depth)))
-   ((atoms-of-generation max-gen-2) (horizontal-level subtree (- ls2 depth)))))
 
 (define (invertible-function-f-applies gs1 gs2 ls1 ls2 subtree-and-depth)
   (or (< gs1 3)
@@ -337,16 +332,16 @@
  (and surrounding generations) at level @racket[level-2].}))
 
 (define (s-similar? node-index-1 node-index-2-or-abstract-conjunction index-2-selection tree)
-  (log-debug "checking for s-similarity between ~v and ~v" node-index-1 node-index-2-or-abstract-conjunction)
+  ; TODO: if ls1 is less than dp-zero, always return false
   (define branch (shortest-branch-containing node-index-1 node-index-2-or-abstract-conjunction tree))
   (define skeleton (if branch (car (generational-tree-skeleton branch)) #f))
   (define candidate-targets (if branch (candidate-target-atoms skeleton (- (length branch) 1)) #f))
-  (log-debug "candidate targets are: ~v" candidate-targets)
   (define all-generational-trees (if branch (generational-trees branch) #f))
   (define ls1 (if branch (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch) #f))
-  (define ls2 (if branch (findf-index (λ (l) (or (equal? (label-index l) node-index-2-or-abstract-conjunction) (equal? (label-conjunction l) node-index-2-or-abstract-conjunction))) branch) #f))
-  (when (and branch (not (null? candidate-targets)))
-    (log-debug "selected atom 1 renames selected atom 2: ~a" (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction index-2-selection)))
+  (define ls2
+    (if branch
+        (findf-index
+         (λ (l) (or (equal? (label-index l) node-index-2-or-abstract-conjunction) (equal? (label-conjunction l) node-index-2-or-abstract-conjunction))) branch) #f))
   (if branch
       (and
        (sa1-renames-sa2? branch node-index-1 node-index-2-or-abstract-conjunction index-2-selection)
@@ -362,7 +357,7 @@
                  [gs2
                   (atom-with-generation-generation
                    (list-ref annotated-s2 index-2-selection))])
-            (checks-involving-generations ls1 ls2 gs1 gs2 dp-zero-subtree-depth-complement)))
+            (if (<= ls1 (second dp-zero-subtree-depth-complement)) #f (checks-involving-generations ls1 ls2 gs1 gs2 dp-zero-subtree-depth-complement))))
         candidate-targets
         all-generational-trees)) #f))
 (provide
