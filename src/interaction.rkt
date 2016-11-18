@@ -39,6 +39,7 @@
 (require "abstract-domain-ordering.rkt")
 (require racket/serialize)
 (require "abstract-analysis.rkt")
+(require "abstract-analysis-tree.rkt")
 (require "generational-tree.rkt")
 (require (only-in "concrete-domain.rkt" function?))
 (require "cclp-interpreter.rkt")
@@ -99,16 +100,6 @@
        (when idx (display (format "~v:" idx)))
        (print-conjunction con sel out))]))
 
-(define (resolvent->node res)
-  (node
-   (tree-label
-    (resolvent-conjunction res)
-    (none)
-    (resolvent-substitution res)
-    (resolvent-knowledge res)
-    #f) ; resolvents have not yet been visited
-   (list)))
-
 (define (candidate-for-undo t)
   (match t
     [(node _ (list)) #f]
@@ -147,86 +138,20 @@
                 (tree-display tree print-tree-label)
                 (newline)
                 (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
-
-
-
         [(equal? choice proceed)
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
             (begin (displayln "There are no nodes left to analyze.")
                    (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
            [(cons (some candidate) preds)
-            (let* ([candidate-label (node-label candidate)]
-                   [conjunction-selector
-                    (cond
-                      [(tree-label? candidate-label) tree-label-conjunction]
-                      [(widening? candidate-label) widening-conjunction])]
-                   [conjunction (conjunction-selector candidate-label)]
-                   [more-general-predecessor
-                    (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) preds)]
-                   ; TODO: this is in the wrong place if we want to avoid checking the partial order when it is not necessary
-                   ; we should check only if there is definitely no more general predecessor
-                   [similar-predecessor
-                    (if
-                     (not more-general-predecessor)
-                     (findf (λ (p-and-i) (s-similar? (cdr p-and-i) (label-conjunction (node-label candidate)) tree preprior full-evaluations)) preds)
-                     #f)])
-              ; lots of duplicated code here, can this be improved?
-              ; will only get worse with introduction of similarity cycle
-              (if more-general-predecessor
-                  ; the actual 'proceed' step
-                  (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
-                         [updated-candidate
-                          (node
-                           (cond
-                             [(tree-label? candidate-label)
-                              (tree-label
-                               (tree-label-conjunction candidate-label)
-                               (none)
-                               (tree-label-substitution candidate-label)
-                               (tree-label-rule candidate-label)
-                               next-index)]
-                             [(widening? candidate-label)
-                              (widening (widening-conjunction candidate-label) (none) (widening-message candidate-label) next-index)])
-                           (list cycle-node))]
-                         [updated-top (replace-first-subtree tree candidate updated-candidate)])
-                    ; showing the updated tree - which is identical to how it happens after resolution or similarity cycle
-                    (begin
-                      (newline)
-                      (tree-display updated-candidate print-tree-label)
-                      (newline)
-                      (interactive-analysis
-                       updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))
-                  (let* ([resolution-result
-                          (abstract-resolve conjunction preprior clauses full-evaluations concrete-constants)]
-                         [index-selection (car resolution-result)]
-                         [resolvents (cdr resolution-result)]
-                         [child-trees (map resolvent->node resolvents)]
-                         [updated-candidate
-                          (node
-                           (cond [(tree-label? candidate-label) 
-                                  (tree-label
-                                   (tree-label-conjunction candidate-label)
-                                   (some index-selection)
-                                   (tree-label-substitution candidate-label)
-                                   (tree-label-rule candidate-label)
-                                   next-index)]
-                                 [(widening? candidate-label) 
-                                  (widening
-                                   (widening-conjunction candidate-label)
-                                   (some index-selection)
-                                   (widening-message candidate-label)
-                                   next-index)])
-                           child-trees)]
-                         [updated-top (replace-first-subtree tree candidate updated-candidate)])
-                    (begin
-                      (newline)
-                      (tree-display updated-candidate print-tree-label)
-                      (newline)
-                      (interactive-analysis
-                       updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))))])]
-
-        
+            (let-values ([(updated-candidate updated-top)
+                          (advance-analysis tree candidate clauses full-evaluations concrete-constants preprior next-index preds)])
+              (begin
+                (newline)
+                (tree-display updated-candidate print-tree-label)
+                (newline)
+                (interactive-analysis
+                 updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))])]
         [(equal? choice go-back)
          (let ([rewound (rewind tree)])
            (if rewound

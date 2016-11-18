@@ -24,11 +24,15 @@
 (require (only-in "abstract-multi-domain.rkt" abstract-atom?))
 (require "abstract-knowledge.rkt")
 (require (prefix-in ck: "concrete-knowledge.rkt"))
+(require "concrete-domain.rkt")
+(require (only-in parenlog model?))
 (require "abstract-substitution.rkt")
 (require scribble/srcdoc)
 (require racket/serialize)
 (require (for-doc scribble/manual))
-(require (only-in "abstract-domain-ordering.rkt" renames?))
+(require (only-in "abstract-domain-ordering.rkt" renames? >=-extension))
+(require (only-in "execution.rkt" selected-index))
+(require "abstract-resolve.rkt")
 (require racket-tree-utils/src/tree)
 (require "data-utils.rkt")
 
@@ -36,19 +40,34 @@
   (if (tree-label? l)
       (tree-label-index l)
       (widening-index l)))
-(provide label-index)
+(provide
+ (proc-doc/names
+  label-index
+  (-> label-with-conjunction? (or/c #f exact-positive-integer?))
+  (label)
+  @{Extracts the index from any tree label type which has it.}))
 
 (define (label-conjunction l)
   (if (tree-label? l)
       (tree-label-conjunction l)
       (widening-conjunction l)))
-(provide label-conjunction)
+(provide
+ (proc-doc/names
+  label-conjunction
+  (-> label-with-conjunction? (listof abstract-atom?))
+  (label)
+  @{Extracts the conjunction from any tree label type which represents it explicitly.}))
 
 (define (label-selection l)
   (if (tree-label? l)
       (tree-label-selection l)
       (widening-selection l)))
-(provide label-selection)
+(provide
+ (proc-doc/names
+  label-selection
+  (-> label-with-conjunction? (maybe exact-nonnegative-integer?))
+  (label)
+  @{Extracts the index of the selected atom from any tree label type which has it.}))
 
 (define (label-with-conjunction? l)
   (or (tree-label? l) (widening? l)))
@@ -182,47 +201,3 @@
      The field @racket[selection] works the same way as in a @racket[tree-label].
      The @racket[message] field is optional and is used to explain why widening was applied.
      The @racket[index] field serves the same purpose as that of @racket[tree-label].}))
-
-(define (candidate-and-predecessors t acc)
-  (match t
-    [(node (tree-label '() _ _ _ _) '()) (cons (none) acc)]
-    [(node 'fail '()) (cons (none) acc)]
-    [(node (cycle _) '()) (cons (none) acc)]
-    [(node (similarity-cycle _) '()) (cons (none) acc)]
-    [(node (widening '() _ _ _) '()) (cons (none) acc)]
-    [(node (tree-label c (none) s r #f) '())
-     (cons (some (node (tree-label c (none) s r #f) '())) acc)]
-    [(node (widening c (none) msg i) '())
-     (cons (some (node (widening c (none) msg i) '())) acc)]
-    ; children but no selection = widening or cycle
-    [(node (tree-label c (none) s r i) (list single-child))
-     (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    [(node (widening c (none) msg i) (list single-child))
-     (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    ; next two cases are basically the same...
-    [(node (tree-label c (some v) _ _ i) children)
-     (foldl
-      (λ (child acc2)
-        (if (some? (car acc2))
-            acc2
-            (candidate-and-predecessors
-             child
-             (cdr acc2))))
-      (cons (none) (cons (cons c i) acc))
-      (node-children t))]
-    [(node (widening c (some v) msg i) children)
-     (foldl
-      (λ (child acc2)
-        (if (some? (car acc2))
-            acc2
-            (candidate-and-predecessors
-             child
-             (cdr acc2))))
-      (cons (none) (cons (cons c i) acc))
-      (node-children t))]))
-(provide
- (proc-doc/names
-  candidate-and-predecessors
-  (-> node? list? (cons/c any/c (listof (cons/c (listof abstract-atom?) exact-positive-integer?))))
-  (tree accumulator)
-  ("Find the next candidate for unfolding and conjunctions which have already been dealt with.")))
