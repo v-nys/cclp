@@ -52,6 +52,10 @@ perm(γ1,α1),ndiag(γ1,γ2,α1)
 safe([γ1,γ2|α1]),perm(γ1,α1)
 ndiag(γ1,γ2,[γ3|α1]),perm(γ1,α1)
 ndiag(γ1,γ2,[γ3|α1]),safe([γ1,γ2|α1])
+ndiag(γ1,γ2,[]),safe([γ1])
+
+{CONCRETE CONSTANTS}
+nil
 
 {QUERY}
 queens(γ1,α1)
