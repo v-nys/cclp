@@ -49,6 +49,8 @@ safe(γ1,[γ2,γ3|α1]),coloring(α1)
 allsafe(γ1,γ2,γ3,[γ4|α1]),coloring(α1)
 allsafe(γ1,γ2,γ3,[γ4|α1]),safe([γ1|γ2],[γ3,γ4|α1])
 allsafe(γ1,γ2,[γ3|γ4],[γ5|α1]),safe([γ1,γ2|γ3],[γ4,γ5|α1])
+allsafe(γ1,γ2,γ3,[]),safe([γ1|γ2],[γ3])
+allsafe(γ1,γ2,[],[]),safe([γ1],[γ2])
 
 {CONCRETE CONSTANTS}
 nil
