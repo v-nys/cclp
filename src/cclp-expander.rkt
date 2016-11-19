@@ -218,20 +218,19 @@
 
 ; PART RELATED TO PREPRIOR
 
-; careful! this is syntax such that the atoms can be *converted* to S-expressions
-; the parsed forms are not what we want!
-; use expand-syntax-while-bound instead of syntax->datum!
+; TODO use expand-syntax-while-bound instead of syntax->datum!
 (define-for-syntax (extract-relevant-atom-stx pairs-syntax)
   (define pair-syntaxes (syntax->list pairs-syntax))
   (define (syntaxes->atom-datums lst acc)
     (match lst
-      [(list) (list)]
+      [(list) acc]
       [(list-rest h t)
-       (let ([d1 (syntax->datum (second (syntax->list h)))]
-             [d2 (syntax->datum (third (syntax->list h)))])
+       (let* ([before-sexp (syntax->datum (expand-syntax-while-bound h))]
+              [d1 (second before-sexp)]
+              [d2 (third before-sexp)])
          (syntaxes->atom-datums t (cons d1 (cons d2 acc))))]))
   (define as-datums (remove-duplicates (syntaxes->atom-datums pair-syntaxes '())))
-  (define as-single-datum ('relevant_atoms (foldr (λ (elem acc) ('cons elem acc)) '() as-datums)))
+  (define as-single-datum (list 'relevant_atoms (foldr (λ (elem acc) (list 'cons elem acc)) '() as-datums)))
   (datum->syntax pairs-syntax as-single-datum))
 
 (define-syntax (preprior-section stx)
