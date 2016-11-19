@@ -217,6 +217,9 @@
 
 ; PART RELATED TO PREPRIOR
 
+(define-for-syntax (relevant-fact pair-syntaxes acc)
+  (syntax (relevant_atoms ())))
+
 (define-syntax (preprior-section stx)
   (begin
     (syntax-parse stx
@@ -225,10 +228,11 @@
            ([(expanded-pair ...)
              (datum->syntax
               #'(pair ...)
-              (map expand-syntax-while-bound (syntax->list #'(pair ...))))])
+              (map expand-syntax-while-bound (syntax->list #'(pair ...))))]
+            [relevant-atoms-fact (relevant-fact (syntax->list #'(pair ...)) (list))])
          #`((λ () (define-model prior
                     expanded-pair ...
-                    ; standard list membership
+                    (relevant_atoms (cons (collect (g 1) (a 1)) ()))
                     (member X (cons X Y))
                     (:- (member X (cons Y Z))
                         (member X Z))
@@ -236,11 +240,6 @@
                     (:- (not_a_member X (cons A B))
                         (,(compose not equal?) X A)
                         (not_a_member X B))
-                    ; to avoid dealing with generalizations/specifications not in the graph
-                    (:- (relevant_atom X)
-                        (before X Y))
-                    (:- (relevant_atom X)
-                        (before Y X))
                     (:- (reaches_without_encountering X Y Path)
                         (before X1 Y1)
                         (not_a_member Y1 Path)
@@ -250,14 +249,16 @@
                         (before X1 Y)
                         (not_a_member Y Path)
                         (sexp_gt_extension X1 X)
-                        (relevant_atom Z1)
+                        (relevant_atoms R)
+                        (member Z1 R)
                         (sexp_gt_extension Z Z1)
                         (reaches_without_encountering Y Z1 (cons Y Path)))
                     (:- (reaches_loopfree X Y)
                         (reaches_without_encountering X Y (cons X ())))
                     (:- (violates_partial_order)
-                        (relevant_atom X)
-                        (relevant_atom Y)
+                        (relevant_atoms R)
+                        (member X R)
+                        (member Y R)
                         (reaches_loopfree X Y)
                         (reaches_loopfree Y X)
                         (,(compose not
