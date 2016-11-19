@@ -90,9 +90,8 @@
               (if similar-predecessor
                   (let ([similarity-cycle-node (node (similarity-cycle (cdr similar-predecessor)) '())])
                     (update-candidate next-index (none) (list similarity-cycle-node)))
-                  ; TODO: abstract resolve shouldn't rely on prior anymore, given that we already have the index
                   (let* ([resolution-result
-                          (abstract-resolve conjunction prior clauses full-evaluations concrete-constants)]
+                          (abstract-resolve conjunction selection clauses full-evaluations concrete-constants)]
                          [resolvents (cdr resolution-result)]
                          [child-trees (map resolvent->node resolvents)])
                     (update-candidate next-index (some selection) child-trees)))]

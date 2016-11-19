@@ -77,7 +77,7 @@
    [knowledge (or/c rule? full-evaluation?)])
   @{Summarizes the result of a resolution step.}))
 
-(define (abstract-resolve conjunction prior concrete-clauses full-evaluations concrete-constants)
+(define (abstract-resolve conjunction idx concrete-clauses full-evaluations concrete-constants)
   (define (fold-over-knowledge i kb)
     (foldl
      (λ (k acc)
@@ -87,26 +87,26 @@
              acc)))
      (list)
      kb))
-  (let* ([conjunct-index (selected-index conjunction prior full-evaluations)]
+  (let* ([conjunct-index idx]
          [conjunct (list-ref conjunction conjunct-index)]
          [outcomes-full-eval ((curry fold-over-knowledge conjunct-index) full-evaluations)])
     (cons conjunct-index
           (if (null? outcomes-full-eval)
               ((curry fold-over-knowledge conjunct-index) concrete-clauses)
               outcomes-full-eval))))
-
+; TODO: no point in returning a pair anymore
 (provide
  (proc-doc/names
   abstract-resolve
   (-> (listof abstract-atom?)
-      model?
+      exact-nonnegative-integer?
       (listof rule?)
       (listof full-evaluation?)
       (listof function?)
       (cons/c exact-nonnegative-integer? (listof resolvent?)))
-  (conjunction prior concrete-clauses full-evaluations concrete-constants)
-  @{Resolves the next abstract atom selected from @racket[conjunction]
- by partial order @racket[prior] with every applicable rule in both
+  (conjunction idx concrete-clauses full-evaluations concrete-constants)
+  @{Resolves the abstract atom in position @racket[idx] in @racket[conjunction]
+ with every applicable rule in both
  @racket[concrete-clauses] and @racket[full-evaluations].
  The rules in @racket[concrete-clauses] themselves are concrete,
  but they are abstracted to apply resolution.

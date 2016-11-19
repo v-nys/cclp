@@ -34,6 +34,7 @@
 (provide (contract-out [is-valid? (-> model? boolean?)]))
 
 (define (selected-index conjunction prior full-ai-rules)
+  (log-debug "looking for selected index")
   (define full-eval-index
     (foldl
      (λ (r acc)
@@ -42,12 +43,14 @@
            (findf-index (λ (atom) (>=-extension (full-evaluation-input-pattern r) atom)) conjunction)))
      #f
      full-ai-rules))
+  ; TODO: only use equivalence classes for atoms
   (if full-eval-index
       full-eval-index
       (let* ([sexp-conjunction (abstract-domain-elem->sexp conjunction)]
              [query (list 'member_reaches_or_includes_all_under_consistency 'X sexp-conjunction)]
              [outcomes (query-model-dynamic prior query)])
         (begin
+          (log-debug "found topmost atom type: ~v" outcomes)
           (if (null? outcomes)
               (error "Partial order is underspecified.")
               (begin
