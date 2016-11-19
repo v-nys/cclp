@@ -27,11 +27,21 @@
 (require "abstract-knowledge.rkt")
 (require (only-in racket-list-utils/utils findf-index))
 (require parenlog)
+(require racket/set)
 
 (define (is-valid? prior)
   (let ([counter-examples (query-model prior (violates_partial_order))])
     (< (length counter-examples) 1)))
 (provide (contract-out [is-valid? (-> model? boolean?)]))
+
+(define (unique-atoms conjunction)
+  (reverse
+   (foldl
+    (λ (at acc)
+      (let ([renaming (findf (λ (x) (renames? x at)) acc)])
+        (if renaming acc (cons at acc))))
+    (list)
+    conjunction)))
 
 (define (selected-index conjunction prior full-ai-rules)
   (log-debug "looking for selected index")
@@ -43,10 +53,9 @@
            (findf-index (λ (atom) (>=-extension (full-evaluation-input-pattern r) atom)) conjunction)))
      #f
      full-ai-rules))
-  ; TODO: only use equivalence classes for atoms
   (if full-eval-index
       full-eval-index
-      (let* ([sexp-conjunction (abstract-domain-elem->sexp conjunction)]
+      (let* ([sexp-conjunction (abstract-domain-elem->sexp (unique-atoms conjunction))]
              [query (list 'member_reaches_or_includes_all_under_consistency 'X sexp-conjunction)]
              [outcomes (query-model-dynamic prior query)])
         (begin
