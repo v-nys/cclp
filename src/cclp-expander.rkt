@@ -36,6 +36,7 @@
 (require (only-in "data-utils.rkt" 5-tuple))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 (require (for-syntax (only-in "data-utils.rkt" positive-integer->symbol)))
+(require (for-syntax (only-in racket remove-duplicates match second third)))
 
 (require "abstract-domain-ordering.rkt")
 
@@ -217,8 +218,21 @@
 
 ; PART RELATED TO PREPRIOR
 
-(define-for-syntax (relevant-fact pair-syntaxes acc)
-  (syntax (relevant_atoms ())))
+; careful! this is syntax such that the atoms can be *converted* to S-expressions
+; the parsed forms are not what we want!
+; use expand-syntax-while-bound instead of syntax->datum!
+(define-for-syntax (extract-relevant-atom-stx pairs-syntax)
+  (define pair-syntaxes (syntax->list pairs-syntax))
+  (define (syntaxes->atom-datums lst acc)
+    (match lst
+      [(list) (list)]
+      [(list-rest h t)
+       (let ([d1 (syntax->datum (second (syntax->list h)))]
+             [d2 (syntax->datum (third (syntax->list h)))])
+         (syntaxes->atom-datums t (cons d1 (cons d2 acc))))]))
+  (define as-datums (remove-duplicates (syntaxes->atom-datums pair-syntaxes '())))
+  (define as-single-datum ('relevant_atoms (foldr (λ (elem acc) ('cons elem acc)) '() as-datums)))
+  (datum->syntax pairs-syntax as-single-datum))
 
 (define-syntax (preprior-section stx)
   (begin
@@ -229,10 +243,12 @@
              (datum->syntax
               #'(pair ...)
               (map expand-syntax-while-bound (syntax->list #'(pair ...))))]
-            [relevant-atoms-fact (relevant-fact (syntax->list #'(pair ...)) (list))])
+            [relevant-atoms-stx (extract-relevant-atom-stx #'(pair ...))])
+            ; placeholder to check if the approach works
+            ;[relevant-atoms-stx #'(relevant_atoms (cons (collect (γ sym1) (α sym1)) (cons (eq (α sym1) (α sym2)) ())))])
          #`((λ () (define-model prior
                     expanded-pair ...
-                    (relevant_atoms (cons (collect (g 1) (a 1)) ()))
+                    relevant-atoms-stx
                     (member X (cons X Y))
                     (:- (member X (cons Y Z))
                         (member X Z))
