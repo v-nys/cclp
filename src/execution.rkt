@@ -57,7 +57,7 @@
       full-eval-index
       (let* ([sexp-conjunction (abstract-domain-elem->sexp (unique-atoms conjunction))]
              [query (list 'member_reaches_or_includes_all_under_consistency 'X sexp-conjunction)]
-             [outcomes (query-model-dynamic prior query)])
+             [outcomes (query-model-dynamic prior #:limit 1 query)])
         (begin
           (log-debug "found topmost atom type: ~v" outcomes)
           (if (null? outcomes)

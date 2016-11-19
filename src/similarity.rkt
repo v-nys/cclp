@@ -335,9 +335,7 @@
   (define branch (shortest-branch-containing node-index-1 node-index-2-or-abstract-conjunction tree))
   (define skeleton (if branch (car (generational-tree-skeleton branch)) #f))
   (define candidate-targets (if branch (candidate-target-atoms skeleton (- (length branch) 1)) #f))
-  (log-debug "candidate target atoms: ~v" candidate-targets)
   (define all-generational-trees (if branch (generational-trees branch) #f))
-  (log-debug "number of generational trees: ~v" (length all-generational-trees))
   (define ls1 (if branch (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch) #f))
   (define ls2
     (if branch

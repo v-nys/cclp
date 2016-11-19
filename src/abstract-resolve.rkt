@@ -87,11 +87,12 @@
              acc)))
      (list)
      kb))
-  (let* ([conjunct (list-ref conjunction idx)]
-         [outcomes-full-eval ((curry fold-over-knowledge idx) full-evaluations)])
-    (cons idx
+  (let* ([conjunct-index idx]
+         [conjunct (list-ref conjunction conjunct-index)]
+         [outcomes-full-eval ((curry fold-over-knowledge conjunct-index) full-evaluations)])
+    (cons conjunct-index
           (if (null? outcomes-full-eval)
-              ((curry fold-over-knowledge idx) concrete-clauses)
+              ((curry fold-over-knowledge conjunct-index) concrete-clauses)
               outcomes-full-eval))))
 ; TODO: no point in returning a pair anymore
 (provide

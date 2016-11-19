@@ -37,11 +37,14 @@ append(γ1,α1,α2),collect(γ1,α1)
 append(γ1,α1,α2),append([γ1|α1],α2,α3)
 append([γ1|α1],α2,α3),collect(γ1,α1)
 eq([γ1|α1],α2),collect(γ1,α1)
+eq(γ1,α1),collect(γ1,[γ2|α1])
+append([],α1,α2),eq([γ1|α1],α2)
 eq(α1,[]),collect(γ1,α1)
 append(α1,α2,[γ1|α3]),collect(γ1,α1)
 collect(γ1,[]),collect(γ1,[γ2|α1])
+collect(γ1,[]),collect(γ1,[γ2])
 append(α1,α2,[]),collect(γ1,[γ2|α1])
-collect(γ1,[]),append(α1,α2,[])
+append(α1,α2,[]),collect(γ1,[])
 
 {CONCRETE CONSTANTS}
 nil

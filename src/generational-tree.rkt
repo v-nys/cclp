@@ -108,6 +108,7 @@
     [(node (tree-label (list) _ _ _ _) '()) #f]
     [(node 'fail '()) #f]
     [(node (cycle _) '()) #f]
+    [(node (similarity-cycle _) '()) #f]
     [(node (tree-label c (none) s r #f) '())
      (list (tree-label c (none) s r #f))]
     [(node (tree-label c sel s r i) ch)
@@ -177,65 +178,67 @@
 (define (candidate-target-atoms skeleton live-depth [depth-acc 0])
   (if (>= depth-acc live-depth)
       (list)
-      (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
-               (descendant-renames? skeleton (node-label skeleton)))
-          (list (node-label skeleton))
-          (foldl
-           (λ (c candidate-acc)
-             (append candidate-acc (candidate-target-atoms c live-depth (+ depth-acc 1))))
-           (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
-                    (descendant-renames? skeleton (node-label skeleton)))
-               (list (node-label skeleton))
-               (list))
-           (node-children skeleton)))))
-(provide
- (proc-doc/names
-  candidate-target-atoms
-  (->*
-   (node? exact-positive-integer?)
-   (exact-nonnegative-integer?)
-   (listof abstract-atom?))
-  ((skeleton live-depth) ((depth-acc 0)))
-  @{Finds potential target atoms for recursion analysis.
+      (let ([candidates-among-descendants
+             (foldl
+              (λ (c candidate-acc)
+                (append candidate-acc (candidate-target-atoms c live-depth (+ depth-acc 1))))
+              (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
+                       (descendant-renames? skeleton (node-label skeleton)))
+                  (list (node-label skeleton))
+                  (list))
+              (node-children skeleton))])
+        (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
+                 (descendant-renames? skeleton (node-label skeleton)))
+            (cons (node-label skeleton) candidates-among-descendants)
+            candidates-among-descendants))))
+  (provide
+   (proc-doc/names
+    candidate-target-atoms
+    (->*
+     (node? exact-positive-integer?)
+     (exact-nonnegative-integer?)
+     (listof abstract-atom?))
+    ((skeleton live-depth) ((depth-acc 0)))
+    @{Finds potential target atoms for recursion analysis.
  The parameter @racket[skeleton] is a non-annotated recursion analysis,
  @racket[live-depth] indicates depth from which an atom may survive indefinitely,
  @racket[depth-acc] is the depth at which the root of @racket[skeleton] is found.}))
-
-; TODO test
-(define (multiple-direct-live-lines? my-node live-depth curr-depth)
-  (let ([children-reaching-live-depth
-         (filter
-          (λ (c) (can-reach-depth? c live-depth (+ curr-depth 1)))
-          (node-children my-node))])
-    (>= (length children-reaching-live-depth) 2)))
-(provide
- (proc-doc/names
-  multiple-direct-live-lines?
-  (-> node? exact-nonnegative-integer? exact-nonnegative-integer? boolean?)
-  (node live-depth current-depth)
-  @{Tests whether @racket[node] has at least two children and whether both children have descendants at depth @racket[live-depth], when @racket[node] is at @racket[current-depth].}))
-
-(define (can-reach-depth? my-node target-depth curr-depth)
-  (cond [(>= curr-depth target-depth) #t]
-        [(null? (node-children my-node)) #f]
-        [else
-         (ormap
-          (λ (c) can-reach-depth? c target-depth (+ curr-depth) 1)
-          (node-children my-node))]))
-
-(define (generational-trees branch)
-  (define skeleton (generational-tree-skeleton branch))
-  (annotate-generational-trees
-   (car skeleton) ; the assumption here is that the branch starts with a single atom
-   (- (length branch) 1)))
-; can refine this further:
-; first resolution-info should have an atomic query
-; not having a selection-and-clause and having a successor list element would also be a violation
-; +vice versa
-(provide
- (proc-doc/names
-  generational-trees
-  (-> (non-empty-listof tree-label?) (listof node?))
-  (branch)
-  @{Computes all potentially interesting generational trees for @racket[branch].
+  
+  ; TODO test
+  (define (multiple-direct-live-lines? my-node live-depth curr-depth)
+    (let ([children-reaching-live-depth
+           (filter
+            (λ (c) (can-reach-depth? c live-depth (+ curr-depth 1)))
+            (node-children my-node))])
+      (>= (length children-reaching-live-depth) 2)))
+  (provide
+   (proc-doc/names
+    multiple-direct-live-lines?
+    (-> node? exact-nonnegative-integer? exact-nonnegative-integer? boolean?)
+    (node live-depth current-depth)
+    @{Tests whether @racket[node] has at least two children and whether both children have descendants at depth @racket[live-depth], when @racket[node] is at @racket[current-depth].}))
+  
+  (define (can-reach-depth? my-node target-depth curr-depth)
+    (cond [(>= curr-depth target-depth) #t]
+          [(null? (node-children my-node)) #f]
+          [else
+           (ormap
+            (λ (c) can-reach-depth? c target-depth (+ curr-depth) 1)
+            (node-children my-node))]))
+  
+  (define (generational-trees branch)
+    (define skeleton (generational-tree-skeleton branch))
+    (annotate-generational-trees
+     (car skeleton) ; the assumption here is that the branch starts with a single atom
+     (- (length branch) 1)))
+  ; can refine this further:
+  ; first resolution-info should have an atomic query
+  ; not having a selection-and-clause and having a successor list element would also be a violation
+  ; +vice versa
+  (provide
+   (proc-doc/names
+    generational-trees
+    (-> (non-empty-listof tree-label?) (listof node?))
+    (branch)
+    @{Computes all potentially interesting generational trees for @racket[branch].
  All generational trees for a branch have the same skeleton, but potentially interesting ones are those for which a target atom can be found which is recursively evaluated.}))
