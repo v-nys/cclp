@@ -33,6 +33,18 @@ append([H|T],L,[H|TR]) :- append(T,L,TR).
 {PREPRIOR}
 collect(γ1,α1),eq(α1,α2)
 collect(γ1,α1),append(α1,α2,α3)
+append(γ1,α1,α2),collect(γ1,α1)
+append(γ1,α1,α2),append([γ1|α1],α2,α3)
+append([γ1|α1],α2,α3),collect(γ1,α1)
+eq([γ1|α1],α2),collect(γ1,α1)
+eq(α1,[]),collect(γ1,α1)
+append(α1,α2,[γ1|α3]),collect(γ1,α1)
+collect(γ1,[]),collect(γ1,[γ2|α1])
+append(α1,α2,[]),collect(γ1,[γ2|α1])
+collect(γ1,[]),append(α1,α2,[])
+
+{CONCRETE CONSTANTS}
+nil
 
 {QUERY}
 sameleaves(γ1,γ2)
