@@ -90,9 +90,7 @@
               (if similar-predecessor
                   (let ([similarity-cycle-node (node (similarity-cycle (cdr similar-predecessor)) '())])
                     (update-candidate next-index (none) (list similarity-cycle-node)))
-                  (let* ([resolution-result
-                          (abstract-resolve conjunction selection clauses full-evaluations concrete-constants)]
-                         [resolvents (cdr resolution-result)]
+                  (let* ([resolvents (abstract-resolve conjunction selection clauses full-evaluations concrete-constants)]
                          [child-trees (map resolvent->node resolvents)])
                     (update-candidate next-index (some selection) child-trees)))]
              [updated-top (replace-first-subtree top candidate updated-candidate)])

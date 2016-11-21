@@ -87,14 +87,11 @@
              acc)))
      (list)
      kb))
-  (let* ([conjunct-index idx]
-         [conjunct (list-ref conjunction conjunct-index)]
-         [outcomes-full-eval ((curry fold-over-knowledge conjunct-index) full-evaluations)])
-    (cons conjunct-index
-          (if (null? outcomes-full-eval)
-              ((curry fold-over-knowledge conjunct-index) concrete-clauses)
-              outcomes-full-eval))))
-; TODO: no point in returning a pair anymore
+  (let* ([conjunct (list-ref conjunction idx)]
+         [outcomes-full-eval ((curry fold-over-knowledge idx) full-evaluations)])
+    (if (null? outcomes-full-eval)
+        ((curry fold-over-knowledge idx) concrete-clauses)
+        outcomes-full-eval)))
 (provide
  (proc-doc/names
   abstract-resolve
@@ -103,7 +100,7 @@
       (listof rule?)
       (listof full-evaluation?)
       (listof function?)
-      (cons/c exact-nonnegative-integer? (listof resolvent?)))
+      (listof resolvent?))
   (conjunction idx concrete-clauses full-evaluations concrete-constants)
   @{Resolves the abstract atom in position @racket[idx] in @racket[conjunction]
  with every applicable rule in both
@@ -112,8 +109,7 @@
  but they are abstracted to apply resolution.
  Concrete constants in @racket[concrete-constants] are mapped to abstract constants,
  rather than abstract variables.
- The result is a @racket[pair] consisting of the index of the selected
- abstract atom and a list of outcomes for every possible resolution step.}))
+ The result is a @racket[list] of outcomes for every possible resolution step.}))
 
 (define (abstract-step conjunct-index conjunction knowledge concrete-constants)
   (define conjunct (list-ref conjunction conjunct-index))

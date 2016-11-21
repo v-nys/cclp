@@ -36,14 +36,12 @@
                          (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
                    (list)
                    (list))
- (cons
-  0
-  (list (resolvent (interpret-abstract-conjunction "del(α8,[γ8|γ9],α10),perm(α10,α9),ord([α8|α9])")
-                   (abp:parse-abstract-substitution "α6/γ8,α7/γ9,γ1/[γ8|γ9],α1/[α8|α9]")
-                   (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
-        (resolvent (interpret-abstract-conjunction "ord(γ2)")
-                   (abp:parse-abstract-substitution "γ1/γ2,α1/γ2")
-                   (cbp:parse-rule "perm([],[])")))))
+ (list (resolvent (interpret-abstract-conjunction "del(α8,[γ8|γ9],α10),perm(α10,α9),ord([α8|α9])")
+                  (abp:parse-abstract-substitution "α6/γ8,α7/γ9,γ1/[γ8|γ9],α1/[α8|α9]")
+                  (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
+       (resolvent (interpret-abstract-conjunction "ord(γ2)")
+                  (abp:parse-abstract-substitution "γ1/γ2,α1/γ2")
+                  (cbp:parse-rule "perm([],[])"))))
 
 (let ([full-eval
        (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
@@ -55,12 +53,10 @@
     '()
     (list full-eval)
     (list))
-   (cons
-    0
-    (list
-     (resolvent
-      (interpret-abstract-conjunction "perm(γ23,α13),ord([γ3,γ22|α13])")
-      (abp:parse-abstract-substitution "α12/γ22,γ18/γ20,γ19/γ21,α14/γ23")
-      full-eval)))))
+   (list
+    (resolvent
+     (interpret-abstract-conjunction "perm(γ23,α13),ord([γ3,γ22|α13])")
+     (abp:parse-abstract-substitution "α12/γ22,γ18/γ20,γ19/γ21,α14/γ23")
+     full-eval))))
 
 ; TODO test whether single-step unfolding does not take place when full eval is applied
