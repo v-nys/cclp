@@ -336,7 +336,7 @@
 (define (s-similar? node-index-1 node-index-2-or-abstract-conjunction index-2-selection tree)
   (define branch (shortest-branch-containing node-index-1 node-index-2-or-abstract-conjunction tree))
   (define skeleton (if branch (car (generational-tree-skeleton branch)) #f))
-  (define candidate-targets (if branch (candidate-target-atoms skeleton (- (length branch) 1)) #f))
+  (define candidate-targets (if branch (candidate-target-identified-atoms skeleton (- (length branch) 1)) #f))
   (define all-generational-trees (if branch (generational-trees branch) #f))
   (define ls1 (if branch (findf-index (λ (l) (equal? (label-index l) node-index-1)) branch) #f))
   (define ls2
