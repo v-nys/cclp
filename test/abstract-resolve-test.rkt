@@ -31,7 +31,7 @@
 
 (check-equal?
  (abstract-resolve (interpret-abstract-conjunction "perm(γ1,α1),ord(α1)")
-                   (abp:parse-prior-relation "perm(γ1,α1),ord(α1)")
+                   0
                    (list (cbp:parse-rule "perm([],[])")
                          (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
                    (list)
@@ -51,7 +51,7 @@
   (check-equal?
    (abstract-resolve
     (interpret-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")
-    (abp:parse-prior-relation "perm(γ1,α1),ord(α1)")
+    0
     '()
     (list full-eval)
     (list))
