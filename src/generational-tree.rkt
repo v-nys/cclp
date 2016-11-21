@@ -77,13 +77,20 @@
   @{Computes how many conjuncts will be introduced when @racket[knowledge] is applied.}))
 
 (struct identified-atom (atom uid) #:transparent)
+(provide
+ (struct*-doc
+  identified-atom
+  ([atom abstract-atom?]
+   [uid exact-nonnegative-integer?])
+  @{A uniquely identifiable instance of an abstract atom in a generational tree (or skeleton).
+     The field @racket[uid] is unique to each atom in a generational tree.}))
 
 (define (generational-tree-skeleton branch [uid-acc 1])
   (match branch
     [(list label)
      (map-accumulatel
-      (λ (atom acc) (cons (node (identified-atom acc) '()) (add1 acc)))
-      0
+      (λ (atom acc) (cons (node (identified-atom label acc) '()) (add1 acc)))
+      uid-acc
       (tree-label-conjunction label))]
     [(list-rest (tree-label tl-con (some selected) tl-subst tl-r tl-i) tl-rest)
      (let* ([first-unselected (take tl-con selected)]
@@ -99,7 +106,7 @@
                  (λ (pre post acc)
                    (cons
                     (cons (node (identified-atom pre (cdr acc)) (list post)) (car acc))
-                    (+ (cdr acc) 1)))
+                    (add1 (cdr acc))))
                  (cons '() uid-acc)
                  first-unselected
                  first-successors))
@@ -156,7 +163,7 @@
     [(node id-atom-label (list single-elem))
      (node (identified-atom-with-generation id-atom-label generation-acc)
            (list
-            (annotate-generational-tree single-elem target-identified-atom generation-acc live-depth (+ depth-acc 1))))]
+            (annotate-generational-tree single-elem target-identified-atom generation-acc live-depth (add1 depth-acc))))]
     [(node atom-label (list-rest h t))
      #:when (and (or (equal? (identified-atom-uid target-identified-atom) (identified-atom-uid atom-label))
                      (and (renames?
@@ -167,13 +174,13 @@
      (node (identified-atom-with-generation atom-label generation-acc)
            (map
             (λ (subtree)
-              (annotate-generational-tree subtree target-identified-atom (+ generation-acc 1) live-depth (+ depth-acc 1)))
+              (annotate-generational-tree subtree target-identified-atom (add1 generation-acc) live-depth (add1 depth-acc)))
             (cons h t)))]
     [(node atom-label (list-rest h t))
      (node (identified-atom-with-generation atom-label generation-acc)
            (map
             (λ (subtree)
-              (annotate-generational-tree subtree target-identified-atom generation-acc live-depth (+ depth-acc 1)))
+              (annotate-generational-tree subtree target-identified-atom generation-acc live-depth (add1 depth-acc)))
             (cons h t)))]))
 (provide
  (proc-doc/names

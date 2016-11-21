@@ -92,7 +92,7 @@
   (define
     dp-zero-index
     (findf-index
-     (λ (t) (equal? (node-label t) (atom-with-generation dp 0)))
+     (λ (t) (equal? (node-label t) (identified-atom-with-generation dp 0)))
      gen-tree-lvl-subforest))
   (if
    dp-zero-index
@@ -108,10 +108,9 @@
   dp-zero-subtree-depth-complement-at-level
   (-> abstract-atom? node? exact-nonnegative-integer? (or/c #f list?))
   (dp generational-tree lvl)
-  @{Find a subtree of the generational tree @racket[generational-tree] with an exact occurrence
- of abstract atom @racket[dp] of generation 0 at its root at the level @racket[lvl].
- Additionally, track the level and find the complement at this level.
- This assumes there is only one exact occurrence of @racket[dp].}))
+  @{Find a subtree of the generational tree @racket[generational-tree] with
+ the uniquely identified atom @racket[dp] of generation 0 at its root at the level @racket[lvl].
+ Additionally, track the level and find the complement at this level.}))
 
 (define (find-dp-zero-subtree-depth-complement dp gen-tree)
   (define gt-depth (node-depth gen-tree))
@@ -125,42 +124,42 @@
   find-dp-zero-subtree-depth-complement
   (-> abstract-atom? node? (or/c #f list?))
   (dp generational-tree)
-  @{Find a subtree of the generational tree @racket[generational-tree] with an exact occurrence
- of abstract atom @racket[dp] of generation 0 at its root, along with the depth of this root and
+  @{Find a subtree of the generational tree @racket[generational-tree] with the uniquely identified
+ atom @racket[dp] of generation 0 at its root, along with the depth of this root and
  with subtrees at the same level in @racket[generational-tree], i.e. the complement at that level.
  This assumes that there is only one exact occurrence of @racket[dp].
  In case there is no exact occurrence of @racket[dp], the result is @racket[#f].}))
 
 (define (context-and-ends-match subset-s1-with-gen subset-s2-with-gen dp-complement depth ls1 ls2)
-  (define big-l1 (apply max (map atom-with-generation-generation subset-s1-with-gen)))
+  (define big-l1 (apply max (map identified-atom-with-generation-generation subset-s1-with-gen)))
   (define ls1-1-dp
-    (map atom-with-generation-atom (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s1-with-gen)))
+    (map identified-atom-with-generation-id-atom (filter (λ (a-g) (equal? (identified-atom-with-generation-generation a-g) 1)) subset-s1-with-gen)))
   (define ls1-L-dp
-    (map atom-with-generation-atom (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l1)) subset-s1-with-gen)))
+    (map identified-atom-with-generation-id-atom (filter (λ (a-g) (equal? (identified-atom-with-generation-generation a-g) big-l1)) subset-s1-with-gen)))
   (define full-complement-at-ls1
     (apply
      append
      (map
-      (compose (curry map atom-with-generation-atom) (λ (comp) (horizontal-level comp (- ls1 depth))))
+      (compose (curry map identified-atom-with-generation-id-atom) (λ (comp) (horizontal-level comp (- ls1 depth))))
       dp-complement)))
-  (define big-l2 (apply max (map atom-with-generation-generation subset-s2-with-gen)))
+  (define big-l2 (apply max (map identified-atom-with-generation-generation subset-s2-with-gen)))
   (define ls2-1-dp
-    (map atom-with-generation-atom (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) 1)) subset-s2-with-gen)))
+    (map identified-atom-with-generation-id-atom (filter (λ (a-g) (equal? (identified-atom-with-generation-generation a-g) 1)) subset-s2-with-gen)))
   (define ls2-L-dp
-    (map atom-with-generation-atom (filter (λ (a-g) (equal? (atom-with-generation-generation a-g) big-l2)) subset-s2-with-gen)))
+    (map identified-atom-with-generation-id-atom (filter (λ (a-g) (equal? (identified-atom-with-generation-generation a-g) big-l2)) subset-s2-with-gen)))
   (define full-complement-at-ls2
     (apply
      append
      (map
-      (compose (curry map atom-with-generation-atom) (λ (comp) (horizontal-level comp (- ls2 depth))))
+      (compose (curry map identified-atom-with-generation-id-atom) (λ (comp) (horizontal-level comp (- ls2 depth))))
       dp-complement)))
   (renames?
-   (append ls1-1-dp ls1-L-dp full-complement-at-ls1)
-   (append ls1-1-dp ls1-L-dp full-complement-at-ls1)))
+   (map identified-atom-atom (append ls1-1-dp ls1-L-dp full-complement-at-ls1))
+   (map identified-atom-atom (append ls1-1-dp ls1-L-dp full-complement-at-ls1))))
 
 (define (minimal-maximum-generation-check level1 level2)
-  (let ([max-gen1 (apply max (map atom-with-generation-generation level1))]
-        [max-gen2 (apply max (map atom-with-generation-generation level2))])
+  (let ([max-gen1 (apply max (map identified-atom-with-generation-generation level1))]
+        [max-gen2 (apply max (map identified-atom-with-generation-generation level2))])
     (and (>= max-gen1 3)
          (> max-gen2 max-gen1))))
 
@@ -203,8 +202,8 @@
 
 (define (atoms-of-generation gen)
   (compose
-   (curry map atom-with-generation-atom)
-   (curry filter (compose (curry equal? gen) atom-with-generation-generation))))
+   (curry map identified-atom-with-generation-id-atom)
+   (curry filter (compose (curry equal? gen) identified-atom-with-generation-generation))))
 
 (define (subsequent-gen-mapping ls subtree-and-depth i)
   (define subtree (car subtree-and-depth))
@@ -240,7 +239,7 @@
         (applies-beyond-gs g-mapping ls1 ls2 gs1 gs2 subtree-and-depth))))
 
 (define (max-gen gen-tree level)
-  (apply max (horizontal-level (node-map atom-with-generation-generation gen-tree) level)))
+  (apply max (horizontal-level (node-map identified-atom-with-generation-generation gen-tree) level)))
 
 (define (applies-in-range mapping ls1 ls2 gs1 gs2 from-start subtree-and-depth)
   (log-debug "checking whether mapping ~v applies (from start: ~v)" mapping from-start)
@@ -249,35 +248,35 @@
   (define h-level-1 (horizontal-level subtree (- ls1 subtree-depth)))
   (define h-level-2 (horizontal-level subtree (- ls2 subtree-depth)))
   (define atoms-gens-level-1
-    (group-by atom-with-generation-generation h-level-1))
+    (group-by identified-atom-with-generation-generation h-level-1))
   (define atoms-gens-level-2
-    (group-by atom-with-generation-generation h-level-2))
+    (group-by identified-atom-with-generation-generation h-level-2))
   (define max-gen-1 (max-gen subtree (- ls1 subtree-depth)))
   (define max-gen-2 (max-gen subtree (- ls2 subtree-depth)))
   (define relevant-groups-level-1
     (filter
      (λ (group)
-       (and (>= (atom-with-generation-generation (car group)) (if from-start 1 (+ gs1 1)))
-            (< (atom-with-generation-generation (car group)) (if from-start gs1 (- max-gen-1 1)))))
+       (and (>= (identified-atom-with-generation-generation (car group)) (if from-start 1 (+ gs1 1)))
+            (< (identified-atom-with-generation-generation (car group)) (if from-start gs1 (- max-gen-1 1)))))
      atoms-gens-level-1))
   (define relevant-groups-level-2
     (filter
      (λ (group)
-       (and (>= (atom-with-generation-generation (car group)) (if from-start 1 (+ gs2 1)))
-            (< (atom-with-generation-generation (car group)) (if from-start gs2 (- max-gen-2 1)))))
+       (and (>= (identified-atom-with-generation-generation (car group)) (if from-start 1 (+ gs2 1)))
+            (< (identified-atom-with-generation-generation (car group)) (if from-start gs2 (- max-gen-2 1)))))
      atoms-gens-level-2))
   (and (andmap
         (curry mapping-applies mapping)
-        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-1 (if from-start (- gs1 1) (- max-gen-1 2))))
-        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-1 (if from-start 1 (+ gs1 1)))))
+        (map (curry map (compose identified-atom-atom identified-atom-with-generation-id-atom)) (drop-gen-group relevant-groups-level-1 (if from-start (- gs1 1) (- max-gen-1 2))))
+        (map (curry map (compose identified-atom-atom identified-atom-with-generation-id-atom)) (drop-gen-group relevant-groups-level-1 (if from-start 1 (+ gs1 1)))))
        (andmap
         (curry mapping-applies mapping)
-        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-2 (if from-start (- gs2 1) (- max-gen-2 2))))
-        (map (curry map atom-with-generation-atom) (drop-gen-group relevant-groups-level-2 (if from-start 1 (+ gs2 1)))))))
+        (map (curry map (compose identified-atom-atom identified-atom-with-generation-id-atom)) (drop-gen-group relevant-groups-level-2 (if from-start (- gs2 1) (- max-gen-2 2))))
+        (map (curry map (compose identified-atom-atom identified-atom-with-generation-id-atom)) (drop-gen-group relevant-groups-level-2 (if from-start 1 (+ gs2 1)))))))
 
 (define (drop-gen-group lst gen)
   (foldr
-   (λ (g acc) (if (equal? (atom-with-generation-generation (car g)) gen) acc (cons g acc)))
+   (λ (g acc) (if (equal? (identified-atom-with-generation-generation (car g)) gen) acc (cons g acc)))
    '()
    lst))
 
@@ -310,24 +309,24 @@
   (define
     three-generation-conjunction-1
     (filter
-     (λ (a-g) (<= (- gs1 1) (atom-with-generation-generation a-g) (+ gs1 1)))
+     (λ (a-g) (<= (- gs1 1) (identified-atom-with-generation-generation a-g) (+ gs1 1)))
      subset-s1-with-gen))
   (define
     three-generation-conjunction-2
     (filter
-     (λ (a-g) (<= (- gs2 1) (atom-with-generation-generation a-g) (+ gs2 1)))
+     (λ (a-g) (<= (- gs2 1) (identified-atom-with-generation-generation a-g) (+ gs2 1)))
      subset-s2-with-gen))
   (and
    (renames?
-    (map atom-with-generation-atom three-generation-conjunction-1)
-    (map atom-with-generation-atom three-generation-conjunction-2))
+    (map (compose identified-atom-atom identified-atom-with-generation-id-atom) three-generation-conjunction-1)
+    (map (compose identified-atom-atom identified-atom-with-generation-id-atom) three-generation-conjunction-2))
    (equal?
-    (map (compose (curry - gs1) atom-with-generation-generation) three-generation-conjunction-1)
-    (map (compose (curry - gs2) atom-with-generation-generation) three-generation-conjunction-2))))
+    (map (compose (curry - gs1) identified-atom-with-generation-generation) three-generation-conjunction-1)
+    (map (compose (curry - gs2) identified-atom-with-generation-generation) three-generation-conjunction-2))))
 (provide
  (proc-doc/names
   three-generation-correspondence
-  (-> exact-nonnegative-integer? exact-nonnegative-integer? (listof atom-with-generation?) (listof atom-with-generation?) boolean?)
+  (-> exact-nonnegative-integer? exact-nonnegative-integer? (listof identified-atom-with-generation?) (listof identified-atom-with-generation?) boolean?)
   (gs1 gs2 level-1 level-2)
   @{Checks whether the selected generation @racket[gs1] at level @racket[level-1] (of a genealogical tree),
  along with the the preceding generation and the following generation consitutes a renamed instance of @racket[gs2]
@@ -353,10 +352,10 @@
                  [dp-zero-subtree-depth-complement
                   (find-dp-zero-subtree-depth-complement dp gt)]
                  [gs1
-                  (atom-with-generation-generation
+                  (identified-atom-with-generation-generation
                    (list-ref annotated-s1 (some-v (label-selection (list-ref branch ls1)))))]
                  [gs2
-                  (atom-with-generation-generation
+                  (identified-atom-with-generation-generation
                    (list-ref annotated-s2 index-2-selection))])
             (if (<= ls1 (second dp-zero-subtree-depth-complement)) #f (checks-involving-generations ls1 ls2 gs1 gs2 dp-zero-subtree-depth-complement))))
         candidate-targets
