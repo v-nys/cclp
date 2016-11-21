@@ -238,7 +238,7 @@
   (current-logger logger)
   (with-logging-to-port (current-error-port)
     (λ () (cclp-run filename program-data))
-    'debug))
+    'info))
 (provide
  (proc-doc/names
   cclp-top
