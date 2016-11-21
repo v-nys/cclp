@@ -158,6 +158,12 @@
    (append ls1-1-dp ls1-L-dp full-complement-at-ls1)
    (append ls1-1-dp ls1-L-dp full-complement-at-ls1)))
 
+(define (minimal-maximum-generation-check level1 level2)
+  (let ([max-gen1 (apply max (map atom-with-generation-generation level1))]
+        [max-gen2 (apply max (map atom-with-generation-generation level2))])
+    (and (>= max-gen1 3)
+         (> max-gen2 max-gen1))))
+
 (define (checks-involving-generations ls1 ls2 gs1 gs2 subtree-depth-complement)
   ; note that complement means all trees at the same depth as that for dp!
   (match subtree-depth-complement
@@ -169,15 +175,11 @@
        (define subset-s1-with-gen (horizontal-level subtree (- ls1 depth)))
        (define subset-s2-with-gen (horizontal-level subtree (- ls2 depth)))
        (and
-        (begin (log-debug "checking three-generation-correspondence") #t)
+        (minimal-maximum-generation-check subset-s1-with-gen subset-s2-with-gen)
         (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
-        (begin (log-debug "checking whether context and ends match") #t)
         (context-and-ends-match subset-s1-with-gen subset-s2-with-gen complement depth ls1 ls2)
-        (begin (log-debug "checking whether invertible function f applies (or is not needed)") #t)
         (invertible-function-f-applies gs1 gs2 ls1 ls2 (cons subtree depth))
-        (begin (log-debug "checking whether invertible function g applies (or is not needed)") #t)
-        (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))
-        (begin (log-debug "all conditions for s-similarity are met") #t)))]))
+        (invertible-function-g-applies gs1 gs2 ls1 ls2 (cons subtree depth))))]))
 
 (define (invertible-function-f-applies gs1 gs2 ls1 ls2 subtree-and-depth)
   (or (< gs1 3)
