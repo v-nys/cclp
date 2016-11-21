@@ -171,14 +171,17 @@
     "check if the skeleton is correct")
    (check-equal?
     (generational-trees (active-branch-info level-1))
-    (list
-     (generational-tree-bp
-      (a 0
-         (b 1
-            (b 1))
-         (a 1
-            (b 2)
-            (a 2)))))
+    ; a occurs three times in analysis, but four times in the skeleton
+    (build-list
+     4
+     (λ (_)
+       (generational-tree-bp
+        (a 0
+           (b 1
+              (b 1))
+           (a 1
+              (b 2)
+              (a 2))))))
     "check if analysis without a target atom is correct")))
 
 (check-equal?
