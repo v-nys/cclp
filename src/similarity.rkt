@@ -106,7 +106,7 @@
 (provide
  (proc-doc/names
   dp-zero-subtree-depth-complement-at-level
-  (-> abstract-atom? node? exact-nonnegative-integer? (or/c #f list?))
+  (-> identified-atom? node? exact-nonnegative-integer? (or/c #f list?))
   (dp generational-tree lvl)
   @{Find a subtree of the generational tree @racket[generational-tree] with
  the uniquely identified atom @racket[dp] of generation 0 at its root at the level @racket[lvl].
@@ -122,7 +122,7 @@
 (provide
  (proc-doc/names
   find-dp-zero-subtree-depth-complement
-  (-> abstract-atom? node? (or/c #f list?))
+  (-> identified-atom? node? (or/c #f list?))
   (dp generational-tree)
   @{Find a subtree of the generational tree @racket[generational-tree] with the uniquely identified
  atom @racket[dp] of generation 0 at its root, along with the depth of this root and

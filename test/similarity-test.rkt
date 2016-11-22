@@ -42,108 +42,108 @@
       (identified-atom-with-generation (identified-atom (interpret-abstract-atom h1) h2) h3)
       (apply horizontal-level-bp t))]))
 
-;(test-case
-; "finding level-0 instances of a target, and their complement, at a particular level"
-; (check-equal?
-;  (dp-zero-subtree-depth-complement-at-level
-;   (ad:abstract-atom 'dp '())
-;   (generational-tree-bp
-;    (a 0
-;       (dp 0
-;           (f 1)
-;           (g 1))
-;       (b 0
-;          (c 0)
-;          (dp 0
-;              (f 1)
-;              (g 1)))))
-;   1)
-;  (list
-;   (generational-tree-bp
-;    (dp 0
-;        (f 1)
-;        (g 1)))
-;   1
-;   (list
-;    (generational-tree-bp
-;     (b 0
-;        (c 0)
-;        (dp 0
-;            (f 1)
-;            (g 1))))))))
-;
-;(test-case
-; "finding subtrees which begin with a particular atom, as well as their depth and complement"
-; (check-equal?
-;  (find-dp-zero-subtree-depth-complement
-;   (ad:abstract-atom 'dp '())
-;   (generational-tree-bp
-;    (a 0
-;       (dp 0
-;           (f 1)
-;           (g 1))
-;       (b 0
-;          (c 0)
-;          (dp 0
-;              (f 1)
-;              (g 1))))))
-;  (list
-;   (generational-tree-bp
-;    (dp 0
-;        (f 1)
-;        (g 1)))
-;   1
-;   (list
-;    (generational-tree-bp
-;     (b 0
-;        (c 0)
-;        (dp 0
-;            (f 1)
-;            (g 1)))))))
-; (check-equal?
-;  (find-dp-zero-subtree-depth-complement
-;   (ad:abstract-atom 'dp '())
-;   (generational-tree-bp
-;    (dp 0
-;        (a 1)
-;        (b 1))))
-;  (list
-;   (generational-tree-bp
-;    (dp 0
-;        (a 1)
-;        (b 1)))
-;   0
-;   (list)))
-; (check-equal?
-;  (find-dp-zero-subtree-depth-complement
-;   (ad:abstract-atom 'dp '())
-;   (generational-tree-bp
-;    (a 0)))
-;  #f)
-; (check-equal?
-;  (find-dp-zero-subtree-depth-complement
-;   (ad:abstract-atom 'dp '())
-;   (generational-tree-bp
-;    (a 0
-;       (b 0)
-;       (c 0))))
-;  #f))
-;
-;(let* ([bottom-left (node (cycle 1) '())]
-;       [bottom-right (node (tree-label (list) #f (list) #f #f) '())]
-;       [near-bottom-right-contents
-;        (widening (interpret-abstract-conjunction "b(α1)") #f "test" 3)]
-;       [near-bottom-right (node near-bottom-right-contents (list bottom-right))]
-;       [near-top-right-contents
-;        (tree-label (interpret-abstract-conjunction "b(γ1)") 0 (list) #f 2)]
-;       [near-top-right (node near-top-right-contents (list near-bottom-right))]
-;       [top-contents
-;        (widening (interpret-abstract-conjunction "a(α1)") #f "test" 1)]
-;       [top (node top-contents (list bottom-left near-top-right))])
-;  (check-equal?
-;   (shortest-branch-containing 1 3 top)
-;   (list top-contents near-top-right-contents near-bottom-right-contents)))
-;
+(test-case
+ "finding level-0 instances of a target, and their complement, at a particular level"
+ (check-equal?
+  (dp-zero-subtree-depth-complement-at-level
+   (identified-atom (ad:abstract-atom 'dp '()) 2)
+   (generational-tree-bp
+    (a 1 0
+       (dp 2 0
+           (f 4 1)
+           (g 5 1))
+       (b 3 0
+          (c 6 0)
+          (dp 7 0
+              (f 8 1)
+              (g 9 1)))))
+   1)
+  (list
+   (generational-tree-bp
+    (dp 2 0
+        (f 4 1)
+        (g 5 1)))
+   1
+   (list
+    (generational-tree-bp
+     (b 3 0
+        (c 6 0)
+        (dp 7 0
+            (f 8 1)
+            (g 9 1))))))))
+
+(test-case
+ "finding subtrees which begin with a particular atom, as well as their depth and complement"
+ (check-equal?
+  (find-dp-zero-subtree-depth-complement
+   (identified-atom (ad:abstract-atom 'dp '()) 2)
+   (generational-tree-bp
+    (a 1 0
+       (dp 2 0
+           (f 4 1)
+           (g 5 1))
+       (b 3 0
+          (c 6 0)
+          (dp 7 0
+              (f 8 1)
+              (g 9 1))))))
+  (list
+   (generational-tree-bp
+    (dp 2 0
+        (f 4 1)
+        (g 5 1)))
+   1
+   (list
+    (generational-tree-bp
+     (b 3 0
+        (c 6 0)
+        (dp 7 0
+            (f 8 1)
+            (g 9 1)))))))
+ (check-equal?
+  (find-dp-zero-subtree-depth-complement
+   (identified-atom (ad:abstract-atom 'dp '()) 1)
+   (generational-tree-bp
+    (dp 1 0
+        (a 2 1)
+        (b 3 1))))
+  (list
+   (generational-tree-bp
+    (dp 1 0
+        (a 2 1)
+        (b 3 1)))
+   0
+   (list)))
+ (check-equal?
+  (find-dp-zero-subtree-depth-complement
+   (identified-atom (ad:abstract-atom 'dp '()) 1)
+   (generational-tree-bp
+    (a 2 0)))
+  #f)
+ (check-equal?
+  (find-dp-zero-subtree-depth-complement
+   (identified-atom (ad:abstract-atom 'dp '()) 1)
+   (generational-tree-bp
+    (a 2 0
+       (b 3 0)
+       (c 4 0))))
+  #f))
+
+(let* ([bottom-left (node (cycle 1) '())]
+       [bottom-right (node (tree-label (list) #f (list) #f #f) '())]
+       [near-bottom-right-contents
+        (widening (interpret-abstract-conjunction "b(α1)") #f "test" 3)]
+       [near-bottom-right (node near-bottom-right-contents (list bottom-right))]
+       [near-top-right-contents
+        (tree-label (interpret-abstract-conjunction "b(γ1)") 0 (list) #f 2)]
+       [near-top-right (node near-top-right-contents (list near-bottom-right))]
+       [top-contents
+        (widening (interpret-abstract-conjunction "a(α1)") #f "test" 1)]
+       [top (node top-contents (list bottom-left near-top-right))])
+  (check-equal?
+   (shortest-branch-containing 1 3 top)
+   (list top-contents near-top-right-contents near-bottom-right-contents)))
+
 ;(test-case
 ; "extracting the invertible function f from two related conjunctions"
 ; (check-equal?
