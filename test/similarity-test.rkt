@@ -341,85 +341,85 @@
 ;    0))
 ;  #t))
 
-;(test-case
-; "checking for correspondence between generations around and including selected one"
-; (check-equal?
-;  (three-generation-correspondence
-;   2
-;   3
-;   (horizontal-level-bp
-;    "integers(γ1,α1)" 0
-;    "filter(γ2,α1,α2)" 1
-;    "filter(γ3,[γ4|α2],α3)" 2
-;    "filter(γ5,α3,α4)" 3
-;    "sift(α4,α5)" 3
-;    "length(α5,γ6)" 0)
-;   (horizontal-level-bp
-;    "integers(γ1,α1)" 0
-;    "filter(γ2,α1,α2)" 1
-;    "filter(γ3,α2,α3)" 2
-;    "filter(γ4,[γ5|α3],α4)" 3
-;    "filter(γ6,α4,α5)" 4
-;    "sift(α5,α6)" 4
-;    "length(α6,γ7)" 0))
-;  #t)
-; (check-equal?
-;  (three-generation-correspondence
-;   1
-;   1
-;   (horizontal-level-bp
-;    "integers(γ1,α1)" 0
-;    "filter(γ2,[γ3|α1],α2)" 1
-;    "filter(γ4,α2,α3)" 2
-;    "filter(γ5,α3,α4)" 3
-;    "sift(α4,α5)" 3
-;    "length(α5,γ6)" 0)
-;   (horizontal-level-bp
-;    "integers(γ1,α1)" 0
-;    "filter(γ2,[γ3|α1],α2)" 1
-;    "filter(γ4,α2,α3)" 2
-;    "filter(γ5,α3,α4)" 3
-;    "filter(γ6,α4,α5)" 4
-;    "sift(α5,α6)" 4
-;    "length(α6,γ7)" 0))
-;  #t)
-; (check-equal?
-;  (three-generation-correspondence
-;   1
-;   1
-;   (horizontal-level-bp
-;    "integers(γ1,α1)" 0
-;    "filter(γ2,[γ3|α1],α2)" 1
-;    "filter(γ4,α2,α3)" 2
-;    "filter(γ5,α3,α4)" 3
-;    "sift(α4,α5)" 3
-;    "length(α5,γ6)" 0)
-;   (horizontal-level-bp
-;    "integers(γ1,α1)" 0
-;    "filter(γ2,[γ3|α1],α2)" 1
-;    "filter(γ4,α2,α3)" 2
-;    "filter(γ5,α3,α4)" 3
-;    "filter(γ6,α4,α5)" 4
-;    "sift(α5,α6)" 4
-;    "length(γ6,γ7)" 0)) ; difference in preceding generation
-;  #f)
-; (check-equal?
-;  (three-generation-correspondence
-;   1
-;   1
-;   (horizontal-level-bp
-;    "integers(γ1,α1)" 0
-;    "filter(γ2,[γ3|α1],α2)" 1
-;    "filter(γ4,α2,α3)" 2
-;    "filter(γ5,α3,α4)" 3
-;    "sift(α4,α5)" 3
-;    "length(α5,γ6)" 0)
-;   (horizontal-level-bp
-;    "integers(γ1,α1)" 0
-;    "filter(γ2,[γ3|α1],α2)" 1
-;    "filter(γ4,α2,γ3)" 2 ; difference in subsequent generation
-;    "filter(γ5,α3,α4)" 3
-;    "filter(γ6,α4,α5)" 4
-;    "sift(α5,α6)" 4
-;    "length(α6,γ7)" 0))
-;  #f))
+(test-case
+ "checking for correspondence between generations around and including selected one"
+ (check-equal?
+  (three-generation-correspondence
+   2
+   3
+   (horizontal-level-bp
+    "integers(γ1,α1)" 1 0
+    "filter(γ2,α1,α2)" 2 1
+    "filter(γ3,[γ4|α2],α3)" 3 2
+    "filter(γ5,α3,α4)" 4 3
+    "sift(α4,α5)" 5 3
+    "length(α5,γ6)" 6 0)
+   (horizontal-level-bp
+    "integers(γ1,α1)" 7 0
+    "filter(γ2,α1,α2)" 8 1
+    "filter(γ3,α2,α3)" 9 2
+    "filter(γ4,[γ5|α3],α4)" 10 3
+    "filter(γ6,α4,α5)" 11 4
+    "sift(α5,α6)" 12 4
+    "length(α6,γ7)" 13 0))
+  #t)
+ (check-equal?
+  (three-generation-correspondence
+   1
+   1
+   (horizontal-level-bp
+    "integers(γ1,α1)" 1 0
+    "filter(γ2,[γ3|α1],α2)" 2 1
+    "filter(γ4,α2,α3)" 3 2
+    "filter(γ5,α3,α4)" 4 3
+    "sift(α4,α5)" 5 3
+    "length(α5,γ6)" 6 0)
+   (horizontal-level-bp
+    "integers(γ1,α1)" 7 0
+    "filter(γ2,[γ3|α1],α2)" 8 1
+    "filter(γ4,α2,α3)" 9 2
+    "filter(γ5,α3,α4)" 10 3
+    "filter(γ6,α4,α5)" 11 4
+    "sift(α5,α6)" 12 4
+    "length(α6,γ7)" 13 0))
+  #t)
+ (check-equal?
+  (three-generation-correspondence
+   1
+   1
+   (horizontal-level-bp
+    "integers(γ1,α1)" 1 0
+    "filter(γ2,[γ3|α1],α2)" 2 1
+    "filter(γ4,α2,α3)" 3 2
+    "filter(γ5,α3,α4)" 4 3
+    "sift(α4,α5)" 5 3
+    "length(α5,γ6)" 6 0)
+   (horizontal-level-bp
+    "integers(γ1,α1)" 7 0
+    "filter(γ2,[γ3|α1],α2)" 8 1
+    "filter(γ4,α2,α3)" 9 2
+    "filter(γ5,α3,α4)" 10 3
+    "filter(γ6,α4,α5)" 11 4
+    "sift(α5,α6)" 12 4
+    "length(γ6,γ7)" 13 0)) ; difference in preceding generation
+  #f)
+ (check-equal?
+  (three-generation-correspondence
+   1
+   1
+   (horizontal-level-bp
+    "integers(γ1,α1)" 1 0
+    "filter(γ2,[γ3|α1],α2)" 2 1
+    "filter(γ4,α2,α3)" 3 2
+    "filter(γ5,α3,α4)" 4 3
+    "sift(α4,α5)" 5 3
+    "length(α5,γ6)" 6 0)
+   (horizontal-level-bp
+    "integers(γ1,α1)" 7 0
+    "filter(γ2,[γ3|α1],α2)" 8 1
+    "filter(γ4,α2,γ3)" 9 2 ; difference in subsequent generation
+    "filter(γ5,α3,α4)" 10 3
+    "filter(γ6,α4,α5)" 11 4
+    "sift(α5,α6)" 12 4
+    "length(α6,γ7)" 13 0))
+  #f))
