@@ -174,7 +174,7 @@
        (define subset-s1-with-gen (horizontal-level subtree (- ls1 depth)))
        (define subset-s2-with-gen (horizontal-level subtree (- ls2 depth)))
        (and
-        (minimal-maximum-generation-check subset-s1-with-gen subset-s2-with-gen)
+        ;(minimal-maximum-generation-check subset-s1-with-gen subset-s2-with-gen)
         (three-generation-correspondence gs1 gs2 subset-s1-with-gen subset-s2-with-gen)
         (context-and-ends-match subset-s1-with-gen subset-s2-with-gen complement depth ls1 ls2)
         (invertible-function-f-applies gs1 gs2 ls1 ls2 (cons subtree depth))
