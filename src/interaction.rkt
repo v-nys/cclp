@@ -130,9 +130,9 @@
  and the top-level tree to which this node belongs, or @racket[#f].}))
 
 (define (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)
-  (define-values (show-top proceed go-back save widen genealogy end)
-    (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "show genealogical analysis" "end analysis"))
-  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen genealogy end))
+  (define-values (show-top proceed go-back save widen case-split genealogy end)
+    (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "apply a case split" "show genealogical analysis" "end analysis"))
+  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen case-split genealogy end))
   (cond [(equal? choice show-top)
          (begin (newline)
                 (tree-display tree print-tree-label)
@@ -189,6 +189,10 @@
                  candidate
                  (node updated-label (list (node (widening widened-conjunction (none) read-reason #f) '())))))
               (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants))])]
+        [(equal? choice case-split)
+         ; similar to widen, but user should enter as many conjunctions as they like
+         ; the conjunctions do not need to (and in most cases will not) specify the candidate
+         (error "not implemented yet")]
         [(equal? choice genealogy)
          (let* ([active-branch (active-branch-info tree)]
                 [outputs (if active-branch (generational-trees active-branch) #f)])
