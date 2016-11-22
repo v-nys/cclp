@@ -201,3 +201,30 @@
      The field @racket[selection] works the same way as in a @racket[tree-label].
      The @racket[message] field is optional and is used to explain why widening was applied.
      The @racket[index] field serves the same purpose as that of @racket[tree-label].}))
+
+(serializable-struct case (conjunction selection index)
+                     ; message has no bearing on the semantics
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc c1 c2 equal?-recur)
+                        (and (equal?-recur (case-conjunction c1) (case-conjunction c2))
+                             (equal?-recur (case-selection c1) (case-selection c2))
+                             (equal?-recur (case-index c1) (case-index c2))))
+                      (define (hash-proc c hash-recur)
+                        (+ (hash-recur (case-conjunction c))
+                           (hash-recur (case-selection c))
+                           (hash-recur (case-index c))))
+                      (define (hash2-proc c hash2-recur)
+                        (+ (hash2-recur (case-conjunction c))
+                           (hash2-recur (case-selection c))
+                           (hash2-recur (case-index c))))])
+(provide
+ (struct*-doc
+  case
+  ([conjunction (listof abstract-atom?)]
+   [selection any/c]
+   [index (or/c #f exact-positive-integer?)])
+  @{A case in a case split applied during abstract analysis.
+     The field @racket[conjunction] contains the more specific case of the parent conjunction.
+     The field @racket[selection] works the same way as in a @racket[tree-label].
+     The @racket[index] field serves the same purpose as that of @racket[tree-label].}))
