@@ -112,43 +112,43 @@
          (tree-label (interpret-abstract-conjunction "baz") (none) (list) (cbp:parse-rule "quux :- baz") #f)])
    (check-equal? (active-branch-info root) (list info1 info2 info3))))
 
-;(test-case
-; "the skeleton is computed correctly based on a branch of several nodes"
-; (define-values (atom-a atom-b atom-c atom-d atom-e atom-f)
-;   (values (interpret-abstract-atom "a")
-;           (interpret-abstract-atom "b")
-;           (interpret-abstract-atom "c")
-;           (interpret-abstract-atom "d")
-;           (interpret-abstract-atom "e")
-;           (interpret-abstract-atom "f")))
-; (define-values (a-clause b-clause c-clause)
-;   (values (cbp:parse-rule "a :- b, c")
-;           (cbp:parse-rule "b :- d, e")
-;           (cbp:parse-rule "c :- f")))
-; (let* ([level-3-analysis
-;         (node
-;          (tree-label (interpret-abstract-conjunction "d,e,f") (none) (list) c-clause #f) '())]
-;        [level-2-analysis
-;         (node
-;          (tree-label (interpret-abstract-conjunction "d,e,c") (some 2) (list) b-clause 3)
-;          (list level-3-analysis))]
-;        [level-1-analysis
-;         (node
-;          (tree-label (interpret-abstract-conjunction "b,c") (some 0) (list) a-clause 2)
-;          (list level-2-analysis))]
-;        [level-0-analysis
-;         (node
-;          (tree-label (interpret-abstract-conjunction "a") (some 0) (list) #f 1)
-;          (list level-1-analysis))]
-;        [branch (active-branch-info level-0-analysis)]
-;        [level-2-skeleton-1 (node atom-d (list (node atom-d '())))]
-;        [level-2-skeleton-2 (node atom-e (list (node atom-e '())))]
-;        [level-2-skeleton-3 (node atom-c (list (node atom-f '())))]
-;        [level-1-skeleton-1 (node atom-b (list level-2-skeleton-1 level-2-skeleton-2))]
-;        [level-1-skeleton-2 (node atom-c (list level-2-skeleton-3))]
-;        [level-0-skeleton (node atom-a (list level-1-skeleton-1 level-1-skeleton-2))]
-;        [outcome (generational-tree-skeleton branch)])
-;   (check-equal? outcome (list level-0-skeleton))))
+(test-case
+ "the skeleton is computed correctly based on a branch of several nodes"
+ (define-values (atom-a atom-b atom-c atom-d atom-e atom-f)
+   (values (interpret-abstract-atom "a")
+           (interpret-abstract-atom "b")
+           (interpret-abstract-atom "c")
+           (interpret-abstract-atom "d")
+           (interpret-abstract-atom "e")
+           (interpret-abstract-atom "f")))
+ (define-values (a-clause b-clause c-clause)
+   (values (cbp:parse-rule "a :- b, c")
+           (cbp:parse-rule "b :- d, e")
+           (cbp:parse-rule "c :- f")))
+ (let* ([level-3-analysis
+         (node
+          (tree-label (interpret-abstract-conjunction "d,e,f") (none) (list) c-clause #f) '())]
+        [level-2-analysis
+         (node
+          (tree-label (interpret-abstract-conjunction "d,e,c") (some 2) (list) b-clause 3)
+          (list level-3-analysis))]
+        [level-1-analysis
+         (node
+          (tree-label (interpret-abstract-conjunction "b,c") (some 0) (list) a-clause 2)
+          (list level-2-analysis))]
+        [level-0-analysis
+         (node
+          (tree-label (interpret-abstract-conjunction "a") (some 0) (list) #f 1)
+          (list level-1-analysis))]
+        [branch (active-branch-info level-0-analysis)]
+        [level-2-skeleton-1 (node (identified-atom atom-d 4) (list (node (identified-atom atom-d 7) '())))]
+        [level-2-skeleton-2 (node (identified-atom atom-e 5) (list (node (identified-atom atom-e 8) '())))]
+        [level-2-skeleton-3 (node (identified-atom atom-c 6) (list (node (identified-atom atom-f 9) '())))]
+        [level-1-skeleton-1 (node (identified-atom atom-b 2) (list level-2-skeleton-1 level-2-skeleton-2))]
+        [level-1-skeleton-2 (node (identified-atom atom-c 3) (list level-2-skeleton-3))]
+        [level-0-skeleton (node (identified-atom atom-a 1) (list level-1-skeleton-1 level-1-skeleton-2))]
+        [outcome (generational-tree-skeleton branch)])
+   (check-equal? outcome (list level-0-skeleton))))
 ;
 ;(let* ([level-3
 ;        (node

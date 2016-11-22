@@ -89,10 +89,11 @@
 (define (generational-tree-skeleton branch [uid-acc 1])
   (match branch
     [(list label)
-     (map-accumulatel
-      (λ (atom acc) (cons (node (identified-atom label acc) '()) (add1 acc)))
-      uid-acc
-      (tree-label-conjunction label))]
+     (car
+      (map-accumulatel
+       (λ (atom acc) (cons (node (identified-atom atom acc) '()) (add1 acc)))
+       uid-acc
+       (tree-label-conjunction label)))]
     [(list-rest (tree-label tl-con (some selected) tl-subst tl-r tl-i) tl-rest)
      (let* ([first-unselected (take tl-con selected)]
             [selected-atom (list-ref tl-con selected)]
@@ -107,8 +108,8 @@
                  (λ (pre post acc)
                    (cons
                     (cons (node (identified-atom pre (cdr acc)) (list post)) (car acc))
-                    (add1 (cdr acc))))
-                 (cons '() uid-acc)
+                    (sub1 (cdr acc))))
+                 (cons '() (- (+ uid-acc selected) 1))
                  first-unselected
                  first-successors))
                (list (node (identified-atom selected-atom (+ uid-acc selected)) selected-successors))
@@ -117,8 +118,8 @@
                  (λ (pre post acc)
                    (cons
                     (cons (node (identified-atom pre (cdr acc)) (list post)) (car acc))
-                    (+ (cdr acc) 1)))
-                 (cons '() (+ uid-acc selected 1))
+                    (sub1 (cdr acc))))
+                 (cons '() (+ uid-acc selected (length last-unselected)))
                  last-unselected
                  last-successors))))]
     [_ (error "unforeseen pattern for generational-tree-skeleton")]))
