@@ -187,7 +187,7 @@
 (provide invertible-function-f-applies)
 
 (define (extract-f-mapping ls subtree-and-depth)
-  (subsequent-gen-mapping ls subtree-and-depth 1))
+  (consecutive-gen-mapping ls subtree-and-depth 1))
 (provide
  (proc-doc/names
   extract-f-mapping
@@ -205,17 +205,17 @@
    (curry map identified-atom-with-generation-id-atom)
    (curry filter (compose (curry equal? gen) identified-atom-with-generation-generation))))
 
-(define (subsequent-gen-mapping ls subtree-and-depth i)
+(define (consecutive-gen-mapping ls subtree-and-depth i)
   (define subtree (car subtree-and-depth))
   (define horizontal-reading (horizontal-level subtree (- ls (cdr subtree-and-depth))))
-  (define gen-i-plus-one ((atoms-of-generation (+ i 1)) horizontal-reading))
-  (define gen-i ((atoms-of-generation i) horizontal-reading))
+  (define gen-i-plus-one (map identified-atom-atom ((atoms-of-generation (+ i 1)) horizontal-reading)))
+  (define gen-i (map identified-atom-atom ((atoms-of-generation i) horizontal-reading)))
   (define gen-i-plus-one-args (apply append (map abstract-atom-args gen-i-plus-one)))
   (define gen-i-args (apply append (map abstract-atom-args gen-i)))
   (map (λ (x) (if (and (abstract-variable? x) (findf-index (λ (pa) (equal? x pa)) gen-i-plus-one-args)) (identity-constraint (+ 1 (findf-index (λ (pa) (equal? x pa)) gen-i-plus-one-args))) 'fresh)) gen-i-args))
 
 (define (extract-g-mapping ls subtree-and-depth max-gen-1)
-  (subsequent-gen-mapping ls subtree-and-depth (- max-gen-1 2)))
+  (consecutive-gen-mapping ls subtree-and-depth (- max-gen-1 2)))
 (provide
  (proc-doc/names
   extract-g-mapping

@@ -144,65 +144,80 @@
    (shortest-branch-containing 1 3 top)
    (list top-contents near-top-right-contents near-bottom-right-contents)))
 
-;(test-case
-; "extracting the invertible function f from two related conjunctions"
-; (check-equal?
-;  (extract-f-mapping
-;   3
-;   (cons
-;    (generational-tree-bp
-;     (collect
-;      ((g 1) (a 1))
-;      0
-;      (collect
-;       ((g 2) (a 2))
-;       1
-;       (collect
-;        ((g 4) (a 4))
-;        2
-;        (collect
-;         ((g 6) (a 6))
-;         3)
-;        (collect
-;         ((g 7) (a 7))
-;         3)
-;        (append
-;         ((a 6) (a 7) (a 4))
-;         3))
-;       (collect
-;        ((g 5) (a 5))
-;        2
-;        (collect
-;         ((g 5) (a 5))
-;         2))
-;       (append
-;        ((a 4) (a 5) (a 2))
-;        2
-;        (append
-;         ((a 4) (a 5) (a 2))
-;         2)))
-;      (collect
-;       ((g 3) (a 3))
-;       1
-;       (collect
-;        ((g 3) (a 3))
-;        1
-;        (collect
-;         ((g 3) (a 3))
-;         1)))
-;      (append
-;       ((a 2) (a 3) (a 1))
-;       1
-;       (append
-;        ((a 2) (a 3) (a 1))
-;        1
-;        (append
-;         ((a 2) (a 3) (a 1))
-;         1)))))
-;    0))
-;  ; i.e. 3rd argument of gen i is fifth argument of gen i + 1
-;  (list 'fresh 'fresh (identity-constraint 5) 'fresh 'fresh)))
-;
+(test-case
+ "extracting the invertible function f from two related conjunctions"
+ (check-equal?
+  (extract-f-mapping
+   3
+   (cons
+    (generational-tree-bp
+     (collect
+      ((g 1) (a 1))
+      1
+      0
+      (collect
+       ((g 2) (a 2))
+       2
+       1
+       (collect
+        ((g 4) (a 4))
+        5
+        2
+        (collect
+         ((g 6) (a 6))
+         10
+         3)
+        (collect
+         ((g 7) (a 7))
+         11
+         3)
+        (append
+         ((a 6) (a 7) (a 4))
+         12
+         3))
+       (collect
+        ((g 5) (a 5))
+        6
+        2
+        (collect
+         ((g 5) (a 5))
+         13
+         2))
+       (append
+        ((a 4) (a 5) (a 2))
+        7
+        2
+        (append
+         ((a 4) (a 5) (a 2))
+         14
+         2)))
+      (collect
+       ((g 3) (a 3))
+       3
+       1
+       (collect
+        ((g 3) (a 3))
+        8
+        1
+        (collect
+         ((g 3) (a 3))
+         15
+         1)))
+      (append
+       ((a 2) (a 3) (a 1))
+       4
+       1
+       (append
+        ((a 2) (a 3) (a 1))
+        9
+        1
+        (append
+         ((a 2) (a 3) (a 1))
+         16
+         1)))))
+    0))
+  (list 'fresh 'fresh (identity-constraint 5) 'fresh 'fresh)))
+
 ;(test-case
 ; "checking whether f expresses exactly the desired mapping, across all related conjunctions"
 ; (check-equal?
