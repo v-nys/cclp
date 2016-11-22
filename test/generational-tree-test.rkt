@@ -149,48 +149,53 @@
         [level-0-skeleton (node (identified-atom atom-a 1) (list level-1-skeleton-1 level-1-skeleton-2))]
         [outcome (generational-tree-skeleton branch)])
    (check-equal? outcome (list level-0-skeleton))))
-;
-;(let* ([level-3
-;        (node
-;         (tree-label
-;          (interpret-abstract-conjunction "b,b,a") (none) (list) (cbp:parse-rule "a :- b,a") #f)
-;         '())]
-;       [level-2
-;        (node
-;         (tree-label
-;          (interpret-abstract-conjunction "b,a") (some 1) (list) (cbp:parse-rule "a :- b,a") 2)
-;         (list level-3))]
-;       [level-1
-;        (node
-;         (tree-label (interpret-abstract-conjunction "a") (some 0) (list) #f 1)
-;         (list level-2))])
-;  (test-case
-;   "generational tree for analysis tree a - b,a - b,b,a"
-;   (check-equal?
-;    (generational-tree-skeleton (active-branch-info level-1))
-;    (list
-;     (skeleton-bp
-;      (a ()
-;         (b ()
-;            (b ()))
-;         (a ()
-;            (b ())
-;            (a ())))))
-;    "check if the skeleton is correct")
-;   (check-equal?
-;    (generational-trees (active-branch-info level-1))
-;    ; a occurs three times in analysis, but four times in the skeleton
-;    (build-list
-;     4
-;     (λ (_)
-;       (generational-tree-bp
-;        (a 0
-;           (b 1
-;              (b 1))
-;           (a 1
-;              (b 2)
-;              (a 2))))))
-;    "check if analysis without a target atom is correct")))
+
+(let* ([level-3
+        (node
+         (tree-label
+          (interpret-abstract-conjunction "b,b,a") (none) (list) (cbp:parse-rule "a :- b,a") #f)
+         '())]
+       [level-2
+        (node
+         (tree-label
+          (interpret-abstract-conjunction "b,a") (some 1) (list) (cbp:parse-rule "a :- b,a") 2)
+         (list level-3))]
+       [level-1
+        (node
+         (tree-label (interpret-abstract-conjunction "a") (some 0) (list) #f 1)
+         (list level-2))])
+  (test-case
+   "generational tree for analysis tree a - b,a - b,b,a"
+   (check-equal?
+    (generational-tree-skeleton (active-branch-info level-1))
+    (list
+     (skeleton-bp
+      (a () 1
+         (b () 2
+            (b () 4))
+         (a () 3
+            (b () 5)
+            (a () 6)))))
+    "check if the skeleton is correct")
+   (let ([gen-trees (generational-trees (active-branch-info level-1))])
+     (check-equal?
+      gen-trees
+      (list
+       (generational-tree-bp
+        (a 1 0
+           (b 2 1
+              (b 4 1))
+           (a 3 1
+              (b 5 2)
+              (a 6 2))))
+       (generational-tree-bp
+        (a 1 0
+           (b 2 0
+              (b 4 0))
+           (a 3 0
+              (b 5 1)
+              (a 6 1)))))
+      "check if analysis without a target atom is correct"))))
 
 (check-equal?
  (descendant-renames?

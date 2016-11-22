@@ -132,7 +132,7 @@
  The result is a @racket[list], as each atom of the starting conjunction has its own lineage and lines are never joined --- they can only split.}))
 
 (define (annotate-generational-trees skeleton-tree live-depth)
-  (let ([candidates (candidate-target-identified-atoms skeleton-tree live-depth)])
+  (let ([candidates (remove-duplicates (candidate-target-identified-atoms skeleton-tree live-depth))])
     (map (λ (c) (annotate-generational-tree skeleton-tree c 0 live-depth 0)) candidates)))
 
 (define (active-branch-info t)
