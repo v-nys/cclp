@@ -76,42 +76,42 @@
     [(_ (SYM ARG ...))
      #'(ad:abstract-function 'SYM (list (generational-atom-arg-bp ARG) ...))]))
 
-;(test-case
-; "Extracting the active branch from a tree."
-; (let* ([completed-leaf (node (tree-label '() (none) '() (cbp:parse-rule "foo") #f) '())]
-;        [parent
-;         (node
-;          (tree-label (interpret-abstract-conjunction "foo") (some 0) '() #f 1)
-;          (list completed-leaf completed-leaf))])
-;   (check-equal? (active-branch-info parent) #f "all branches have been completed"))
-; (let* ([completed-leaf (node (tree-label '() (none) '() (cbp:parse-rule "bar") #f) '())]
-;        [left-child
-;         (node
-;          (tree-label
-;           (interpret-abstract-conjunction "bar") (some 0) '() (cbp:parse-rule "foo :- bar") 2)
-;          (list completed-leaf))]
-;        [active-leaf
-;         (node
-;          (tree-label (interpret-abstract-conjunction "baz") (none) '() (cbp:parse-rule "quux :- baz") #f)
-;          '())]
-;        [right-child
-;         (node
-;          (tree-label
-;           (interpret-abstract-conjunction "quux") (some 0) '() (cbp:parse-rule "foo :- quux") 3)
-;          (list active-leaf))]
-;        [root
-;         (node
-;          (tree-label
-;           (interpret-abstract-conjunction "foo") (some 0) '() #f 1)
-;          (list left-child right-child))]
-;        [info1
-;         (tree-label (interpret-abstract-conjunction "foo") (some 0) (list) #f 1)]
-;        [info2
-;         (tree-label (interpret-abstract-conjunction "quux") (some 0) (list) (cbp:parse-rule "foo :- quux") 3)]
-;        [info3
-;         (tree-label (interpret-abstract-conjunction "baz") (none) (list) (cbp:parse-rule "quux :- baz") #f)])
-;   (check-equal? (active-branch-info root) (list info1 info2 info3))))
-;
+(test-case
+ "Extracting the active branch from a tree."
+ (let* ([completed-leaf (node (tree-label '() (none) '() (cbp:parse-rule "foo") #f) '())]
+        [parent
+         (node
+          (tree-label (interpret-abstract-conjunction "foo") (some 0) '() #f 1)
+          (list completed-leaf completed-leaf))])
+   (check-equal? (active-branch-info parent) #f "all branches have been completed"))
+ (let* ([completed-leaf (node (tree-label '() (none) '() (cbp:parse-rule "bar") #f) '())]
+        [left-child
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "bar") (some 0) '() (cbp:parse-rule "foo :- bar") 2)
+          (list completed-leaf))]
+        [active-leaf
+         (node
+          (tree-label (interpret-abstract-conjunction "baz") (none) '() (cbp:parse-rule "quux :- baz") #f)
+          '())]
+        [right-child
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "quux") (some 0) '() (cbp:parse-rule "foo :- quux") 3)
+          (list active-leaf))]
+        [root
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "foo") (some 0) '() #f 1)
+          (list left-child right-child))]
+        [info1
+         (tree-label (interpret-abstract-conjunction "foo") (some 0) (list) #f 1)]
+        [info2
+         (tree-label (interpret-abstract-conjunction "quux") (some 0) (list) (cbp:parse-rule "foo :- quux") 3)]
+        [info3
+         (tree-label (interpret-abstract-conjunction "baz") (none) (list) (cbp:parse-rule "quux :- baz") #f)])
+   (check-equal? (active-branch-info root) (list info1 info2 info3))))
+
 ;(test-case
 ; "the skeleton is computed correctly based on a branch of several nodes"
 ; (define-values (atom-a atom-b atom-c atom-d atom-e atom-f)
