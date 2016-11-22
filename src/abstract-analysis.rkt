@@ -37,9 +37,10 @@
 (require "data-utils.rkt")
 
 (define (label-index l)
-  (if (tree-label? l)
-      (tree-label-index l)
-      (widening-index l)))
+  (cond
+    [(tree-label? l) (tree-label-index l)]
+    [(widening? l) (widening-index l)]
+    [(case? l) (case-index l)]))
 (provide
  (proc-doc/names
   label-index
@@ -48,9 +49,10 @@
   @{Extracts the index from any tree label type which has it.}))
 
 (define (label-conjunction l)
-  (if (tree-label? l)
-      (tree-label-conjunction l)
-      (widening-conjunction l)))
+  (cond
+    [(tree-label? l) (tree-label-conjunction l)]
+    [(widening? l) (widening-conjunction l)]
+    [(case? l) (case-conjunction l)]))
 (provide
  (proc-doc/names
   label-conjunction
@@ -59,9 +61,10 @@
   @{Extracts the conjunction from any tree label type which represents it explicitly.}))
 
 (define (label-selection l)
-  (if (tree-label? l)
-      (tree-label-selection l)
-      (widening-selection l)))
+  (cond
+    [(tree-label? l) (tree-label-selection l)]
+    [(widening? l) (widening-selection l)]
+    [(case? l) (case-selection l)]))
 (provide
  (proc-doc/names
   label-selection
@@ -70,7 +73,7 @@
   @{Extracts the index of the selected atom from any tree label type which has it.}))
 
 (define (label-with-conjunction? l)
-  (or (tree-label? l) (widening? l)))
+  (or (tree-label? l) (widening? l) (case? l)))
 (provide
  (proc-doc/names
   label-with-conjunction?
