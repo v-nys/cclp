@@ -57,7 +57,7 @@
 (define (print-atom-with-generation-node n [out (current-output-port)])
   (match n
     [(node ag _)
-     (fprintf out "~v {~v}" (atom-with-generation-atom ag) (atom-with-generation-generation ag))]))
+     (fprintf out "~v {~v}" (identified-atom-atom (identified-atom-with-generation-id-atom ag)) (identified-atom-with-generation-generation ag))]))
 (provide print-atom-with-generation-node)
 
 (define (print-conjunction c ms [out (current-output-port)])

@@ -85,6 +85,7 @@
   @{A uniquely identifiable instance of an abstract atom in a generational tree (or skeleton).
      The field @racket[uid] is unique to each atom in a generational tree.}))
 
+; FIXME ID's will not be unique?
 (define (generational-tree-skeleton branch [uid-acc 1])
   (match branch
     [(list label)
