@@ -231,7 +231,7 @@
   (->*
    (node? exact-positive-integer?)
    (exact-nonnegative-integer?)
-   (listof abstract-atom?))
+   (listof identified-atom?))
   ((skeleton live-depth) ((depth-acc 0)))
   @{Finds potential target atoms for recursion analysis.
  The parameter @racket[skeleton] is a non-annotated recursion analysis,
