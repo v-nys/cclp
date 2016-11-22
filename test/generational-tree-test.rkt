@@ -228,56 +228,65 @@
          (a ()))))
   (ad:abstract-atom 'a '()))
  #t)
-;
-;(test-case
-; "annotating skeletons"
-; (check-equal?
-;  (annotate-generational-tree
-;   (skeleton-bp
-;    (collect ((g 1) (a 1))
-;             (collect ((g 2) (a 2))
-;                      (collect ((g 4) (a 4))
-;                               (collect ((g 6) (a 6)))
-;                               (collect ((g 7) (a 7)))
-;                               (append ((a 6) (a 7) (a 4))))
-;                      (collect ((g 5) (a 5))
-;                               (collect ((g 5) (a 5))))
-;                      (append ((a 4) (a 5) (a 2))
-;                              (append ((a 4) (a 5) (a 2)))))
-;             (collect ((g 3) (a 3))
-;                      (collect ((g 3) (a 3))
-;                               (collect ((g 3) (a 3)))))
-;             (append ((a 2) (a 3) (a 1))
-;                     (append ((a 2) (a 3) (a 1))
-;                             (append ((a 2) (a 3) (a 1)))))))
-;   (ad:abstract-atom 'collect (list (ad:g 2) (ad:a 2)))
-;   0
-;   3
-;   0)
-;  (generational-tree-bp
-;   (collect ((g 1) (a 1))
-;            0
-;            (collect ((g 2) (a 2))
-;                     0
-;                     (collect ((g 4) (a 4))
-;                              1
-;                              (collect ((g 6) (a 6)) 2)
-;                              (collect ((g 7) (a 7)) 2)
-;                              (append ((a 6) (a 7) (a 4)) 2))
-;                     (collect ((g 5) (a 5))
-;                              1
-;                              (collect ((g 5) (a 5)) 1))
-;                     (append ((a 4) (a 5) (a 2))
-;                             1
-;                             (append ((a 4) (a 5) (a 2)) 1)))
-;            (collect ((g 3) (a 3))
-;                     0
-;                     (collect ((g 3) (a 3))
-;                              0
-;                              (collect ((g 3) (a 3)) 0)))
-;            (append ((a 2) (a 3) (a 1))
-;                    0
-;                    (append ((a 2) (a 3) (a 1))
-;                            0
-;                            (append ((a 2) (a 3) (a 1)) 0)))))
-;  "generational increase begins with first *literal* occurrence of dp"))
+
+(test-case
+ "annotating skeletons"
+ (check-equal?
+  (annotate-generational-tree
+   (skeleton-bp
+    (collect ((g 1) (a 1)) 1
+             (collect ((g 2) (a 2)) 2
+                      (collect ((g 4) (a 4)) 5
+                               (collect ((g 6) (a 6)) 10)
+                               (collect ((g 7) (a 7)) 11)
+                               (append ((a 6) (a 7) (a 4)) 12))
+                      (collect ((g 5) (a 5)) 6
+                               (collect ((g 5) (a 5)) 13))
+                      (append ((a 4) (a 5) (a 2)) 7
+                              (append ((a 4) (a 5) (a 2)) 14)))
+             (collect ((g 3) (a 3)) 3
+                      (collect ((g 3) (a 3)) 8
+                               (collect ((g 3) (a 3)) 15)))
+             (append ((a 2) (a 3) (a 1)) 4
+                     (append ((a 2) (a 3) (a 1)) 9
+                             (append ((a 2) (a 3) (a 1)) 16)))))
+   (identified-atom (ad:abstract-atom 'collect (list (ad:g 2) (ad:a 2))) 2)
+   0
+   3
+   0)
+  (generational-tree-bp
+   (collect ((g 1) (a 1))
+            1
+            0
+            (collect ((g 2) (a 2))
+                     2
+                     0
+                     (collect ((g 4) (a 4))
+                              5
+                              1
+                              (collect ((g 6) (a 6)) 10 2)
+                              (collect ((g 7) (a 7)) 11 2)
+                              (append ((a 6) (a 7) (a 4)) 12 2))
+                     (collect ((g 5) (a 5))
+                              6
+                              1
+                              (collect ((g 5) (a 5)) 13 1))
+                     (append ((a 4) (a 5) (a 2))
+                             7
+                             1
+                             (append ((a 4) (a 5) (a 2)) 14 1)))
+            (collect ((g 3) (a 3))
+                     3
+                     0
+                     (collect ((g 3) (a 3))
+                              8
+                              0
+                              (collect ((g 3) (a 3)) 15 0)))
+            (append ((a 2) (a 3) (a 1))
+                    4
+                    0
+                    (append ((a 2) (a 3) (a 1))
+                            9
+                            0
+                            (append ((a 2) (a 3) (a 1)) 16 0)))))
+  "generational increase begins with first literal occurrence of dp"))
