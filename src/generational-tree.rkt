@@ -132,7 +132,7 @@
  The result is a @racket[list], as each atom of the starting conjunction has its own lineage and lines are never joined --- they can only split.}))
 
 (define (annotate-generational-trees skeleton-tree live-depth)
-  (let ([candidates (remove-duplicates (candidate-target-identified-atoms skeleton-tree live-depth))])
+  (let ([candidates (candidate-target-identified-atoms skeleton-tree live-depth)])
     (map (λ (c) (annotate-generational-tree skeleton-tree c 0 live-depth 0)) candidates)))
 
 (define (active-branch-info t)
@@ -209,34 +209,32 @@
   (node abstract-atom)
   @{Checks whether any descendant of @racket[node] (not node @racket[node] itself) has a label which renames @racket[abstract-atom].}))
 
-(define (candidate-target-identified-atoms skeleton live-depth [depth-acc 0])
-  (if (>= depth-acc live-depth)
-      (list)
-      (let ([candidates-among-descendants
-             (foldl
-              (λ (c candidate-acc)
-                (append candidate-acc (candidate-target-identified-atoms c live-depth (+ depth-acc 1))))
-              (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
-                       (descendant-renames? (node-map identified-atom-atom skeleton) (identified-atom-atom (node-label skeleton))))
-                  (list (node-label skeleton))
-                  (list))
-              (node-children skeleton))])
-        (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
-                 (descendant-renames? (node-map identified-atom-atom skeleton) (identified-atom-atom (node-label skeleton))))
-            (cons (node-label skeleton) candidates-among-descendants)
-            candidates-among-descendants))))
+(define (candidate-target-identified-atoms skeleton live-depth)
+  (define (candidate-target-identified-atoms-aux skeleton live-depth [depth-acc 0])
+    (if (>= depth-acc live-depth)
+        (list)
+        (let ([candidates-among-descendants
+               (foldl
+                (λ (c candidate-acc)
+                  (append candidate-acc (candidate-target-identified-atoms-aux c live-depth (+ depth-acc 1))))
+                (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
+                         (descendant-renames? (node-map identified-atom-atom skeleton) (identified-atom-atom (node-label skeleton))))
+                    (list (node-label skeleton))
+                    (list))
+                (node-children skeleton))])
+          (if (and (multiple-direct-live-lines? skeleton live-depth depth-acc)
+                   (descendant-renames? (node-map identified-atom-atom skeleton) (identified-atom-atom (node-label skeleton))))
+              (cons (node-label skeleton) candidates-among-descendants)
+              candidates-among-descendants))))
+  (remove-duplicates (candidate-target-identified-atoms-aux skeleton live-depth 0)))
 (provide
  (proc-doc/names
   candidate-target-identified-atoms
-  (->*
-   (node? exact-positive-integer?)
-   (exact-nonnegative-integer?)
-   (listof identified-atom?))
-  ((skeleton live-depth) ((depth-acc 0)))
+  (-> node? exact-positive-integer? (listof identified-atom?))
+  (skeleton live-depth)
   @{Finds potential target atoms for recursion analysis.
  The parameter @racket[skeleton] is a non-annotated recursion analysis,
- @racket[live-depth] indicates depth from which an atom may survive indefinitely,
- @racket[depth-acc] is the depth at which the root of @racket[skeleton] is found.}))
+ @racket[live-depth] indicates depth from which an atom may survive indefinitely.}))
 
 ; TODO test
 (define (multiple-direct-live-lines? my-node live-depth curr-depth)
