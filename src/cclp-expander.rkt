@@ -299,7 +299,7 @@
 (define-syntax (preprior-pair stx)
   (syntax-parse stx
     [(_ atom1 "," atom2)
-     (with-syntax ([before (datum->syntax #'() 'before)])
+     (with-syntax ([before (datum->syntax stx 'before)])
        #`(before atom1 atom2))]))
 (provide preprior-pair)
 
@@ -313,7 +313,7 @@
 (define-syntax (sexp-abstract-atom-without-args stx)
   (syntax-parse stx
     [(_ sym:str)
-     (with-syntax ([sym-sym (datum->syntax #'() (string->symbol (syntax->datum #'sym)))])
+     (with-syntax ([sym-sym (datum->syntax stx (string->symbol (syntax->datum #'sym)))])
        #'(sym-sym))]))
 (provide sexp-abstract-atom-without-args)
 
@@ -329,7 +329,7 @@
     [(_ "α" index)
      (with-syntax
          ([sym-stx (datum->syntax
-                    #'index
+                    stx
                     (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
        #''(α sym-stx))]))
 (provide sexp-abstract-variable-a)
@@ -339,7 +339,7 @@
     [(_ "γ" index)
      (with-syntax
          ([sym-stx (datum->syntax
-                    #'index
+                    stx
                     (string->symbol (string-append "sym" (number->string (syntax->datum #'index)))))])
        #''(γ sym-stx))]))
 (provide sexp-abstract-variable-g)
@@ -476,6 +476,7 @@
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 ; can we get the filename of the program being run? would be useful for serialization
-(define #'(cclp-module-begin _PARSE-TREE ...)
-  #'(#%module-begin (cclp-top current-contract-region _PARSE-TREE ...)))
+(define-syntax (cclp-module-begin stx)
+  (syntax-parse stx
+    [(_ _PARSE-TREE ...) #'(#%module-begin (cclp-top current-contract-region _PARSE-TREE ...))]))
 (provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
