@@ -40,5 +40,8 @@ perm(γ1,α1),ord(α1)
 perm(γ1,α1),ord([γ1|α1])
 ord([γ1,γ2|α1]),perm(γ1,α1)
 
+{CONCRETE CONSTANTS}
+nil
+
 {QUERY}
 sort(γ1,α1)
