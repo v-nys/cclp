@@ -64,9 +64,9 @@
               (error "Partial order is underspecified.")
               (begin
                 (let ([sexp-renaming-of-selection (hash-ref (car outcomes) 'X)])
-                (findf-index
-                 (λ (atom) (renames? atom (sexp->abstract-atom sexp-renaming-of-selection)))
-                 conjunction))))))))
+                  (findf-index
+                   (λ (atom) (renames? atom (sexp->abstract-atom sexp-renaming-of-selection)))
+                   conjunction))))))))
 
 ; contract could be more specific (range is from 0 to length of the list...), but can wait
 (provide (contract-out [selected-index (-> (listof abstract-atom?) model? (listof full-evaluation?) natural-number/c)]))

@@ -31,7 +31,6 @@
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
 (require (only-in racket-list-utils/utils odd-elems))
 
-
 ; the "interpret" functions are all basically the same thing
 ; could use macros to avoid boilerplate?
 
