@@ -374,3 +374,6 @@
  to the node with index @racket[node-index-1] in @racket[analysis-tree].
  The caller is responsible for checking that tree has a branch with the supplied indices and that
  @racket[index-2-selection] is the index of the selected atom in the second conjunction.}))
+
+(module+ test
+  (require rackunit))

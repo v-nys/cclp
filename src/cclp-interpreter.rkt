@@ -29,10 +29,74 @@
 (require (only-in "cclp-parser.rkt" make-rule-parser))
 (require (only-in "cclp-reader.rkt" all-tokens))
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
+(require (prefix-in cd: "concrete-domain.rkt")
+         (prefix-in ck: "concrete-knowledge.rkt"))
 (require (only-in racket-list-utils/utils odd-elems))
 
 ; the "interpret" functions are all basically the same thing
 ; could use macros to avoid boilerplate?
+
+(define (interpret-concrete-rule str)
+  (define rule-parse (make-rule-parser rule))
+  (define parsed (rule-parse (all-tokens str)))
+  (interpret-concrete-rule-syntax parsed))
+(provide interpret-concrete-rule)
+
+(define (interpret-concrete-rule-syntax rule-stx)
+  (syntax-parse rule-stx
+    [((~literal rule) ATOM) (interpret-concrete-atom-syntax #'ATOM)]
+    [((~literal rule) ATOM ":-" CONJUNCTION)
+     (ck:rule
+      (interpret-concrete-atom-syntax #'ATOM)
+      (interpret-concrete-conjunction-syntax #'CONJUNCTION))]))
+
+(define (interpret-concrete-conjunction-syntax con-stx)
+  (syntax-parse con-stx
+    [((~literal conjunction) ATOM0 ATOM-OR-COMMA ...)
+     (map interpret-concrete-atom-syntax (odd-elems (syntax->list #'(ATOM0 ATOM-OR-COMMA ...))))]))
+
+(define (interpret-concrete-atom-syntax stx)
+  (syntax-parse stx
+    [((~literal atom) SYMBOL)
+     (cd:atom (string->symbol (syntax->datum #'SYMBOL)) (list))]
+    [((~literal atom) SYMBOL "(" ARG-OR-SEP ... ")")
+     (cd:atom
+      (string->symbol (syntax->datum #'SYMBOL))
+      (map interpret-concrete-term-syntax (odd-elems (syntax->list #'(ARG-OR-SEP ...)))))]))
+
+(define (interpret-concrete-term-syntax term-stx)
+  (syntax-parse term-stx
+    [((~literal term) ((~literal variable) NESTED-VAR))
+     (interpret-concrete-variable-syntax #'NESTED-VAR)]
+    [((~literal term) ((~literal function-term) ((~literal number-term) NUM)))
+     (syntax->datum #'NUM)]
+    [((~literal term) ((~literal function-term) FUNCTOR))
+     (cd:function (string->symbol (syntax->datum #'FUNCTOR)) '())]
+    [((~literal term) ((~literal function-term) FUNCTOR "(" ARG-OR-SEP ... ")"))
+     (cd:function
+      (string->symbol (syntax->datum #'FUNCTOR))
+      (map interpret-concrete-term-syntax (odd-elems (syntax->list #'(ARG-OR-SEP ...)))))]
+    [((~literal term) ((~literal lplist) "[" "]"))
+     (cd:function 'nil '())]
+    [((~literal term) ((~literal lplist) "[" TERM "]"))
+     (cd:function
+      'cons
+      (list (interpret-concrete-term-syntax #'TERM) (cd:function 'nil '())))]
+    [((~literal term) ((~literal lplist) "[" TERM0 "," REST ... "]"))
+     (cd:function
+      'cons
+      (list
+       (interpret-concrete-term-syntax #'TERM0)
+       (interpret-concrete-term-syntax #'(term (lplist "[" REST ... "]")))))]
+    [((~literal term) ((~literal lplist) "[" TERM0 "|" REST "]"))
+     (cd:function
+      'cons
+      (list (interpret-concrete-term-syntax #'TERM0)
+            (interpret-concrete-term-syntax #'(term REST))))]))
+
+(define (interpret-concrete-variable-syntax stx)
+  (syntax-parse stx
+    [VAR-ID (cd:variable (string->symbol (syntax->datum #'VAR-ID)))]))
 
 (define (interpret-abstract-conjunction str)
   (define conjunction-parse (make-rule-parser abstract-conjunction))
@@ -75,8 +139,8 @@
     [((~literal abstract-term) ((~literal abstract-variable) NESTED-VAR))
      (interpret-abstract-variable-syntax #'NESTED-VAR)]
     [((~literal abstract-term) ((~literal abstract-function-term)
-      ((~literal abstract-number-term)
-       ((~literal abstract-number) NUM))))
+                                ((~literal abstract-number-term)
+                                 ((~literal abstract-number) NUM))))
      (syntax->datum #'NUM)]
     [((~literal abstract-term) ((~literal abstract-function-term) FUNCTOR))
      (ad:abstract-function (string->symbol (syntax->datum #'FUNCTOR)) '())]
