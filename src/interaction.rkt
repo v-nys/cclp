@@ -276,3 +276,105 @@
                 (cclp-run filename program-data))]
         [(equal? choice quit) (void)]
         [else (error 'unsupported)]))
+
+(module+ test
+  (require rackunit)
+  (test-case
+ "finding the most recently applied operation"
+ (let ([root-only-tree
+        (node
+         (tree-label
+          (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+          (none)
+          (list)
+          #f
+          #f) '())])
+   (check-equal? (candidate-for-undo root-only-tree) #f))
+ (let* ([unwound-leaf
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),eq(α1,α2)")
+           (none)
+           (list)
+           #f ; doesn't matter for purpose of this test
+           #f) '())]
+        [unwound-tree
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+           (some 0)
+           (list)
+           #f
+           1) (list unwound-leaf))]
+        [rewound-tree
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+           (none)
+           (list)
+           #f
+           #f) '())])
+   (check-equal? (candidate-for-undo unwound-tree) unwound-tree)))
+
+(test-case
+ "rewinding the most recently applied operation"
+ (let ([root-only-tree
+        (node
+         (tree-label
+          (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+          (none)
+          (list)
+          #f
+          #f) '())])
+   (check-equal? (rewind root-only-tree) #f))
+ (let* ([unwound-leaf
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),eq(α1,α2)")
+           (none)
+           (list)
+           #f ; doesn't matter for purpose of this test
+           #f) '())]
+        [unwound-tree
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+           (some 0)
+           (list)
+           #f
+           1) (list unwound-leaf))]
+        [rewound-tree
+         (node
+          (tree-label
+           (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+           (none)
+           (list)
+           #f
+           #f) '())])
+   (check-equal? (rewind unwound-tree) (cons rewound-tree rewound-tree)))
+ (let* ([leaf1 (node (tree-label (list) (none) (list) #f #f) (list))]
+        [leaf2 leaf1]
+        [grandchild1 (node (tree-label (interpret-abstract-conjunction "quux") 0 (list) #f 3) (list leaf1))]
+        [grandchild2 (node (tree-label (interpret-abstract-conjunction "zoom") 0 (list) #f 4) (list leaf2))]
+        [child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 grandchild2))]
+        [unwound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list child))]
+        [rewound-node (node (tree-label (interpret-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
+        [rewound-child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node))]
+        [rewound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
+   (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
+ (let* ([leaf1 (node (tree-label (list) (none) (list) #f #f) (list))]
+        [leaf2 (node (cycle 3) (list))]
+        [grandchild1 (node (tree-label (interpret-abstract-conjunction "quux") 0 (list) #f 3) (list leaf1))]
+        [grandchild2 (node (tree-label (interpret-abstract-conjunction "zoom") 0 (list) #f 4) (list leaf2))]
+        [grandchild3 (node (tree-label (interpret-abstract-conjunction "baz") (none) (list) #f 4) (list))]
+        [child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 grandchild2 grandchild3))]
+        [unwound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list child))]
+        [rewound-node (node (tree-label (interpret-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
+        [rewound-child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node grandchild3))]
+        [rewound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
+   (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
+ (let* ([leaf (node (widening (interpret-abstract-conjunction "foo(γ1)") #f "some message" #f) '())]
+        [root-before (node (tree-label (interpret-abstract-conjunction "foo(nil)") 0 (list) #f 1) (list leaf))]
+        [root-after (node (tree-label (interpret-abstract-conjunction "foo(nil)") (none) (list) #f #f) (list))])
+   (check-equal? (car (rewind root-before)) root-after)
+   (check-equal? (cdr (rewind root-before)) root-after))))
