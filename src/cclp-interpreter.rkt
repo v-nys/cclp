@@ -183,55 +183,72 @@
 
 (module+ test
   (require rackunit)
+  
   (check-equal?
- (interpret-abstract-atom "safe")
- (ad:abstract-atom 'safe (list)))
+   (interpret-abstract-atom "safe")
+   (ad:abstract-atom 'safe (list)))
 
-(check-equal?
- (interpret-abstract-atom "safe([γ1])")
- (ad:abstract-atom
-  'safe
-  (list (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'nil (list)))))))
+  (check-equal?
+   (interpret-abstract-atom "safe([γ1])")
+   (ad:abstract-atom
+    'safe
+    (list (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'nil (list)))))))
 
-(check-equal?
- (interpret-abstract-atom "safe([γ1,γ2])")
- (ad:abstract-atom
-  'safe
-  (list
-   (ad:abstract-function
-    'cons
-    (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:abstract-function 'nil (list)))))))))
+  (check-equal?
+   (interpret-abstract-atom "safe([γ1,γ2])")
+   (ad:abstract-atom
+    'safe
+    (list
+     (ad:abstract-function
+      'cons
+      (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:abstract-function 'nil (list)))))))))
 
-(check-equal?
- (interpret-abstract-atom "safe([γ1,γ2|α1])")
- (ad:abstract-atom
-  'safe
-  (list (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:a 1))))))))
+  (check-equal?
+   (interpret-abstract-atom "safe([γ1,γ2|α1])")
+   (ad:abstract-atom
+    'safe
+    (list (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:a 1))))))))
 
-(check-equal?
- (interpret-abstract-atom "safe([γ1,γ2|α1],γ3)")
- (ad:abstract-atom
-  'safe
-  (list
-   (ad:abstract-function
-    'cons
-    (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:a 1)))))
-   (ad:g 3))))
+  (check-equal?
+   (interpret-abstract-atom "safe([γ1,γ2|α1],γ3)")
+   (ad:abstract-atom
+    'safe
+    (list
+     (ad:abstract-function
+      'cons
+      (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:a 1)))))
+     (ad:g 3))))
 
-(check-equal?
- (interpret-abstract-term "foo(γ1)")
- (ad:abstract-function 'foo (list (ad:g 1))))
+  (check-equal?
+   (interpret-abstract-term "foo(γ1)")
+   (ad:abstract-function 'foo (list (ad:g 1))))
 
-(check-equal?
- (interpret-abstract-term "[]")
- (ad:abstract-function 'nil (list)))
+  (check-equal?
+   (interpret-abstract-term "[]")
+   (ad:abstract-function 'nil (list)))
 
-(check-equal?
- (interpret-abstract-conjunction "safe([γ1,γ2|α1]),perm(γ1,α1)")
- (list
-  (ad:abstract-atom
-   'safe
-   (list (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:a 1)))))))
-  (ad:abstract-atom
-   'perm
-   (list (ad:g 1) (ad:a 1))))))
+  (check-equal?
+   (interpret-abstract-conjunction "safe([γ1,γ2|α1]),perm(γ1,α1)")
+   (list
+    (ad:abstract-atom
+     'safe
+     (list (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:a 1)))))))
+    (ad:abstract-atom
+     'perm
+     (list (ad:g 1) (ad:a 1)))))
+  (check-equal?
+   (interpret-concrete-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W), perm(W,V)")
+   (ck:rule
+    (cd:atom
+     'perm
+     (list
+      (cd:function 'cons (list (cd:variable 'X) (cd:variable 'Y)))
+      (cd:function 'cons (list (cd:variable 'U) (cd:variable 'V)))))
+    (list
+     (cd:atom
+      'del
+      (list
+       (cd:variable 'U)
+       (cd:function 'cons (list (cd:variable 'X) (cd:variable 'Y)))
+       (cd:variable 'W)))
+     (cd:atom 'perm (list (cd:variable 'W) (cd:variable 'V)))))))
