@@ -66,9 +66,9 @@
       (cons (hash-ref existing-mapping constant) existing-mapping)
       (if (member constant concrete-constants)
           (cons (abstract-function (function-functor constant) '()) existing-mapping)
-       (let ([max-g (get-maximum-abstract-var g? avar-index (hash-values existing-mapping))])
-        (match max-g [(none) (cons (g 1) (hash-set existing-mapping constant (g 1)))]
-          [(some index) (cons (g (+ index 1)) (hash-set existing-mapping constant (g (+ index 1))))])))))
+          (let ([max-g (get-maximum-abstract-var g? avar-index (hash-values existing-mapping))])
+            (match max-g [(none) (cons (g 1) (hash-set existing-mapping constant (g 1)))]
+              [(some index) (cons (g (+ index 1)) (hash-set existing-mapping constant (g (+ index 1))))])))))
 (provide pre-abstract-aux-constant)
 
 ;(: pre-abstract-aux-term (-> Term (HashTable Term AbstractVariable) (Pair AbstractTerm (HashTable Term AbstractVariable))))
@@ -140,3 +140,63 @@
  If @racket[concrete-domain-elem] is a concrete atom, the result is an abstract atom.
  If @racket[concrete-domain-elem] is a concrete conjunction, the result is a concrete conjunction.
  If @racket[concrete-domain-elem] is a concrete term, the result is an abstract term.}))
+
+(module+ test
+  (require rackunit)
+  (require "cclp-interpreter.rkt")
+  (check-equal?
+   (get-maximum-abstract-var
+    a?
+    avar-index
+    (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14)))
+   (some 9)
+   "Find the biggest a, where there is one")
+  (check-equal? (get-maximum-abstract-var g? avar-index (list (g 1) (a 2) (g 5) (a 9) (a 6) (g 14))) (some 14) "Find the biggest g, where there is one")
+  (check-equal? (get-maximum-abstract-var g? avar-index (list (a 1) (a 2) (a 5) (a 9) (a 6) (a 14))) (none) "Find the biggest g, where there is none")
+
+  (check-equal? (pre-abstract (variable "A")) (a 1) "single new variable case")
+  (check-equal? (pre-abstract (function "dummy" '())) (g 1) "single new constant case")
+
+  (check-equal?
+   (pre-abstract-aux-constant
+    (function 'dummy '())
+    (hash)
+    (list))
+   (cons (g 1) (hash (function 'dummy '()) (g 1)))
+   "case of constant with no existing mapping")
+  (check-equal?
+   (pre-abstract-aux-constant
+    (function 'dummy '())
+    (hash)
+    (list (function 'dummy '())))
+   (cons (abstract-function 'dummy '()) (hash))
+   "case of constant in the abstract domain with no existing mapping")
+  (check-equal?
+   (pre-abstract-aux-constant 3 (hash) (list))
+   (cons (g 1) (hash 3 (g 1)))
+   "case of constant with no existing mapping")
+  (check-equal?
+   (pre-abstract-aux-constant
+    (function "dummy" '())
+    (hash (function "dummy" '()) (g 1))
+    (list))
+   (cons (g 1) (hash (function "dummy" '()) (g 1)))
+   "case of constant with an existing mapping")
+  (check-equal?
+   (pre-abstract-aux-constant
+    (function "dummy2" '())
+    (hash (function "dummy1" '()) (g 1))
+    (list))
+   (cons (g 2) (hash (function "dummy1" '()) (g 1) (function "dummy2" '()) (g 2)))
+   "case of constant when there is a mapping for another constant")
+
+  (let ([abstract-args (list (a 1) (a 1) (a 2) (g 1) (g 2) (g 1))]
+        ; should be able to do this more concisely using #lang lp building blocks, roughly as (expand (parse 'function "dummy(A,A,dummy2,dummy3,dummy2)"))
+        [concrete-args (list (variable "A") (variable "A") (variable "B") (function "dummy2" '()) (function "dummy3" '()) (function "dummy2" '()))])
+    (check-equal? (pre-abstract (function "dummy" concrete-args)) (abstract-function "dummy" abstract-args) "abstracting a complex term"))
+
+  (check-equal? (pre-abstract-rule (interpret-concrete-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)") (list))
+                (ak:abstract-rule (interpret-abstract-atom "collect(tree(α1,α2),α3)") (list (interpret-abstract-atom "collect(α1,α4)") (interpret-abstract-atom "collect(α2,α5)") (interpret-abstract-atom "append(α4,α5,α3)"))))
+
+  (check-equal? (pre-abstract-rule (interpret-concrete-rule "append([],L,L)") (list (function 'nil '())))
+                (ak:abstract-rule (interpret-abstract-atom "append(nil,α1,α1)") (list))))
