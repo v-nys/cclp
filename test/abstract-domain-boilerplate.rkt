@@ -20,11 +20,3 @@
             #'() (prior-section-parse (all-tokens (syntax->datum #'THE-SECTION))))])
        #'PARSE-TREE)]))
 (provide parse-prior-relation)
-
-(define-syntax (term-equality-list stx)
-  (syntax-case stx ()
-    [(_) #'(list)]
-    [(_ (t1 t2) rest ...)
-     #'(cons (abstract-equality (interpret-abstract-term t1) (interpret-abstract-term t2))
-             (term-equality-list rest ...))]))
-(provide term-equality-list)

@@ -156,15 +156,7 @@
   (require rackunit)
   (require (for-syntax syntax/parse))
   (require "cclp-interpreter.rkt")
-  (define-syntax (aeq stx)
-    (syntax-parse stx
-      [((~literal aeq) (TERM1 TERM2))
-       #'(abstract-equality TERM1 TERM2)]))
-
-  (define-syntax (asubst stx)
-    (syntax-parse stx
-      [(_ SUBST-PAIR ...)
-       #'(list (aeq SUBST-PAIR) ...)]))
+  (require (for-syntax (only-in "../src/abstract-substitution.rkt" asubst)))
 
   (check-equal?
    (abstract-resolve (interpret-abstract-conjunction "perm(γ1,α1),ord(α1)")
@@ -177,8 +169,8 @@
                     (asubst
                      ((a 6) (g 8))
                      ((a 7) (g 9))
-                     ((g 1) (abstract-function 'cons (list (g 8) (g 9))))
-                     ((a 1) (abstract-function 'cons (list (a 8) (a 9)))))
+                     ((g 1) (cons [(g 8) (g 9)]))
+                     ((a 1) (cons [(a 8) (a 0)])))
                     (interpret-concrete-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
          (resolvent (interpret-abstract-conjunction "ord(γ2)")
                     (asubst

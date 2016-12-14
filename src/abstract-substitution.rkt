@@ -26,6 +26,7 @@
 (require "abstraction-inspection-utils.rkt")
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
+(require (for-syntax syntax/parse))
 (require racket/serialize)
 
 (require scribble/srcdoc)
@@ -141,6 +142,26 @@
             abstract-knowledge?))
   (subst substitution-object)
   ("One documentation-time expression" "Another documentation-time expression")))
+
+(define-syntax (t stx)
+  (syntax-parse stx
+    [(_ ((~literal a) NUM))
+     #'(a NUM)]
+    [(_ ((~literal g) NUM))
+     #'(g NUM)]
+    [(_ id:id)
+     #'(abstract-function (quote id) (list))]
+    [(_ (id:id [ARG ...]))
+     #'(abstract-function (quote id) (list (t ARG) ...))]))
+(define-syntax (aeq stx)
+  (syntax-parse stx
+    [(_ (TERM1 TERM2))
+     #'(abstract-equality (t TERM1) (t TERM2))]))
+(define-syntax (asubst stx)
+  (syntax-parse stx
+    [(_ SUBST-PAIR ...)
+     #'(list (aeq SUBST-PAIR) ...)]))
+(provide asubst)
 
 (module+ test
   (require rackunit)

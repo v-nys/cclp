@@ -22,7 +22,6 @@
 
 #lang racket
 (require rackunit)
-(require (for-syntax syntax/strip-context))
 (require "../src/abstract-unify.rkt")
 (require "../src/data-utils.rkt")
 
@@ -31,6 +30,10 @@
 
 (require "abstract-domain-boilerplate.rkt")
 (require "../src/cclp-interpreter.rkt")
+
+(require (for-syntax syntax/parse))
+
+(require (for-syntax (only-in "../src/abstract-substitution.rkt" asubst)))
 
 ; the occurs check
 (check-true (occurs (g 1) (interpret-abstract-term "γ1")))
@@ -51,21 +54,24 @@
 (check-true (occurs (g 1) (interpret-abstract-atom "foo(bar(γ1))")))
 (check-false (occurs (g 1) (interpret-abstract-atom "foo(bar(γ2))")))
 
-(check-equal? (abstract-unify (term-equality-list ("foo" "bar")) 0) (none) "unification of different functions")
-(check-equal? (abstract-unify (term-equality-list ("foo" "foo")) 0) (some (list)) "unification of identical functions")
-(check-equal? (abstract-unify (term-equality-list ("α1" "α2")) 0) (some (term-equality-list ("α1" "α2"))) "unification of equivalent variables")
-(check-equal? (abstract-unify (term-equality-list ("α1" "γ1")) 0) (some (term-equality-list ("α1" "γ1"))) "unification of most general with more specific variable")
-(check-equal? (abstract-unify (term-equality-list ("foo(bar(α1))" "foo(bar(γ1))")) 0) (some (term-equality-list ("α1" "γ1"))) "unification of nested terms")
+(check-equal? (abstract-unify (asubst (foo bar)) 0) (none) "unification of different functions")
+(check-equal? (abstract-unify (asubst (foo foo)) 0) (some (list)) "unification of identical functions")
+(check-equal? (abstract-unify (asubst ((a 1) (a 2))) 0) (some (asubst ((a 1) (a 2)))) "unification of equivalent variables")
+(check-equal? (abstract-unify (asubst ((a 1) (g 1))) 0) (some (asubst ((a 1) (g 1)))) "unification of most general with more specific variable")
+(check-equal? (abstract-unify (asubst ((foo [(bar [(a 1)])]) (foo [(bar [(g 1)])]))) 0) (some (asubst ((a 1) (g 1)))) "unification of nested terms")
 ;(check-equal? (abstract-unify (term-equality-list ("γ1" "node(α1)")) 0) (some (term-equality-list ("α1" "γ2") ("γ1" "node(γ2)"))) "unification introducing new variable")
 
-(check-equal? (abstract-unify (term-equality-list ("[γ1]" "[γ2]")) 0) (some (term-equality-list ("γ1" "γ2"))) "unification of lists")
-(check-equal? (abstract-unify (term-equality-list ("append(α13,α14,α12)" "append(α19,α20,α18)")) 0) (some (term-equality-list ("α13" "α19") ("α14" "α20") ("α12" "α18"))) "unification of renamings respects the order of the arguments")
+(check-equal? (abstract-unify (asubst ((cons [(g 1) nil]) (cons [(g 2) nil]))) 0) (some (asubst ((g 1) (g 2)))) "unification of lists")
+(check-equal? (abstract-unify (asubst ((append [(a 13) (a 14) (a 12)]) (append [(a 19) (a 20) (a 18)]))) 0) (some (asubst ((a 13) (a 19)) ((a 14) (a 20)) ((a 12) (a 18)))) "unification of renamings respects the order of the arguments")
 ;(check-equal? (abstract-unify (term-equality-list ("collect(γ3,α3)" "collect(node(α1),cons(α1,γ4))")) 0) (some (term-equality-list ("α1" "γ5") ("γ3" "node(γ5)") ("α3" "cons(γ5,γ4)"))))
 
 (test-case "unification of more complex terms"
-           (check-true (some? (abstract-unify (term-equality-list ("collect(γ1,α4)" "collect(tree(α5,α6),α7)")) 0)))
-           (check-equal? (list->set (some-v (abstract-unify (term-equality-list ("collect(γ1,α4)" "collect(tree(α5,α6),α7)")) 0)))
-                         (list->set (term-equality-list ("α5" "γ6") ("α6" "γ7") ("γ1" "tree(γ6,γ7)") ("α4" "α7")))))
+           (check-true
+            (some?
+             (abstract-unify
+              (asubst ((collect [(g 1) (a 4)]) (collect [(tree [(a 5) (a 6)]) (a 7)]))) 0)))
+           (check-equal? (list->set (some-v (abstract-unify (asubst ((collect [(g 1) (a 4)]) (collect [(tree [(a 5) (a 6)]) (a 7)]))) 0)))
+                         (list->set (asubst ((a 5) (g 6)) ((a 6) (g 7)) ((g 1) (tree [(g 6) (g 7)])) ((a 4) (a 7))))))
 
 ; TODO demonstrate what happens when bad offset is supplied
 ; TODO unification for multi?
