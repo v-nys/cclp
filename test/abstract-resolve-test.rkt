@@ -23,25 +23,43 @@
 #lang racket
 (require rackunit
          (prefix-in abp: "abstract-domain-boilerplate.rkt")
-         (prefix-in cbp: "concrete-domain-boilerplate.rkt")
          "../src/abstract-resolve.rkt"
          "printed-test-results.rkt"
          "../src/abstract-knowledge.rkt"
          "../src/cclp-interpreter.rkt")
+(require (for-syntax syntax/parse))
+(require "../src/abstract-substitution.rkt")
+(require "../src/abstract-multi-domain.rkt")
+
+(define-syntax (aeq stx)
+  (syntax-parse stx
+    [((~literal aeq) (TERM1 TERM2))
+     #'(abstract-equality TERM1 TERM2)]))
+
+(define-syntax (asubst stx)
+  (syntax-parse stx
+    [(_ SUBST-PAIR ...)
+     #'(list (aeq SUBST-PAIR) ...)]))
 
 (check-equal?
  (abstract-resolve (interpret-abstract-conjunction "perm(γ1,α1),ord(α1)")
                    0
-                   (list (cbp:parse-rule "perm([],[])")
-                         (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
+                   (list (interpret-concrete-rule "perm([],[])")
+                         (interpret-concrete-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
                    (list)
                    (list))
  (list (resolvent (interpret-abstract-conjunction "del(α8,[γ8|γ9],α10),perm(α10,α9),ord([α8|α9])")
-                  (abp:parse-abstract-substitution "α6/γ8,α7/γ9,γ1/[γ8|γ9],α1/[α8|α9]")
-                  (cbp:parse-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
+                  (asubst
+                   ((a 6) (g 8))
+                   ((a 7) (g 9))
+                   ((g 1) (abstract-function 'cons (list (g 8) (g 9))))
+                   ((a 1) (abstract-function 'cons (list (a 8) (a 9)))))
+                  (interpret-concrete-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
        (resolvent (interpret-abstract-conjunction "ord(γ2)")
-                  (abp:parse-abstract-substitution "γ1/γ2,α1/γ2")
-                  (cbp:parse-rule "perm([],[])"))))
+                  (asubst
+                   ((g 1) (g 2))
+                   ((a 1) (g 2)))
+                  (interpret-concrete-rule "perm([],[])"))))
 
 (let ([full-eval
        (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
@@ -56,7 +74,11 @@
    (list
     (resolvent
      (interpret-abstract-conjunction "perm(γ23,α13),ord([γ3,γ22|α13])")
-     (abp:parse-abstract-substitution "α12/γ22,γ18/γ20,γ19/γ21,α14/γ23")
+     (asubst
+      ((a 12) (g 22))
+      ((g 18) (g 20))
+      ((g 19) (g 21))
+      ((a 14) (g 23)))
      full-eval))))
 
 ; TODO test whether single-step unfolding does not take place when full eval is applied

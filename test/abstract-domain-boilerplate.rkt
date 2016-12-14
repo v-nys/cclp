@@ -10,20 +10,6 @@
 (require syntax/parse)
 (require "../src/cclp-interpreter.rkt")
 
-; TODO: move the others to the interpreter?
-
-(define-syntax (parse-abstract-substitution stx)
-  (define substitution-parse (make-rule-parser abstract-substitution))
-  (syntax-case stx ()
-    [(_ THE-SUBSTITUTION)
-     (with-syntax
-         ([PARSE-TREE
-           (replace-context
-            #'()
-            (substitution-parse (all-tokens (syntax->datum #'THE-SUBSTITUTION))))])
-       #'PARSE-TREE)]))
-(provide parse-abstract-substitution)
-
 (define-syntax (parse-prior-relation stx)
   (define prior-section-parse (make-rule-parser preprior-section))
   (syntax-case stx ()
