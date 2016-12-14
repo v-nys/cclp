@@ -170,7 +170,7 @@
                      ((a 6) (g 8))
                      ((a 7) (g 9))
                      ((g 1) (cons [(g 8) (g 9)]))
-                     ((a 1) (cons [(a 8) (a 0)])))
+                     ((a 1) (cons [(a 8) (a 9)])))
                     (interpret-concrete-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
          (resolvent (interpret-abstract-conjunction "ord(γ2)")
                     (asubst
