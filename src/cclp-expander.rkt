@@ -243,8 +243,8 @@
               #'(pair ...)
               (map expand-syntax-while-bound (syntax->list #'(pair ...))))]
             [relevant-atoms-stx (extract-relevant-atom-stx #'(pair ...))])
-            ; placeholder to check if the approach works
-            ;[relevant-atoms-stx #'(relevant_atoms (cons (collect (γ sym1) (α sym1)) (cons (eq (α sym1) (α sym2)) ())))])
+         ; placeholder to check if the approach works
+         ;[relevant-atoms-stx #'(relevant_atoms (cons (collect (γ sym1) (α sym1)) (cons (eq (α sym1) (α sym2)) ())))])
          #`((λ () (define-model prior
                     expanded-pair ...
                     relevant-atoms-stx
@@ -480,3 +480,124 @@
   (syntax-parse stx
     [(_ _PARSE-TREE ...) #'(#%module-begin (cclp-top current-contract-region _PARSE-TREE ...))]))
 (provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
+
+(module+ test
+  (require rackunit)
+  (check-equal? (number-term 4) (cd:function 4 '()))
+  (check-equal? (lplist "[" "]") (cd:function 'nil '()))
+
+  (check-equal? (abstract-variable-a "α" 1) (ad:a 1))
+  (check-equal? (abstract-variable-g "γ" 2) (ad:g 2))
+  (check-equal? (abstract-number 3) (ad:abstract-function 3 '()))
+  (check-equal? (abstract-variable (abstract-variable-a "α" 1)) (ad:a 1))
+  (check-equal? (abstract-variable (abstract-variable-g "γ" 2)) (ad:g 2))
+  (check-equal? (abstract-number-term (abstract-number 3)) (ad:abstract-function 3 '()))
+  (check-equal? (abstract-function-term "my-func") (ad:abstract-function 'my-func '()))
+  (check-equal? (abstract-atom-without-args "my-atom") (ad:abstract-atom 'my-atom '()))
+  (check-equal? (abstract-atom (abstract-atom-without-args "my-atom"))
+                (ad:abstract-atom 'my-atom '()))
+  (check-equal? (abstract-lplist "[" "]") (ad:abstract-function 'nil '()))
+  (check-equal? (abstract-lplist
+                 "["
+                 (abstract-variable (abstract-variable-g "γ" 2))
+                 ","
+                 (abstract-variable (abstract-variable-a "α" 1))
+                 "]")
+                (ad:abstract-function
+                 'cons
+                 (list (ad:g 2)
+                       (ad:abstract-function
+                        'cons
+                        (list (ad:a 1)
+                              (ad:abstract-function 'nil '()))))))
+  (check-equal? (abstract-lplist
+                 "["
+                 (abstract-variable (abstract-variable-g "γ" 2))
+                 ","
+                 (abstract-variable (abstract-variable-a "α" 1))
+                 "|"
+                 (abstract-variable (abstract-variable-a "α" 2))
+                 "]")
+                (ad:abstract-function
+                 'cons
+                 (list (ad:g 2) (ad:abstract-function 'cons (list (ad:a 1) (ad:a 2))))))
+  (check-equal? (conjunction
+                 (abstract-atom (abstract-atom-without-args "my-atom1"))
+                 "," (abstract-atom (abstract-atom-without-args "my-atom2"))
+                 "," (abstract-atom (abstract-atom-without-args "my-atom3")))
+                (list (ad:abstract-atom 'my-atom1 '())
+                      (ad:abstract-atom 'my-atom2 '())
+                      (ad:abstract-atom 'my-atom3 '())))
+  (check-equal? (abstract-function-term
+                 "my-func"
+                 "("
+                 (abstract-term (abstract-variable (abstract-variable-g "γ" 1)))
+                 ","
+                 (abstract-term (abstract-variable (abstract-variable-g "γ" 2))) ")")
+                (ad:abstract-function 'my-func (list (ad:g 1) (ad:g 2))))
+  (check-equal? (abstract-atom
+                 (abstract-atom-with-args
+                  "my-atom"
+                  "("
+                  (abstract-variable (abstract-variable-g "γ" 1))
+                  ","
+                  (abstract-variable (abstract-variable-g "γ" 2))
+                  ")"))
+                (ad:abstract-atom 'my-atom (list (ad:g 1) (ad:g 2))))
+
+  ; concrete program section
+  (check-equal?
+   (variable "MyPrologVar")
+   (cd:variable 'MyPrologVar))
+
+  ; full eval section
+  (check-equal?
+   (fullai-rule-without-body
+    (abstract-atom-with-args
+     "myatom"
+     "("
+     (abstract-variable
+      (abstract-variable-g "γ" 1))
+     ","
+     (abstract-variable
+      (abstract-variable-g "γ" 2))
+     ")")
+    ".")
+   (fai:full-ai-rule
+    (ad:abstract-atom 'myatom (list (ad:g 1) (ad:g 2)))
+    (list)))
+
+  (check-equal?
+   (fullai-rule-with-body
+    (abstract-atom-with-args
+     "del"
+     "("
+     (abstract-variable
+      (abstract-variable-a "α" 1))
+     ","
+     (abstract-variable
+      (abstract-variable-g "γ" 1))
+     ","
+     (abstract-variable
+      (abstract-variable-a "α" 2))
+     ")")
+    "->"
+    (abstract-substitution
+     (abstract-substitution-pair
+      (abstract-variable
+       (abstract-variable-a "α" 1))
+      "/"
+      (abstract-variable
+       (abstract-variable-g "γ" 2)))
+     ","
+     (abstract-substitution-pair
+      (abstract-variable
+       (abstract-variable-a "α" 2))
+      "/"
+      (abstract-variable
+       (abstract-variable-g "γ" 3))))
+    ".")
+   (fai:full-ai-rule
+    (ad:abstract-atom 'del (list (ad:a 1) (ad:g 1) (ad:a 2)))
+    (list (as:abstract-equality (ad:a 1) (ad:g 2))
+          (as:abstract-equality (ad:a 2) (ad:g 3))))))
