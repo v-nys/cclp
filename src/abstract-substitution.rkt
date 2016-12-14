@@ -186,23 +186,24 @@
   (check-equal? (substitute-in-substitution (interpret-abstract-term "γ5") (interpret-abstract-term "α4") (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
                 (list (abstract-equality (interpret-abstract-term "γ5") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
 
-  (check-equal? (apply-substitution-to-term (list (abstract-equality (g 1) (interpret-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
+  (check-equal? (apply-substitution-to-term (asubst ((g 1) quux) ((a 2) (g 4)))
                                             (interpret-abstract-term "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
                 (interpret-abstract-term "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
 
-  (check-equal? (apply-substitution-to-conjunct (list (abstract-equality (g 1) (interpret-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
+  (check-equal? (apply-substitution-to-conjunct (asubst ((g 1) quux) ((a 2) (g 4)))
                                                 (interpret-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
                 (interpret-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
 
-  (check-equal? (apply-substitution-to-conjunction (list (abstract-equality (g 1) (interpret-abstract-term "quux")) (abstract-equality (a 2) (g 4)))
+  (check-equal? (apply-substitution-to-conjunction (asubst ((g 1) quux) ((a 2) (g 4)))
                                                    (list (interpret-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))") (interpret-abstract-atom "zip(zoom(γ1,α1),kweh(α2,γ2,α5))")))
                 (list (interpret-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))") (interpret-abstract-atom "zip(zoom(quux,α1),kweh(γ4,γ2,α5))")))
 
   (check-equal? (apply-substitution-to-full-evaluation
-                 (list (abstract-equality (a 2) (a 16))
-                       (abstract-equality (a 1) (a 15))
-                       (abstract-equality (g 2) (g 21))
-                       (abstract-equality (g 1) (g 20)))
+                 (asubst
+                  ((a 2) (a 16))
+                  ((a 1) (a 15))
+                  ((g 2) (g 21))
+                  ((g 1) (g 20)))
                  (full-evaluation
                   (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
                   (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
