@@ -44,7 +44,7 @@
 
 (define (interpret-concrete-rule-syntax rule-stx)
   (syntax-parse rule-stx
-    [((~literal rule) ATOM) (interpret-concrete-atom-syntax #'ATOM)]
+    [((~literal rule) ATOM) (ck:rule (interpret-concrete-atom-syntax #'ATOM) (list))]
     [((~literal rule) ATOM ":-" CONJUNCTION)
      (ck:rule
       (interpret-concrete-atom-syntax #'ATOM)
