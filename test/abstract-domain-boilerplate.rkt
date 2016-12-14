@@ -10,6 +10,8 @@
 (require syntax/parse)
 (require "../src/cclp-interpreter.rkt")
 
+; should have a "baseline" prior relation model object
+; interpreting a model is then just a matter of interpreting rules and adding them to the model's list of rules!
 (define-syntax (parse-prior-relation stx)
   (define prior-section-parse (make-rule-parser preprior-section))
   (syntax-case stx ()
