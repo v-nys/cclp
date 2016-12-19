@@ -27,7 +27,7 @@
 ; should prohibit constants of the form symXYZ, where XYZ is a natural number
 
 #lang brag
-cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PREPRIOR-DELIMITER preprior-section] [CONCRETE-CONSTANTS-DELIMITER concrete-constants-section] QUERY-DELIMITER abstract-atom
+cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [CONCRETE-CONSTANTS-DELIMITER concrete-constants-section] QUERY-DELIMITER abstract-atom
 
 program-section : (rule PERIOD)*
 atom : SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]
@@ -58,20 +58,6 @@ abstract-substitution : abstract-substitution-pair (COMMA abstract-substitution-
 abstract-substitution-pair : abstract-variable SLASH abstract-term
 abstract-atom : abstract-atom-with-args | abstract-atom-without-args
 abstract-conjunction : abstract-atom (COMMA abstract-atom)*
-
-preprior-section : preprior-pair+
-preprior-pair : sexp-abstract-atom COMMA sexp-abstract-atom
-sexp-abstract-atom : sexp-abstract-atom-without-args | sexp-abstract-atom-with-args
-sexp-abstract-atom-without-args : SYMBOL
-sexp-abstract-atom-with-args : SYMBOL OPEN-PAREN sexp-abstract-term (COMMA sexp-abstract-term)* CLOSE-PAREN
-sexp-abstract-term : sexp-abstract-variable | sexp-abstract-function-term | sexp-abstract-lplist
-sexp-abstract-variable : sexp-abstract-variable-a | sexp-abstract-variable-g
-sexp-abstract-variable-a : AVAR-SYMBOL-A NUMBER
-sexp-abstract-variable-g : AVAR-SYMBOL-G NUMBER
-sexp-abstract-lplist : OPEN-LIST-PAREN [sexp-abstract-term (COMMA sexp-abstract-term)* [LIST-SEPARATOR (sexp-abstract-lplist | sexp-abstract-variable)]] CLOSE-LIST-PAREN
-sexp-abstract-function-term : (SYMBOL [OPEN-PAREN sexp-abstract-term (COMMA sexp-abstract-term)* CLOSE-PAREN]) | sexp-abstract-number-term
-sexp-abstract-number-term : sexp-abstract-number
-sexp-abstract-number : NUMBER
 
 concrete-constants-section : concrete-constant+
 concrete-constant: SYMBOL

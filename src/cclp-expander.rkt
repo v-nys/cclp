@@ -31,9 +31,8 @@
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (for-syntax syntax/parse))
-(require (only-in "interaction.rkt" cclp-top))
+(require (only-in "interaction.rkt" cclp-top cclp))
 (require racket/contract)
-(require (only-in "data-utils.rkt" 5-tuple))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 (require (for-syntax (only-in "data-utils.rkt" positive-integer->symbol)))
 (require (for-syntax (only-in racket remove-duplicates match second third)))
@@ -44,31 +43,71 @@
 (require "abstract-multi-domain-sexp-conversion.rkt")
 (require parenlog)
 
+; a "generic" model for a partial order
+; relevant atoms (i.e. those explicitly in 'before' pairs are specified
+; and the before relations themselves
+(define blank-model
+  (i/model
+   `((member X (cons X Y))
+     (:- (member X (cons Y Z))
+         (member X Z))
+     (not_a_member X ())
+     (:- (not_a_member X (cons A B))
+         (,(compose not equal?) X A)
+         (not_a_member X B))
+     (:- (reaches_without_encountering X Y Path)
+         (before X1 Y1)
+         (not_a_member Y1 Path)
+         (sexp_gt_extension X1 X)
+         (sexp_gt_extension Y Y1))
+     (:- (reaches_without_encountering X Z Path)
+         (before X1 Y)
+         (not_a_member Y Path)
+         (sexp_gt_extension X1 X)
+         (relevant_atoms R)
+         (member Z1 R)
+         (sexp_gt_extension Z Z1)
+         (reaches_without_encountering Y Z1 (cons Y Path)))
+     (:- (reaches_loopfree X Y)
+         (reaches_without_encountering X Y (cons X ())))
+     (:- (violates_partial_order)
+         (relevant_atoms R)
+         (member X R)
+         (member Y R)
+         (reaches_loopfree X Y)
+         (reaches_loopfree Y X)
+         (,(compose not
+                    (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
+                                               (sexp->abstract-atom sexp2)))) X Y))
+     (:- (member_reaches_or_includes_all_under_consistency X Atoms)
+         (member X Atoms)
+         (reaches_or_includes_all_under_consistency X Atoms))
+     (reaches_or_includes_all_under_consistency X ())
+     (:- (reaches_or_includes_all_under_consistency X (cons Destination Ds))
+         (sexp_gt_extension Destination X)
+         (reaches_or_includes_all_under_consistency X Ds))
+     (:- (reaches_or_includes_all_under_consistency X (cons Destination Ds))
+         (reaches_loopfree X Destination)
+         (reaches_or_includes_all_under_consistency X Ds))
+     (:- (sexp_gt_extension X Y)
+         (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
+                                    (sexp->abstract-atom e2))) X Y)))))
+
 ; PUTTING THE THREE PARTS TOGETHER
 
 ; can I make this more modular?
 (define-syntax (cclp-program stx)
   (syntax-parse stx
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(5-tuple _PROGRAM-SECTION (list) (list) (list) _QUERY-SECTION)]
+     #'(cclp _PROGRAM-SECTION (list) blank-model (list) _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
         _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(5-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) (list) _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(5-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION (list) _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
-        _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(5-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION (list) _QUERY-SECTION)]
+     #'(cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION blank-model (list) _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(5-tuple _PROGRAM-SECTION (list) (list) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
+     #'(cclp _PROGRAM-SECTION (list) blank-model _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
         _FULL-EVALUATION-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(5-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(5-tuple _PROGRAM-SECTION (list) _PREPRIOR-SECTION _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
-        _FULL-EVALUATION-SECTION "{PREPRIOR}" _PREPRIOR-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(5-tuple _PROGRAM-SECTION _FULL-EVALUATION-SECTION _PREPRIOR-SECTION _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]))
+     #'(cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION blank-model _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]))
 (provide cclp-program)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
@@ -216,156 +255,6 @@
   (as:abstract-equality lhs rhs))
 (provide abstract-substitution-pair)
 
-; PART RELATED TO PREPRIOR
-
-; TODO use expand-syntax-while-bound instead of syntax->datum!
-(define-for-syntax (extract-relevant-atom-stx pairs-syntax)
-  (define pair-syntaxes (syntax->list pairs-syntax))
-  (define (syntaxes->atom-datums lst acc)
-    (match lst
-      [(list) acc]
-      [(list-rest h t)
-       (let* ([before-sexp (syntax->datum (expand-syntax-while-bound h))]
-              [d1 (second before-sexp)]
-              [d2 (third before-sexp)])
-         (syntaxes->atom-datums t (cons d1 (cons d2 acc))))]))
-  (define as-datums (remove-duplicates (syntaxes->atom-datums pair-syntaxes '())))
-  (define as-single-datum (list 'relevant_atoms (foldr (λ (elem acc) (list 'cons elem acc)) '() as-datums)))
-  (datum->syntax pairs-syntax as-single-datum))
-
-(define-syntax (preprior-section stx)
-  (begin
-    (syntax-parse stx
-      [(_ pair ...)
-       (with-syntax
-           ([(expanded-pair ...)
-             (datum->syntax
-              #'(pair ...)
-              (map expand-syntax-while-bound (syntax->list #'(pair ...))))]
-            [relevant-atoms-stx (extract-relevant-atom-stx #'(pair ...))])
-         ; placeholder to check if the approach works
-         ;[relevant-atoms-stx #'(relevant_atoms (cons (collect (γ sym1) (α sym1)) (cons (eq (α sym1) (α sym2)) ())))])
-         #`((λ () (define-model prior
-                    expanded-pair ...
-                    relevant-atoms-stx
-                    (member X (cons X Y))
-                    (:- (member X (cons Y Z))
-                        (member X Z))
-                    (not_a_member X ())
-                    (:- (not_a_member X (cons A B))
-                        (,(compose not equal?) X A)
-                        (not_a_member X B))
-                    (:- (reaches_without_encountering X Y Path)
-                        (before X1 Y1)
-                        (not_a_member Y1 Path)
-                        (sexp_gt_extension X1 X)
-                        (sexp_gt_extension Y Y1))
-                    (:- (reaches_without_encountering X Z Path)
-                        (before X1 Y)
-                        (not_a_member Y Path)
-                        (sexp_gt_extension X1 X)
-                        (relevant_atoms R)
-                        (member Z1 R)
-                        (sexp_gt_extension Z Z1)
-                        (reaches_without_encountering Y Z1 (cons Y Path)))
-                    (:- (reaches_loopfree X Y)
-                        (reaches_without_encountering X Y (cons X ())))
-                    (:- (violates_partial_order)
-                        (relevant_atoms R)
-                        (member X R)
-                        (member Y R)
-                        (reaches_loopfree X Y)
-                        (reaches_loopfree Y X)
-                        (,(compose not
-                                   (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
-                                                              (sexp->abstract-atom sexp2)))) X Y))
-                    (:- (member_reaches_or_includes_all_under_consistency X Atoms)
-                        (member X Atoms)
-                        (reaches_or_includes_all_under_consistency X Atoms))
-                    (reaches_or_includes_all_under_consistency X ())
-                    (:- (reaches_or_includes_all_under_consistency X (cons Destination Ds))
-                        (sexp_gt_extension Destination X)
-                        (reaches_or_includes_all_under_consistency X Ds))
-                    (:- (reaches_or_includes_all_under_consistency X (cons Destination Ds))
-                        (reaches_loopfree X Destination)
-                        (reaches_or_includes_all_under_consistency X Ds))
-                    (:- (sexp_gt_extension X Y)
-                        (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
-                                                   (sexp->abstract-atom e2))) X Y)))
-              prior)))])))
-(provide preprior-section)
-
-; expand-syntax expands preprior-pairs too far
-; it tries to expand the resulting unbound identifiers (e.g. the identifier before)
-; therefore, we need an expansion mechanism which stops just in time
-(define-for-syntax (expand-syntax-while-bound stx)
-  (syntax-case stx (preprior-pair
-                    sexp-abstract-atom
-                    sexp-abstract-atom-without-args
-                    sexp-abstract-atom-with-args
-                    sexp-abstract-term
-                    sexp-abstract-number
-                    sexp-abstract-lplist
-                    sexp-abstract-number-term
-                    sexp-abstract-number
-                    sexp-abstract-function-term
-                    sexp-abstract-lplist)
-    [(preprior-pair atom1 "," atom2)
-     (with-syntax ([before (datum->syntax #'() 'before)]
-                   [exp-atom1 (expand-syntax-while-bound #'atom1)]
-                   [exp-atom2 (expand-syntax-while-bound #'atom2)])
-       #'(before exp-atom1 exp-atom2))]
-    [(sexp-abstract-atom actual-atom)
-     (expand-syntax-while-bound #'actual-atom)]
-    [(sexp-abstract-atom-without-args atom-sym)
-     (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'atom-sym)))])
-       #'(sym))]
-    [(sexp-abstract-lplist "[" "]")
-     #'(nil)]
-    [(sexp-abstract-lplist "[" term0 "]")
-     (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)])
-       #'(cons expanded-term0 (nil)))]
-    [(sexp-abstract-lplist "[" term0 "," rest ... "]")
-     (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)]
-                   [expanded-rest (expand-syntax-while-bound #'(sexp-abstract-lplist "[" rest ... "]"))])
-       #'(cons expanded-term0 expanded-rest))]
-    [(sexp-abstract-lplist "[" term0 "|" rest "]")
-     (with-syntax ([expanded-term0 (expand-syntax-while-bound #'term0)]
-                   [expanded-rest (expand-syntax-while-bound #'(sexp-abstract-term rest))])
-       #'(cons expanded-term0 expanded-rest))]
-    [(sexp-abstract-function-term (sexp-abstract-number-term num))
-     #'(sexp-abstract-number-term num)]
-    [(sexp-abstract-function-term func-sym)
-     (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'func-sym)))])
-       #`(sym))]
-    [(sexp-abstract-function-term func-sym "(" arg ... ")")
-     (let ([splicable-list (map expand-syntax-while-bound (odd-elems (syntax->list #'(arg ...))))])
-       (begin
-         (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'func-sym)))])
-           #`(sym #,@splicable-list))))]
-    [(sexp-abstract-number-term actual-number)
-     #'actual-number]
-    [(sexp-abstract-number num)
-     (with-syntax ([num-sym (datum->syntax #'num (positive-integer->symbol (syntax->datum #'num)))])
-       #'(num-sym))]
-    [(sexp-abstract-term actual-term)
-     (expand-syntax-while-bound #'actual-term)]
-    [(sexp-abstract-atom-with-args atom-sym "(" arg ... ")")
-     (let ([splicable-list (map expand-syntax-while-bound (odd-elems (syntax->list #'(arg ...))))])
-       (begin
-         (with-syntax ([sym (datum->syntax #'() (string->symbol (syntax->datum #'atom-sym)))])
-           #`(sym #,@splicable-list))))]
-    [(sexp-abstract-variable actual-variable)
-     (expand-syntax-while-bound #'actual-variable)]
-    [(sexp-abstract-variable-a "α" index)
-     (with-syntax ([alpha-symbol (datum->syntax #'() 'α)]
-                   [index-symbol (datum->syntax #'index (positive-integer->symbol (syntax->datum #'index)))])
-       #'(alpha-symbol index-symbol))]
-    [(sexp-abstract-variable-g "γ" index)
-     (with-syntax ([gamma-symbol (datum->syntax #'() 'γ)]
-                   [index-symbol (datum->syntax #'index (positive-integer->symbol (syntax->datum #'index)))])
-       #'(gamma-symbol index-symbol))]))
-
 (define-syntax (concrete-constant stx)
   (syntax-parse stx
     [(_ _CONSTANT-SYMBOL)
@@ -380,7 +269,6 @@
 (provide concrete-constants-section)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
-; can we get the filename of the program being run? would be useful for serialization
 (define-syntax (cclp-module-begin stx)
   (syntax-parse stx
     [(_ _PARSE-TREE ...) #'(#%module-begin (cclp-top current-contract-region _PARSE-TREE ...))]))

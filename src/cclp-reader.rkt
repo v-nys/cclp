@@ -32,7 +32,6 @@
        [whitespace (token 'WS lexeme #:skip? #t)]
        ["{PROGRAM}" (token 'PROGRAM-DELIMITER lexeme)]
        ["{FULL EVALUATION}" (token 'FULL-EVALUATION-DELIMITER lexeme)]
-       ["{PREPRIOR}" (token 'PREPRIOR-DELIMITER lexeme)]
        ["{QUERY}" (token 'QUERY-DELIMITER lexeme)]
        ["{CONCRETE CONSTANTS}" (token 'CONCRETE-CONSTANTS-DELIMITER lexeme)]
        ["α" (token 'AVAR-SYMBOL-A lexeme)] ; to avoid conflict with potential constants a and g

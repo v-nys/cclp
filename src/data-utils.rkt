@@ -25,40 +25,6 @@
                      (type-predicate (some-v elem))))))
 (provide maybe)
 
-(struct 5-tuple (first second third fourth fifth)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc t1 t2 equal?-recur)
-     (and (equal?-recur (5-tuple-first t1) (5-tuple-first t2))
-          (equal?-recur (5-tuple-second t1) (5-tuple-second t2))
-          (equal?-recur (5-tuple-third t1) (5-tuple-third t2))
-          (equal?-recur (5-tuple-fourth t1) (5-tuple-fourth t2))
-          (equal?-recur (5-tuple-fourth t1) (5-tuple-fourth t2))))
-   (define (hash-proc my-tuple hash-recur)
-     (+ (hash-recur (5-tuple-first my-tuple))
-        (* 3 (hash-recur (5-tuple-second my-tuple)))
-        (* 7 (hash-recur (5-tuple-third my-tuple)))
-        (* 11 (hash-recur (5-tuple-fourth my-tuple)))
-        (* 13 (hash-recur (5-tuple-fifth my-tuple)))))
-   (define (hash2-proc my-tuple hash2-recur)
-     (+ (hash2-recur (5-tuple-first my-tuple))
-        (hash2-recur (5-tuple-second my-tuple))
-        (hash2-recur (5-tuple-third my-tuple))
-        (hash2-recur (5-tuple-fourth my-tuple))
-        (hash2-recur (5-tuple-fifth my-tuple))))]
-  #:transparent)
-(provide (struct-out 5-tuple))
-
-(define (5-tupleof type-predicate1 type-predicate2 type-predicate3 type-predicate4 type-predicate5)
-  (λ (elem)
-    (and (5-tuple? elem)
-         (type-predicate1 (5-tuple-first elem))
-         (type-predicate2 (5-tuple-second elem))
-         (type-predicate3 (5-tuple-third elem))
-         (type-predicate4 (5-tuple-fourth elem))
-         (type-predicate5 (5-tuple-fifth elem)))))
-(provide 5-tupleof)
-
 ; may want to create a set utils module?
 (define (optional-set-union . sets)
   (foldl (λ (el acc) (set-union el acc)) (set) sets))

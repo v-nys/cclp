@@ -61,7 +61,7 @@
         (begin
           (log-debug "found topmost atom type: ~v" outcomes)
           (if (null? outcomes)
-              (error "Partial order is underspecified.")
+              #f
               (begin
                 (let ([sexp-renaming-of-selection (hash-ref (car outcomes) 'X)])
                   (findf-index
@@ -69,4 +69,4 @@
                    conjunction))))))))
 
 ; contract could be more specific (range is from 0 to length of the list...), but can wait
-(provide (contract-out [selected-index (-> (listof abstract-atom?) model? (listof full-evaluation?) natural-number/c)]))
+(provide (contract-out [selected-index (-> (listof abstract-atom?) model? (listof full-evaluation?) (or/c #f natural-number/c))]))
