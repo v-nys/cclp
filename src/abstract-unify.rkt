@@ -69,9 +69,9 @@
                                                   (let* ([max-g (maximum-var-index-in-substitution g? (cons (abstract-equality (g i) t) tail))]
                                                          [g-offset (+ additional-g-offset (if (some? max-g) (some-v max-g) 1))]
                                                          [nested-any-indices (assemble-var-indices a? t)]
-                                                         [equalities (map (λ (idx) (abstract-equality (a idx) (g (+ idx g-offset)))) (set->list nested-any-indices))]
+                                                         [equalities (map (λ (idx) (abstract-equality (a idx) (g (+ idx g-offset)))) nested-any-indices)]
                                                          [substituted-substitution (substitute-in-substitution t (g i) tail)])
-                                                    (if (set-empty? nested-any-indices)
+                                                    (if (empty? nested-any-indices)
                                                         (let ([rest (abstract-unify substituted-substitution additional-g-offset)]) (if (none? rest) rest (some (cons (abstract-equality (g i) t) (some-v rest)))))
                                                         (abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)) additional-g-offset)))]
     [else (none)]))

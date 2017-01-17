@@ -27,40 +27,90 @@
 
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
+(module+ test (require rackunit "cclp-interpreter.rkt"))
 
 (define (assemble-var-indices right-variable-type? abstract-data)
-  (cond [(abstract-variable? abstract-data)
-         (if (right-variable-type? abstract-data)
-             (set (avar-index abstract-data)) (set))]
-        [(abstract-atom? abstract-data)
-         (apply
-          optional-set-union
-          (map
-           (λ (arg) (assemble-var-indices right-variable-type? arg))
-           (abstract-atom-args abstract-data)))]
-        [(abstract-function? abstract-data)
-         (apply
-          optional-set-union
-          (map
-           (λ (arg) (assemble-var-indices right-variable-type? arg))
-           (abstract-function-args abstract-data)))]
-        [(list? abstract-data)
-         (apply
-          optional-set-union
-          (map (λ (arg) (assemble-var-indices right-variable-type? arg)) abstract-data))]
-        [(abstract-rule? abstract-data)
-         (set-union
-          (assemble-var-indices right-variable-type? (abstract-rule-head abstract-data))
-          (assemble-var-indices right-variable-type? (abstract-rule-body abstract-data)))]
-        [(full-evaluation? abstract-data)
-         (set-union
-          (assemble-var-indices
-           right-variable-type?
-           (full-evaluation-input-pattern abstract-data))
-          (assemble-var-indices
-           right-variable-type?
-           (full-evaluation-output-pattern abstract-data)))]))
-(provide assemble-var-indices)
+  (define (assemble-aux right-variable-type? abstract-data)
+    (cond [(abstract-variable? abstract-data)
+           (if (right-variable-type? abstract-data)
+               (list (avar-index abstract-data)) (list))]
+          [(abstract-atom? abstract-data)
+           (append* (map
+                     (λ (arg) (assemble-var-indices right-variable-type? arg))
+                     (abstract-atom-args abstract-data)))]
+          [(abstract-function? abstract-data)
+           (append*
+            (map
+             (λ (arg) (assemble-var-indices right-variable-type? arg))
+             (abstract-function-args abstract-data)))]
+          [(list? abstract-data)
+           (append*
+            (map (λ (arg) (assemble-var-indices right-variable-type? arg)) abstract-data))]
+          [(abstract-rule? abstract-data)
+           (append
+            (assemble-var-indices right-variable-type? (abstract-rule-head abstract-data))
+            (assemble-var-indices right-variable-type? (abstract-rule-body abstract-data)))]
+          [(full-evaluation? abstract-data)
+           (append
+            (assemble-var-indices
+             right-variable-type?
+             (full-evaluation-input-pattern abstract-data))
+            (assemble-var-indices
+             right-variable-type?
+             (full-evaluation-output-pattern abstract-data)))]))
+  (remove-duplicates (assemble-aux right-variable-type? abstract-data)))
+(provide
+ (proc-doc/names
+  assemble-var-indices
+  (->
+   (-> any/c boolean?)
+   (or/c abstract-domain-elem? abstract-rule? full-evaluation? (listof (or/c abstract-domain-elem? abstract-rule? full-evaluation?)))
+   (listof exact-positive-integer?))
+  (pred abstract-data)
+  @{Assembles the indices of the variables for which @racket[pred] passes,
+ at any level in @racket[abstract-data] and returns them in left-to-right order of occurrence,
+ without any duplicates.}))
+(module+ test
+  (check-equal? (assemble-var-indices g? (interpret-abstract-term "α1")) (list))
+  (check-equal? (assemble-var-indices a? (interpret-abstract-term "γ1")) (list))
+  (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar)")) (list))
+  (check-equal? (assemble-var-indices g? (abstract-function "bar" (list))) (list))
+  (check-equal?
+   (assemble-var-indices g? (abstract-function "foo" (list (abstract-function "bar" '()))))
+   (list))
+  (check-equal? (assemble-var-indices a? (interpret-abstract-term "foo(bar)")) (list))
+  (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar(γ1,γ2,α3,α4))")) (list 1 2))
+  (check-equal? (assemble-var-indices a? (interpret-abstract-term "foo(bar(γ1,γ2,α3,α4))")) (list 3 4))
+  (check-equal? (assemble-var-indices g? (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")) (list 1 2))
+  (check-equal? (assemble-var-indices a? (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")) (list 3 4))
+
+  (check-equal?
+   (assemble-var-indices
+    g?
+    (list
+     (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")
+     (interpret-abstract-atom "foo(bar(γ5,γ6,α7,α8))")))
+   (list 1 2 5 6))
+  (check-equal?
+   (assemble-var-indices
+    a?
+    (list
+     (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")
+     (interpret-abstract-atom "foo(bar(γ5,γ6,α7,α8))")))
+   (list 3 4 7 8))
+
+  (check-equal?
+   (assemble-var-indices
+    a?
+    (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
+                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
+   (list 1 2))
+  (check-equal?
+   (assemble-var-indices
+    g?
+    (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
+                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
+   (list 1 2 3 4)))
 
 (define (maximum-var-index abstraction right-variable-type?)
   (define max-of-args-accumulator
@@ -98,52 +148,9 @@
   (abstraction subterm)
   @{Checks whether @racket[subterm] occurs anywhere in @racket[abstraction].}))
 
+
+
 (module+ test
-  (require rackunit)
-  (require "cclp-interpreter.rkt")
-  (check-equal? (assemble-var-indices g? (interpret-abstract-term "α1")) (set))
-  (check-equal? (assemble-var-indices a? (interpret-abstract-term "γ1")) (set))
-  (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar)")) (set))
-
-  (check-equal? (assemble-var-indices g? (abstract-function "bar" (list))) (set))
-  (check-equal?
-   (assemble-var-indices g? (abstract-function "foo" (list (abstract-function "bar" '()))))
-   (set))
-
-  (check-equal? (assemble-var-indices a? (interpret-abstract-term "foo(bar)")) (set))
-  (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar(γ1,γ2,α3,α4))")) (set 1 2))
-  (check-equal? (assemble-var-indices a? (interpret-abstract-term "foo(bar(γ1,γ2,α3,α4))")) (set 3 4))
-  (check-equal? (assemble-var-indices g? (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")) (set 1 2))
-  (check-equal? (assemble-var-indices a? (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")) (set 3 4))
-
-  (check-equal?
-   (assemble-var-indices
-    g?
-    (list
-     (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")
-     (interpret-abstract-atom "foo(bar(γ5,γ6,α7,α8))")))
-   (set 1 2 5 6))
-  (check-equal?
-   (assemble-var-indices
-    a?
-    (list
-     (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")
-     (interpret-abstract-atom "foo(bar(γ5,γ6,α7,α8))")))
-   (set 3 4 7 8))
-
-  (check-equal?
-   (assemble-var-indices
-    a?
-    (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
-   (set 1 2))
-  (check-equal?
-   (assemble-var-indices
-    g?
-    (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
-   (set 1 2 3 4))
-
   (check-equal?
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 7)) #t)
   (check-equal?

@@ -2,11 +2,12 @@
 @(require (for-label racket))@;so that racket bindings are hyperlinked
 
 @title{The CCLP language}
+@author{Vincent Nys}
+@defmodulelang{cclp}
 
-The CCLP language is a language for the implementation of pure logic programs which rely on instantiation-based coroutining.
+CCLP is a language for the implementation of pure logic programs which rely on instantiation-based coroutining.
 A program written in the CCLP language can be executed to generate --- at the current time --- an abstract interpretation of a pure logic program.
 From this abstract interpretation, a logic program which does not require special coroutining constructs but which does have the desired control flow can be derived.
-
 
 @section{A simple example}
 @verbatim{

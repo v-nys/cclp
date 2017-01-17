@@ -6,9 +6,11 @@
 (require "data-utils.rkt")
 (require "abstract-substitution.rkt")
 (require "abstract-renaming.rkt")
-
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
+(module+ test
+  (require rackunit)
+  (require "cclp-interpreter.rkt"))
 
 (define (>=-extension domain-elem1 domain-elem2)
   (let* ([renamed-domain-elem2
@@ -28,20 +30,7 @@
   (-> abstract-domain-elem? abstract-domain-elem? boolean?)
   (domain-elem1 domain-elem2)
   @{Checks whether @racket[domain-elem1] is at least as general as @racket[domain-elem2].}))
-
-(define (renames? domain-elem1 domain-elem2)
-  (and (>=-extension domain-elem1 domain-elem2)
-       (>=-extension domain-elem2 domain-elem1)))
-(provide
- (proc-doc/names
-  renames?
-  (-> abstract-domain-elem? abstract-domain-elem? boolean?)
-  (domain-elem1 domain-elem2)
-  @{Checks whether @racket[domain-elem1] is equivalent to @racket[domain-elem2].}))
-
 (module+ test
-  (require rackunit)
-  (require "cclp-interpreter.rkt")
   (check-true (>=-extension (interpret-abstract-term "α1") (interpret-abstract-term "γ1")))
   (check-true (>=-extension (interpret-abstract-term "α1") (interpret-abstract-term "α2")))
   (check-false (>=-extension (interpret-abstract-term "γ1") (interpret-abstract-term "α1")))
@@ -96,3 +85,13 @@
     (list
      (interpret-abstract-atom "sift([γ2|α4],α1)")
      (interpret-abstract-atom "filter(α6,α5)")))))
+
+(define (renames? domain-elem1 domain-elem2)
+  (and (>=-extension domain-elem1 domain-elem2)
+       (>=-extension domain-elem2 domain-elem1)))
+(provide
+ (proc-doc/names
+  renames?
+  (-> abstract-domain-elem? abstract-domain-elem? boolean?)
+  (domain-elem1 domain-elem2)
+  @{Checks whether @racket[domain-elem1] is equivalent to @racket[domain-elem2].}))

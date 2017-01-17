@@ -22,35 +22,36 @@
 
 #lang racket
 (require racket/serialize)
+(module+ test (require rackunit))
 
 (define (write-a obj port mode)
   (if (eq? mode #t) (fprintf port "#<struct:a ~s>" (a-index obj)) (fprintf port "a~a" (a-index obj))))
 (serializable-struct a (index)
-  #:methods
-  gen:custom-write [(define write-proc write-a)]
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc a1 a2 equal?-recur)
-     (equal?-recur (a-index a1) (a-index a2)))
-   (define (hash-proc my-a hash-recur)
-     (hash-recur (a-index my-a)))
-   (define (hash2-proc my-a hash2-recur)
-     (hash2-recur (a-index my-a)))])
+                     #:methods
+                     gen:custom-write [(define write-proc write-a)]
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc a1 a2 equal?-recur)
+                        (equal?-recur (a-index a1) (a-index a2)))
+                      (define (hash-proc my-a hash-recur)
+                        (hash-recur (a-index my-a)))
+                      (define (hash2-proc my-a hash2-recur)
+                        (hash2-recur (a-index my-a)))])
 (provide (struct-out a))
 
 (define (write-g obj port mode)
   (if (eq? mode #t) (fprintf port "#<struct:g ~s>" (g-index obj)) (fprintf port "g~a" (g-index obj))))
 (serializable-struct g (index)
-  #:methods
-  gen:custom-write [(define write-proc write-g)]
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc g1 g2 equal?-recur)
-     (equal?-recur (g-index g1) (g-index g2)))
-   (define (hash-proc my-g hash-recur)
-     (hash-recur (g-index my-g)))
-   (define (hash2-proc my-g hash2-recur)
-     (hash2-recur (g-index my-g)))])
+                     #:methods
+                     gen:custom-write [(define write-proc write-g)]
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc g1 g2 equal?-recur)
+                        (equal?-recur (g-index g1) (g-index g2)))
+                      (define (hash-proc my-g hash-recur)
+                        (hash-recur (g-index my-g)))
+                      (define (hash2-proc my-g hash2-recur)
+                        (hash2-recur (g-index my-g)))])
 (provide (struct-out g))
 
 (define (abstract-variable? v)
@@ -87,3 +88,6 @@
 (define (abstract-domain-elem? elem)
   (or (abstract-atom? elem) (abstract-term? elem) ((listof abstract-atom?) elem)))
 (provide abstract-domain-elem?)
+
+(define concrete-constants (make-parameter (list)))
+(provide concrete-constants)

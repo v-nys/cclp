@@ -29,6 +29,9 @@
 (require (only-in "data-utils.rkt" some-v some?))
 (require (only-in racket-list-utils/utils map-accumulatel))
 
+(define max-depth (make-parameter 5))
+(provide max-depth)
+
 (define (ground? elem)
   (cond [(list? elem) (andmap ground? elem)]
         [(abstract-atom? elem) (andmap ground? (abstract-atom-args elem))]
