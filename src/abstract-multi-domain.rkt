@@ -88,6 +88,3 @@
 (define (abstract-domain-elem? elem)
   (or (abstract-atom? elem) (abstract-term? elem) ((listof abstract-atom?) elem)))
 (provide abstract-domain-elem?)
-
-(define domain-symbols (make-parameter (list)))
-(provide domain-symbols)

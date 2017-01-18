@@ -1,12 +1,9 @@
 #lang at-exp racket
 (require racket/generic)
 (require graph)
-(require "abstract-multi-domain.rkt" "abstract-renaming.rkt" "depth-k-abstraction.rkt" "cclp-interpreter.rkt")
+(require "abstract-multi-domain.rkt" "abstract-renaming.rkt" "cclp-interpreter.rkt")
 (module+ test (require rackunit))
 
-; how to deal with equivalence classes?
-; graph elements are actually part of those, not just abstract atoms...
-; TODO add proper normalization to abstract domain!!
 (struct preprior-graph (prior)
   #:methods gen:graph
   [(define/generic component-has-vertex? has-vertex?)
@@ -23,9 +20,8 @@
    (define (vertex=? g u v)
      (equal? (normalize-abstract-atom u) (normalize-abstract-atom v)))
    (define/generic component-add-vertex! add-vertex!)
+   ; TODO automatically add edges to more general / from more specific atoms?
    (define (add-vertex! g v)
-     ; TODO add more specific and more general vertices, as well
-     ; will need to make sure a max depth parameter is defined so that this can be done
      (component-add-vertex! (preprior-graph-prior g) (normalize-abstract-atom v)))
    (define/generic component-remove-vertex! remove-vertex!)
    (define (remove-vertex! g v)
@@ -95,48 +91,38 @@
 (provide mk-preprior-graph)
 
 (module+ test
-  (parameterize
-      ([max-depth 2]
-       [domain-symbols
-        (list
-         (abstract-atom 'foo '()) ; this is foo/0
-         (abstract-atom 'bar '())
-         (abstract-atom 'quux '())
-         (abstract-atom 'foo (list (a 1))) ; this is foo/1
-         (abstract-function 'cons (list (a 1) (a 2)))
-         (abstract-function 'nil '()))])
-    (let ([g (mk-preprior-graph)]
-          [u (abstract-atom 'foo (list))]
-          [v (abstract-atom 'bar (list))])
-      (begin (add-directed-edge! g u v)
-             (check-true (hash-ref (transitive-closure g) (list u v) #f))))
-    (let ([g (mk-preprior-graph)]
-          [u (abstract-atom 'foo (list))]
-          [v (abstract-atom 'bar (list))]
-          [w (abstract-atom 'quux (list))])
-      (begin (add-directed-edge! g u v)
-             (add-directed-edge! g v w)
-             (check-true (hash-ref (transitive-closure g) (list u w) #f))))
-    (let ([g (mk-preprior-graph)]
-          [u (abstract-atom 'foo (list))]
-          [v (abstract-atom 'bar (list))]
-          [w (abstract-atom 'quux (list))])
-      (begin (add-directed-edge! g u v)
-             (add-directed-edge! g v w)
-             (check-true (hash-ref (transitive-closure g) (list u w) #f))))
-    (let ([g (mk-preprior-graph)]
-          [u (interpret-abstract-atom "foo(nil)")])
-      (begin (add-vertex! g u)
-             (check-true (has-edge? g u u))))
-    (let ([g (mk-preprior-graph)]
-          [u (interpret-abstract-atom "foo(nil)")]
-          [v (interpret-abstract-atom "foo(γ1)")])
-      (begin (add-vertex! g u)
-             (check-true (has-edge? g u v))))
-    (let ([g (mk-preprior-graph)]
-          [u (interpret-abstract-atom "foo(nil)")]
-          [v (interpret-abstract-atom "foo(γ1)")]
-          [w (interpret-abstract-atom "foo(α1)")])
-      (begin (add-vertex! g v)
-             (check-true (has-edge? g u v))
-             (check-true (has-edge? g v w))))))
+  (let ([g (mk-preprior-graph)]
+        [u (abstract-atom 'foo (list))]
+        [v (abstract-atom 'bar (list))])
+    (begin (add-directed-edge! g u v)
+           (check-true (hash-ref (transitive-closure g) (list u v) #f))))
+  (let ([g (mk-preprior-graph)]
+        [u (abstract-atom 'foo (list))]
+        [v (abstract-atom 'bar (list))]
+        [w (abstract-atom 'quux (list))])
+    (begin (add-directed-edge! g u v)
+           (add-directed-edge! g v w)
+           (check-true (hash-ref (transitive-closure g) (list u w) #f))))
+  (let ([g (mk-preprior-graph)]
+        [u (abstract-atom 'foo (list))]
+        [v (abstract-atom 'bar (list))]
+        [w (abstract-atom 'quux (list))])
+    (begin (add-directed-edge! g u v)
+           (add-directed-edge! g v w)
+           (check-true (hash-ref (transitive-closure g) (list u w) #f))))
+  (let ([g (mk-preprior-graph)]
+        [u (interpret-abstract-atom "foo(nil)")])
+    (begin (add-vertex! g u)
+           (check-true (has-edge? g u u))))
+  (let ([g (mk-preprior-graph)]
+        [u (interpret-abstract-atom "foo(nil)")]
+        [v (interpret-abstract-atom "foo(γ1)")])
+    (begin (add-vertex! g u)
+           (check-true (has-edge? g u v))))
+  (let ([g (mk-preprior-graph)]
+        [u (interpret-abstract-atom "foo(nil)")]
+        [v (interpret-abstract-atom "foo(γ1)")]
+        [w (interpret-abstract-atom "foo(α1)")])
+    (begin (add-vertex! g v)
+           (check-true (has-edge? g u v))
+           (check-true (has-edge? g v w)))))
