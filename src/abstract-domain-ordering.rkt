@@ -8,6 +8,7 @@
 (require "abstract-renaming.rkt")
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
+(require (only-in "depth-k-abstraction.rkt" max-depth))
 (module+ test
   (require rackunit)
   (require "cclp-interpreter.rkt"))
@@ -95,3 +96,45 @@
   (-> abstract-domain-elem? abstract-domain-elem? boolean?)
   (domain-elem1 domain-elem2)
   @{Checks whether @racket[domain-elem1] is equivalent to @racket[domain-elem2].}))
+
+; note: generates direct and indirect generalizations
+; i.e. this generalizes nil to g1 but also to a1
+; could also just generalize to g1, as g1 itself generalizes to a1
+; on the other hand, that would make add-vertex trickier
+(define (>-instances aa) (set))
+(define (<-instances aa) (set))
+(module+ test
+  (parameterize
+      ([max-depth 2]
+       [domain-symbols
+        (list
+         (abstract-atom 'foo '()) ; foo/0
+         (abstract-atom 'foo (list (a 1))) ; foo/1
+         (abstract-atom 'foo (list (a 1) (a 2))) ; foo/2
+         (abstract-function 'cons (list (a 1) (a 2)))
+         (abstract-function 'nil '()))])
+    (check-equal?
+     (>-instances (abstract-atom 'foo '()))
+     (set))
+    (check-equal?
+     (>-instances (abstract-atom 'foo (list (g 1))))
+     (set (abstract-atom 'foo (list (a 1)))))
+    (check-equal?
+     (>-instances (abstract-atom 'foo (list (abstract-function 'nil '()))))
+     (set
+      (abstract-atom 'foo (list (g 1)))
+      (abstract-atom 'foo (list (a 1)))))
+    (check-equal?
+     (>-instances
+      (abstract-atom
+       'foo
+       (list
+        (abstract-function 'nil '())
+        (abstract-function 'nil '()))))
+     (set
+      (abstract-atom 'foo (list (g 1) (g 1)))
+      (abstract-atom 'foo (list (g 1) (g 2)))
+      (abstract-atom 'foo (list (g 1) (a 1)))
+      (abstract-atom 'foo (list (a 1) (g 1)))
+      (abstract-atom 'foo (list (a 1) (a 1)))
+      (abstract-atom 'foo (list (a 1) (a 2)))))))

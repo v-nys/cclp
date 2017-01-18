@@ -89,5 +89,5 @@
   (or (abstract-atom? elem) (abstract-term? elem) ((listof abstract-atom?) elem)))
 (provide abstract-domain-elem?)
 
-(define concrete-constants (make-parameter (list)))
-(provide concrete-constants)
+(define domain-symbols (make-parameter (list)))
+(provide domain-symbols)
