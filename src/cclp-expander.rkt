@@ -36,62 +36,8 @@
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 (require (for-syntax (only-in "data-utils.rkt" positive-integer->symbol)))
 (require (for-syntax (only-in racket remove-duplicates match second third)))
-
 (require "abstract-domain-ordering.rkt")
-
-(require (for-syntax "abstract-multi-domain-sexp-conversion.rkt"))
-(require "abstract-multi-domain-sexp-conversion.rkt")
-(require parenlog)
-
-; a "generic" model for a partial order
-; relevant atoms (i.e. those explicitly in 'before' pairs are specified
-; and the before relations themselves
-(define blank-model
-  (i/model
-   `((member X (cons X Y))
-     (:- (member X (cons Y Z))
-         (member X Z))
-     (not_a_member X ())
-     (:- (not_a_member X (cons A B))
-         (,(compose not equal?) X A)
-         (not_a_member X B))
-     (:- (reaches_without_encountering X Y Path)
-         (before X1 Y1)
-         (not_a_member Y1 Path)
-         (sexp_gt_extension X1 X)
-         (sexp_gt_extension Y Y1))
-     (:- (reaches_without_encountering X Z Path)
-         (before X1 Y)
-         (not_a_member Y Path)
-         (sexp_gt_extension X1 X)
-         (relevant_atoms R)
-         (member Z1 R)
-         (sexp_gt_extension Z Z1)
-         (reaches_without_encountering Y Z1 (cons Y Path)))
-     (:- (reaches_loopfree X Y)
-         (reaches_without_encountering X Y (cons X ())))
-     (:- (violates_partial_order)
-         (relevant_atoms R)
-         (member X R)
-         (member Y R)
-         (reaches_loopfree X Y)
-         (reaches_loopfree Y X)
-         (,(compose not
-                    (λ (sexp1 sexp2) (renames? (sexp->abstract-atom sexp1)
-                                               (sexp->abstract-atom sexp2)))) X Y))
-     (:- (member_reaches_or_includes_all_under_consistency X Atoms)
-         (member X Atoms)
-         (reaches_or_includes_all_under_consistency X Atoms))
-     (reaches_or_includes_all_under_consistency X ())
-     (:- (reaches_or_includes_all_under_consistency X (cons Destination Ds))
-         (sexp_gt_extension Destination X)
-         (reaches_or_includes_all_under_consistency X Ds))
-     (:- (reaches_or_includes_all_under_consistency X (cons Destination Ds))
-         (reaches_loopfree X Destination)
-         (reaches_or_includes_all_under_consistency X Ds))
-     (:- (sexp_gt_extension X Y)
-         (,(λ (e1 e2) (>=-extension (sexp->abstract-atom e1)
-                                    (sexp->abstract-atom e2))) X Y)))))
+(require "prior-graph.rkt")
 
 ; PUTTING THE THREE PARTS TOGETHER
 
@@ -99,15 +45,15 @@
 (define-syntax (cclp-program stx)
   (syntax-parse stx
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(cclp _PROGRAM-SECTION (list) blank-model (list) _QUERY-SECTION)]
+     #'(cclp _PROGRAM-SECTION (list) (mk-preprior-graph) (list) _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
         _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION blank-model (list) _QUERY-SECTION)]
+     #'(cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (mk-preprior-graph) (list) _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(cclp _PROGRAM-SECTION (list) blank-model _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
+     #'(cclp _PROGRAM-SECTION (list) (mk-preprior-graph) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
         _FULL-EVALUATION-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION blank-model _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]))
+     #'(cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (mk-preprior-graph) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]))
 (provide cclp-program)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF

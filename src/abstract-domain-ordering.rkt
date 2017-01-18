@@ -8,7 +8,6 @@
 (require "abstract-renaming.rkt")
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
-(require (only-in "depth-k-abstraction.rkt" max-depth))
 (module+ test
   (require rackunit)
   (require "cclp-interpreter.rkt"))

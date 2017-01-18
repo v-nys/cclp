@@ -22,17 +22,11 @@
 
 #lang racket
 (require "abstract-multi-domain.rkt")
-(require "abstract-multi-domain-sexp-conversion.rkt")
 (require "abstract-domain-ordering.rkt")
 (require "abstract-knowledge.rkt")
+(require "prior-graph.rkt")
 (require (only-in racket-list-utils/utils findf-index))
-(require parenlog)
 (require racket/set)
-
-(define (is-valid? prior)
-  (let ([counter-examples (query-model prior (violates_partial_order))])
-    (< (length counter-examples) 1)))
-(provide (contract-out [is-valid? (-> model? boolean?)]))
 
 (define (unique-atoms conjunction)
   (reverse
@@ -55,6 +49,8 @@
      full-ai-rules))
   (if full-eval-index
       full-eval-index
+      ; TODO: find an atom which precedes all others in prior
+      ; assume the others are added before selected-index is called!
       (let* ([sexp-conjunction (abstract-domain-elem->sexp (unique-atoms conjunction))]
              [query (list 'member_reaches_or_includes_all_under_consistency 'X sexp-conjunction)]
              [outcomes (query-model* prior (i/query query) #:limit 1)])
@@ -69,4 +65,4 @@
                    conjunction))))))))
 
 ; contract could be more specific (range is from 0 to length of the list...), but can wait
-(provide (contract-out [selected-index (-> (listof abstract-atom?) model? (listof full-evaluation?) (or/c #f natural-number/c))]))
+(provide (contract-out [selected-index (-> (listof abstract-atom?) preprior-graph? (listof full-evaluation?) (or/c #f natural-number/c))]))
