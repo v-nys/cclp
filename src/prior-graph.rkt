@@ -1,7 +1,7 @@
 #lang at-exp racket
 (require racket/generic)
 (require graph)
-(require "abstract-multi-domain.rkt" "abstract-renaming.rkt" "cclp-interpreter.rkt")
+(require "abstract-multi-domain.rkt" "abstract-renaming.rkt" "cclp-interpreter.rkt" "abstract-domain-ordering.rkt")
 (module+ test (require rackunit))
 
 (struct preprior-graph (prior)
@@ -20,9 +20,18 @@
    (define (vertex=? g u v)
      (equal? (normalize-abstract-atom u) (normalize-abstract-atom v)))
    (define/generic component-add-vertex! add-vertex!)
-   ; TODO automatically add edges to more general / from more specific atoms?
    (define (add-vertex! g v)
-     (component-add-vertex! (preprior-graph-prior g) (normalize-abstract-atom v)))
+     (component-add-vertex!
+      (preprior-graph-prior g)
+      (normalize-abstract-atom v))
+     (for ([xv (in-component-vertices (preprior-graph-prior g))]
+           #:when (>=-extension v xv)
+           #:unless (renames? xv v))
+       (component-add-directed-edge! (preprior-graph-prior g) xv v))
+     (for ([xv (in-component-vertices (preprior-graph-prior g))]
+           #:when (>=-extension xv v)
+           #:unless (renames? xv v))
+       (component-add-directed-edge! (preprior-graph-prior g) v xv)))
    (define/generic component-remove-vertex! remove-vertex!)
    (define (remove-vertex! g v)
      (component-remove-vertex!
@@ -56,25 +65,25 @@
    (define/generic component-get-vertices get-vertices)
    (define (get-vertices g)
      (component-get-vertices (preprior-graph-prior g)))
-   (define/generic component-in-vertices in-vertices)
+   (define/generic in-component-vertices in-vertices)
    (define (in-vertices g)
-     (component-in-vertices (preprior-graph-prior g)))
+     (in-component-vertices (preprior-graph-prior g)))
    (define/generic component-get-neighbors get-neighbors)
    (define (get-neighbors g v)
      (component-get-neighbors
       (preprior-graph-prior g)
       (normalize-abstract-atom v)))
-   (define/generic component-in-neighbors in-neighbors)
+   (define/generic in-component-neighbors in-neighbors)
    (define (in-neighbors g v)
-     (component-in-neighbors
+     (in-component-neighbors
       (preprior-graph-prior g)
       (normalize-abstract-atom v)))
    (define/generic component-get-edges get-edges)
    (define (get-edges g)
      (component-get-edges (preprior-graph-prior g)))
-   (define/generic component-in-edges in-edges)
+   (define/generic in-component-edges in-edges)
    (define (in-edges g)
-     (component-in-edges (preprior-graph-prior g)))
+     (in-component-edges (preprior-graph-prior g)))
    (define/generic component-edge-weight edge-weight)
    (define (edge-weight g u v)
      (component-edge-weight
@@ -113,16 +122,60 @@
   (let ([g (mk-preprior-graph)]
         [u (interpret-abstract-atom "foo(nil)")])
     (begin (add-vertex! g u)
-           (check-true (has-edge? g u u))))
+           (check-false (has-edge? g u u))))
   (let ([g (mk-preprior-graph)]
         [u (interpret-abstract-atom "foo(nil)")]
         [v (interpret-abstract-atom "foo(γ1)")])
     (begin (add-vertex! g u)
+           (add-vertex! g v)
            (check-true (has-edge? g u v))))
   (let ([g (mk-preprior-graph)]
         [u (interpret-abstract-atom "foo(nil)")]
-        [v (interpret-abstract-atom "foo(γ1)")]
-        [w (interpret-abstract-atom "foo(α1)")])
+        [v (interpret-abstract-atom "foo(γ1)")])
     (begin (add-vertex! g v)
-           (check-true (has-edge? g u v))
-           (check-true (has-edge? g v w)))))
+           (add-vertex! g u)
+           (check-true (has-edge? g u v)))))
+
+(define (strict-partial-order? g)
+  (define transitive-g (transitive-closure g))
+  (not (ormap (λ (v) (hash-ref transitive-g (list v v) #f)) (get-vertices g))))
+(module+ test
+  (check-true (strict-partial-order? (mk-preprior-graph)))
+  (let ([g (mk-preprior-graph)]
+        [v (abstract-atom 'a '())])
+    (begin
+      (add-vertex! g v)
+      (add-directed-edge! g v v)
+      (check-false (strict-partial-order? g))))
+  (let ([g (mk-preprior-graph)]
+        [u (abstract-atom 'a '())]
+        [v (abstract-atom 'b '())])
+    (begin
+      (add-vertex! g u)
+      (add-vertex! g v)
+      (add-directed-edge! g u v)
+      (add-directed-edge! g v u)
+      (check-false (strict-partial-order? g))))
+  (let ([g (mk-preprior-graph)]
+        [u (abstract-atom 'a '())]
+        [v (abstract-atom 'b '())]
+        [w (abstract-atom 'c '())])
+    (begin
+      (add-vertex! g u)
+      (add-vertex! g v)
+      (add-vertex! g w)
+      (add-directed-edge! g u v)
+      (add-directed-edge! g v w)
+      (check-true (strict-partial-order? g))))
+  (let ([g (mk-preprior-graph)]
+        [u (abstract-atom 'a '())]
+        [v (abstract-atom 'b '())]
+        [w (abstract-atom 'c '())])
+    (begin
+      (add-vertex! g u)
+      (add-vertex! g v)
+      (add-vertex! g w)
+      (add-directed-edge! g u v)
+      (add-directed-edge! g v w)
+      (add-directed-edge! g w u)
+      (check-false (strict-partial-order? g)))))
