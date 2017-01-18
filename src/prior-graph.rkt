@@ -2,6 +2,8 @@
 (require racket/generic)
 (require graph)
 (require "abstract-multi-domain.rkt" "abstract-renaming.rkt" "cclp-interpreter.rkt" "abstract-domain-ordering.rkt")
+(require scribble/srcdoc)
+(require (for-doc scribble/manual))
 (module+ test (require rackunit))
 
 ; TODO: inconsistency between prior-graph (in some places) and preprior-graph... which is it?
@@ -98,7 +100,17 @@
    (define (graph-copy g)
      (preprior-graph (component-graph-copy (preprior-graph-prior g))))])
 (define (mk-preprior-graph) (preprior-graph (unweighted-graph/directed '())))
-(provide mk-preprior-graph preprior-graph?)
+(provide
+ (proc-doc/names
+  mk-preprior-graph
+  (-> preprior-graph?) ()
+  @{Creates a mutable graph suitable for representing a strict partial order, without any vertices.}))
+(provide
+ (proc-doc/names
+  preprior-graph?
+  (-> any/c boolean?)
+  (val)
+  @{Checks whether @racket[val] is a mutable graph suitable for representing a strict partial order.}))
 
 (module+ test
   (let ([g (mk-preprior-graph)]
@@ -154,6 +166,14 @@
               (hash-ref transitive-g (list v2 v) #f)))
            (get-vertices g))))
     (get-vertices g))))
+(provide
+ (proc-doc/names
+  strict-partial-order?
+  (-> preprior-graph? boolean?)
+  (g)
+  @{Checks whether @racket[g] represents a strict partial order.
+ If the transitive closure (without implied reachability of self) contains loops,
+ including edges from an atom to itself, this is not the case.}))
 
 (module+ test
   (check-true (strict-partial-order? (mk-preprior-graph)))
