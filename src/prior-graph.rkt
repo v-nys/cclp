@@ -4,6 +4,8 @@
 (require "abstract-multi-domain.rkt" "abstract-renaming.rkt" "cclp-interpreter.rkt" "abstract-domain-ordering.rkt")
 (module+ test (require rackunit))
 
+; TODO: inconsistency between prior-graph (in some places) and preprior-graph... which is it?
+
 (struct preprior-graph (prior)
   #:methods gen:graph
   [(define/generic component-has-vertex? has-vertex?)
@@ -96,7 +98,7 @@
    (define (graph-copy g)
      (preprior-graph (component-graph-copy (preprior-graph-prior g))))])
 (define (mk-preprior-graph) (preprior-graph (unweighted-graph/directed '())))
-(provide mk-preprior-graph)
+(provide mk-preprior-graph preprior-graph?)
 
 (module+ test
   (let ([g (mk-preprior-graph)]
