@@ -21,17 +21,16 @@
      (equal? (normalize-abstract-atom u) (normalize-abstract-atom v)))
    (define/generic component-add-vertex! add-vertex!)
    (define (add-vertex! g v)
+     (define normalized-v (normalize-abstract-atom v))
      (component-add-vertex!
       (preprior-graph-prior g)
-      (normalize-abstract-atom v))
+      normalized-v)
      (for ([xv (in-component-vertices (preprior-graph-prior g))]
-           #:when (>=-extension v xv)
-           #:unless (renames? xv v))
-       (component-add-directed-edge! (preprior-graph-prior g) xv v))
+           #:when (and (>=-extension normalized-v xv) (not (renames? xv normalized-v))))
+       (component-add-directed-edge! (preprior-graph-prior g) xv normalized-v))
      (for ([xv (in-component-vertices (preprior-graph-prior g))]
-           #:when (>=-extension xv v)
-           #:unless (renames? xv v))
-       (component-add-directed-edge! (preprior-graph-prior g) v xv)))
+           #:when (and (>=-extension xv normalized-v) (not (renames? xv normalized-v))))
+       (component-add-directed-edge! (preprior-graph-prior g) normalized-v xv)))
    (define/generic component-remove-vertex! remove-vertex!)
    (define (remove-vertex! g v)
      (component-remove-vertex!
@@ -137,8 +136,23 @@
            (check-true (has-edge? g u v)))))
 
 (define (strict-partial-order? g)
+  ; note: transitive closure always returns #t for self loops
+  ; (see racket/graph source code)
+  ; therefore, check for self *edges* or non-self loops
   (define transitive-g (transitive-closure g))
-  (not (ormap (λ (v) (hash-ref transitive-g (list v v) #f)) (get-vertices g))))
+  (not
+   (ormap
+    (λ (v)
+      (or (has-edge? g v v)
+          (ormap
+           (λ (v2)
+             (and
+              (not (vertex=? g v v2))
+              (hash-ref transitive-g (list v v2) #f)
+              (hash-ref transitive-g (list v2 v) #f)))
+           (get-vertices g))))
+    (get-vertices g))))
+
 (module+ test
   (check-true (strict-partial-order? (mk-preprior-graph)))
   (let ([g (mk-preprior-graph)]
@@ -178,4 +192,15 @@
       (add-directed-edge! g u v)
       (add-directed-edge! g v w)
       (add-directed-edge! g w u)
+      (check-false (strict-partial-order? g))))
+  (let ([g (mk-preprior-graph)]
+        [u (interpret-abstract-atom "foo(α1)")]
+        [v (abstract-atom 'bar '())]
+        [w (interpret-abstract-atom "foo(γ1)")])
+    (begin
+      (add-vertex! g u)
+      (add-vertex! g v)
+      (add-vertex! g w)
+      (add-directed-edge! g u v)
+      (add-directed-edge! g v w)
       (check-false (strict-partial-order? g)))))
