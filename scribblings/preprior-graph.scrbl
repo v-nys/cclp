@@ -1,13 +1,13 @@
 #lang scribble/manual
-@(require (for-label "../src/prior-graph.rkt"))
+@(require (for-label "../src/preprior-graph.rkt"))
 @(require (for-label "../src/abstract-renaming.rkt"))
 
-@title{The prior graph}
+@title{The preprior graph}
 A graph constructed using @racket[mk-preprior-graph] can be used to maintain
 and check the partial order relation used to select atoms for expansion.
 
 Whenever there are multiple candidates for expansion,
-the user is expected to add them to the prior graph using @racket[add-vertex!].
+the user is expected to add them to the preprior graph using @racket[add-vertex!].
 
 When a candidate is added, it is normalized via @racket[normalize-abstract-atom], and the following happens:
 
