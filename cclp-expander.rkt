@@ -34,7 +34,6 @@
 (require (only-in "interaction.rkt" cclp-top cclp))
 (require racket/contract)
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
-(require (for-syntax (only-in "data-utils.rkt" positive-integer->symbol)))
 (require (for-syntax (only-in racket remove-duplicates match second third)))
 (require "abstract-domain-ordering.rkt")
 (require "preprior-graph.rkt")

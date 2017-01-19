@@ -68,7 +68,8 @@
 (define (read-syntax source-path input-port)
   (define parse-tree (parse source-path (tokenize input-port)))
   (strip-context
-    (with-syntax ([_PARSE-TREE parse-tree])
-                  #'(module lp-mod "cclp-expander.rkt"
-                      _PARSE-TREE))))
+   (with-syntax
+       ([_PARSE-TREE parse-tree])
+     #'(module lp-mod cclp/cclp-expander
+         _PARSE-TREE))))
 (provide read-syntax)
