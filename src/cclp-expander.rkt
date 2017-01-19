@@ -37,7 +37,7 @@
 (require (for-syntax (only-in "data-utils.rkt" positive-integer->symbol)))
 (require (for-syntax (only-in racket remove-duplicates match second third)))
 (require "abstract-domain-ordering.rkt")
-(require "prior-graph.rkt")
+(require "preprior-graph.rkt")
 
 ; PUTTING THE THREE PARTS TOGETHER
 

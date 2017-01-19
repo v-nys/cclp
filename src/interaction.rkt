@@ -43,7 +43,6 @@
 (require (only-in "concrete-domain.rkt" function?))
 (require "cclp-interpreter.rkt")
 (require "similarity.rkt")
-(require "abstract-multi-domain-sexp-conversion.rkt")
 
 (require racket/logging)
 (require (for-doc scribble/manual))
