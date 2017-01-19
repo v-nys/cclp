@@ -103,7 +103,16 @@
       (add-vertex! preprior (first conjunction))
       (add-vertex! preprior (second conjunction))
       (add-vertex! preprior (third conjunction))
-      (check-equal? (selected-index conjunction preprior '()) 2))))
+      (check-equal? (selected-index conjunction preprior '()) 2)))
+  (let ([conjunction (interpret-abstract-conjunction "foo(α1),bar(γ1)")]
+        [full-ai
+         (list
+          (full-evaluation
+           (interpret-abstract-atom "bar(γ1)")
+           (interpret-abstract-atom "bar(nil)")))])
+    (check-equal?
+     (selected-index conjunction (mk-preprior-graph) full-ai)
+     1)))
 ; contract could be more specific (range is from 0 to length of the list...), but can wait
 (provide
  (proc-doc/names
