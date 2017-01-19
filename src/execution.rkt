@@ -30,7 +30,7 @@
 (require racket/set)
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
-(module+ test (require rackunit))
+(module+ test (require rackunit "cclp-interpreter.rkt"))
 
 (define (unique-atoms conjunction)
   (reverse
@@ -40,8 +40,16 @@
         (if renaming acc (cons at acc))))
     (list)
     conjunction)))
-
-; TODO add tests
+(module+ test
+  (let* ([original (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")]
+         [filtered (unique-atoms original)])
+    (check-equal? filtered original))
+  (let* ([st "foo(γ1,α1),bar(γ2,α2),foo(γ1,α1),bar(γ2,α2)"]
+         [original (interpret-abstract-conjunction st)]
+         [filtered (unique-atoms original)])
+    (check-equal?
+     filtered
+     (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)"))))
 
 (define (selected-index conjunction prior full-ai-rules)
   (define full-eval-index
