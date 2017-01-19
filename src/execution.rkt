@@ -25,6 +25,7 @@
 (require "abstract-domain-ordering.rkt")
 (require "abstract-knowledge.rkt")
 (require "preprior-graph.rkt")
+(require "abstract-renaming.rkt")
 (require (only-in racket-list-utils/utils findf-index))
 (require graph)
 (require racket/set)
@@ -51,7 +52,7 @@
      filtered
      (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)"))))
 
-(define (selected-index conjunction prior full-ai-rules)
+(define (selected-index conjunction preprior full-ai-rules)
   (define full-eval-index
     (foldl
      (λ (r acc)
@@ -62,22 +63,47 @@
      full-ai-rules))
   (if full-eval-index
       full-eval-index
-      (let* ([unique (unique-atoms conjunction)]
-             [tc (transitive-closure prior)]
-             [first
+      (let* ([unique (unique-atoms (map normalize-abstract-atom conjunction))]
+             ; remember, tc always has reachability of self
+             [tc (transitive-closure preprior)]
+             [first-choice
               (findf
                (λ (aa1)
                  (andmap
-                  (λ (aa2) (hash-ref tc (list aa1 aa2) #f))
+                  (λ (aa2)
+                    (hash-ref tc (list aa1 aa2) #f))
                   unique))
                unique)])
         (begin
-          (if (not first)
+          (if (not first-choice)
               #f
-              (findf-index first conjunction))))))
-
-; TODO add tests
-
+              (findf-index (λ (c) (renames? c first-choice)) conjunction))))))
+(module+ test
+  (let* ([preprior (mk-preprior-graph)]
+         [conjunction (interpret-abstract-conjunction "foo(γ1,α1)")])
+    (begin
+      (add-vertex! preprior (first conjunction))
+      (check-equal? (selected-index conjunction preprior '()) 0)))
+  (let* ([preprior (mk-preprior-graph)]
+         [conjunction (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")])
+    (begin
+      (add-vertex! preprior (first conjunction))
+      (add-vertex! preprior (second conjunction))
+      (check-equal? (selected-index conjunction preprior '()) #f)))
+  (let* ([preprior (mk-preprior-graph)]
+         [conjunction (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")])
+    (begin
+      (add-vertex! preprior (first conjunction))
+      (add-vertex! preprior (second conjunction))
+      (add-directed-edge! preprior (second conjunction) (first conjunction))
+      (check-equal? (selected-index conjunction preprior '()) 1)))
+  (let* ([preprior (mk-preprior-graph)]
+         [conjunction (interpret-abstract-conjunction "foo(α1),foo(γ1),foo(nil)")])
+    (begin
+      (add-vertex! preprior (first conjunction))
+      (add-vertex! preprior (second conjunction))
+      (add-vertex! preprior (third conjunction))
+      (check-equal? (selected-index conjunction preprior '()) 2))))
 ; contract could be more specific (range is from 0 to length of the list...), but can wait
 (provide
  (proc-doc/names
