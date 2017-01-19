@@ -216,7 +216,9 @@
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 (define-syntax (cclp-module-begin stx)
   (syntax-parse stx
-    [(_ _PARSE-TREE ...) #'(#%module-begin (cclp-top current-contract-region _PARSE-TREE ...))]))
+    [(_ _PARSE-TREE ...)
+     #'(#%module-begin
+        (cclp-top current-contract-region _PARSE-TREE ...))]))
 (provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
 
 (module+ test

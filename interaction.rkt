@@ -138,12 +138,7 @@
                 (newline)
                 (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
         [(equal? choice proceed)
-         ; this still assumes advance-analysis will simply throw an error
-         ; can't do that anymore
-         ; if there is a candidate tree node, we need to check if an index will be selected
-         ; we also need to remove preprior as a parameter of this function?
-         ; not quite! it should be possibly to rewind an atom selection, but the model should hold for the *entire* program
-         ; so finishing a branch and moving on to a sibling branch should not rewind anything
+         ; TODO: make sure right vertices are added at the right time
          (match (candidate-and-predecessors tree '())
            [(cons (none) _)
             (begin (displayln "There are no nodes left to analyze.")
