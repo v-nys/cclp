@@ -5,4 +5,4 @@
 @title{The abstract analysis interaction prompt}
 
 @section{API}
-@(include-extracted "../src/interaction.rkt")
+@(include-extracted "../interaction.rkt")

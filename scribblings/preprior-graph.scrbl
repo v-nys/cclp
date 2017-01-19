@@ -1,6 +1,6 @@
 #lang scribble/manual
-@(require (for-label "../src/preprior-graph.rkt"))
-@(require (for-label "../src/abstract-renaming.rkt"))
+@(require (for-label "../preprior-graph.rkt"))
+@(require (for-label "../abstract-renaming.rkt"))
 
 @title{The preprior graph}
 A graph constructed using @racket[mk-preprior-graph] can be used to maintain

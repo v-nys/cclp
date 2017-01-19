@@ -87,9 +87,9 @@
 (module+ test
   (require rackunit)
   (require (for-syntax syntax/parse))
-  (require "../src/cclp-interpreter.rkt")
+  (require "cclp-interpreter.rkt")
 
-  (require (for-syntax (only-in "../src/abstract-substitution.rkt" asubst)))
+  (require (for-syntax (only-in "abstract-substitution.rkt" asubst)))
 
   ; the occurs check
   (check-true (occurs (g 1) (interpret-abstract-term "γ1")))

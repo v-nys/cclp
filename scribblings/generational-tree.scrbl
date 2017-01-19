@@ -7,4 +7,4 @@ A generational tree is an auxiliary data structure used to detect similarity bet
 where one is not simply a renaming or an instance of the other.
 
 @section{API}
-@(include-extracted "../src/generational-tree.rkt")
+@(include-extracted "../generational-tree.rkt")

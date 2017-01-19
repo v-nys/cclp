@@ -5,4 +5,4 @@
 @title{Abstract substitutions}
 
 @section{API}
-@(include-extracted "../src/abstract-substitution.rkt")
+@(include-extracted "../abstract-substitution.rkt")

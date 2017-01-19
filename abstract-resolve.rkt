@@ -156,7 +156,7 @@
   (require rackunit)
   (require (for-syntax syntax/parse))
   (require "cclp-interpreter.rkt")
-  (require (for-syntax (only-in "../src/abstract-substitution.rkt" asubst)))
+  (require (for-syntax (only-in "abstract-substitution.rkt" asubst)))
 
   (check-equal?
    (abstract-resolve (interpret-abstract-conjunction "perm(γ1,α1),ord(α1)")

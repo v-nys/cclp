@@ -5,4 +5,4 @@
 @title{Ordering of the abstract domain}
 
 @section{API}
-@(include-extracted "../src/abstract-domain-ordering.rkt")
+@(include-extracted "../abstract-domain-ordering.rkt")

@@ -8,4 +8,4 @@ except for the tree data structure, which is generic.
 The most common and largest of these is @racket[tree-label].
 
 @section{API}
-@(include-extracted "../src/abstract-analysis.rkt")
+@(include-extracted "../abstract-analysis.rkt")

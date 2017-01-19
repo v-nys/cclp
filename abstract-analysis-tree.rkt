@@ -108,7 +108,7 @@
 
 (module+ test
   (require rackunit)
-  (require "../src/cclp-interpreter.rkt")
+  (require "cclp-interpreter.rkt")
   (test-case
    "candidate and predecessors for various scenarios"
    (let ([tree (node (tree-label (list (interpret-abstract-atom "foo(γ1)")) (none) '() #f #f) '())])
