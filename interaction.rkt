@@ -29,7 +29,6 @@
 (require (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-function?))
 (require racket-tree-utils/src/tree (only-in racket-tree-utils/src/printer tree-display))
 (require (only-in racket-list-utils/utils findf-index))
-(require parenlog)
 (require "abstract-resolve.rkt")
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")

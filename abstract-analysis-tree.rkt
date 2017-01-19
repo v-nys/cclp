@@ -3,7 +3,6 @@
 (require "abstract-knowledge.rkt")
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require "concrete-domain.rkt")
-(require (only-in parenlog model?))
 (require "abstract-substitution.rkt")
 (require scribble/srcdoc)
 (require racket/serialize)
@@ -15,6 +14,7 @@
 (require "data-utils.rkt")
 (require (only-in "similarity.rkt" s-similar?))
 (require "abstract-analysis.rkt")
+(require "preprior-graph.rkt")
 
 (define (resolvent->node res)
   (node
@@ -98,7 +98,7 @@
 (provide
  (proc-doc/names
   advance-analysis
-  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) model? exact-positive-integer? list? (values node? node?))
+  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) preprior-graph? exact-positive-integer? list? (values node? node?))
   (top candidate clauses full-evaluations concrete-constants prior next-index more-general-predecessor)
   @{Advances the analysis in @racket[top], when the next conjunction up for unfolding or full evaluation is @racket[candidate],
  the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].

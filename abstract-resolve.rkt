@@ -32,7 +32,6 @@
 (require "domain-switching.rkt")
 (require "abstract-renaming.rkt")
 (require "abstraction-inspection-utils.rkt")
-(require (only-in parenlog model?))
 (require racket/logging)
 (require (only-in "concrete-domain.rkt" function?))
 

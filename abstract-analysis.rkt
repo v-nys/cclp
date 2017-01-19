@@ -25,7 +25,6 @@
 (require "abstract-knowledge.rkt")
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require "concrete-domain.rkt")
-(require (only-in parenlog model?))
 (require "abstract-substitution.rkt")
 (require scribble/srcdoc)
 (require racket/serialize)
