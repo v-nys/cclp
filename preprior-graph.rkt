@@ -7,19 +7,18 @@
 (module+ test (require rackunit))
 (require racket/serialize)
 
-; Each element of the list is a list of vertices where the first vertex is the source and the rest are destinations.
-; g is an unweighted graph
-(define (adj-list g) (list))
-(module+ test
-  (let ([g (unweighted-graph/directed (list))])
-    (check-equal? (adj-list g) (list)))
-  (let ([g (unweighted-graph/directed '((a b) (a c) (b c) (c d)))])
-    (check-equal?
-     (adj-list g)
-     '((a b c)
-       (b c)
-       (c d)
-       (d)))))
+(define (adj-list g)
+  (map
+   (λ (v)
+     (cons
+      v
+      (map
+       second
+       (filter
+        (λ (e)
+          (equal? (first e) v))
+        (get-edges g)))))
+   (get-vertices g)))
 
 (define ds-info
   (make-deserialize-info
@@ -30,8 +29,11 @@
      (values
       (error "should not be required")
       (error "should not be required")))))
+(provide ds-info)
 
+; TODO add proper equality check
 (struct preprior-graph (prior)
+  #:transparent
   #:methods gen:graph
   [(define/generic component-has-vertex? has-vertex?)
    (define (has-vertex? g v)
@@ -125,8 +127,10 @@
   #:property
   prop:serializable
   (make-serialize-info
+   ; yes, 'ds-info as a symbol looks weird
+   ; but that's how the reference explains it, and it looks weird
    (λ (s) (make-vector 1 (adj-list (preprior-graph-prior s))))
-   ds-info
+   'ds-info
    #f
    (or (current-load-relative-directory) (current-directory))))
 (define (mk-preprior-graph) (preprior-graph (unweighted-graph/directed '())))
@@ -143,41 +147,61 @@
   @{Checks whether @racket[val] is a mutable graph suitable for representing a strict partial order.}))
 
 (module+ test
-  (let ([g (mk-preprior-graph)]
-        [u (abstract-atom 'foo (list))]
-        [v (abstract-atom 'bar (list))])
-    (begin (add-directed-edge! g u v)
-           (check-true (hash-ref (transitive-closure g) (list u v) #f))))
-  (let ([g (mk-preprior-graph)]
-        [u (abstract-atom 'foo (list))]
-        [v (abstract-atom 'bar (list))]
-        [w (abstract-atom 'quux (list))])
-    (begin (add-directed-edge! g u v)
-           (add-directed-edge! g v w)
-           (check-true (hash-ref (transitive-closure g) (list u w) #f))))
-  (let ([g (mk-preprior-graph)]
-        [u (abstract-atom 'foo (list))]
-        [v (abstract-atom 'bar (list))]
-        [w (abstract-atom 'quux (list))])
-    (begin (add-directed-edge! g u v)
-           (add-directed-edge! g v w)
-           (check-true (hash-ref (transitive-closure g) (list u w) #f))))
-  (let ([g (mk-preprior-graph)]
-        [u (interpret-abstract-atom "foo(nil)")])
-    (begin (add-vertex! g u)
-           (check-false (has-edge? g u u))))
-  (let ([g (mk-preprior-graph)]
-        [u (interpret-abstract-atom "foo(nil)")]
-        [v (interpret-abstract-atom "foo(γ1)")])
-    (begin (add-vertex! g u)
-           (add-vertex! g v)
-           (check-true (has-edge? g u v))))
-  (let ([g (mk-preprior-graph)]
-        [u (interpret-abstract-atom "foo(nil)")]
-        [v (interpret-abstract-atom "foo(γ1)")])
-    (begin (add-vertex! g v)
-           (add-vertex! g u)
-           (check-true (has-edge? g u v)))))
+  (test-case
+   "transitive closure with extra instantiation constraints works as expected"
+   (let ([g (mk-preprior-graph)]
+         [u (abstract-atom 'foo (list))]
+         [v (abstract-atom 'bar (list))])
+     (begin (add-directed-edge! g u v)
+            (check-true (hash-ref (transitive-closure g) (list u v) #f))))
+   (let ([g (mk-preprior-graph)]
+         [u (abstract-atom 'foo (list))]
+         [v (abstract-atom 'bar (list))]
+         [w (abstract-atom 'quux (list))])
+     (begin (add-directed-edge! g u v)
+            (add-directed-edge! g v w)
+            (check-true (hash-ref (transitive-closure g) (list u w) #f))))
+   (let ([g (mk-preprior-graph)]
+         [u (abstract-atom 'foo (list))]
+         [v (abstract-atom 'bar (list))]
+         [w (abstract-atom 'quux (list))])
+     (begin (add-directed-edge! g u v)
+            (add-directed-edge! g v w)
+            (check-true (hash-ref (transitive-closure g) (list u w) #f))))
+   (let ([g (mk-preprior-graph)]
+         [u (interpret-abstract-atom "foo(nil)")])
+     (begin (add-vertex! g u)
+            (check-false (has-edge? g u u))))
+   (let ([g (mk-preprior-graph)]
+         [u (interpret-abstract-atom "foo(nil)")]
+         [v (interpret-abstract-atom "foo(γ1)")])
+     (begin (add-vertex! g u)
+            (add-vertex! g v)
+            (check-true (has-edge? g u v))))
+   (let ([g (mk-preprior-graph)]
+         [u (interpret-abstract-atom "foo(nil)")]
+         [v (interpret-abstract-atom "foo(γ1)")])
+     (begin (add-vertex! g v)
+            (add-vertex! g u)
+            (check-true (has-edge? g u v)))))
+  (test-case
+   "serialization and deserialization work as expected"
+   (let ([g (mk-preprior-graph)]
+         [a (interpret-abstract-atom "a")]
+         [b (interpret-abstract-atom "b")]
+         [c (interpret-abstract-atom "c")]
+         [d (interpret-abstract-atom "d")])
+     (begin
+       (add-vertex! g a)
+       (add-vertex! g b)
+       (add-vertex! g c)
+       (add-vertex! g d)
+       (add-edge! g a b)
+       (add-edge! g a c)
+       (add-edge! g c d)
+       (check-equal?
+        (deserialize (serialize g))
+        g)))))
 
 (define (strict-partial-order? g)
   ; note: transitive closure always returns #t for self loops
