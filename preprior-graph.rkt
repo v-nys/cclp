@@ -31,9 +31,7 @@
       (error "should not be required")))))
 (provide ds-info)
 
-; TODO add proper equality check
 (struct preprior-graph (prior)
-  #:transparent
   #:methods gen:graph
   [(define/generic component-has-vertex? has-vertex?)
    (define (has-vertex? g v)
@@ -124,11 +122,17 @@
    (define/generic component-graph-copy graph-copy)
    (define (graph-copy g)
      (preprior-graph (component-graph-copy (preprior-graph-prior g))))]
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc g1 g2 equal?-recur)
+     (equal?-recur (preprior-graph-prior g1) (preprior-graph-prior g2)))
+   (define (hash-proc g hash-recur)
+     (hash-recur (preprior-graph-prior g)))
+   (define (hash2-proc g hash2-recur)
+     (hash2-recur (preprior-graph-prior g)))]
   #:property
   prop:serializable
   (make-serialize-info
-   ; yes, 'ds-info as a symbol looks weird
-   ; but that's how the reference explains it, and it looks weird
    (λ (s) (make-vector 1 (adj-list (preprior-graph-prior s))))
    'ds-info
    #f
