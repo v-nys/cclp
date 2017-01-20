@@ -5,8 +5,31 @@
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 (module+ test (require rackunit))
+(require racket/serialize)
 
-; TODO: inconsistency between prior-graph (in some places) and preprior-graph... which is it?
+; Each element of the list is a list of vertices where the first vertex is the source and the rest are destinations.
+; g is an unweighted graph
+(define (adj-list g) (list))
+(module+ test
+  (let ([g (unweighted-graph/directed (list))])
+    (check-equal? (adj-list g) (list)))
+  (let ([g (unweighted-graph/directed '((a b) (a c) (b c) (c d)))])
+    (check-equal?
+     (adj-list g)
+     '((a b c)
+       (b c)
+       (c d)
+       (d)))))
+
+(define ds-info
+  (make-deserialize-info
+   (λ (edges)
+     (preprior-graph
+      (unweighted-graph/adj edges)))
+   (λ ()
+     (values
+      (error "should not be required")
+      (error "should not be required")))))
 
 (struct preprior-graph (prior)
   #:methods gen:graph
@@ -98,7 +121,14 @@
      (preprior-graph (component-transpose (preprior-graph-prior g))))
    (define/generic component-graph-copy graph-copy)
    (define (graph-copy g)
-     (preprior-graph (component-graph-copy (preprior-graph-prior g))))])
+     (preprior-graph (component-graph-copy (preprior-graph-prior g))))]
+  #:property
+  prop:serializable
+  (make-serialize-info
+   (λ (s) (make-vector 1 (adj-list (preprior-graph-prior s))))
+   ds-info
+   #f
+   (or (current-load-relative-directory) (current-directory))))
 (define (mk-preprior-graph) (preprior-graph (unweighted-graph/directed '())))
 (provide
  (proc-doc/names
