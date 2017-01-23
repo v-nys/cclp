@@ -43,39 +43,48 @@
 ; can I make this more modular?
 (define-syntax (cclp-program stx)
   (syntax-parse stx
+    ; no full ai rules, no concrete constants
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(cclp _PROGRAM-SECTION (list) (mk-preprior-graph) (list) _QUERY-SECTION)]
+     (syntax/loc stx (cclp _PROGRAM-SECTION (list) (list) _QUERY-SECTION))]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
         _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (mk-preprior-graph) (list) _QUERY-SECTION)]
+     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION))]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(cclp _PROGRAM-SECTION (list) (mk-preprior-graph) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]
+     (syntax/loc stx (cclp _PROGRAM-SECTION (list) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION))]
     [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
         _FULL-EVALUATION-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     #'(cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (mk-preprior-graph) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION)]))
+     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION))]))
 (provide cclp-program)
+
+; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
+(define-syntax (cclp-module-begin stx)
+  (syntax-parse stx
+    [(_ _PARSE-TREE ...)
+     (syntax/loc stx (#%module-begin
+        (cclp-top current-contract-region _PARSE-TREE ...)))]))
+(provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
 
 (define-syntax (program-section stx)
   (syntax-parse stx
-    [(_) #'(list)]
+    [(_) (syntax/loc stx (list))]
     [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...)
-     #'(cons _KNOWLEDGE (program-section _MOREKNOWLEDGE ...))]))
+     (syntax/loc stx (cons _KNOWLEDGE (program-section _MOREKNOWLEDGE ...)))]))
 (provide program-section)
 
 (define-syntax (atom stx)
   (syntax-parse stx
     [(_ symbol)
-     #'(cd:atom (string->symbol (quote symbol)) '())]
+     (syntax/loc stx (cd:atom (string->symbol (quote symbol)) '()))]
     [(_ symbol "(" arg ... ")")
-     #'(cd:atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
+     (syntax/loc stx (cd:atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
 (provide atom)
 
 (define-syntax (term stx)
   (syntax-parse stx
     [(_ VAR-OR-LIST-OR-MISC-FUNCTION)
-     #'VAR-OR-LIST-OR-MISC-FUNCTION]))
+     (syntax/loc stx VAR-OR-LIST-OR-MISC-FUNCTION)]))
 (provide term)
 
 (define-syntax-rule (variable VARIABLE-NAME) (cd:variable (string->symbol (quote VARIABLE-NAME))))
@@ -84,38 +93,38 @@
 (define-syntax (function-term stx)
   (syntax-parse stx
     [(_ symbol:str)
-     #'(cd:function (string->symbol (quote symbol)) '())]
-    [(_ num-term) #'num-term] ; these are just plain numbers
+     (syntax/loc stx (cd:function (string->symbol (quote symbol)) '()))]
+    [(_ num-term) (syntax/loc stx num-term)] ; these are just plain numbers
     [(_ symbol "(" arg ... ")")
-     #'(cd:function (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
+     (syntax/loc stx (cd:function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
 (provide function-term)
 
 (define-syntax (lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
-     #'(cd:function 'nil '())]
+     (syntax/loc stx (cd:function 'nil '()))]
     [(_ "[" term0 "]")
-     #'(cd:function 'cons (list term0 (cd:function 'nil '())))]
+     (syntax/loc stx (cd:function 'cons (list term0 (cd:function 'nil '()))))]
     [(_ "[" term0 "," rest ... "]")
-     #'(cd:function 'cons (list term0 (lplist "[" rest ... "]")))]
+     (syntax/loc stx (cd:function 'cons (list term0 (lplist "[" rest ... "]"))))]
     [(_ "[" term0 "|" rest ... "]")
-     #'(cd:function 'cons (list term0 rest ...))]))
+     (syntax/loc stx (cd:function 'cons (list term0 rest ...)))]))
 (provide lplist)
 
 (define-syntax (rule stx)
   (syntax-parse stx
-    [(_ atom) #'(ck:rule atom '())]
-    [(_ atom ":-" conjunction) #'(ck:rule atom conjunction)]))
+    [(_ atom) (syntax/loc stx (ck:rule atom '()))]
+    [(_ atom ":-" conjunction) (syntax/loc stx (ck:rule atom conjunction))]))
 (provide rule)
 
 (define-syntax (conjunction stx)
   (syntax-parse stx
-    [(_ conjunct ...) #'(odd-elems-as-list conjunct ...)]))
+    [(_ conjunct ...) (syntax/loc stx (odd-elems-as-list conjunct ...))]))
 (provide conjunction)
 
 (define-syntax (abstract-conjunction stx)
   (syntax-parse stx
-    [(_ conjunct ...) #'(odd-elems-as-list conjunct ...)]))
+    [(_ conjunct ...) (syntax/loc stx (odd-elems-as-list conjunct ...))]))
 (provide abstract-conjunction)
 
 ; PART RELATED TO FULL EVALUATION
@@ -140,7 +149,7 @@
 (provide abstract-atom-without-args)
 
 (define-syntax (abstract-atom stx)
-  (syntax-parse stx [(_ args-or-nothing) #'args-or-nothing]))
+  (syntax-parse stx [(_ args-or-nothing) (syntax/loc stx args-or-nothing)]))
 (provide abstract-atom)
 
 (define-syntax-rule (abstract-term specific-term) specific-term)
@@ -158,10 +167,10 @@
 
 (define-syntax (abstract-function-term stx)
   (syntax-parse stx
-    [(_ symbol:str) #'(ad:abstract-function (string->symbol (quote symbol)) '())]
-    [(_ num-term) #'num-term]
+    [(_ symbol:str) (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) '()))]
+    [(_ num-term) (syntax/loc stx num-term)]
     [(_ symbol "(" arg ... ")")
-     #'(ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...))]))
+     (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
 (provide abstract-function-term)
 
 (define-syntax-rule (abstract-number NUMBER)
@@ -178,13 +187,13 @@
 (define-syntax (abstract-lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
-     #'(ad:abstract-function 'nil '())]
+     (syntax/loc stx (ad:abstract-function 'nil '()))]
     [(_ "[" term0 "]")
-     #'(ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '())))]
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '()))))]
     [(_ "[" term0 "," rest ... "]")
-     #'(ad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]")))]
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]"))))]
     [(_ "[" term0 "|" rest "]")
-     #'(ad:abstract-function 'cons (list term0 rest))]))
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 rest)))]))
 (provide abstract-lplist)
 
 ; empty substitutions make sense if we can just scratch the abstract atom
@@ -193,7 +202,7 @@
   (syntax-parse stx
     [(_) (list)]
     [(_ lhs0 lhs1 ...)
-     #'(odd-elems-as-list lhs0 lhs1 ...)]))
+     (syntax/loc stx (odd-elems-as-list lhs0 lhs1 ...))]))
 (provide abstract-substitution)
 
 (define-syntax-rule (abstract-substitution-pair lhs "/" rhs)
@@ -205,21 +214,13 @@
     [(_ _CONSTANT-SYMBOL)
      (with-syntax
          ([CON-SYM (datum->syntax #'_CONSTANT-SYMBOL (string->symbol (syntax->datum #'_CONSTANT-SYMBOL)))])
-       #'(cd:function (quote CON-SYM) (list)))]))
+       (syntax/loc stx (cd:function (quote CON-SYM) (list))))]))
 (provide concrete-constant)
 
 (define-syntax (concrete-constants-section stx)
   (syntax-parse stx
-    [(_ _CONCRETE-CONSTANT ...) #'(list _CONCRETE-CONSTANT ...)]))
+    [(_ _CONCRETE-CONSTANT ...) (syntax/loc stx (list _CONCRETE-CONSTANT ...))]))
 (provide concrete-constants-section)
-
-; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
-(define-syntax (cclp-module-begin stx)
-  (syntax-parse stx
-    [(_ _PARSE-TREE ...)
-     #'(#%module-begin
-        (cclp-top current-contract-region _PARSE-TREE ...))]))
-(provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
 
 (module+ test
   (require rackunit)
