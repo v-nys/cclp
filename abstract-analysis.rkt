@@ -36,6 +36,24 @@
 (require "data-utils.rkt")
 (require "preprior-graph.rkt")
 
+(define (write-tree-label obj port mode)
+  (if (eq? mode #t)
+      (fprintf
+       port
+       "#(struct:tree-label ~s ~s ~s ~s ~s)"
+       (tree-label-conjunction obj)
+       (tree-label-selection obj)
+       (tree-label-substitution obj)
+       (tree-label-rule obj)
+       (tree-label-index obj))
+      (fprintf
+       port
+       "tree label conjunction ~a, with selection ~a, obtained through rule ~a and substitution ~a"
+       (tree-label-conjunction obj)
+       (tree-label-selection obj)
+       (tree-label-substitution obj)
+       (tree-label-rule obj))))
+
 (serializable-struct
  cycle (index)
  #:methods
@@ -247,21 +265,3 @@
   (-> any/c boolean?)
   (label)
   @{Checks whether the supplied value is a type of tree label which contains a conjunction.}))
-
-(define (write-tree-label obj port mode)
-  (if (eq? mode #t)
-      (fprintf
-       port
-       "#(struct:tree-label ~s ~s ~s ~s ~s)"
-       (tree-label-conjunction obj)
-       (tree-label-selection obj)
-       (tree-label-substitution obj)
-       (tree-label-rule obj)
-       (tree-label-index obj))
-      (fprintf
-       port
-       "tree label conjunction ~a, with selection ~a, obtained through rule ~a and substitution ~a"
-       (tree-label-conjunction obj)
-       (tree-label-selection obj)
-       (tree-label-substitution obj)
-       (tree-label-rule obj))))

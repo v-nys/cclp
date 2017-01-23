@@ -15,8 +15,10 @@
 (require (only-in "similarity.rkt" s-similar?))
 (require "abstract-analysis.rkt")
 (require "preprior-graph.rkt")
+(require (prefix-in faid: "fullai-domain.rkt"))
 (module+ test
   (require rackunit)
+  (require "test-data.rkt")
   (require "cclp-interpreter.rkt"))
 
 (define (largest-node-index t)
@@ -120,7 +122,7 @@
 (define (advance-analysis top candidate clauses full-evaluations concrete-constants next-index predecessors)
   (define candidate-label (node-label candidate))
   (define conjunction (label-conjunction candidate-label))
-  (define more-general-predecessor (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) predecessors))
+  ; (define more-general-predecessor (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) predecessors))
 
   ; replace a candidate by assigning an index, a selection, children and possibly a new preprior stack
   ;  (define (update-candidate idx sel ch)
@@ -133,28 +135,31 @@
   ; TODO fix
   (define prior (mk-preprior-graph))
   (define (update-candidate idx sel ch) candidate)
+
+  (values candidate top)
   
-  (if more-general-predecessor
-      (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
-             [updated-candidate
-              (update-candidate next-index (none) (list cycle-node))]
-             [updated-top (replace-first-subtree top candidate updated-candidate)])
-        (values updated-candidate updated-top))
-      ; TODO: may not get a selection here...
-      (let* ([selection (selected-index conjunction prior full-evaluations)]
-             [similar-predecessor (foldl (λ (p acc) (if acc acc (if (s-similar? (cdr p) conjunction selection top) p acc))) #f predecessors)]
-             [updated-candidate
-              (if similar-predecessor
-                  (let ([similarity-cycle-node (node (similarity-cycle (cdr similar-predecessor)) '())])
-                    (update-candidate next-index (none) (list similarity-cycle-node)))
-                  (let* ([resolvents (abstract-resolve conjunction selection clauses full-evaluations concrete-constants)]
-                         ; TODO resolvents need stacks
-                         ; before a child is unfolded, it gets the parent's topmost order
-                         ; after completion of a child, the child's final order is pushed onto the parent's stack
-                         [child-trees (map resolvent->node resolvents)])
-                    (update-candidate next-index (some selection) child-trees)))]
-             [updated-top (replace-first-subtree top candidate updated-candidate)])
-        (values updated-candidate updated-top))))
+  ;  (if more-general-predecessor
+  ;      (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
+  ;             [updated-candidate
+  ;              (update-candidate next-index (none) (list cycle-node))]
+  ;             [updated-top (replace-first-subtree top candidate updated-candidate)])
+  ;        (values updated-candidate updated-top))
+  ;      ; TODO: may not get a selection here...
+  ;      (let* ([selection (selected-index conjunction prior full-evaluations)]
+  ;             [similar-predecessor (foldl (λ (p acc) (if acc acc (if (s-similar? (cdr p) conjunction selection top) p acc))) #f predecessors)]
+  ;             [updated-candidate
+  ;              (if similar-predecessor
+  ;                  (let ([similarity-cycle-node (node (similarity-cycle (cdr similar-predecessor)) '())])
+  ;                    (update-candidate next-index (none) (list similarity-cycle-node)))
+  ;                  (let* ([resolvents (abstract-resolve conjunction selection clauses full-evaluations concrete-constants)]
+  ;                         ; TODO resolvents need stacks
+  ;                         ; before a child is unfolded, it gets the parent's topmost order
+  ;                         ; after completion of a child, the child's final order is pushed onto the parent's stack
+  ;                         [child-trees (map resolvent->node resolvents)])
+  ;                    (update-candidate next-index (some selection) child-trees)))]
+  ;             [updated-top (replace-first-subtree top candidate updated-candidate)])
+  ;        (values updated-candidate updated-top)))
+  )
 (provide
  (proc-doc/names
   advance-analysis
@@ -167,24 +172,54 @@
  Returns two values: the updated candidate and the updated top-level tree.}))
 
 (module+ test
-  (check-equal?
-   
-   (advance-analysis top cand primes-clauses primes-evals primes-consts 1 (list (mk-preprior-graph)))
-   (values)))
+  (define (full-ai-rule->full-evaluation r)
+    (full-evaluation
+     (faid:full-ai-rule-input-pattern r)
+     (apply-substitution (faid:full-ai-rule-output-substitution r) (faid:full-ai-rule-input-pattern r))))
+  (define-syntax-rule
+    (advance-primes-analysis top cand i gs)
+    (advance-analysis top cand primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts i gs))
+  ; (conjunction selection substitution rule index preprior-stack)
+  (let ([top-pre (node (tree-label (interpret-abstract-conjunction "primes(γ1,α1)") #f (list) #f #f (list (mk-preprior-graph))) (list))])
+    (let-values
+        ([(outcome-cand top-post)
+          (advance-primes-analysis top-pre top-pre 1 (list (mk-preprior-graph)))]
+         [(cand-post)
+          (node
+           (tree-label
+            (interpret-abstract-conjunction "primes(γ1,α1)")
+            0
+            (list) ; don't know this yet, will be something else
+            #f
+            1
+            (list (mk-preprior-graph)))
+           (list
+            (node
+             (tree-label
+              (interpret-abstract-conjunction "integers(γ2,α2),sift(α2,α1),len(α1,γ1)")
+              #f
+              (list)
+              (first primes-clauses)
+              #f
+              (list (mk-preprior-graph)))
+             (list))))])
+      (begin
+        (check-equal? outcome-cand cand-post)
+        (check-equal? top-post cand-post)))))
 
 (module+ test 
   (test-case
    "candidate and predecessors for various scenarios"
-   (let ([tree (node (tree-label (list (interpret-abstract-atom "foo(γ1)")) (none) '() #f #f) '())])
+   (let ([tree (node (tree-label (list (interpret-abstract-atom "foo(γ1)")) (none) '() #f #f (list)) '())])
      (check-equal? (candidate-and-predecessors tree '())
                    (cons (some tree) '())))
    (let* ([leaf1
-           (node (tree-label (list (interpret-abstract-atom "bar(γ1)")) (none) '() #f #f) '())]
+           (node (tree-label (list (interpret-abstract-atom "bar(γ1)")) (none) '() #f #f (list)) '())]
           [leaf2
-           (node (tree-label (list (interpret-abstract-atom "baz(α1)")) (none) '() #f #f) '())]
+           (node (tree-label (list (interpret-abstract-atom "baz(α1)")) (none) '() #f #f (list)) '())]
           [tree
            (node
-            (tree-label (list (interpret-abstract-atom "foo(γ1)")) (some 0) '() #f 1)
+            (tree-label (list (interpret-abstract-atom "foo(γ1)")) (some 0) '() #f 1 (list))
             (list leaf1 leaf2))])
      (begin
        (check-equal?
@@ -196,13 +231,13 @@
    (let* ([leaf1 (node 'fail '())]
           [middle
            (node
-            (tree-label (list (interpret-abstract-atom "bar(γ1)")) (some 0) '() #f 2)
+            (tree-label (list (interpret-abstract-atom "bar(γ1)")) (some 0) '() #f 2 (list))
             (list leaf1))]
           [leaf2
-           (node (tree-label (list (interpret-abstract-atom "baz(α1)")) (none) '() #f #f) '())]
+           (node (tree-label (list (interpret-abstract-atom "baz(α1)")) (none) '() #f #f (list)) '())]
           [tree
            (node
-            (tree-label (list (interpret-abstract-atom "foo(γ1)")) (some 0) '() #f 1)
+            (tree-label (list (interpret-abstract-atom "foo(γ1)")) (some 0) '() #f 1 (list))
             (list middle leaf2))])
      (begin
        (check-equal?
@@ -215,15 +250,15 @@
          (cons (list (interpret-abstract-atom "foo(γ1)")) 1)))))
    (let* ([bottom-left (node (cycle 1) '())]
           [above-bottom-left
-           (node (tree-label (list (interpret-abstract-atom "a")) (none) (list) #f 3)
+           (node (tree-label (list (interpret-abstract-atom "a")) (none) (list) #f 3 (list))
                  (list bottom-left))]
           [left-of-root
-           (node (tree-label (list (interpret-abstract-atom "b")) (some 0) (list) #f 2)
+           (node (tree-label (list (interpret-abstract-atom "b")) (some 0) (list) #f 2 (list))
                  (list above-bottom-left))]
           [bottom-right
-           (node (tree-label (list (interpret-abstract-atom "c")) (none) (list) #f #f) '())]
+           (node (tree-label (list (interpret-abstract-atom "c")) (none) (list) #f #f (list)) '())]
           [tree
-           (node (tree-label (list (interpret-abstract-atom "a")) (some 0) (list) #f 1)
+           (node (tree-label (list (interpret-abstract-atom "a")) (some 0) (list) #f 1 (list))
                  (list left-of-root bottom-right))])
      (check-equal?
       (car (candidate-and-predecessors tree '()))

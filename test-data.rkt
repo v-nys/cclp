@@ -1,5 +1,10 @@
-#lang racket
+#lang at-exp racket
+(require "abstract-multi-domain.rkt")
 (require "cclp-interpreter.rkt")
+(require "concrete-knowledge.rkt")
+
+(require scribble/srcdoc)
+(require (for-doc scribble/manual))
 
 (define primes-clauses
   (map interpret-concrete-rule
@@ -17,15 +22,18 @@ length([],0)
 length([H|T],N) :- minus(N,1,M),length(T,M)
 HERE
         "\n")))
+(provide primes-clauses)
 
 (define primes-full-evals
   (interpret-full-eval-section
-        #<<HERE
+   #<<HERE
 plus(γ1,γ2,α1) -> α1/γ3.
 minus(γ1,γ2,α1) -> α1/γ3.
 divides(γ1,γ2).
 does_not_divide(γ1,γ2).
 HERE
-        "\n"))
+   ))
+(provide primes-full-evals)
 
 (define primes-consts (list (abstract-function 'nil (list))))
+(provide primes-consts)
