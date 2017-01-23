@@ -23,27 +23,28 @@
     (none)
     (resolvent-substitution res)
     (resolvent-knowledge res)
-    #f) ; resolvents have not yet been visited
+    #f ; resolvents have not yet been visited
+    (list)) ; first preprior is provided right before analysis
    (list)))
 
 (define (candidate-and-predecessors t acc)
   (match t
-    [(node (tree-label '() _ _ _ _) '()) (cons (none) acc)]
+    [(node (tree-label '() _ _ _ _ _) '()) (cons (none) acc)]
     [(node 'fail '()) (cons (none) acc)]
     [(node (cycle _) '()) (cons (none) acc)]
     [(node (similarity-cycle _) '()) (cons (none) acc)]
-    [(node (widening '() _ _ _) '()) (cons (none) acc)]
-    [(node (tree-label c (none) s r #f) '())
-     (cons (some (node (tree-label c (none) s r #f) '())) acc)]
-    [(node (widening c (none) msg i) '())
-     (cons (some (node (widening c (none) msg i) '())) acc)]
+    [(node (widening '() _ _ _ _) '()) (cons (none) acc)]
+    [(node (tree-label c (none) s r #f pp) '())
+     (cons (some (node (tree-label c (none) s r #f pp) '())) acc)]
+    [(node (widening c (none) msg i pp) '())
+     (cons (some (node (widening c (none) msg i pp) '())) acc)]
     ; children but no selection = widening or cycle
-    [(node (tree-label c (none) s r i) (list single-child))
+    [(node (tree-label c (none) s r i pp) (list single-child))
      (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    [(node (widening c (none) msg i) (list single-child))
+    [(node (widening c (none) msg i pp) (list single-child))
      (candidate-and-predecessors single-child (cons (cons c i) acc))]
     ; next two cases are basically the same...
-    [(node (tree-label c (some v) _ _ i) children)
+    [(node (tree-label c (some v) _ _ i pp) children)
      (foldl
       (λ (child acc2)
         (if (some? (car acc2))
@@ -53,7 +54,7 @@
              (cdr acc2))))
       (cons (none) (cons (cons c i) acc))
       (node-children t))]
-    [(node (widening c (some v) msg i) children)
+    [(node (widening c (some v) msg i pp) children)
      (foldl
       (λ (child acc2)
         (if (some? (car acc2))
@@ -74,16 +75,22 @@
   (define candidate-label (node-label candidate))
   (define conjunction (label-conjunction candidate-label))
   (define more-general-predecessor (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) predecessors))
+
+  ; replace a candidate by assigning an index, a selection, children and possibly a new preprior stack
   (define (update-candidate idx sel ch)
     (match candidate
-      [(node (tree-label c _ sub r _) _) (node (tree-label c sel sub r idx) ch)]
-      [(node (widening c _ m _) _) (node (widening c sel m idx) ch)]))
+      [(node (tree-label c _ sub r _) _)
+       (node (tree-label c sel sub r idx) ch)]
+      [(node (widening c _ m _) _)
+       (node (widening c sel m idx) ch)]))
+  
   (if more-general-predecessor
       (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
              [updated-candidate
               (update-candidate next-index (none) (list cycle-node))]
              [updated-top (replace-first-subtree top candidate updated-candidate)])
         (values updated-candidate updated-top))
+      ; TODO: may not get a selection here...
       (let* ([selection (selected-index conjunction prior full-evaluations)]
              [similar-predecessor (foldl (λ (p acc) (if acc acc (if (s-similar? (cdr p) conjunction selection top) p acc))) #f predecessors)]
              [updated-candidate
@@ -91,6 +98,9 @@
                   (let ([similarity-cycle-node (node (similarity-cycle (cdr similar-predecessor)) '())])
                     (update-candidate next-index (none) (list similarity-cycle-node)))
                   (let* ([resolvents (abstract-resolve conjunction selection clauses full-evaluations concrete-constants)]
+                         ; TODO resolvents need stacks
+                         ; before a child is unfolded, it gets the parent's topmost order
+                         ; after completion of a child, the child's final order is pushed onto the parent's stack
                          [child-trees (map resolvent->node resolvents)])
                     (update-candidate next-index (some selection) child-trees)))]
              [updated-top (replace-first-subtree top candidate updated-candidate)])

@@ -94,7 +94,7 @@
        (λ (atom acc) (cons (node (identified-atom atom acc) '()) (add1 acc)))
        uid-acc
        (tree-label-conjunction label)))]
-    [(list-rest (tree-label tl-con (some selected) tl-subst tl-r tl-i) tl-rest)
+    [(list-rest (tree-label tl-con (some selected) tl-subst tl-r tl-i tl-pp) tl-rest)
      (let* ([first-unselected (take tl-con selected)]
             [selected-atom (list-ref tl-con selected)]
             [last-unselected (drop tl-con (+ 1 selected))]
@@ -137,16 +137,16 @@
 
 (define (active-branch-info t)
   (match t
-    [(node (tree-label (list) _ _ _ _) '()) #f]
+    [(node (tree-label (list) _ _ _ _ _) '()) #f]
     [(node 'fail '()) #f]
     [(node (cycle _) '()) #f]
     [(node (similarity-cycle _) '()) #f]
-    [(node (tree-label c (none) s r #f) '())
-     (list (tree-label c (none) s r #f))]
-    [(node (tree-label c sel s r i) ch)
+    [(node (tree-label c (none) s r #f pp) '())
+     (list (tree-label c (none) s r #f pp))]
+    [(node (tree-label c sel s r i pp) ch)
      (let ([first-child-branch (foldl (λ (c acc) (if acc acc (active-branch-info c))) #f ch)])
        (if first-child-branch
-           (cons (tree-label c sel s r i) first-child-branch)
+           (cons (tree-label c sel s r i pp) first-child-branch)
            #f))]))
 
 (provide
