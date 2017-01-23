@@ -16,6 +16,50 @@
 (require "abstract-analysis.rkt")
 (require "preprior-graph.rkt")
 
+(define (largest-node-index t)
+  (match t
+    [(node label (list)) #f]
+    [(node label children)
+     (or
+      (foldr
+       (λ (c acc)
+         (if (and (not acc) (tree-label? (node-label c)))
+             (largest-node-index c)
+             acc))
+       #f
+       children)
+      (tree-label-index label))]))
+(provide largest-node-index)
+
+(define (candidate-for-undo t)
+  (match t
+    [(node _ (list)) #f]
+    [(node l ch)
+     (if (andmap (compose empty? node-children) ch)
+         t
+         (candidate-for-undo (last (filter (compose not empty? node-children) ch))))]))
+(provide candidate-for-undo)
+
+;(define (undo t)
+;  (match t
+;    [(node (tree-label con sel sub r i) ch)
+;     (node (tree-label con (none) sub r #f) (list))]))
+;
+;(define (rewind t)
+;  (let* ([candidate (candidate-for-undo t)]
+;         [locally-rewound (if candidate (undo candidate) #f)])
+;    (if candidate
+;        (cons locally-rewound (replace-last-subtree t candidate locally-rewound))
+;        #f)))
+;(provide
+; (proc-doc/names
+;  rewind
+;  (-> node? (or/c #f (cons/c node? node?)))
+;  (t)
+;  @{Undo the latest unfolding or generalization that occurred in @racket[t].
+; The result is a @racket[pair] containing the node on which the operation has been applied
+; and the top-level tree to which this node belongs, or @racket[#f].}))
+
 (define (resolvent->node res)
   (node
    (tree-label
@@ -32,7 +76,6 @@
     [(node (tree-label '() _ _ _ _ _) '()) (cons (none) acc)]
     [(node 'fail '()) (cons (none) acc)]
     [(node (cycle _) '()) (cons (none) acc)]
-    [(node (similarity-cycle _) '()) (cons (none) acc)]
     [(node (widening '() _ _ _ _) '()) (cons (none) acc)]
     [(node (tree-label c (none) s r #f pp) '())
      (cons (some (node (tree-label c (none) s r #f pp) '())) acc)]
@@ -71,18 +114,22 @@
   (tree accumulator)
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
-(define (advance-analysis top candidate clauses full-evaluations concrete-constants prior next-index predecessors)
+(define (advance-analysis top candidate clauses full-evaluations concrete-constants next-index predecessors)
   (define candidate-label (node-label candidate))
   (define conjunction (label-conjunction candidate-label))
   (define more-general-predecessor (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) predecessors))
 
   ; replace a candidate by assigning an index, a selection, children and possibly a new preprior stack
-  (define (update-candidate idx sel ch)
-    (match candidate
-      [(node (tree-label c _ sub r _) _)
-       (node (tree-label c sel sub r idx) ch)]
-      [(node (widening c _ m _) _)
-       (node (widening c sel m idx) ch)]))
+;  (define (update-candidate idx sel ch)
+;    (match candidate
+;      [(node (tree-label c _ sub r _) _)
+;       (node (tree-label c sel sub r idx) ch)]
+;      [(node (widening c _ m _) _)
+;       (node (widening c sel m idx) ch)]))
+
+  ; TODO fix
+  (define prior (mk-preprior-graph))
+  (define (update-candidate idx sel ch) candidate)
   
   (if more-general-predecessor
       (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
@@ -108,13 +155,13 @@
 (provide
  (proc-doc/names
   advance-analysis
-  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) preprior-graph? exact-positive-integer? list? (values node? node?))
-  (top candidate clauses full-evaluations concrete-constants prior next-index more-general-predecessor)
+  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) exact-positive-integer? list? (values node? node?))
+  (top candidate clauses full-evaluations concrete-constants next-index more-general-predecessor)
   @{Advances the analysis in @racket[top], when the next conjunction up for unfolding or full evaluation is @racket[candidate],
  the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
  If a more general conjunction than that for @racket[candidate] exists earlier in the tree, it is supplied as @racket[more-general-predecessor].
  Otherwise, @racket[more-general-predecessor] should be @racket[#f].
- Returns two values: the updated candidate and the update top-level tree.}))
+ Returns two values: the updated candidate and the updated top-level tree.}))
 
 (module+ test
   (require rackunit)

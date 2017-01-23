@@ -49,8 +49,173 @@
 
 ; full-ai-rules is tricky
 ; these are converted to full-evaluations pretty fast...
-(struct cclp (clauses full-ai-rules model concrete-constants query))
+(struct cclp (clauses full-ai-rules concrete-constants query))
 (provide (struct-out cclp))
+
+(define (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)
+  (define-values (show-top proceed go-back save widen case-split genealogy end)
+    (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "apply a case split" "show genealogical analysis" "end analysis"))
+  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen case-split genealogy end))
+  (cond
+;    [(equal? choice show-top)
+;     (begin (newline)
+;            (tree-display tree print-tree-label)
+;            (newline)
+;            (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants))]
+        
+    [(equal? choice proceed)
+     (match (candidate-and-predecessors tree '())
+       [(cons (none) _)
+        (begin (displayln "There are no nodes left to analyze.")
+               (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants))]
+       [(cons (some candidate) preds)
+        ; TODO we can select a candidate (conjunction) regardless of preprior
+        ; but to advance the analysis, we may need to update the partial order
+        ; if the candidate contains conjuncts which are not in its topmost partial order,
+        ; or if it contains a new combination of conjuncts seen before but not ordered wrt to one another
+        ; we need additional interaction
+        ; also, what happens when a branch is completed?
+        ; sibling branches are updated
+        ; 
+        (let-values ([(updated-candidate updated-top)
+                      (advance-analysis tree candidate clauses full-evaluations concrete-constants next-index preds)])
+          (begin
+            (newline)
+            (tree-display updated-candidate print-tree-label)
+            (newline)
+            (interactive-analysis
+             updated-top clauses full-evaluations (+ next-index 1) filename concrete-constants)))])]
+        
+    [(equal? choice go-back)
+     (let ([rewound (rewind tree)])
+       (if rewound
+           (begin
+             (tree-display (car rewound) print-tree-label)
+             (interactive-analysis (cdr rewound) clauses full-evaluations (- next-index 1) filename concrete-constants))
+           (displayln "Can't go back any further!")))]
+;    [(equal? choice save)
+;     (let* ([out (open-output-file filename #:exists 'truncate/replace)]
+;            [serialized-tree (serialize tree)])
+;       (begin
+;         (write serialized-tree out)
+;         (close-output-port out)
+;         (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)))]
+;    [(equal? choice widen)
+;     (match (candidate-and-predecessors tree '())
+;       [(cons (none) _)
+;        (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)]
+;       ; candidate can be either a tree-label or a widening
+;       [(cons (some candidate) _)
+;        (begin
+;          (displayln "Please enter a conjunction with an equal or greater extension.")
+;          (define read-conjunction (read))
+;          (define widened-conjunction (interpret-abstract-conjunction read-conjunction))
+;          (displayln "Please enter a reason why widening was applied.")
+;          (define read-reason (read))
+;          (define updated-label
+;            (match (node-label candidate)
+;              [(tree-label c se su r #f) (tree-label c se su r next-index)]
+;              [(widening c se msg #f) (widening c se msg next-index)]
+;              [_ (error "candidate type unaccounted for")]))
+;          (define updated-top
+;            (replace-first-subtree
+;             tree
+;             candidate
+;             (node updated-label (list (node (widening widened-conjunction (none) read-reason #f) '())))))
+;          (interactive-analysis updated-top clauses full-evaluations (+ next-index 1) filename concrete-constants))])]
+;    [(equal? choice case-split)
+;     ; similar to widen, but user should enter as many conjunctions as they like
+;     ; the conjunctions do not need to (and in most cases will not) specify the candidate
+;     (error "not implemented yet")]
+;    [(equal? choice genealogy)
+;     (let* ([active-branch (active-branch-info tree)]
+;            [outputs (if active-branch (generational-trees active-branch) #f)])
+;       (begin
+;         (if active-branch
+;             (if (empty? outputs)
+;                 (displayln "There are no target atoms for recursion analysis.")
+;                 (map (λ (t) (tree-display t print-atom-with-generation-node)) outputs))
+;             (displayln "There is no active branch."))
+;         (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)))]
+;    [(equal? choice end) (void)]
+    [else (error 'unsupported)]))
+
+
+
+; TODO check if file exists
+(define (load-analysis clauses full-evaluations filename concrete-constants)
+  (let* ([loaded-tree (deserialize (read (open-input-file filename)))]
+         [largest-index (largest-node-index loaded-tree)]
+         [fresh-index (if largest-index (+ largest-index 1) 1)])
+    (interactive-analysis loaded-tree clauses full-evaluations fresh-index filename concrete-constants)))
+
+(define (begin-analysis program-data filename)
+  (match program-data
+    [(cclp clauses full-evaluations concrete-constants initial-query)
+     ; using none for selection because no selection will occur more often
+     ; using list for substitution because it is not wrong and is consistent
+     ; using #f for rule because this is the only case where there is no associated clause
+     (begin (define initial-tree-label
+              (tree-label (list initial-query) (none) (list) #f #f (list (mk-preprior-graph))))
+            (define initial-tree (node initial-tree-label (list)))
+            (interactive-analysis initial-tree clauses full-evaluations 1 filename concrete-constants))]))
+
+(define (cclp-top filename program-data)
+  (define logger (make-logger 'cc #f))
+  (current-logger logger)
+  (with-logging-to-port (current-error-port)
+    (λ () (cclp-run filename program-data))
+    'info))
+(provide
+ (proc-doc/names
+  cclp-top
+  (-> path?
+      cclp?
+      void?)
+  (filename program-data)
+  @{Top-level function used to run a compiling control logic program.}))
+
+(define (cclp-run filename program-data)
+  (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
+  (define serialized-filename
+    (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
+  (define-values (analysis load quit)
+    (values "analyze this program" "load existing analysis" "quit"))
+  (define choice (prompt-for-answer "What do you want to do?" analysis load quit))
+  (define (full-ai-rule->full-evaluation r)
+    (full-evaluation
+     (full-ai-rule-input-pattern r)
+     (apply-substitution (full-ai-rule-output-substitution r) (full-ai-rule-input-pattern r))))
+  (define full-evaluations (map full-ai-rule->full-evaluation (cclp-full-ai-rules program-data)))
+  (define program-data-aux (struct-copy cclp program-data [full-ai-rules full-evaluations]))
+  (cond [(equal? choice analysis)
+         (begin (begin-analysis program-data-aux serialized-filename)
+                (cclp-run filename program-data))]
+        [(equal? choice load)
+         (begin (load-analysis (cclp-clauses program-data) full-evaluations (cclp-model program-data) serialized-filename (cclp-concrete-constants program-data))
+                (cclp-run filename program-data))]
+        [(equal? choice quit) (void)]
+        [else (error 'unsupported)]))
+
+;                                                                          
+;                                                                          
+;                                                                          
+;                        ;                          ;                      
+;                        ;                ;         ;                      
+;                                         ;                                
+;   ; ;;;      ; ;;;   ;;;     ; ;;;;   ;;;;;;    ;;;     ; ;;;;     ;;; ; 
+;   ;;   ;     ;;   ;    ;     ;;   ;;    ;         ;     ;;   ;;   ;   ;; 
+;   ;     ;    ;         ;     ;     ;    ;         ;     ;     ;  ;     ; 
+;   ;     ;    ;         ;     ;     ;    ;         ;     ;     ;  ;     ; 
+;   ;     ;    ;         ;     ;     ;    ;         ;     ;     ;  ;     ; 
+;   ;     ;    ;         ;     ;     ;    ;         ;     ;     ;  ;     ; 
+;   ;;   ;     ;         ;     ;     ;    ;         ;     ;     ;   ;   ;; 
+;   ; ;;;      ;      ;;;;;;;  ;     ;     ;;;   ;;;;;;;  ;     ;    ;;; ; 
+;   ;                                                                    ; 
+;   ;                                                               ;   ;; 
+;   ;                                                                ;;;;  
+;                                                                          
+
 
 (define (print-substitution s [out (current-output-port)])
   (display "{" out)
@@ -89,190 +254,31 @@
      (if use-color
          (display-color (format "cycle back to node ~a" i) out #:fg 'green)
          (display (format "cycle back to node ~a" i) out))]
-    [(similarity-cycle i)
-     (if use-color
-         (display-color (format "similarity cycle back to node ~a" i) out #:fg 'green)
-         (display (format "similarity cycle back to node ~a" i) out))]
     [(widening con sel msg idx)
      (begin
        (display "[widening]")
        (when idx (display (format "~v:" idx)))
        (print-conjunction con sel out))]))
 
-(define (candidate-for-undo t)
-  (match t
-    [(node _ (list)) #f]
-    [(node l ch)
-     (if (andmap (compose empty? node-children) ch)
-         t
-         (candidate-for-undo (last (filter (compose not empty? node-children) ch))))]))
-(provide candidate-for-undo)
+;                                               
+;                                               
+;                                               
+;                                               
+;     ;                          ;              
+;     ;                          ;              
+;   ;;;;;;     ;;;     ;;;;;   ;;;;;;    ;;;;;  
+;     ;       ;   ;   ;     ;    ;      ;     ; 
+;     ;      ;     ;  ;          ;      ;       
+;     ;      ;     ;  ;;;;       ;      ;;;;    
+;     ;      ;;;;;;;      ;;;    ;          ;;; 
+;     ;      ;              ;    ;            ; 
+;     ;       ;    ;  ;     ;    ;      ;     ; 
+;      ;;;     ;;;;    ;;;;;      ;;;    ;;;;;  
+;                                               
+;                                               
+;                                               
+;                                               
 
-(define (undo t)
-  (match t
-    [(node (tree-label con sel sub r i) ch)
-     (node (tree-label con (none) sub r #f) (list))]))
-
-(define (rewind t)
-  (let* ([candidate (candidate-for-undo t)]
-         [locally-rewound (if candidate (undo candidate) #f)])
-    (if candidate
-        (cons locally-rewound (replace-last-subtree t candidate locally-rewound))
-        #f)))
-(provide
- (proc-doc/names
-  rewind
-  (-> node? (or/c #f (cons/c node? node?)))
-  (t)
-  @{Undo the latest unfolding or generalization that occurred in @racket[t].
- The result is a @racket[pair] containing the node on which the operation has been applied
- and the top-level tree to which this node belongs, or @racket[#f].}))
-
-(define (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)
-  (define-values (show-top proceed go-back save widen case-split genealogy end)
-    (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "apply a case split" "show genealogical analysis" "end analysis"))
-  (define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen case-split genealogy end))
-  (cond [(equal? choice show-top)
-         (begin (newline)
-                (tree-display tree print-tree-label)
-                (newline)
-                (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
-        [(equal? choice proceed)
-         ; TODO: make sure right vertices are added at the right time
-         (match (candidate-and-predecessors tree '())
-           [(cons (none) _)
-            (begin (displayln "There are no nodes left to analyze.")
-                   (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants))]
-           [(cons (some candidate) preds)
-            (let-values ([(updated-candidate updated-top)
-                          (advance-analysis tree candidate clauses full-evaluations concrete-constants preprior next-index preds)])
-              (begin
-                (newline)
-                (tree-display updated-candidate print-tree-label)
-                (newline)
-                (interactive-analysis
-                 updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants)))])]
-        [(equal? choice go-back)
-         (let ([rewound (rewind tree)])
-           (if rewound
-               (begin
-                 (tree-display (car rewound) print-tree-label)
-                 (interactive-analysis (cdr rewound) clauses full-evaluations preprior (- next-index 1) filename concrete-constants))
-               (displayln "Can't go back any further!")))]
-        [(equal? choice save)
-         (let* ([out (open-output-file filename #:exists 'truncate/replace)]
-                [serialized-tree (serialize tree)])
-           (begin
-             (write serialized-tree out)
-             (close-output-port out)
-             (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)))]
-        [(equal? choice widen)
-         (match (candidate-and-predecessors tree '())
-           [(cons (none) _)
-            (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)]
-           ; candidate can be either a tree-label or a widening
-           [(cons (some candidate) _)
-            (begin
-              (displayln "Please enter a conjunction with an equal or greater extension.")
-              (define read-conjunction (read))
-              (define widened-conjunction (interpret-abstract-conjunction read-conjunction))
-              (displayln "Please enter a reason why widening was applied.")
-              (define read-reason (read))
-              (define updated-label
-                (match (node-label candidate)
-                  [(tree-label c se su r #f) (tree-label c se su r next-index)]
-                  [(widening c se msg #f) (widening c se msg next-index)]
-                  [_ (error "candidate type unaccounted for")]))
-              (define updated-top
-                (replace-first-subtree
-                 tree
-                 candidate
-                 (node updated-label (list (node (widening widened-conjunction (none) read-reason #f) '())))))
-              (interactive-analysis updated-top clauses full-evaluations preprior (+ next-index 1) filename concrete-constants))])]
-        [(equal? choice case-split)
-         ; similar to widen, but user should enter as many conjunctions as they like
-         ; the conjunctions do not need to (and in most cases will not) specify the candidate
-         (error "not implemented yet")]
-        [(equal? choice genealogy)
-         (let* ([active-branch (active-branch-info tree)]
-                [outputs (if active-branch (generational-trees active-branch) #f)])
-           (begin
-             (if active-branch
-                 (if (empty? outputs)
-                     (displayln "There are no target atoms for recursion analysis.")
-                     (map (λ (t) (tree-display t print-atom-with-generation-node)) outputs))
-                 (displayln "There is no active branch."))
-             (interactive-analysis tree clauses full-evaluations preprior next-index filename concrete-constants)))]
-        [(equal? choice end) (void)]
-        [else (error 'unsupported)]))
-
-(define (largest-node-index t)
-  (match t
-    [(node label (list)) #f]
-    [(node label children)
-     (or
-      (foldr
-       (λ (c acc)
-         (if (and (not acc) (tree-label? (node-label c)))
-             (largest-node-index c)
-             acc))
-       #f
-       children)
-      (tree-label-index label))]))
-
-; TODO check if file exists
-(define (load-analysis clauses full-evaluations preprior filename concrete-constants)
-  (let* ([loaded-tree (deserialize (read (open-input-file filename)))]
-         [largest-index (largest-node-index loaded-tree)]
-         [fresh-index (if largest-index (+ largest-index 1) 1)])
-    (interactive-analysis loaded-tree clauses full-evaluations preprior fresh-index filename concrete-constants)))
-
-(define (begin-analysis program-data filename)
-  (match program-data
-    [(cclp clauses full-evaluations preprior concrete-constants initial-query)
-     ; using none for selection because no selection will occur more often
-     ; using list for substitution because it is not wrong and is consistent
-     ; using #f for rule because this is the only case where there is no associated clause
-     (begin (define initial-tree-label (tree-label (list initial-query) (none) (list) #f #f))
-            (define initial-tree (node initial-tree-label (list)))
-            (interactive-analysis initial-tree clauses full-evaluations preprior 1 filename concrete-constants))]))
-
-(define (cclp-top filename program-data)
-  (define logger (make-logger 'cc #f))
-  (current-logger logger)
-  (with-logging-to-port (current-error-port)
-    (λ () (cclp-run filename program-data))
-    'info))
-(provide
- (proc-doc/names
-  cclp-top
-  (-> path?
-      cclp?
-      void?)
-  (filename program-data)
-  @{Top-level function used to run a compiling control logic program.}))
-
-(define (cclp-run filename program-data)
-  (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
-  (define serialized-filename
-    (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
-  (define-values (analysis load quit)
-    (values "analyze this program" "load existing analysis" "quit"))
-  (define choice (prompt-for-answer "What do you want to do?" analysis load quit))
-  (define (full-ai-rule->full-evaluation r)
-    (full-evaluation
-     (full-ai-rule-input-pattern r)
-     (apply-substitution (full-ai-rule-output-substitution r) (full-ai-rule-input-pattern r))))
-  (define full-evaluations (map full-ai-rule->full-evaluation (cclp-full-ai-rules program-data)))
-  (define program-data-aux (struct-copy cclp program-data [full-ai-rules full-evaluations]))
-  (cond [(equal? choice analysis)
-         (begin (begin-analysis program-data-aux serialized-filename)
-                (cclp-run filename program-data))]
-        [(equal? choice load)
-         (begin (load-analysis (cclp-clauses program-data) full-evaluations (cclp-model program-data) serialized-filename (cclp-concrete-constants program-data))
-                (cclp-run filename program-data))]
-        [(equal? choice quit) (void)]
-        [else (error 'unsupported)]))
 
 (module+ test
   (require rackunit)
