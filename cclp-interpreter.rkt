@@ -204,7 +204,7 @@
 
 (define (interpret-abstract-substitution str)
   (define subst-parse (make-rule-parser abstract-substitution))
-  (define parsed (subst-parse str))
+  (define parsed (subst-parse (all-tokens str)))
   (interpret-abstract-substitution-syntax parsed))
   
 (define (interpret-abstract-substitution-syntax sub-stx)
@@ -218,7 +218,8 @@
 
 (define (interpret-abstract-substitution-pair-syntax pair-stx)
   (syntax-parse pair-stx
-    [(AVAR-STX "/" ATERM-STX)
+    [((~literal abstract-substitution-pair)
+      ((~literal abstract-variable) AVAR-STX) "/" ATERM-STX)
      (abstract-equality
       (interpret-abstract-variable-syntax #'AVAR-STX)
       (interpret-abstract-term-syntax #'ATERM-STX))]))
@@ -227,8 +228,8 @@
   (check-equal?
    (interpret-abstract-substitution "α1/γ3,α2/γ4")
    (list
-    (abstract-equality (a 1) (g 3))
-    (abstract-equality (a 2) (g 4)))))
+    (abstract-equality (ad:a 1) (ad:g 3))
+    (abstract-equality (ad:a 2) (ad:g 4)))))
 
 (module+ test
   (check-equal?

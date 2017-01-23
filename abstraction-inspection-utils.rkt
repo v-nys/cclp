@@ -135,6 +135,22 @@
          (maximum-var-index (list (full-evaluation-input-pattern abstraction) (full-evaluation-output-pattern abstraction)) right-variable-type?)]))
 (provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
 
+(module+ test
+  (check-equal? (maximum-var-index (interpret-abstract-term "γ1") g?) (some 1))
+  (check-equal? (maximum-var-index (interpret-abstract-term "γ1") a?) (none))
+  (check-equal? (maximum-var-index (interpret-abstract-term "α2") a?) (some 2))
+  (check-equal? (maximum-var-index (interpret-abstract-term "α2") g?) (none))
+
+  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,α2)") g?) (some 1))
+  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,α2)") a?) (some 2))
+  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,γ2)") a?) (none))
+  (check-equal? (maximum-var-index (interpret-abstract-term "foo(α1,α2)") g?) (none))
+
+  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,α2)") g?) (some 1))
+  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,α2)") a?) (some 2))
+  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,γ2)") a?) (none))
+  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(α1,α2)") g?) (none)))
+
 (define (contains-subterm? abstraction subterm)
   (match abstraction
     [(list) #f]

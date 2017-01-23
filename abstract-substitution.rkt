@@ -23,7 +23,6 @@
 #lang racket
 (require "abstract-multi-domain.rkt")
 (require "abstract-knowledge.rkt")
-(require "abstraction-inspection-utils.rkt")
 (require "data-utils.rkt")
 (require (for-syntax syntax/parse))
 (require racket/serialize)
@@ -70,23 +69,6 @@
          (abstract-equality (substitute-in-domain-elem substituter substitutee (abstract-equality-term1 aeq))
                             (substitute-in-domain-elem substituter substitutee (abstract-equality-term2 aeq)))) input-subst))
 (provide substitute-in-substitution)
-
-;(: maximum-var-index-in-substitution (-> (-> AbstractVariable Boolean) AbstractSubstitution (Opt Integer)))
-(define (maximum-var-index-in-substitution right-variable-type? substitution)
-  (foldl (λ (eq acc)
-           (let ([max-aeq (maximum-var-index-in-equality right-variable-type? eq)])
-             (cond [(none? acc) max-aeq]
-                   [(none? max-aeq) acc]
-                   [else (some (max (some-v acc) (some-v max-aeq)))]))) (none) substitution))
-(provide maximum-var-index-in-substitution)
-
-;(: maximum-var-index-in-equality (-> (-> AbstractVariable Boolean) abstract-equality (Opt Integer)))
-(define (maximum-var-index-in-equality right-variable-type? aeq)
-  (let ([max-lhs (maximum-var-index (abstract-equality-term1 aeq) right-variable-type?)]
-        [max-rhs (maximum-var-index (abstract-equality-term2 aeq) right-variable-type?)])
-    (cond [(none? max-lhs) max-rhs]
-          [(none? max-rhs) max-lhs]
-          [else (some (max (some-v max-lhs) (some-v max-rhs)))])))
 
 ; TODO can probably clean this up significantly now that this is no longer in TR
 
@@ -162,50 +144,32 @@
      #'(list (aeq SUBST-PAIR) ...)]))
 (provide asubst)
 
-(module+ test
-  (require rackunit)
-  (require "cclp-interpreter.rkt")
-  (check-equal? (maximum-var-index (interpret-abstract-term "γ1") g?) (some 1))
-  (check-equal? (maximum-var-index (interpret-abstract-term "γ1") a?) (none))
-  (check-equal? (maximum-var-index (interpret-abstract-term "α2") a?) (some 2))
-  (check-equal? (maximum-var-index (interpret-abstract-term "α2") g?) (none))
-
-  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,α2)") g?) (some 1))
-  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,α2)") a?) (some 2))
-  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,γ2)") a?) (none))
-  (check-equal? (maximum-var-index (interpret-abstract-term "foo(α1,α2)") g?) (none))
-
-  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,α2)") g?) (some 1))
-  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,α2)") a?) (some 2))
-  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,γ2)") a?) (none))
-  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(α1,α2)") g?) (none))
-
-  (check-equal? (substitute-in-substitution (interpret-abstract-term "γ5") (interpret-abstract-term "α1") (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
-                (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,γ5,α2))"))))
-  (check-equal? (substitute-in-substitution (interpret-abstract-term "γ5") (interpret-abstract-term "α4") (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
-                (list (abstract-equality (interpret-abstract-term "γ5") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
-
-  (check-equal? (apply-substitution-to-term (asubst ((g 1) quux) ((a 2) (g 4)))
-                                            (interpret-abstract-term "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
-                (interpret-abstract-term "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
-
-  (check-equal? (apply-substitution-to-conjunct (asubst ((g 1) quux) ((a 2) (g 4)))
-                                                (interpret-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
-                (interpret-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
-
-  (check-equal? (apply-substitution-to-conjunction (asubst ((g 1) quux) ((a 2) (g 4)))
-                                                   (list (interpret-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))") (interpret-abstract-atom "zip(zoom(γ1,α1),kweh(α2,γ2,α5))")))
-                (list (interpret-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))") (interpret-abstract-atom "zip(zoom(quux,α1),kweh(γ4,γ2,α5))")))
-
-  (check-equal? (apply-substitution-to-full-evaluation
-                 (asubst
-                  ((a 2) (a 16))
-                  ((a 1) (a 15))
-                  ((g 2) (g 21))
-                  ((g 1) (g 20)))
-                 (full-evaluation
-                  (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                  (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
-                (full-evaluation
-                 (interpret-abstract-atom "del(α15,[γ20|γ21],α16)")
-                 (interpret-abstract-atom "del(γ3,[γ20|γ21],γ4)"))))
+;(module+ test
+;  (require rackunit)
+;  (require "cclp-interpreter.rkt")
+;  (require "abstraction-inspection-utils.rkt")
+;  (check-equal? (substitute-in-substitution (interpret-abstract-term "γ5") (interpret-abstract-term "α1") (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
+;                (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,γ5,α2))"))))
+;  (check-equal? (substitute-in-substitution (interpret-abstract-term "γ5") (interpret-abstract-term "α4") (list (abstract-equality (interpret-abstract-term "α4") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
+;                (list (abstract-equality (interpret-abstract-term "γ5") (interpret-abstract-term "foo(bar(α3,α1,α2))"))))
+;  (check-equal? (apply-substitution-to-term (asubst ((g 1) quux) ((a 2) (g 4)))
+;                                            (interpret-abstract-term "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
+;                (interpret-abstract-term "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
+;  (check-equal? (apply-substitution-to-conjunct (asubst ((g 1) quux) ((a 2) (g 4)))
+;                                                (interpret-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))"))
+;                (interpret-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))"))
+;  (check-equal? (apply-substitution-to-conjunction (asubst ((g 1) quux) ((a 2) (g 4)))
+;                                                   (list (interpret-abstract-atom "foo(bar(γ1,α1),baz(γ2,α2,α3))") (interpret-abstract-atom "zip(zoom(γ1,α1),kweh(α2,γ2,α5))")))
+;                (list (interpret-abstract-atom "foo(bar(quux,α1),baz(γ2,γ4,α3))") (interpret-abstract-atom "zip(zoom(quux,α1),kweh(γ4,γ2,α5))")))
+;  (check-equal? (apply-substitution-to-full-evaluation
+;                 (asubst
+;                  ((a 2) (a 16))
+;                  ((a 1) (a 15))
+;                  ((g 2) (g 21))
+;                  ((g 1) (g 20)))
+;                 (full-evaluation
+;                  (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
+;                  (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
+;                (full-evaluation
+;                 (interpret-abstract-atom "del(α15,[γ20|γ21],α16)")
+;                 (interpret-abstract-atom "del(γ3,[γ20|γ21],γ4)"))))

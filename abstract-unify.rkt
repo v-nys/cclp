@@ -26,6 +26,23 @@
 (require "abstract-multi-domain.rkt")
 (require "abstraction-inspection-utils.rkt")
 
+;(: maximum-var-index-in-substitution (-> (-> AbstractVariable Boolean) AbstractSubstitution (Opt Integer)))
+(define (maximum-var-index-in-substitution right-variable-type? substitution)
+  (foldl (λ (eq acc)
+           (let ([max-aeq (maximum-var-index-in-equality right-variable-type? eq)])
+             (cond [(none? acc) max-aeq]
+                   [(none? max-aeq) acc]
+                   [else (some (max (some-v acc) (some-v max-aeq)))]))) (none) substitution))
+(provide maximum-var-index-in-substitution)
+
+;(: maximum-var-index-in-equality (-> (-> AbstractVariable Boolean) abstract-equality (Opt Integer)))
+(define (maximum-var-index-in-equality right-variable-type? aeq)
+  (let ([max-lhs (maximum-var-index (abstract-equality-term1 aeq) right-variable-type?)]
+        [max-rhs (maximum-var-index (abstract-equality-term2 aeq) right-variable-type?)])
+    (cond [(none? max-lhs) max-rhs]
+          [(none? max-rhs) max-lhs]
+          [else (some (max (some-v max-lhs) (some-v max-rhs)))])))
+
 ; TODO: some equalities are irrelevant for resolution
 ; e.g. a.../a... is provably redundant because this gives us a result in solved form
 ; removing these will lead to fewer index renamings and more readable output
