@@ -24,7 +24,6 @@
 (require "abstract-multi-domain.rkt")
 (require "abstract-knowledge.rkt")
 (require "abstraction-inspection-utils.rkt")
-(require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
 (require (for-syntax syntax/parse))
 (require racket/serialize)

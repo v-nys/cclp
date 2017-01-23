@@ -15,6 +15,9 @@
 (require (only-in "similarity.rkt" s-similar?))
 (require "abstract-analysis.rkt")
 (require "preprior-graph.rkt")
+(module+ test
+  (require rackunit)
+  (require "cclp-interpreter.rkt"))
 
 (define (largest-node-index t)
   (match t
@@ -120,12 +123,12 @@
   (define more-general-predecessor (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) predecessors))
 
   ; replace a candidate by assigning an index, a selection, children and possibly a new preprior stack
-;  (define (update-candidate idx sel ch)
-;    (match candidate
-;      [(node (tree-label c _ sub r _) _)
-;       (node (tree-label c sel sub r idx) ch)]
-;      [(node (widening c _ m _) _)
-;       (node (widening c sel m idx) ch)]))
+  ;  (define (update-candidate idx sel ch)
+  ;    (match candidate
+  ;      [(node (tree-label c _ sub r _) _)
+  ;       (node (tree-label c sel sub r idx) ch)]
+  ;      [(node (widening c _ m _) _)
+  ;       (node (widening c sel m idx) ch)]))
 
   ; TODO fix
   (define prior (mk-preprior-graph))
@@ -164,8 +167,12 @@
  Returns two values: the updated candidate and the updated top-level tree.}))
 
 (module+ test
-  (require rackunit)
-  (require "cclp-interpreter.rkt")
+  (check-equal?
+   
+   (advance-analysis top cand primes-clauses primes-evals primes-consts 1 (list (mk-preprior-graph)))
+   (values)))
+
+(module+ test 
   (test-case
    "candidate and predecessors for various scenarios"
    (let ([tree (node (tree-label (list (interpret-abstract-atom "foo(γ1)")) (none) '() #f #f) '())])

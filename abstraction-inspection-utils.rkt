@@ -27,7 +27,9 @@
 
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
-(module+ test (require rackunit "cclp-interpreter.rkt"))
+(module+ test (require rackunit
+                       "cclp-interpreter.rkt"
+                       ))
 
 (define (assemble-var-indices right-variable-type? abstract-data)
   (define (assemble-aux right-variable-type? abstract-data)
@@ -147,8 +149,6 @@
   (-> abstract-domain-elem? abstract-term? boolean?)
   (abstraction subterm)
   @{Checks whether @racket[subterm] occurs anywhere in @racket[abstraction].}))
-
-
 
 (module+ test
   (check-equal?

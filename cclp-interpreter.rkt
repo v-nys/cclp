@@ -32,6 +32,9 @@
 (require (prefix-in cd: "concrete-domain.rkt")
          (prefix-in ck: "concrete-knowledge.rkt"))
 (require (only-in racket-list-utils/utils odd-elems))
+(require "abstract-substitution.rkt")
+(module+ test
+  (require rackunit))
 
 ; the "interpret" functions are all basically the same thing
 ; could use macros to avoid boilerplate?
@@ -181,9 +184,53 @@
     [((~literal abstract-variable-g) G-SYMBOL G-INDEX)
      (ad:g (syntax->datum #'G-INDEX))]))
 
-(module+ test
-  (require rackunit)
+;(define (interpret-full-eval-section str)
+;  (define section-parse (make-rule-parser full-evaluation-section))
+;  (define parsed (section-parse (all-tokens str)))
+;  (interpret-full-eval-section-syntax parsed))
+;
+;(define (interpret-full-eval-section-syntax sec-stx)
+;  (syntax-parse sec-stx
+;    [((~literal full-evaluation-section) FULL-EVAL-RULE ...+)
+;     (list (interpret-full-eval-stx FULL-EVAL-RULE) ...)]))
+;
+;(define (interpret-full-eval-stx rule-stx)
+;  (syntax-parse rule-stx
+;    [((~literal fullai-rule-with-body) ATOM-STX "->" SUB-STX ".")
+;     (full-ai-rule
+;      (interpret-abstract-atom-syntax ATOM-STX)
+;      (interpret-abstract-substitution-syntax SUB-STX))]))
+
+
+(define (interpret-abstract-substitution str)
+  (define subst-parse (make-rule-parser abstract-substitution))
+  (define parsed (subst-parse str))
+  (interpret-abstract-substitution-syntax parsed))
   
+(define (interpret-abstract-substitution-syntax sub-stx)
+  (syntax-parse sub-stx
+    [((~literal abstract-substitution) SUBST-PAIR)
+     (list (interpret-abstract-substitution-pair-syntax #'SUBST-PAIR))]
+    [((~literal abstract-substitution) SUBST-PAIR "," COMMA-OR-SUBST-PAIR ...)
+     (cons (interpret-abstract-substitution-pair-syntax #'SUBST-PAIR)
+           (interpret-abstract-substitution-syntax
+            #'(abstract-substitution COMMA-OR-SUBST-PAIR ...)))]))
+
+(define (interpret-abstract-substitution-pair-syntax pair-stx)
+  (syntax-parse pair-stx
+    [(AVAR-STX "/" ATERM-STX)
+     (abstract-equality
+      (interpret-abstract-variable-syntax #'AVAR-STX)
+      (interpret-abstract-term-syntax #'ATERM-STX))]))
+
+(module+ test
+  (check-equal?
+   (interpret-abstract-substitution "α1/γ3,α2/γ4")
+   (list
+    (abstract-equality (a 1) (g 3))
+    (abstract-equality (a 2) (g 4)))))
+
+(module+ test
   (check-equal?
    (interpret-abstract-atom "safe")
    (ad:abstract-atom 'safe (list)))
