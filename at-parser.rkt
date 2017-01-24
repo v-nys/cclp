@@ -32,7 +32,7 @@ term : variable | function-term | lplist
 variable : VARIABLE-IDENTIFIER
 function-term : (SYMBOL [OPEN-PAREN term (COMMA WS* term)* CLOSE-PAREN]) | number-term
 number-term : NUMBER
-lplist : OPEN-LIST-PAREN [term (COMMA WS* term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN
+lplist : OPEN-RECTANGULAR-PAREN [term (COMMA WS* term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-RECTANGULAR-PAREN
 conjunction : atom (COMMA WS* atom)*
 
 fullai-rule : fullai-rule-with-body | fullai-rule-without-body
