@@ -51,8 +51,8 @@
        "tree label conjunction ~a, with selection ~a, obtained through rule ~a and substitution ~a"
        (tree-label-conjunction obj)
        (tree-label-selection obj)
-       (tree-label-substitution obj)
-       (tree-label-rule obj))))
+       (tree-label-rule obj)
+       (tree-label-substitution obj))))
 
 (serializable-struct
  cycle (index)

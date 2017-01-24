@@ -9,7 +9,7 @@
   (define (next-token)
     (define get-token
       (lexer-src-pos
-       [whitespace (token 'WS lexeme)]
+       [(re-+ whitespace) (token 'WS lexeme)]
        ["(" (token 'OPEN-PAREN lexeme)]
        [")" (token 'CLOSE-PAREN lexeme)]
        ["[" (token 'OPEN-RECTANGULAR-PAREN lexeme)]
