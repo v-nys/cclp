@@ -96,5 +96,6 @@
 ;    [("?") (syntax/loc stx (mk-preprior-model))]))
 
 ; TODO
-(define-syntax (ws-prefixed-subtrees stx) (syntax/loc stx #'(list)))
+(define-syntax (ws-prefixed-subtrees stx)
+  (syntax/loc stx (list)))
 (provide ws-prefixed-subtrees)
