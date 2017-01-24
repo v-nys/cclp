@@ -42,11 +42,14 @@
 
 (define-syntax (at-label stx)
   (syntax-parse stx
-    [(_ NUM-STX "." ACON-P-SEL-STX)
+    [(_ IDX-STX "." ACON-P-SEL-STX)
      (syntax/loc stx
        (tree-label
         (car ACON-P-SEL-STX)
-        (cdr ACON-P-SEL-STX) (list) #f (quote NUM-STX) (list)))]))
+        (cdr ACON-P-SEL-STX) (list) #f (quote IDX-STX) (list)))]
+    [(_ ACON-P-SEL-STX)
+     (syntax/loc stx
+       (tree-label ACON-P-SEL-STX #f (list) #f #f (list)))]))
 (provide at-label)
 
 (define-syntax (acon-with-potential-selection stx)
@@ -60,6 +63,22 @@
      (syntax/loc stx (cons (list SELECTED-ATOM-STX) 0))]))
 (provide acon-with-selection)
 
+(define-syntax (acon-without-selection stx)
+  (syntax-parse stx
+    [(_ "□")
+     (syntax/loc stx (list))]
+    [(_ NONEMPTY-ACON-WITHOUT-SELECTION-STX)
+     (syntax/loc stx NONEMPTY-ACON-WITHOUT-SELECTION-STX)]))
+(provide acon-without-selection)
+
+(define-syntax (nonempty-acon-without-selection stx)
+  (syntax-parse stx
+    [(_ ATOM-STX) (syntax/loc stx (list ATOM-STX))]
+    [(_ ATOM-STX "," OPT-WS-STX REST-STX ...)
+     (syntax/loc stx
+       (cons ATOM-STX (nonempty-acon-without-selection REST-STX ...)))]))
+(provide nonempty-acon-without-selection)
+
 (define-syntax (abstract-atom stx)
   (syntax-parse stx
     [(_ NESTED-STX)
@@ -67,8 +86,7 @@
 (provide abstract-atom)
 
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
-  (ad:abstract-atom (string->symbol (quote symbol)) (list);(odd-elems-as-list arg ...)
-                    ))
+  (ad:abstract-atom (string->symbol (quote symbol)) (list)))
 (provide abstract-atom-with-args)
 
 (define-syntax-rule (abstract-atom-without-args symbol)
@@ -91,11 +109,9 @@
      (syntax/loc stx (list))]))
 (provide graph-stack)
 
-;(define-syntax (graph stx)
-;  (syntax-parse stx
-;    [("?") (syntax/loc stx (mk-preprior-model))]))
-
-; TODO
 (define-syntax (ws-prefixed-subtrees stx)
-  (syntax/loc stx (list)))
+  (syntax-parse stx
+    [(_) (syntax/loc stx (list))]
+    [(_ WS-STX CHILD-STX REST-STX ...)
+     (syntax/loc stx (cons CHILD-STX (ws-prefixed-subtrees REST-STX ...)))]))
 (provide ws-prefixed-subtrees)
