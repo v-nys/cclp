@@ -268,7 +268,9 @@
 (define-syntax (fullai-rule-with-body stx)
   (syntax-parse stx
     [(_ AATOM-STX _ "->" _ SUBST-STX)
-     (syntax/loc stx (faid:full-ai-rule AATOM-STX SUBST-STX))]))
+     (syntax/loc stx
+       (full-ai-rule->full-evaluation
+        (faid:full-ai-rule AATOM-STX SUBST-STX)))]))
 (provide fullai-rule-with-body)
 
 (define-syntax (graph-stack stx)

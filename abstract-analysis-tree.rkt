@@ -172,10 +172,6 @@
  Returns two values: the updated candidate and the updated top-level tree.}))
 
 (module+ test
-  (define (full-ai-rule->full-evaluation r)
-    (full-evaluation
-     (faid:full-ai-rule-input-pattern r)
-     (apply-substitution (faid:full-ai-rule-output-substitution r) (faid:full-ai-rule-input-pattern r))))
   (define-syntax-rule
     (advance-primes-analysis top cand i gs)
     (advance-analysis top cand primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts i gs))

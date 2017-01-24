@@ -36,6 +36,14 @@
 (require "data-utils.rkt")
 (require "preprior-graph.rkt")
 
+(require (prefix-in faid: "fullai-domain.rkt"))
+
+(define (full-ai-rule->full-evaluation r)
+  (full-evaluation
+   (faid:full-ai-rule-input-pattern r)
+   (apply-substitution (faid:full-ai-rule-output-substitution r) (faid:full-ai-rule-input-pattern r))))
+(provide full-ai-rule->full-evaluation)
+
 (define (write-tree-label obj port mode)
   (if (eq? mode #t)
       (fprintf
