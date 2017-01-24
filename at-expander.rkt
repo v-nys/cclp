@@ -2,7 +2,7 @@
 (require (for-syntax syntax/parse))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 
-(require "abstract-multi-domain.rkt")
+(require (prefix-in ad: "abstract-multi-domain.rkt"))
 (require "abstract-analysis.rkt")
 (require racket-tree-utils/src/tree)
 
@@ -29,18 +29,24 @@
 
 (define-syntax (label-stack-opt-origin stx)
   (syntax-parse stx
-    ; ORIGIN-STX is always here
-    ; it may not expand to anything, though!
-    [(LABEL-STX _WS-STX-1 STACK-STX _WS-STX-2 OPT-ORIGIN-STX)
-     (syntax/loc stx
-       (struct-copy tree-label LABEL-STX [preprior-stack STACK-STX]))]))
+    [(_ LABEL-STX _WS-STX-1 STACK-STX _WS-STX-2 OPT-ORIGIN-STX)
+     (begin
+       (syntax/loc stx
+       (struct-copy tree-label LABEL-STX [preprior-stack STACK-STX])))]))
 (provide label-stack-opt-origin)
+
+(define-syntax (opt-origin stx)
+  (syntax-parse stx
+    [(_) (syntax/loc stx (cons (list) #f))]))
+(provide opt-origin)
 
 (define-syntax (at-label stx)
   (syntax-parse stx
     [(_ NUM-STX "." ACON-P-SEL-STX)
      (syntax/loc stx
-       (tree-label (car ACON-P-SEL-STX) (cdr ACON-P-SEL-STX) (list) #f NUM-STX (list)))]))
+       (tree-label
+        (car ACON-P-SEL-STX)
+        (cdr ACON-P-SEL-STX) (list) #f (quote NUM-STX) (list)))]))
 (provide at-label)
 
 (define-syntax (acon-with-potential-selection stx)
@@ -51,7 +57,7 @@
 (define-syntax (acon-with-selection stx)
   (syntax-parse stx
     [(_ "*" SELECTED-ATOM-STX "*")
-     (syntax/loc stx SELECTED-ATOM-STX)]))
+     (syntax/loc stx (cons (list SELECTED-ATOM-STX) 0))]))
 (provide acon-with-selection)
 
 (define-syntax (abstract-atom stx)
@@ -75,12 +81,12 @@
 
 (define-syntax (graph-stack stx)
   (syntax-parse stx
-    [("[" "]")
+    [(_ "[" "]")
      (syntax/loc stx (list))]
-    [("[" GRAPH-STX "]")
+    [(_ "[" GRAPH-STX "]")
      ; TODO deal with this
      (syntax/loc stx (list))]
-    [("[" GRAPH-STX _OPT-WS-1-STX "&" _OPT-WS-2-STX REST-GRAPH-STX ... "]")
+    [(_ "[" GRAPH-STX _OPT-WS-1-STX "&" _OPT-WS-2-STX REST-GRAPH-STX ... "]")
      ; TODO deal with this
      (syntax/loc stx (list))]))
 (provide graph-stack)
