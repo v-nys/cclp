@@ -1,5 +1,7 @@
 #lang br
 (require (for-syntax syntax/parse))
+(require (for-syntax (only-in racket-list-utils/utils odd-elems)))
+
 (require "abstract-multi-domain.rkt")
 (require "abstract-analysis.rkt")
 (require racket-tree-utils/src/tree)
@@ -7,7 +9,7 @@
 (define-syntax (at-module-begin stx)
   (syntax-parse stx
     [(_ _PARSE-TREE ...)
-     (syntax/loc stx (#%module-begin '_PARSE-TREE ...))]))
+     (syntax/loc stx (#%module-begin _PARSE-TREE ...))]))
 (provide (rename-out [at-module-begin #%module-begin]) #%top-interaction)
 
 (define-syntax (top stx)
@@ -23,28 +25,34 @@
        (node
         LABEL-STACK-OPT-ORIGIN-STX
         WS-PREFIXED-SUBTREES-STX))]))
+(provide at)
 
 (define-syntax (label-stack-opt-origin stx)
   (syntax-parse stx
-    ; TODO case with origin
-    [(LABEL-STX _WS-STX-1 STACK-STX _WS-STX-2)
+    ; ORIGIN-STX is always here
+    ; it may not expand to anything, though!
+    [(LABEL-STX _WS-STX-1 STACK-STX _WS-STX-2 OPT-ORIGIN-STX)
      (syntax/loc stx
        (struct-copy tree-label LABEL-STX [preprior-stack STACK-STX]))]))
+(provide label-stack-opt-origin)
 
 (define-syntax (at-label stx)
   (syntax-parse stx
     [(_ NUM-STX "." ACON-P-SEL-STX)
      (syntax/loc stx
        (tree-label (car ACON-P-SEL-STX) (cdr ACON-P-SEL-STX) (list) #f NUM-STX (list)))]))
+(provide at-label)
 
 (define-syntax (acon-with-potential-selection stx)
   (syntax-parse stx
     [(_ NESTED-STX) (syntax/loc stx NESTED-STX)]))
+(provide acon-with-potential-selection)
 
 (define-syntax (acon-with-selection stx)
   (syntax-parse stx
     [(_ "*" SELECTED-ATOM-STX "*")
      (syntax/loc stx SELECTED-ATOM-STX)]))
+(provide acon-with-selection)
 
 (define-syntax (abstract-atom stx)
   (syntax-parse stx
@@ -52,7 +60,14 @@
      (syntax/loc stx NESTED-STX)]))
 (provide abstract-atom)
 
+(define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
+  (ad:abstract-atom (string->symbol (quote symbol)) (list);(odd-elems-as-list arg ...)
+                    ))
+(provide abstract-atom-with-args)
 
+(define-syntax-rule (abstract-atom-without-args symbol)
+  (ad:abstract-atom (string->symbol (quote symbol)) (list)))
+(provide abstract-atom-without-args)
 
 ;graph-stack : OPEN-RECTANGULAR-PAREN [graph (opt-ws AMPERSAND opt-ws graph)*] CLOSE-RECTANGULAR-PAREN
 ;graph : QUESTION-MARK | precedence (COMMA opt-ws precedence)*
@@ -68,6 +83,7 @@
     [("[" GRAPH-STX _OPT-WS-1-STX "&" _OPT-WS-2-STX REST-GRAPH-STX ... "]")
      ; TODO deal with this
      (syntax/loc stx (list))]))
+(provide graph-stack)
 
 ;(define-syntax (graph stx)
 ;  (syntax-parse stx
@@ -75,3 +91,4 @@
 
 ; TODO
 (define-syntax (ws-prefixed-subtrees stx) (syntax/loc stx #'(list)))
+(provide ws-prefixed-subtrees)
