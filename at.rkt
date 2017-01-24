@@ -4,11 +4,12 @@
 (require (prefix-in re- parser-tools/lex-sre))
 (require syntax/strip-context)
 
+; not skipping whitespace: could do so with  #:skip? #t
 (define (tokenize input-port)
   (define (next-token)
     (define get-token
       (lexer-src-pos
-       [whitespace (token 'WS lexeme #:skip? #t)]
+       [whitespace (token 'WS lexeme)]
        ["(" (token 'OPEN-PAREN lexeme)]
        [")" (token 'CLOSE-PAREN lexeme)]
        ["[" (token 'OPEN-RECTANGULAR-PAREN lexeme)]
@@ -28,13 +29,10 @@
          (char-range "A" "Z")
          (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_")))
         (token 'VARIABLE-IDENTIFIER lexeme)]
-       [; this makes an exception for g... and a...
-        (re--
+       [(re--
          (re-seq (char-range "a" "z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_")))
          (re-or (re-seq "g" (re-+ numeric))
                 (re-seq "a" (re-+ numeric)))) (token 'SYMBOL lexeme)]
-       ["a" (token 'AVAR-SYMBOL-A lexeme)]
-       ["g" (token 'AVAR-SYMBOL-G lexeme)]
        ["->" (token 'LEADS-TO lexeme)]
        [">" (token 'GT lexeme)]
        [":-" (token 'IMPLIES lexeme)]
