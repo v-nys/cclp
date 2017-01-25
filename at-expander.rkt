@@ -11,11 +11,16 @@
 (require "abstract-analysis.rkt")
 (require racket-tree-utils/src/tree)
 (require (only-in graph add-vertex! add-edge!))
+(require (for-syntax syntax/strip-context))
 
 (define-syntax (at-module-begin stx)
   (syntax-parse stx
     [(_ _PARSE-TREE)
-     (syntax/loc stx (#%module-begin _PARSE-TREE))]))
+     (with-syntax ([REPLACED (replace-context stx #'val)])
+       (syntax/loc stx
+         (#%module-begin
+          (define REPLACED _PARSE-TREE)
+          (provide REPLACED))))]))
 (provide (rename-out [at-module-begin #%module-begin]) #%top-interaction)
 
 (define-syntax (top stx)
