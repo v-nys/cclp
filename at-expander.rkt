@@ -43,13 +43,6 @@
         SUBTREES-STX))]))
 (provide at)
 
-(define-syntax (subtrees stx)
-  (syntax-parse stx
-    [(_ AT-STX) (syntax/loc stx (list AT-STX))]
-    [(_ AT-STX _ REST-STX ...+)
-     (syntax/loc stx (cons AT-STX (subtrees REST-STX ...)))]))
-(provide subtrees)
-
 (define-syntax (label-stack-opt-origin stx)
   (syntax-parse stx
     [(_ LABEL-STX _ STACK-STX)
@@ -65,18 +58,25 @@
         [rule KNOWLEDGE-STX]))]))
 (provide label-stack-opt-origin)
 
+(define-syntax (subtrees stx)
+  (syntax-parse stx
+    [(_ AT-STX) (syntax/loc stx (list AT-STX))]
+    [(_ AT-STX _ REST-STX ...+)
+     (syntax/loc stx (cons AT-STX (subtrees REST-STX ...)))]))
+(provide subtrees)
+
 ; TODO double-check these!
 
 (define-syntax (at-label stx)
-  (syntax-parse stx
-    [(_ IDX-STX "." ACON-P-SEL-STX)
+  (syntax-parse stx #:literals (acon-with-selection acon-without-selection)
+    [(_ IDX-STX "." (acon-with-selection ACON-STX))
      (syntax/loc stx
        (tree-label
-        (car ACON-P-SEL-STX)
-        (cdr ACON-P-SEL-STX) (list) #f (quote IDX-STX) (list)))]
-    [(_ ACON-P-SEL-STX) ; no index -> no selection
+        (car (acon-with-selection ACON-STX))
+        (cdr (acon-with-selection ACON-STX)) (list) #f (quote IDX-STX) (list)))]
+    [(_ (acon-without-selection ACON-STX))
      (syntax/loc stx
-       (tree-label ACON-P-SEL-STX #f (list) #f #f (list)))]))
+       (tree-label (acon-without-selection ACON-STX) #f (list) #f #f (list)))]))
 (provide at-label)
 
 (define-syntax (acon-with-selection stx)

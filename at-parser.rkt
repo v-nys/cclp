@@ -5,7 +5,6 @@
 top : [WS] at
 at : OPEN-PAREN label-stack-opt-origin [WS subtrees] CLOSE-PAREN  # keep label, stack and origin together as they are the all stored in the node label
 label-stack-opt-origin : at-label WS graph-stack [WS substitution WS knowledge]
-subtrees : at (WS at)*
 
 at-label : [NUMBER PERIOD] acon-with-selection | acon-without-selection # this currently assumes a treelabel, not widening, case-split, or loop
 acon-with-selection : [nonempty-acon-without-selection COMMA] ASTERISK abstract-atom ASTERISK [COMMA nonempty-acon-without-selection]
@@ -32,5 +31,6 @@ variable : VARIABLE-IDENTIFIER
 function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | NUMBER
 lplist : OPEN-RECTANGULAR-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-RECTANGULAR-PAREN
 conjunction : atom (COMMA atom)*
-
 fullai-rule : abstract-atom WS LEADS-TO WS substitution
+
+subtrees : at (WS at)*
