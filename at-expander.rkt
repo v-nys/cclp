@@ -58,15 +58,6 @@
         [rule KNOWLEDGE-STX]))]))
 (provide label-stack-opt-origin)
 
-(define-syntax (subtrees stx)
-  (syntax-parse stx
-    [(_ AT-STX) (syntax/loc stx (list AT-STX))]
-    [(_ AT-STX _ REST-STX ...+)
-     (syntax/loc stx (cons AT-STX (subtrees REST-STX ...)))]))
-(provide subtrees)
-
-; TODO double-check these!
-
 (define-syntax (at-label stx)
   (syntax-parse stx #:literals (acon-with-selection acon-without-selection)
     [(_ IDX-STX "." (acon-with-selection ACON-STX))
@@ -96,26 +87,6 @@
        (cons (cons SELECTED-ATOM-STX REMAINING-CONJUNCTION) 0))]))
 (provide acon-with-selection)
 
-(define-syntax (abstract-lplist stx)
-  (syntax-parse stx
-    [(_ "[" "]")
-     (syntax/loc stx (ad:abstract-function 'nil '()))]
-    [(_ "[" term0 "]")
-     (syntax/loc stx (ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '()))))]
-    [(_ "[" term0 "," rest ... "]")
-     (syntax/loc stx (ad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]"))))]
-    [(_ "[" term0 "|" rest "]")
-     (syntax/loc stx (ad:abstract-function 'cons (list term0 rest)))]))
-(provide abstract-lplist)
-
-(define-syntax (acon-without-selection stx)
-  (syntax-parse stx
-    [(_ "□")
-     (syntax/loc stx (list))]
-    [(_ NONEMPTY-ACON-WITHOUT-SELECTION-STX)
-     (syntax/loc stx NONEMPTY-ACON-WITHOUT-SELECTION-STX)]))
-(provide acon-without-selection)
-
 (define-syntax (nonempty-acon-without-selection stx)
   (syntax-parse stx
     [(_) (syntax/loc stx (list))]
@@ -140,6 +111,69 @@
         (string->symbol (quote SYM-STX))
         (cons ARG (ad:abstract-atom-args (abstract-atom SYM-STX "(" COMMA-OR-ARG ... ")")))))]))
 (provide abstract-atom)
+
+(define-syntax-rule (abstract-term specific-term) specific-term)
+(provide abstract-term)
+
+(define-syntax (abstract-variable stx)
+  (syntax-parse stx
+    [(_ "a" NUM-STX)
+     (syntax/loc stx (ad:a (quote NUM-STX)))]
+    [(_ "g" NUM-STX)
+     (syntax/loc stx (ad:g (quote NUM-STX)))]))
+(provide abstract-variable)
+
+(define-syntax (abstract-function-term stx)
+  (syntax-parse stx
+    [(_ symbol:str) (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) '()))]
+    [(_ NUMBER:number) (syntax/loc stx (ad:abstract-function (quote NUMBER)))]
+    [(_ symbol:str "(" arg ... ")")
+     (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
+(provide abstract-function-term)
+
+(define-syntax (abstract-lplist stx)
+  (syntax-parse stx
+    [(_ "[" "]")
+     (syntax/loc stx (ad:abstract-function 'nil '()))]
+    [(_ "[" term0 "]")
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '()))))]
+    [(_ "[" term0 "," rest ... "]")
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]"))))]
+    [(_ "[" term0 "|" rest "]")
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 rest)))]))
+(provide abstract-lplist)
+
+(define-syntax (acon-without-selection stx)
+  (syntax-parse stx
+    [(_ "□")
+     (syntax/loc stx (list))]
+    [(_ NONEMPTY-ACON-WITHOUT-SELECTION-STX)
+     (syntax/loc stx NONEMPTY-ACON-WITHOUT-SELECTION-STX)]))
+(provide acon-without-selection)
+
+(define-syntax (graph-stack stx)
+  (syntax-parse stx
+    [(_ "[" "]")
+     (syntax/loc stx (list))]
+    [(_ "[" GRAPH-STX "]")
+     (syntax/loc stx (list GRAPH-STX))]
+    [(_ "[" GRAPH-STX _ "&" _ REST-GRAPH-STX ... "]")
+     (syntax/loc stx (cons GRAPH-STX (graph-stack "[" REST-GRAPH-STX ... "]")))]))
+(provide graph-stack)
+
+(define-syntax (graph stx)
+  (syntax-parse stx
+    [(_) (syntax/loc stx (mk-preprior-graph))]
+    [(_ "?") (syntax/loc stx (mk-preprior-graph))]
+    [(_ PRECEDENCE-STX) (syntax/loc stx (PRECEDENCE-STX (mk-preprior-graph)))]
+    [(_ PRECEDENCE-STX "," _ REST-STX ...) (syntax/loc stx (PRECEDENCE-STX (graph REST-STX ...)))]))
+(provide graph)
+
+(define-syntax (precedence stx)
+  (syntax-parse stx
+    [(_ AATOM-STX-1 _ ">" _ AATOM-STX-2)
+     (syntax/loc stx (λ (g) (begin (add-vertex! g AATOM-STX-1) (add-vertex! g AATOM-STX-2) (add-edge! g AATOM-STX-1 AATOM-STX-2) g)))]))
+(provide precedence)
 
 (define-syntax (substitution stx)
   (syntax-parse stx
@@ -220,29 +254,6 @@
      (syntax/loc stx (cons CONJUNCT-STX (conjunction COMMA-OR-CONJUNCT-STX ...)))]))
 (provide conjunction)
 
-(define-syntax-rule (number-term TERM)
-  (cd:function (quote TERM) '()))
-(provide number-term)
-
-(define-syntax-rule (abstract-term specific-term) specific-term)
-(provide abstract-term)
-
-(define-syntax (abstract-variable stx)
-  (syntax-parse stx
-    [(_ "a" NUM-STX)
-     (syntax/loc stx (ad:a (quote NUM-STX)))]
-    [(_ "g" NUM-STX)
-     (syntax/loc stx (ad:g (quote NUM-STX)))]))
-(provide abstract-variable)
-
-(define-syntax (abstract-function-term stx)
-  (syntax-parse stx
-    [(_ symbol:str) (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) '()))]
-    [(_ NUMBER:number) (syntax/loc stx (ad:abstract-function (quote NUMBER)))]
-    [(_ symbol:str "(" arg ... ")")
-     (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
-(provide abstract-function-term)
-
 (define-syntax (fullai-rule stx)
   (syntax-parse stx
     [(_ AATOM-STX _ "->" _ SUBST-STX)
@@ -251,26 +262,9 @@
         (faid:full-ai-rule AATOM-STX SUBST-STX)))]))
 (provide fullai-rule)
 
-(define-syntax (graph-stack stx)
+(define-syntax (subtrees stx)
   (syntax-parse stx
-    [(_ "[" "]")
-     (syntax/loc stx (list))]
-    [(_ "[" GRAPH-STX "]")
-     (syntax/loc stx (list GRAPH-STX))]
-    [(_ "[" GRAPH-STX _ "&" _ REST-GRAPH-STX ... "]")
-     (syntax/loc stx (cons GRAPH-STX (graph-stack "[" REST-GRAPH-STX ... "]")))]))
-(provide graph-stack)
-
-(define-syntax (graph stx)
-  (syntax-parse stx
-    [(_) (syntax/loc stx (mk-preprior-graph))]
-    [(_ "?") (syntax/loc stx (mk-preprior-graph))]
-    [(_ PRECEDENCE-STX) (syntax/loc stx (PRECEDENCE-STX (mk-preprior-graph)))]
-    [(_ PRECEDENCE-STX "," _ REST-STX ...) (syntax/loc stx (PRECEDENCE-STX (graph REST-STX ...)))]))
-(provide graph)
-
-(define-syntax (precedence stx)
-  (syntax-parse stx
-    [(_ AATOM-STX-1 _ ">" _ AATOM-STX-2)
-     (syntax/loc stx (λ (g) (begin (add-vertex! g AATOM-STX-1) (add-vertex! g AATOM-STX-2) (add-edge! g AATOM-STX-1 AATOM-STX-2) g)))]))
-(provide precedence)
+    [(_ AT-STX) (syntax/loc stx (list AT-STX))]
+    [(_ AT-STX _ REST-STX ...+)
+     (syntax/loc stx (cons AT-STX (subtrees REST-STX ...)))]))
+(provide subtrees)
