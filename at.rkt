@@ -4,7 +4,6 @@
 (require (prefix-in re- parser-tools/lex-sre))
 (require syntax/strip-context)
 
-; not skipping whitespace: could do so with  #:skip? #t
 (define (tokenize input-port)
   (define (next-token)
     (define get-token
