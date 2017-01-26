@@ -172,36 +172,17 @@
  Returns two values: the updated candidate and the updated top-level tree.}))
 
 (module+ test
+  (require (prefix-in primes0: "analysis-trees/primes-zero.rkt"))
+  (require (prefix-in primes1: "analysis-trees/primes-one.rkt"))
   (define-syntax-rule
-    (advance-primes-analysis top cand i gs)
-    (advance-analysis top cand primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts i gs))
-  ; (conjunction selection substitution rule index preprior-stack)
-  (let ([top-pre (node (tree-label (interpret-abstract-conjunction "primes(γ1,α1)") #f (list) #f #f (list (mk-preprior-graph))) (list))])
-    (let-values
-        ([(outcome-cand top-post)
-          (advance-primes-analysis top-pre top-pre 1 (list (mk-preprior-graph)))]
-         [(cand-post)
-          (node
-           (tree-label
-            (interpret-abstract-conjunction "primes(γ1,α1)")
-            0
-            (list) ; don't know this yet, will be something else
-            #f
-            1
-            (list (mk-preprior-graph)))
-           (list
-            (node
-             (tree-label
-              (interpret-abstract-conjunction "integers(γ2,α2),sift(α2,α1),len(α1,γ1)")
-              #f
-              (list)
-              (first primes-clauses)
-              #f
-              (list (mk-preprior-graph)))
-             (list))))])
-      (begin
-        (check-equal? outcome-cand cand-post)
-        (check-equal? top-post cand-post)))))
+    (advance-primes-analysis top cand i predecessors)
+    (advance-analysis top cand primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts i predecessors))
+  ; TODO shouldn't need to supply candidate and predessors manually
+  ; TODO write a macro to do similar tests for steps 1 through 5
+  (let-values
+      ([(cand-post top-post) (advance-primes-analysis primes0:val primes0:val 1 (list))])
+    (check-equal? cand-post primes1:val)
+    (check-equal? top-post primes1:val)))
 
 (module+ test 
   (test-case

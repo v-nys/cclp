@@ -79,11 +79,6 @@
        (tree-label ACON-P-SEL-STX #f (list) #f #f (list)))]))
 (provide at-label)
 
-(define-syntax (acon-with-potential-selection stx)
-  (syntax-parse stx
-    [(_ NESTED-STX) (syntax/loc stx NESTED-STX)]))
-(provide acon-with-potential-selection)
-
 (define-syntax (acon-with-selection stx)
   (syntax-parse stx
     [(_ "*" SELECTED-ATOM-STX "*")
@@ -132,14 +127,8 @@
 
 (define-syntax (abstract-atom stx)
   (syntax-parse stx
-    [(_ NESTED-STX)
-     (syntax/loc stx NESTED-STX)]))
-(provide abstract-atom)
-
-;(define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
-;  (ad:abstract-atom (string->symbol (quote symbol)) (list)))
-(define-syntax (abstract-atom-with-args stx)
-  (syntax-parse stx
+    [(_ SYM-STX)
+     (syntax/loc stx (ad:abstract-atom (string->symbol (quote SYM-STX)) (list)))]
     [(_ SYM-STX "(" ARG ")")
      (syntax/loc stx
        (ad:abstract-atom
@@ -149,12 +138,8 @@
      (syntax/loc stx
        (ad:abstract-atom
         (string->symbol (quote SYM-STX))
-        (cons ARG (ad:abstract-atom-args (abstract-atom-with-args SYM-STX "(" COMMA-OR-ARG ... ")")))))]))
-(provide abstract-atom-with-args)
-
-(define-syntax-rule (abstract-atom-without-args symbol)
-  (ad:abstract-atom (string->symbol (quote symbol)) (list)))
-(provide abstract-atom-without-args)
+        (cons ARG (ad:abstract-atom-args (abstract-atom SYM-STX "(" COMMA-OR-ARG ... ")")))))]))
+(provide abstract-atom)
 
 (define-syntax (substitution stx)
   (syntax-parse stx
@@ -211,7 +196,7 @@
   (syntax-parse stx
     [(_ symbol:str)
      (syntax/loc stx (cd:function (string->symbol (quote symbol)) '()))]
-    [(_ num-term) (syntax/loc stx num-term)] ; these are just plain numbers
+    [(_ NUMBER:number) (syntax/loc stx (cd:function (quote NUMBER) (list)))]
     [(_ symbol "(" arg ... ")")
      (syntax/loc stx (cd:function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
 (provide function-term)
@@ -253,30 +238,18 @@
 (define-syntax (abstract-function-term stx)
   (syntax-parse stx
     [(_ symbol:str) (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) '()))]
-    [(_ num-term) (syntax/loc stx num-term)]
-    [(_ symbol "(" arg ... ")")
+    [(_ NUMBER:number) (syntax/loc stx (ad:abstract-function (quote NUMBER)))]
+    [(_ symbol:str "(" arg ... ")")
      (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
 (provide abstract-function-term)
 
-(define-syntax-rule (abstract-number NUMBER)
-  (ad:abstract-function (quote NUMBER) '()))
-(provide abstract-number)
-
-(define-syntax-rule (abstract-number-term TERM) TERM)
-(provide abstract-number-term)
-
 (define-syntax (fullai-rule stx)
-  (syntax-parse stx
-    [(_ NESTED-STX) (syntax/loc stx NESTED-STX)]))
-(provide fullai-rule)
-
-(define-syntax (fullai-rule-with-body stx)
   (syntax-parse stx
     [(_ AATOM-STX _ "->" _ SUBST-STX)
      (syntax/loc stx
        (full-ai-rule->full-evaluation
         (faid:full-ai-rule AATOM-STX SUBST-STX)))]))
-(provide fullai-rule-with-body)
+(provide fullai-rule)
 
 (define-syntax (graph-stack stx)
   (syntax-parse stx
