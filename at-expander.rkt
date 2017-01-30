@@ -60,14 +60,14 @@
 
 (define-syntax (at-label stx)
   (syntax-parse stx #:literals (acon-with-selection acon-without-selection)
-    [(_ IDX-STX "." (acon-with-selection ACON-STX))
+    [(_ IDX-STX "." (acon-with-selection ACON-STX ...))
      (syntax/loc stx
        (tree-label
-        (car (acon-with-selection ACON-STX))
-        (cdr (acon-with-selection ACON-STX)) (list) #f (quote IDX-STX) (list)))]
-    [(_ (acon-without-selection ACON-STX))
+        (car (acon-with-selection ACON-STX ...))
+        (cdr (acon-with-selection ACON-STX ...)) (list) #f (quote IDX-STX) (list)))]
+    [(_ (acon-without-selection ACON-STX ...))
      (syntax/loc stx
-       (tree-label (acon-without-selection ACON-STX) #f (list) #f #f (list)))]))
+       (tree-label (acon-without-selection ACON-STX ...) #f (list) #f #f (list)))]))
 (provide at-label)
 
 (define-syntax (acon-with-selection stx)
