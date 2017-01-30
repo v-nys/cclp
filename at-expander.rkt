@@ -12,6 +12,7 @@
 (require racket-tree-utils/src/tree)
 (require (only-in graph add-vertex! add-edge!))
 (require (for-syntax syntax/strip-context))
+(require "data-utils.rkt")
 
 (define-syntax (at-module-begin stx)
   (syntax-parse stx
@@ -67,7 +68,7 @@
         (cdr (acon-with-selection ACON-STX ...)) (list) #f (quote IDX-STX) (list)))]
     [(_ (acon-without-selection ACON-STX ...))
      (syntax/loc stx
-       (tree-label (acon-without-selection ACON-STX ...) #f (list) #f #f (list)))]))
+       (tree-label (acon-without-selection ACON-STX ...) (none) (list) #f #f (list)))]))
 (provide at-label)
 
 (define-syntax (acon-with-selection stx)

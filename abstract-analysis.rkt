@@ -35,6 +35,7 @@
 (require racket-tree-utils/src/tree)
 (require "data-utils.rkt")
 (require "preprior-graph.rkt")
+(require racket/struct)
 
 (require (prefix-in faid: "fullai-domain.rkt"))
 
@@ -124,7 +125,17 @@
        (hash2-recur (tree-label-index l))))] ; preprior-graph? is not hashable, ignore
  #:methods
  gen:custom-write
- [(define write-proc write-tree-label)])
+ [(define write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'tree-label)
+     (λ (obj)
+       (list
+        (tree-label-conjunction obj)
+        (tree-label-selection obj)
+        (tree-label-substitution obj)
+        (tree-label-rule obj)
+        (tree-label-index obj)
+        (tree-label-preprior-stack obj)))))])
 (provide
  (struct*-doc
   tree-label

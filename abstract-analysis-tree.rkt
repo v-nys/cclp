@@ -34,7 +34,19 @@
        #f
        children)
       (tree-label-index label))]))
-(provide largest-node-index)
+(provide
+ (proc-doc/names
+  largest-node-index
+  (-> node? (or/c exact-nonnegative-integer? #f))
+  (top)
+  @{Finds the largest index currently used in the abstract analysis tree @racket[top].
+ This assumes @racket[top] conforms to the conventions for assigning indices.}))
+(module+ test
+  (require (prefix-in primes-five: "analysis-trees/primes-five.rkt")
+           (prefix-in l4lt: "analysis-trees/linear-four-level-tree.rkt"))
+  (check-equal? (largest-node-index (node 'irrelevant (list))) #f)
+  (check-equal? (largest-node-index l4lt:val) 3)
+  (check-equal? (largest-node-index primes-five:val) 5))
 
 (define (candidate-for-undo t)
   (match t
@@ -136,7 +148,7 @@
   (define prior (mk-preprior-graph))
   (define (update-candidate idx sel ch) candidate)
 
-  (values candidate top)
+  (cons candidate top)
   
   ;  (if more-general-predecessor
   ;      (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
@@ -163,13 +175,13 @@
 (provide
  (proc-doc/names
   advance-analysis
-  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) exact-positive-integer? list? (values node? node?))
+  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) exact-positive-integer? list? (cons/c node? node?))
   (top candidate clauses full-evaluations concrete-constants next-index more-general-predecessor)
   @{Advances the analysis in @racket[top], when the next conjunction up for unfolding or full evaluation is @racket[candidate],
  the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
  If a more general conjunction than that for @racket[candidate] exists earlier in the tree, it is supplied as @racket[more-general-predecessor].
  Otherwise, @racket[more-general-predecessor] should be @racket[#f].
- Returns two values: the updated candidate and the updated top-level tree.}))
+ Returns a pair of values: the updated candidate and the updated top-level tree.}))
 
 (module+ test
   (require (prefix-in primes0: "analysis-trees/primes-zero.rkt"))
@@ -177,12 +189,14 @@
   (define-syntax-rule
     (advance-primes-analysis top cand i predecessors)
     (advance-analysis top cand primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts i predecessors))
-  ; TODO shouldn't need to supply candidate and predessors manually
+  ; TODO shouldn't need to supply index for next node manually
   ; TODO write a macro to do similar tests for steps 1 through 5
-  (let-values
-      ([(cand-post top-post) (advance-primes-analysis primes0:val primes0:val 1 (list))])
-    (check-equal? cand-post primes1:val)
-    (check-equal? top-post primes1:val)))
+  (let* ([source-tree primes0:val]
+         [c-p (candidate-and-predecessors source-tree (list))]
+         [cp-tp (advance-primes-analysis source-tree (some-v (car c-p)) 1 (cdr c-p))])
+    (begin
+      (check-equal? (car c-p) primes1:val)
+      (check-equal? (cdr c-p) primes1:val))))
 
 (module+ test 
   (test-case
