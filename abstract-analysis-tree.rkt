@@ -48,47 +48,7 @@
   (check-equal? (largest-node-index l4lt:val) 3)
   (check-equal? (largest-node-index primes-five:val) 5))
 
-; TODO check if this needs to be updated
-;(define (candidate-for-undo t)
-;  (match t
-;    [(node _ (list)) #f]
-;    [(node l ch)
-;     (if (andmap (compose empty? node-children) ch)
-;         t
-;         (candidate-for-undo (last (filter (compose not empty? node-children) ch))))]))
-;(provide candidate-for-undo)
-
-;(define (undo t)
-;  (match t
-;    [(node (tree-label con sel sub r i) ch)
-;     (node (tree-label con (none) sub r #f) (list))]))
-;
-;(define (rewind t)
-;  (let* ([candidate (candidate-for-undo t)]
-;         [locally-rewound (if candidate (undo candidate) #f)])
-;    (if candidate
-;        (cons locally-rewound (replace-last-subtree t candidate locally-rewound))
-;        #f)))
-;(provide
-; (proc-doc/names
-;  rewind
-;  (-> node? (or/c #f (cons/c node? node?)))
-;  (t)
-;  @{Undo the latest unfolding or generalization that occurred in @racket[t].
-; The result is a @racket[pair] containing the node on which the operation has been applied
-; and the top-level tree to which this node belongs, or @racket[#f].}))
-
-; TODO check if this needs to be updated
-;(define (resolvent->node res)
-;  (node
-;   (tree-label
-;    (resolvent-conjunction res)
-;    (none)
-;    (resolvent-substitution res)
-;    (resolvent-knowledge res)
-;    #f ; resolvents have not yet been visited
-;    (list)) ; first preprior is provided right before analysis
-;   (list)))
+; TODO reintroduce rewind-related functionality (see VC)
 
 (define (candidate-and-predecessors t acc)
   (match t
@@ -146,90 +106,8 @@
   (tree accumulator)
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
-(define (advance-analysis top clauses full-evaluations concrete-constants next-index prior) (error "not implemented yet"))
-(provide
- (proc-doc/names
-  advance-analysis
-  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) exact-positive-integer? (listof (cons/c abstract-atom? exact-positive-integer?))
-      (or/c 'no-candidate (cons/c 'underspecified-order node?) (cons/c node? node?)))
-  (top candidate clauses full-evaluations concrete-constants next-index predecessors)
-  @{Advances the analysis in @racket[top], when the next conjunction up for unfolding or full evaluation is @racket[candidate],
- the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
- Potential predecessors of the current candidate are supplied as @racket[predecessors].
- Returns a pair of values: the updated candidate and the updated top-level tree.}))
+; TODO reintroduce advance-analysis (see VC)
 
-(module+ test
-  ; TODO add test involving more general predecessor
-  ; TODO add tests with cycles,...
-  (define-syntax-rule
-    (advance-primes-analysis top cand i predecessors)
-    (advance-analysis top cand primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts i predecessors))
-  (define-syntax-rule
-    (test-advance top-pre cand-post top-post)
-    (let* ([c-p (candidate-and-predecessors top-pre (list))]
-           [cp-tp (advance-primes-analysis top-pre (some-v (car c-p)) (or (largest-node-index top-pre) 1) (cdr c-p))])
-      (begin
-        (check-equal? (car cp-tp) cand-post)
-        (check-equal? (cdr cp-tp) top-post))))
-  (test-advance primes0:val primes1:val primes1:val)
-  (test-advance primes1:val primes1cp:val primes2:val)
-  (test-advance primes2:val primes2cp:val primes3:val)
-  (test-advance primes3:val primes3cp:val primes4:val)
-  (test-advance primes4:val primes4cp:val primes5:val))
+; TODO reintroduce code for tests advance in primes trees (see VC)
 
-(module+ test 
-  (test-case
-   "candidate and predecessors for various scenarios"
-   (let ([tree (node (tree-label (list (interpret-abstract-atom "foo(γ1)")) (none) '() #f #f (list)) '())])
-     (check-equal? (candidate-and-predecessors tree '())
-                   (cons (some tree) '())))
-   (let* ([leaf1
-           (node (tree-label (list (interpret-abstract-atom "bar(γ1)")) (none) '() #f #f (list)) '())]
-          [leaf2
-           (node (tree-label (list (interpret-abstract-atom "baz(α1)")) (none) '() #f #f (list)) '())]
-          [tree
-           (node
-            (tree-label (list (interpret-abstract-atom "foo(γ1)")) (some 0) '() #f 1 (list))
-            (list leaf1 leaf2))])
-     (begin
-       (check-equal?
-        (node-label (some-v (car (candidate-and-predecessors tree '()))))
-        (node-label leaf1))
-       (check-equal?
-        (cdr (candidate-and-predecessors tree '()))
-        (list (cons (list (interpret-abstract-atom "foo(γ1)")) 1)))))
-   (let* ([leaf1 (node 'fail '())]
-          [middle
-           (node
-            (tree-label (list (interpret-abstract-atom "bar(γ1)")) (some 0) '() #f 2 (list))
-            (list leaf1))]
-          [leaf2
-           (node (tree-label (list (interpret-abstract-atom "baz(α1)")) (none) '() #f #f (list)) '())]
-          [tree
-           (node
-            (tree-label (list (interpret-abstract-atom "foo(γ1)")) (some 0) '() #f 1 (list))
-            (list middle leaf2))])
-     (begin
-       (check-equal?
-        (car (candidate-and-predecessors tree '()))
-        (some leaf1))
-       (check-equal?
-        (cdr (candidate-and-predecessors tree '()))
-        (list
-         (cons (list (interpret-abstract-atom "bar(γ1)")) 2)
-         (cons (list (interpret-abstract-atom "foo(γ1)")) 1)))))
-   (let* ([bottom-left (node (cycle 1) '())]
-          [above-bottom-left
-           (node (tree-label (list (interpret-abstract-atom "a")) (none) (list) #f 3 (list))
-                 (list bottom-left))]
-          [left-of-root
-           (node (tree-label (list (interpret-abstract-atom "b")) (some 0) (list) #f 2 (list))
-                 (list above-bottom-left))]
-          [bottom-right
-           (node (tree-label (list (interpret-abstract-atom "c")) (none) (list) #f #f (list)) '())]
-          [tree
-           (node (tree-label (list (interpret-abstract-atom "a")) (some 0) (list) #f 1 (list))
-                 (list left-of-root bottom-right))])
-     (check-equal?
-      (car (candidate-and-predecessors tree '()))
-      (some bottom-right)))))
+; TODO reintroduce useful candidate-and-predecessors tests (see VC)
