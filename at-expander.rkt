@@ -32,32 +32,41 @@
 
 (define-syntax (at stx)
   (syntax-parse stx
-    [(_ "(" LABEL-STACK-OPT-ORIGIN-STX ")")
+    [(_ "(" LABEL-EDGES-OPT-ORIGIN-STX ")")
      (syntax/loc stx
        (node
-        LABEL-STACK-OPT-ORIGIN-STX
+        LABEL-EDGES-OPT-ORIGIN-STX
         (list)))]
-    [(_ "(" LABEL-STACK-OPT-ORIGIN-STX _ SUBTREES-STX ")")
+    [(_ "(" LABEL-EDGES-OPT-ORIGIN-STX _ SUBTREES-STX ")")
      (syntax/loc stx
        (node
-        LABEL-STACK-OPT-ORIGIN-STX
+        LABEL-EDGES-OPT-ORIGIN-STX
         SUBTREES-STX))]))
 (provide at)
 
-(define-syntax (label-stack-opt-origin stx)
-  (syntax-parse stx
-    [(_ LABEL-STX _ STACK-STX)
+(define-syntax (label-edges-opt-origin stx)
+  (syntax-parse stx #:literals (graph-edges substitution knowledge)
+    [(_ LABEL-STX)
+     (syntax/loc stx LABEL-STX)]
+    [(_ LABEL-STX _ (graph-edges EDGE-STX ...))
      (syntax/loc stx
-       (struct-copy tree-label LABEL-STX [preprior-stack STACK-STX]))]
-    [(_ LABEL-STX _ STACK-STX _ SUBST-STX _ KNOWLEDGE-STX)
+       (struct-copy tree-label LABEL-STX [introduced-edges (graph-edges EDGE-STX ...)]))]
+    [(_ LABEL-STX _ (substitution SUBST-STX ...) _ (knowledge KNOWLEDGE-STX ...))
      (syntax/loc stx
        (struct-copy
         tree-label
         LABEL-STX
-        [preprior-stack STACK-STX]
-        [substitution SUBST-STX]
-        [rule KNOWLEDGE-STX]))]))
-(provide label-stack-opt-origin)
+        [substitution (substitution SUBST-STX ...)]
+        [rule (knowledge KNOWLEDGE-STX ...)]))]
+    [(_ LABEL-STX _ (graph-edges EDGE-STX ...) _ (substitution SUBST-STX ...) _ (knowledge KNOWLEDGE-STX ...))
+     (syntax/loc stx
+       (struct-copy
+        tree-label
+        LABEL-STX
+        [introduced-edges (graph-edges EDGE-STX ...)]
+        [substitution (substitution SUBST-STX ...)]
+        [rule (knowledge KNOWLEDGE-STX ...)]))]))
+(provide label-edges-opt-origin)
 
 (define-syntax (at-label stx)
   (syntax-parse stx #:literals (acon-with-selection acon-without-selection)
@@ -152,28 +161,19 @@
      (syntax/loc stx NONEMPTY-ACON-WITHOUT-SELECTION-STX)]))
 (provide acon-without-selection)
 
-(define-syntax (graph-stack stx)
+(define-syntax (graph-edges stx)
   (syntax-parse stx
-    [(_ "[" "]")
-     (syntax/loc stx (list))]
-    [(_ "[" GRAPH-STX "]")
-     (syntax/loc stx (list GRAPH-STX))]
-    [(_ "[" GRAPH-STX _ "&" _ REST-GRAPH-STX ... "]")
-     (syntax/loc stx (cons GRAPH-STX (graph-stack "[" REST-GRAPH-STX ... "]")))]))
-(provide graph-stack)
-
-(define-syntax (graph stx)
-  (syntax-parse stx
-    [(_) (syntax/loc stx (mk-preprior-graph))]
-    [(_ "?") (syntax/loc stx (mk-preprior-graph))]
-    [(_ PRECEDENCE-STX) (syntax/loc stx (PRECEDENCE-STX (mk-preprior-graph)))]
-    [(_ PRECEDENCE-STX "," _ REST-STX ...) (syntax/loc stx (PRECEDENCE-STX (graph REST-STX ...)))]))
-(provide graph)
+    [(_ "[" PRECEDENCE-STX "]")
+     (syntax/loc stx (list PRECEDENCE-STX))]
+    [(_ "[" PRECEDENCE-STX "," _ REST-PRECEDENCE-STX ... "]")
+     (syntax/loc stx (cons PRECEDENCE-STX (graph-edges "[" REST-PRECEDENCE-STX ... "]")))]))
+(provide graph-edges)
 
 (define-syntax (precedence stx)
   (syntax-parse stx
-    [(_ AATOM-STX-1 _ ">" _ AATOM-STX-2)
-     (syntax/loc stx (λ (g) (begin (add-vertex! g AATOM-STX-1) (add-vertex! g AATOM-STX-2) (add-edge! g AATOM-STX-1 AATOM-STX-2) g)))]))
+    [(_ AATOM-STX-1 _ "<" _ AATOM-STX-2)
+     (syntax/loc stx
+       (cons AATOM-STX-1 AATOM-STX-2))]))
 (provide precedence)
 
 (define-syntax (substitution stx)

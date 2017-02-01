@@ -1,7 +1,7 @@
 #lang reader "../at.rkt"
-(1.*foo* [?]
- (2.*bar*,baz [?]
+(1.*foo*
+ (2.*bar*,baz [bar < baz]
   {} foo :- bar,baz.
-  (3.*quux*,baz [?]
+  (3.*quux*,baz [quux < baz]
    {} bar :- quux.
-   (narf,baz [?]))))
+   (narf,baz))))

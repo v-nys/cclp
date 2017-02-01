@@ -48,14 +48,15 @@
   (check-equal? (largest-node-index l4lt:val) 3)
   (check-equal? (largest-node-index primes-five:val) 5))
 
-(define (candidate-for-undo t)
-  (match t
-    [(node _ (list)) #f]
-    [(node l ch)
-     (if (andmap (compose empty? node-children) ch)
-         t
-         (candidate-for-undo (last (filter (compose not empty? node-children) ch))))]))
-(provide candidate-for-undo)
+; TODO check if this needs to be updated
+;(define (candidate-for-undo t)
+;  (match t
+;    [(node _ (list)) #f]
+;    [(node l ch)
+;     (if (andmap (compose empty? node-children) ch)
+;         t
+;         (candidate-for-undo (last (filter (compose not empty? node-children) ch))))]))
+;(provide candidate-for-undo)
 
 ;(define (undo t)
 ;  (match t
@@ -77,16 +78,17 @@
 ; The result is a @racket[pair] containing the node on which the operation has been applied
 ; and the top-level tree to which this node belongs, or @racket[#f].}))
 
-(define (resolvent->node res)
-  (node
-   (tree-label
-    (resolvent-conjunction res)
-    (none)
-    (resolvent-substitution res)
-    (resolvent-knowledge res)
-    #f ; resolvents have not yet been visited
-    (list)) ; first preprior is provided right before analysis
-   (list)))
+; TODO check if this needs to be updated
+;(define (resolvent->node res)
+;  (node
+;   (tree-label
+;    (resolvent-conjunction res)
+;    (none)
+;    (resolvent-substitution res)
+;    (resolvent-knowledge res)
+;    #f ; resolvents have not yet been visited
+;    (list)) ; first preprior is provided right before analysis
+;   (list)))
 
 (define (candidate-and-predecessors t acc)
   (match t
@@ -124,72 +126,7 @@
              (cdr acc2))))
       (cons (none) (cons (cons c i) acc))
       (node-children t))]))
-(provide
- (proc-doc/names
-  candidate-and-predecessors
-  (-> node? list? (cons/c any/c (listof (cons/c (listof abstract-atom?) exact-positive-integer?))))
-  (tree accumulator)
-  @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
-
-(define (advance-analysis top candidate clauses full-evaluations concrete-constants next-index predecessors)
-  (define conjunction (label-conjunction (node-label candidate)))
-  (define more-general-predecessor
-    (findf
-     (λ (p-and-i) (>=-extension (car p-and-i) conjunction))
-     predecessors))
-  (define prior (car (label-preprior-stack candidate)))
-  (define selection (selected-index conjunction prior full-evaluations))
-  
-
-  ; replace a candidate by assigning an index, a selection, children and possibly a new preprior stack
-  ;  (define (update-candidate idx sel ch)
-  ;    (match candidate
-  ;      [(node (tree-label c _ sub r _) _)
-  ;       (node (tree-label c sel sub r idx) ch)]
-  ;      [(node (widening c _ m _) _)
-  ;       (node (widening c sel m idx) ch)]))
-
-  ; TODO fix
-  (define prior (mk-preprior-graph))
-  (define (update-candidate idx sel ch) candidate)
-
-  (cons candidate top)
-  
-  ;  (if more-general-predecessor
-  ;      (let* ([cycle-node (node (cycle (cdr more-general-predecessor)) '())]
-  ;             [updated-candidate
-  ;              (update-candidate next-index (none) (list cycle-node))]
-  ;             [updated-top (replace-first-subtree top candidate updated-candidate)])
-  ;        (values updated-candidate updated-top))
-  ;      ; TODO: may not get a selection here...
-  ;      (let* ([selection (selected-index conjunction prior full-evaluations)]
-  ;             [similar-predecessor (foldl (λ (p acc) (if acc acc (if (s-similar? (cdr p) conjunction selection top) p acc))) #f predecessors)]
-  ;             [updated-candidate
-  ;              (if similar-predecessor
-  ;                  (let ([similarity-cycle-node (node (similarity-cycle (cdr similar-predecessor)) '())])
-  ;                    (update-candidate next-index (none) (list similarity-cycle-node)))
-  ;                  (let* ([resolvents (abstract-resolve conjunction selection clauses full-evaluations concrete-constants)]
-  ;                         ; TODO resolvents need stacks
-  ;                         ; before a child is unfolded, it gets the parent's topmost order
-  ;                         ; after completion of a child, the child's final order is pushed onto the parent's stack
-  ;                         [child-trees (map resolvent->node resolvents)])
-  ;                    (update-candidate next-index (some selection) child-trees)))]
-  ;             [updated-top (replace-first-subtree top candidate updated-candidate)])
-  ;        (values updated-candidate updated-top)))
-  )
-(provide
- (proc-doc/names
-  advance-analysis
-  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) exact-positive-integer? (listof (cons/c abstract-atom? exact-positive-integer?)) (or/c 'no-candidate (cons 'underspecified-order node?) (cons/c node? node?)))
-  (top candidate clauses full-evaluations concrete-constants next-index predecessors)
-  @{Advances the analysis in @racket[top], when the next conjunction up for unfolding or full evaluation is @racket[candidate],
- the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
- Potential predecessors of the current candidate are supplied as @racket[predecessors].
- Returns a pair of values: the updated candidate and the updated top-level tree.}))
-
 (module+ test
-  ; TODO add test involving more general predecessor
-  ; TODO add test involving failure branch (no need to update preprior...)
   (require
     (prefix-in primes0: "analysis-trees/primes-zero.rkt")
     (prefix-in primes1: "analysis-trees/primes-one.rkt")
@@ -201,6 +138,29 @@
     (prefix-in primes4: "analysis-trees/primes-four.rkt")
     (prefix-in primes4cp: "analysis-trees/primes-four-candidate-post.rkt")
     (prefix-in primes5: "analysis-trees/primes-five.rkt"))
+  (check-equal? (candidate-and-predecessors primes0:val (list)) (cons primes0:val (list))))
+(provide
+ (proc-doc/names
+  candidate-and-predecessors
+  (-> node? list? (cons/c (or/c #f node?) (listof (cons/c (listof abstract-atom?) exact-positive-integer?))))
+  (tree accumulator)
+  @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
+
+(define (advance-analysis top clauses full-evaluations concrete-constants next-index prior) (error "not implemented yet"))
+(provide
+ (proc-doc/names
+  advance-analysis
+  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) exact-positive-integer? (listof (cons/c abstract-atom? exact-positive-integer?))
+      (or/c 'no-candidate (cons/c 'underspecified-order node?) (cons/c node? node?)))
+  (top candidate clauses full-evaluations concrete-constants next-index predecessors)
+  @{Advances the analysis in @racket[top], when the next conjunction up for unfolding or full evaluation is @racket[candidate],
+ the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
+ Potential predecessors of the current candidate are supplied as @racket[predecessors].
+ Returns a pair of values: the updated candidate and the updated top-level tree.}))
+
+(module+ test
+  ; TODO add test involving more general predecessor
+  ; TODO add tests with cycles,...
   (define-syntax-rule
     (advance-primes-analysis top cand i predecessors)
     (advance-analysis top cand primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts i predecessors))

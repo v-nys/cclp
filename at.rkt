@@ -19,8 +19,6 @@
        ["," (token 'COMMA lexeme)]
        [(re-seq numeric (re-* numeric)) (token 'NUMBER (string->number lexeme))]
        ["/" (token 'SLASH lexeme)]
-       ["?" (token 'QUESTION-MARK lexeme)]
-       ["&" (token 'AMPERSAND lexeme)]
        ["." (token 'PERIOD lexeme)]
        ["*" (token 'ASTERISK lexeme)]
        ["□" (token 'EMPTY-GOAL lexeme)]
@@ -33,7 +31,7 @@
          (re-or (re-seq "g" (re-+ numeric))
                 (re-seq "a" (re-+ numeric)))) (token 'SYMBOL lexeme)]
        ["->" (token 'LEADS-TO lexeme)]
-       [">" (token 'GT lexeme)]
+       ["<" (token 'LT lexeme)]
        [":-" (token 'IMPLIES lexeme)]
        [(eof) eof]
        [(re-seq "%" (re-* (char-complement "\n"))) (token 'COMMENT lexeme #:skip? #t)]))

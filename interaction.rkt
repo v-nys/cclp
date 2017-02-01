@@ -58,6 +58,7 @@
 (define (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)
   (interactive-dispatch
    "What do you want to do?"
+   ; note: if advance is doing to say whether we need extra info anyway, we should not supply candidate *or* predecessors and should get all that info in advance itself
    ("proceed"
     (match (candidate-and-predecessors tree '())
       [(cons (none) _)
