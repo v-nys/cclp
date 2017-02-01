@@ -21,47 +21,31 @@
 ; SOFTWARE.
 
 #lang at-exp racket
-(require (only-in "abstract-multi-domain.rkt" abstract-atom?))
-(require "abstract-knowledge.rkt")
-(require (prefix-in ck: "concrete-knowledge.rkt"))
-(require "concrete-domain.rkt")
-(require "abstract-substitution.rkt")
-(require scribble/srcdoc)
-(require racket/serialize)
+(require
+  racket/serialize ; so that analysis trees can be saved/loaded
+  racket/struct ; for constructor-style printers
+  scribble/srcdoc)
+(require
+  "abstract-knowledge.rkt"
+  (only-in "abstract-multi-domain.rkt" abstract-atom?)
+  "abstract-substitution.rkt"
+  (prefix-in ck: "concrete-knowledge.rkt")
+  "data-utils.rkt" ; selection is still expressed as a maybe
+  (prefix-in faid: "fullai-domain.rkt")
+  "preprior-graph.rkt")
 (require (for-doc scribble/manual))
-(require (only-in "abstract-domain-ordering.rkt" renames? >=-extension))
-(require (only-in "execution.rkt" selected-index))
-(require "abstract-resolve.rkt")
-(require racket-tree-utils/src/tree)
-(require "data-utils.rkt")
-(require "preprior-graph.rkt")
-(require racket/struct)
-
-(require (prefix-in faid: "fullai-domain.rkt"))
 
 (define (full-ai-rule->full-evaluation r)
   (full-evaluation
    (faid:full-ai-rule-input-pattern r)
    (apply-substitution (faid:full-ai-rule-output-substitution r) (faid:full-ai-rule-input-pattern r))))
-(provide full-ai-rule->full-evaluation)
-
-(define (write-tree-label obj port mode)
-  (if (eq? mode #t)
-      (fprintf
-       port
-       "#(struct:tree-label ~s ~s ~s ~s ~s)"
-       (tree-label-conjunction obj)
-       (tree-label-selection obj)
-       (tree-label-substitution obj)
-       (tree-label-rule obj)
-       (tree-label-index obj))
-      (fprintf
-       port
-       "tree label conjunction ~a, with selection ~a, obtained through rule ~a and substitution ~a"
-       (tree-label-conjunction obj)
-       (tree-label-selection obj)
-       (tree-label-rule obj)
-       (tree-label-substitution obj))))
+(provide
+ (proc-doc/names
+  full-ai-rule->full-evaluation
+  (-> faid:full-ai-rule? full-evaluation?)
+  (rule)
+  @{Converts a @racket[faid:full-ai-rule?] to a @racket[full-evaluation?].
+ This function should be deprecated ASAP.}))
 
 (serializable-struct
  cycle (index)
@@ -98,12 +82,14 @@
   ([index exact-positive-integer?])
   @{A cycle detected during abstract analysis, based on similarity (rather than pure renaming).
      The field @racket[index] stands for the index of a previously handled conjunction which is similar to that which introduces the @racket[similarity-cycle].
-     The latter is normally represented as the parent of the @racket[similarity-cycle] in the abstract analysis tree.}))
+     The latter is normally represented as the parent of the @racket[similarity-cycle] in the abstract analysis tree.
+     This struct should be deprecated ASAP.}))
 
 (serializable-struct
  tree-label (conjunction selection substitution rule index preprior-stack)
  #:methods
  gen:equal+hash
+ ; ignore preprior-stack because it is not hashable
  [(define (equal-proc l1 l2 equal?-recur)
     (and (equal?-recur (tree-label-conjunction l1) (tree-label-conjunction l2))
          (equal?-recur (tree-label-selection l1) (tree-label-selection l2))
@@ -116,13 +102,13 @@
        (* 3 (hash-recur (tree-label-selection l)))
        (* 7 (hash-recur (tree-label-substitution l)))
        (* 11 (hash-recur (tree-label-rule l)))
-       (* 13 (hash-recur (tree-label-index l))))) ; preprior-graph? is not hashable, ignore
+       (* 13 (hash-recur (tree-label-index l)))))
   (define (hash2-proc l hash2-recur)
     (+ (hash2-recur (tree-label-conjunction l))
        (hash2-recur (tree-label-selection l))
        (hash2-recur (tree-label-substitution l))
        (hash2-recur (tree-label-rule l))
-       (hash2-recur (tree-label-index l))))] ; preprior-graph? is not hashable, ignore
+       (hash2-recur (tree-label-index l))))]
  #:methods
  gen:custom-write
  [(define write-proc
@@ -160,7 +146,8 @@
 
 (serializable-struct
  widening (conjunction selection message index preprior-stack)
- ; message has no bearing on the semantics
+ ; message has no bearing on the semantics, so ignore that
+ ; ignore preprior-stack because it is not hashable
  #:methods
  gen:equal+hash
  [(define (equal-proc w1 w2 equal?-recur)
@@ -171,11 +158,11 @@
   (define (hash-proc w hash-recur)
     (+ (hash-recur (widening-conjunction w))
        (hash-recur (widening-selection w))
-       (hash-recur (widening-index w)))) ; ignore stack for hashing
+       (hash-recur (widening-index w))))
   (define (hash2-proc w hash2-recur)
     (+ (hash2-recur (widening-conjunction w))
        (hash2-recur (widening-selection w))
-       (hash2-recur (widening-index w))))]) ; ignore stack for hashing
+       (hash2-recur (widening-index w))))])
 (provide
  (struct*-doc
   widening
@@ -196,7 +183,7 @@
 
 (serializable-struct
  case (conjunction selection index preprior-stack)
- ; message has no bearing on the semantics
+ ; ignore preprior-stack because it is not hashable
  #:methods
  gen:equal+hash
  [(define (equal-proc c1 c2 equal?-recur)
@@ -207,11 +194,11 @@
   (define (hash-proc c hash-recur)
     (+ (hash-recur (case-conjunction c))
        (hash-recur (case-selection c))
-       (hash-recur (case-index c)))) ; ignore stack for hashing
+       (hash-recur (case-index c))))
   (define (hash2-proc c hash2-recur)
     (+ (hash2-recur (case-conjunction c))
        (hash2-recur (case-selection c))
-       (hash2-recur (case-index c))))]) ; ignore stack for hashing
+       (hash2-recur (case-index c))))])
 (provide
  (struct*-doc
   case

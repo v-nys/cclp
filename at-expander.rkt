@@ -74,18 +74,18 @@
 (define-syntax (acon-with-selection stx)
   (syntax-parse stx
     [(_ "*" SELECTED-ATOM-STX "*")
-     (syntax/loc stx (cons (list SELECTED-ATOM-STX) 0))]
+     (syntax/loc stx (cons (list SELECTED-ATOM-STX) (some 0)))]
     [(_ PRECEDING-CONJUNCTION "," "*" SELECTED-ATOM-STX "*")
      (syntax/loc stx
        (cons (append PRECEDING-CONJUNCTION (list SELECTED-ATOM-STX))
-             (length PRECEDING-CONJUNCTION)))]
+             (some (length PRECEDING-CONJUNCTION))))]
     [(_ PRECEDING-CONJUNCTION "," "*" SELECTED-ATOM-STX "*" "," REMAINING-CONJUNCTION)
      (syntax/loc stx
        (cons (append PRECEDING-CONJUNCTION (cons SELECTED-ATOM-STX REMAINING-CONJUNCTION))
-             (length PRECEDING-CONJUNCTION)))]
+             (some (length PRECEDING-CONJUNCTION))))]
     [(_ "*" SELECTED-ATOM-STX "*" "," REMAINING-CONJUNCTION)
      (syntax/loc stx
-       (cons (cons SELECTED-ATOM-STX REMAINING-CONJUNCTION) 0))]))
+       (cons (cons SELECTED-ATOM-STX REMAINING-CONJUNCTION) (some 0)))]))
 (provide acon-with-selection)
 
 (define-syntax (nonempty-acon-without-selection stx)

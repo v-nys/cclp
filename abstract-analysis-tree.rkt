@@ -1,21 +1,21 @@
 #lang at-exp racket
-(require (only-in "abstract-multi-domain.rkt" abstract-atom?))
-(require "abstract-knowledge.rkt")
-(require (prefix-in ck: "concrete-knowledge.rkt"))
-(require "concrete-domain.rkt")
-(require "abstract-substitution.rkt")
-(require scribble/srcdoc)
-(require racket/serialize)
-(require (for-doc scribble/manual))
-(require (only-in "abstract-domain-ordering.rkt" renames? >=-extension))
-(require (only-in "execution.rkt" selected-index))
-(require "abstract-resolve.rkt")
+(require
+  racket/serialize ; trees can be saved and loaded
+  scribble/srcdoc)
 (require racket-tree-utils/src/tree)
-(require "data-utils.rkt")
-(require (only-in "similarity.rkt" s-similar?))
-(require "abstract-analysis.rkt")
-(require "preprior-graph.rkt")
-(require (prefix-in faid: "fullai-domain.rkt"))
+(require
+  "abstract-analysis.rkt"
+  (only-in "abstract-domain-ordering.rkt" renames? >=-extension)
+  "abstract-knowledge.rkt"
+  (only-in "abstract-multi-domain.rkt" abstract-atom?)
+  "abstract-resolve.rkt"
+  (only-in "concrete-domain.rkt" function?)
+  (prefix-in ck: "concrete-knowledge.rkt")
+  "data-utils.rkt"
+  (only-in "execution.rkt" selected-index)
+  "preprior-graph.rkt")
+(require (for-doc scribble/manual))
+
 (module+ test
   (require rackunit)
   (require "test-data.rkt")
@@ -132,9 +132,14 @@
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
 (define (advance-analysis top candidate clauses full-evaluations concrete-constants next-index predecessors)
-  (define candidate-label (node-label candidate))
-  (define conjunction (label-conjunction candidate-label))
-  ; (define more-general-predecessor (findf (λ (p-and-i) (>=-extension (car p-and-i) conjunction)) predecessors))
+  (define conjunction (label-conjunction (node-label candidate)))
+  (define more-general-predecessor
+    (findf
+     (λ (p-and-i) (>=-extension (car p-and-i) conjunction))
+     predecessors))
+  (define prior (car (label-preprior-stack candidate)))
+  (define selection (selected-index conjunction prior full-evaluations))
+  
 
   ; replace a candidate by assigning an index, a selection, children and possibly a new preprior stack
   ;  (define (update-candidate idx sel ch)
@@ -175,28 +180,42 @@
 (provide
  (proc-doc/names
   advance-analysis
-  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) exact-positive-integer? list? (cons/c node? node?))
-  (top candidate clauses full-evaluations concrete-constants next-index more-general-predecessor)
+  (-> node? node? (listof ck:rule?) (listof full-evaluation?) (listof function?) exact-positive-integer? (listof (cons/c abstract-atom? exact-positive-integer?)) (or/c 'no-candidate (cons 'underspecified-order node?) (cons/c node? node?)))
+  (top candidate clauses full-evaluations concrete-constants next-index predecessors)
   @{Advances the analysis in @racket[top], when the next conjunction up for unfolding or full evaluation is @racket[candidate],
  the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
- If a more general conjunction than that for @racket[candidate] exists earlier in the tree, it is supplied as @racket[more-general-predecessor].
- Otherwise, @racket[more-general-predecessor] should be @racket[#f].
+ Potential predecessors of the current candidate are supplied as @racket[predecessors].
  Returns a pair of values: the updated candidate and the updated top-level tree.}))
 
 (module+ test
-  (require (prefix-in primes0: "analysis-trees/primes-zero.rkt"))
-  (require (prefix-in primes1: "analysis-trees/primes-one.rkt"))
+  ; TODO add test involving more general predecessor
+  ; TODO add test involving failure branch (no need to update preprior...)
+  (require
+    (prefix-in primes0: "analysis-trees/primes-zero.rkt")
+    (prefix-in primes1: "analysis-trees/primes-one.rkt")
+    (prefix-in primes1cp: "analysis-trees/primes-one-candidate-post.rkt")
+    (prefix-in primes2: "analysis-trees/primes-two.rkt")
+    (prefix-in primes2cp: "analysis-trees/primes-two-candidate-post.rkt")
+    (prefix-in primes3: "analysis-trees/primes-three.rkt")
+    (prefix-in primes3cp: "analysis-trees/primes-three-candidate-post.rkt")
+    (prefix-in primes4: "analysis-trees/primes-four.rkt")
+    (prefix-in primes4cp: "analysis-trees/primes-four-candidate-post.rkt")
+    (prefix-in primes5: "analysis-trees/primes-five.rkt"))
   (define-syntax-rule
     (advance-primes-analysis top cand i predecessors)
     (advance-analysis top cand primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts i predecessors))
-  ; TODO shouldn't need to supply index for next node manually
-  ; TODO write a macro to do similar tests for steps 1 through 5
-  (let* ([source-tree primes0:val]
-         [c-p (candidate-and-predecessors source-tree (list))]
-         [cp-tp (advance-primes-analysis source-tree (some-v (car c-p)) 1 (cdr c-p))])
-    (begin
-      (check-equal? (car c-p) primes1:val)
-      (check-equal? (cdr c-p) primes1:val))))
+  (define-syntax-rule
+    (test-advance top-pre cand-post top-post)
+    (let* ([c-p (candidate-and-predecessors top-pre (list))]
+           [cp-tp (advance-primes-analysis top-pre (some-v (car c-p)) (or (largest-node-index top-pre) 1) (cdr c-p))])
+      (begin
+        (check-equal? (car cp-tp) cand-post)
+        (check-equal? (cdr cp-tp) top-post))))
+  (test-advance primes0:val primes1:val primes1:val)
+  (test-advance primes1:val primes1cp:val primes2:val)
+  (test-advance primes2:val primes2cp:val primes3:val)
+  (test-advance primes3:val primes3cp:val primes4:val)
+  (test-advance primes4:val primes4cp:val primes5:val))
 
 (module+ test 
   (test-case
