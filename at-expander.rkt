@@ -267,7 +267,9 @@
 (provide fullai-rule)
 
 (define-syntax (widening-edges stx)
-  (syntax-parse stx #:literals (graph-edges acon-with-selection acon-without-selection)
+  (syntax-parse stx #:literals (graph-edges acon-with-selection acon-without-selection case-split-edges)
+    ; sketchy trick to disambiguate, despite same grammatical structure (as CS and WI are tokenized the same way)
+    [(_ "CS" STX ...) (syntax/loc stx (case-split-edges "CS" STX ...))]
     [(_ "WI" _ NUMBER:number "." (acon-with-selection ACON-STX ...) _ (graph-edges EDGE-STX ...))
      (syntax/loc stx
        (widening
@@ -301,6 +303,38 @@
         #f
         (list)))]))
 (provide widening-edges)
+
+(define-syntax (case-split-edges stx)
+  (syntax-parse stx #:literals (graph-edges acon-with-selection acon-without-selection)
+    [(_ "CS" _ NUMBER:number "." (acon-with-selection ACON-STX ...) _ (graph-edges EDGE-STX ...))
+     (syntax/loc stx
+       (case
+        (car (acon-with-selection ACON-STX ...))
+        (cdr (acon-with-selection ACON-STX ...))
+        (quote NUMBER)
+        (graph-edges EDGE-STX ...)))]
+    [(_ "CS" _ NUMBER:number "." (acon-with-selection ACON-STX ...))
+     (syntax/loc stx
+       (case
+        (car (acon-with-selection ACON-STX ...))
+        (cdr (acon-with-selection ACON-STX ...))
+        (quote NUMBER)
+        (list)))]
+    [(_ "CS" _ NUMBER:number "." (acon-without-selection ACON-STX ...))
+     (syntax/loc stx
+       (case
+        (acon-without-selection ACON-STX ...)
+        (none)
+        (quote NUMBER)
+        (list)))]
+    [(_ "CS" _ (acon-without-selection ACON-STX ...))
+     (syntax/loc stx
+       (case
+        (acon-without-selection ACON-STX ...)
+        (none)
+        #f
+        (list)))]))
+(provide case-split-edges)
 
 (define-syntax (cyclenode stx)
   (syntax-parse stx

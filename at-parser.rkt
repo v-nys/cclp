@@ -3,7 +3,7 @@
 # note: I am not very flexible about whitespace (e.g. after most commas) - this is just to facilitate writing data, so I should stick to one style anyway
 
 top : [WS] at
-at : OPEN-PAREN (label-edges-origin | widening-edges | cyclenode) [WS subtrees] CLOSE-PAREN  # keep label, edges and origin together as they are the all stored in the node label
+at : OPEN-PAREN (label-edges-origin | widening-edges | case-split-edges | cyclenode) [WS subtrees] CLOSE-PAREN  # keep label, edges and origin together as they are the all stored in the node label
 label-edges-origin : at-label [WS graph-edges] [WS substitution WS knowledge]
 
 at-label : [NUMBER PERIOD] (acon-with-selection | acon-without-selection) # this currently assumes a treelabel, not widening, case-split, or loop
@@ -32,8 +32,10 @@ lplist : OPEN-RECTANGULAR-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | va
 conjunction : atom (COMMA atom)*
 fullai-rule : abstract-atom WS LEADS-TO WS substitution
 
+# this is tricky: cannot distinguish between widening and case split based on current tokens
+# expander uses a trick to make this work, but it's sketchy
 widening-edges : VARIABLE-IDENTIFIER WS [NUMBER PERIOD] (acon-with-selection | acon-without-selection) [WS graph-edges]
-
+case-split-edges : VARIABLE-IDENTIFIER WS [NUMBER PERIOD] (acon-with-selection | acon-without-selection) [WS graph-edges]
 cyclenode : VARIABLE-IDENTIFIER WS NUMBER
 
 subtrees : at (WS at)*
