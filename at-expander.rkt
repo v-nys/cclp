@@ -180,9 +180,9 @@
   (syntax-parse stx
     [(_ "{" "}") (syntax/loc stx (list))]
     [(_ "{" PAIR-STX "}") (syntax/loc stx (list PAIR-STX))]
-    [(_ "{" PAIR-STX "," COMMA-OR-PAIR-STX ... "}")
+    [(_ "{" PAIR-STX "," WS COMMA-OR-PAIR-OR-WS-STX ... "}")
      (syntax/loc stx
-       (cons PAIR-STX (substitution "{" COMMA-OR-PAIR-STX ... "}")))]))
+       (cons PAIR-STX (substitution "{" COMMA-OR-PAIR-OR-WS-STX ... "}")))]))
 (provide substitution)
 
 (define-syntax-rule (substitution-pair lhs "/" rhs)
@@ -262,6 +262,12 @@
        (full-ai-rule->full-evaluation
         (faid:full-ai-rule AATOM-STX SUBST-STX)))]))
 (provide fullai-rule)
+
+(define-syntax (cycle stx)
+  (syntax-parse stx
+    [(_ "CY" IDX:number)
+     (syntax/loc stx (cycle (quote IDX)))]))
+(provide cycle)
 
 (define-syntax (subtrees stx)
   (syntax-parse stx
