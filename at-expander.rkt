@@ -263,11 +263,11 @@
         (faid:full-ai-rule AATOM-STX SUBST-STX)))]))
 (provide fullai-rule)
 
-(define-syntax (cycle stx)
+(define-syntax (cyclenode stx)
   (syntax-parse stx
-    [(_ "CY" IDX:number)
+    [(_ "CY" WS IDX:number)
      (syntax/loc stx (cycle (quote IDX)))]))
-(provide cycle)
+(provide cyclenode)
 
 (define-syntax (subtrees stx)
   (syntax-parse stx

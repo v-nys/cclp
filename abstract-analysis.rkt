@@ -56,7 +56,15 @@
   (define (hash-proc c hash-recur)
     (hash-recur (cycle-index c)))
   (define (hash2-proc c hash2-recur)
-    (hash2-recur (cycle-index c)))])
+    (hash2-recur (cycle-index c)))]
+ #:methods
+ gen:custom-write
+ [(define write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'cycle)
+     (λ (obj)
+       (list
+        (cycle-index obj)))))])
 (provide
  (struct*-doc
   cycle

@@ -3,7 +3,7 @@
 # note: I am not very flexible about whitespace (e.g. after most commas) - this is just to facilitate writing data, so I should stick to one style anyway
 
 top : [WS] at
-at : OPEN-PAREN (label-edges-opt-origin | cycle) [WS subtrees] CLOSE-PAREN  # keep label, edges and origin together as they are the all stored in the node label
+at : OPEN-PAREN (label-edges-opt-origin | cyclenode) [WS subtrees] CLOSE-PAREN  # keep label, edges and origin together as they are the all stored in the node label
 label-edges-opt-origin : at-label [WS graph-edges] [WS substitution WS knowledge]
 
 at-label : [NUMBER PERIOD] acon-with-selection | acon-without-selection # this currently assumes a treelabel, not widening, case-split, or loop
@@ -32,6 +32,6 @@ lplist : OPEN-RECTANGULAR-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | va
 conjunction : atom (COMMA atom)*
 fullai-rule : abstract-atom WS LEADS-TO WS substitution
 
-cycle : (VARIABLE-IDENTIFIER NUMBER)
+cyclenode : (VARIABLE-IDENTIFIER WS NUMBER)
 
 subtrees : at (WS at)*
