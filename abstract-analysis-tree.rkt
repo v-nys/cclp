@@ -1,5 +1,6 @@
 #lang at-exp racket
 (require
+  racket/match
   racket/serialize ; trees can be saved and loaded
   scribble/srcdoc)
 (require racket-tree-utils/src/tree)
@@ -52,39 +53,28 @@
 
 (define (candidate-and-predecessors t acc)
   (match t
-    [(node (tree-label '() _ _ _ _ _) '()) (cons (none) acc)]
-    [(node 'fail '()) (cons (none) acc)]
-    [(node (cycle _) '()) (cons (none) acc)]
-    [(node (widening '() _ _ _ _) '()) (cons (none) acc)]
+    [(node (tree-label '() _ _ _ _ _) '()) (cons #f acc)]
+    [(node 'fail '()) (cons #f acc)]
+    [(node (cycle _) '()) (cons #f acc)]
+    [(node (widening '() _ _ _ _) '()) (cons #f acc)] ; odd, but not impossible...
     [(node (tree-label c (none) s r #f pp) '())
-     (cons (some (node (tree-label c (none) s r #f pp) '())) acc)]
+     (cons (node (tree-label c (none) s r #f pp) '()) acc)]
     [(node (widening c (none) msg i pp) '())
-     (cons (some (node (widening c (none) msg i pp) '())) acc)]
-    ; children but no selection = widening or cycle
-    [(node (tree-label c (none) s r i pp) (list single-child))
+     (cons (node (widening c (none) msg i pp) '()) acc)]
+    ; children but no selection = widened tree-label (or widened widening)
+    [(or (node (tree-label c (none) _ _ i pp) (list single-child))
+         (node (widening c (none) _ i pp) (list single-child)))
      (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    [(node (widening c (none) msg i pp) (list single-child))
-     (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    ; next two cases are basically the same...
-    [(node (tree-label c (some v) _ _ i pp) children)
+    [(or (node (tree-label c (some v) _ _ i pp) children)
+         (node (widening c (some v) _ i pp) children))
      (foldl
       (λ (child acc2)
-        (if (some? (car acc2))
+        (if (car acc2)
             acc2
             (candidate-and-predecessors
              child
              (cdr acc2))))
-      (cons (none) (cons (cons c i) acc))
-      (node-children t))]
-    [(node (widening c (some v) msg i pp) children)
-     (foldl
-      (λ (child acc2)
-        (if (some? (car acc2))
-            acc2
-            (candidate-and-predecessors
-             child
-             (cdr acc2))))
-      (cons (none) (cons (cons c i) acc))
+      (cons #f (cons (cons c i) acc))
       (node-children t))]))
 (module+ test
   (require
@@ -104,15 +94,15 @@
   (check-equal?
    (candidate-and-predecessors primes2:val (list))
    (cons primes2cand:val
-         (list (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1)
-               (cons (interpret-abstract-conjunction "integers(γ2,α2),sift(α2,α1),len(α1,γ1)") 2))))
+         (list (cons (interpret-abstract-conjunction "integers(γ2,α2),sift(α2,α1),len(α1,γ1)") 2)
+               (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1))))
   (check-equal?
    (candidate-and-predecessors primes4:val (list))
    (cons primes4cand:val
-         (list (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1)
-               (cons (interpret-abstract-conjunction "integers(γ2,α2),sift(α2,α1),len(α1,γ1)") 2)
+         (list (cons (interpret-abstract-conjunction "len([],γ1)") 4)
                (cons (interpret-abstract-conjunction "sift([],α1),len(α1,γ1)") 3)
-               (cons (interpret-abstract-conjunction "len([],γ1)") 4)))))
+               (cons (interpret-abstract-conjunction "integers(γ2,α2),sift(α2,α1),len(α1,γ1)") 2)
+               (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1)))))
 (provide
  (proc-doc/names
   candidate-and-predecessors
