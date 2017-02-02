@@ -6,7 +6,7 @@ top : [WS] at
 at : OPEN-PAREN (label-edges-origin | widening-edges | cyclenode) [WS subtrees] CLOSE-PAREN  # keep label, edges and origin together as they are the all stored in the node label
 label-edges-origin : at-label [WS graph-edges] [WS substitution WS knowledge]
 
-at-label : [NUMBER PERIOD] acon-with-selection | acon-without-selection # this currently assumes a treelabel, not widening, case-split, or loop
+at-label : [NUMBER PERIOD] (acon-with-selection | acon-without-selection) # this currently assumes a treelabel, not widening, case-split, or loop
 acon-with-selection : [nonempty-acon-without-selection COMMA] ASTERISK abstract-atom ASTERISK [COMMA nonempty-acon-without-selection]
 nonempty-acon-without-selection : abstract-atom (COMMA abstract-atom)*
 abstract-atom : SYMBOL [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]

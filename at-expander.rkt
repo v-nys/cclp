@@ -75,6 +75,9 @@
        (tree-label
         (car (acon-with-selection ACON-STX ...))
         (cdr (acon-with-selection ACON-STX ...)) (list) #f (quote NUMBER) (list)))]
+    [(_ NUMBER:number "." (acon-without-selection ACON-STX ...))
+     (syntax/loc stx
+       (tree-label (acon-without-selection ACON-STX ...) (none) (list) #f (quote NUMBER) (list)))]
     [(_ (acon-without-selection ACON-STX ...))
      (syntax/loc stx
        (tree-label (acon-without-selection ACON-STX ...) (none) (list) #f #f (list)))]))
