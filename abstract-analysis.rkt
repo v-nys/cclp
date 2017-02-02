@@ -171,7 +171,19 @@
     (+ (hash2-recur (widening-conjunction w))
        (hash2-recur (widening-selection w))
        (hash2-recur (widening-index w))
-       (hash2-recur (widening-introduced-edges w))))])
+       (hash2-recur (widening-introduced-edges w))))]
+ #:methods
+ gen:custom-write
+ [(define write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'widening)
+     (λ (obj)
+       (list
+        (widening-conjunction obj)
+        (widening-selection obj)
+        (widening-message obj)
+        (widening-index obj)
+        (widening-introduced-edges obj)))))])
 (provide
  (struct*-doc
   widening

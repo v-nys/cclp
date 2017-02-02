@@ -32,19 +32,19 @@
 
 (define-syntax (at stx)
   (syntax-parse stx
-    [(_ "(" LABEL-EDGES-OPT-ORIGIN-STX ")")
+    [(_ "(" LABEL-EDGES-ORIGIN-STX ")")
      (syntax/loc stx
        (node
-        LABEL-EDGES-OPT-ORIGIN-STX
+        LABEL-EDGES-ORIGIN-STX
         (list)))]
-    [(_ "(" LABEL-EDGES-OPT-ORIGIN-STX _ SUBTREES-STX ")")
+    [(_ "(" LABEL-EDGES-ORIGIN-STX _ SUBTREES-STX ")")
      (syntax/loc stx
        (node
-        LABEL-EDGES-OPT-ORIGIN-STX
+        LABEL-EDGES-ORIGIN-STX
         SUBTREES-STX))]))
 (provide at)
 
-(define-syntax (label-edges-opt-origin stx)
+(define-syntax (label-edges-origin stx)
   (syntax-parse stx #:literals (graph-edges substitution knowledge)
     [(_ LABEL-STX)
      (syntax/loc stx LABEL-STX)]
@@ -66,15 +66,15 @@
         [introduced-edges (graph-edges EDGE-STX ...)]
         [substitution (substitution SUBST-STX ...)]
         [rule (knowledge KNOWLEDGE-STX ...)]))]))
-(provide label-edges-opt-origin)
+(provide label-edges-origin)
 
 (define-syntax (at-label stx)
   (syntax-parse stx #:literals (acon-with-selection acon-without-selection)
-    [(_ IDX-STX "." (acon-with-selection ACON-STX ...))
+    [(_ NUMBER:number "." (acon-with-selection ACON-STX ...))
      (syntax/loc stx
        (tree-label
         (car (acon-with-selection ACON-STX ...))
-        (cdr (acon-with-selection ACON-STX ...)) (list) #f (quote IDX-STX) (list)))]
+        (cdr (acon-with-selection ACON-STX ...)) (list) #f (quote NUMBER) (list)))]
     [(_ (acon-without-selection ACON-STX ...))
      (syntax/loc stx
        (tree-label (acon-without-selection ACON-STX ...) (none) (list) #f #f (list)))]))
@@ -262,6 +262,42 @@
        (full-ai-rule->full-evaluation
         (faid:full-ai-rule AATOM-STX SUBST-STX)))]))
 (provide fullai-rule)
+
+(define-syntax (widening-edges stx)
+  (syntax-parse stx #:literals (graph-edges acon-with-selection acon-without-selection)
+    [(_ "WI" _ NUMBER:number "." (acon-with-selection ACON-STX ...) _ (graph-edges EDGE-STX ...))
+     (syntax/loc stx
+       (widening
+        (car (acon-with-selection ACON-STX ...))
+        (cdr (acon-with-selection ACON-STX ...))
+        "no message"
+        (quote NUMBER)
+        (graph-edges EDGE-STX ...)))]
+    [(_ "WI" _ NUMBER:number "." (acon-with-selection ACON-STX ...))
+     (syntax/loc stx
+       (widening
+        (car (acon-with-selection ACON-STX ...))
+        (cdr (acon-with-selection ACON-STX ...))
+        "no message"
+        (quote NUMBER)
+        (list)))]
+    [(_ "WI" _ NUMBER:number "." (acon-without-selection ACON-STX ...))
+     (syntax/loc stx
+       (widening
+        (acon-without-selection ACON-STX ...)
+        (none)
+        "no message"
+        (quote NUMBER)
+        (list)))]
+    [(_ "WI" _ (acon-without-selection ACON-STX ...))
+     (syntax/loc stx
+       (widening
+        (acon-without-selection ACON-STX ...)
+        (none)
+        "no message"
+        #f
+        (list)))]))
+(provide widening-edges)
 
 (define-syntax (cyclenode stx)
   (syntax-parse stx
