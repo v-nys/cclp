@@ -1,7 +1,9 @@
 #lang at-exp racket
-(require "abstract-multi-domain.rkt")
-(require "cclp-interpreter.rkt")
-(require "concrete-knowledge.rkt")
+(require graph
+         "abstract-multi-domain.rkt"
+         "cclp-interpreter.rkt"
+         "concrete-knowledge.rkt"
+         "preprior-graph.rkt")
 
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
@@ -37,3 +39,45 @@ HERE
 
 (define primes-consts (list (abstract-function 'nil (list))))
 (provide primes-consts)
+
+(define primes-prior (mk-preprior-graph))
+(begin
+  (add-vertex! primes-prior (interpret-abstract-atom "integers(γ1,α1)"))
+  (add-vertex! primes-prior (interpret-abstract-atom "sift(α1,α2)"))
+  (add-vertex! primes-prior (interpret-abstract-atom "len(α1,γ2)"))
+  (add-vertex! primes-prior (interpret-abstract-atom "sift([],α1)"))
+  (add-directed-edge! primes-prior (interpret-abstract-atom "integers(γ1,α1)") (interpret-abstract-atom "sift(α1,α2)"))
+  (add-directed-edge! primes-prior (interpret-abstract-atom "integers(γ1,α1)") (interpret-abstract-atom "len(α1,γ2)"))
+  (add-directed-edge! primes-prior (interpret-abstract-atom "sift([],α1)") (interpret-abstract-atom "len(α1,γ2)")))
+(provide primes-prior)
+
+(define permsort-clauses
+  (map interpret-concrete-rule
+       (string-split
+        #<<HERE
+sort(X,Y) :- perm(X,Y),ord(Y)
+perm([],[])
+perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)
+ord([])
+ord([X])
+ord([X,Y|Z]) :- lte(X,Y),ord([Y|Z])
+HERE
+        "\n")))
+(provide permsort-clauses)
+
+(define permsort-full-evals
+  (interpret-full-eval-section
+   #<<HERE
+lte(γ1,γ2).
+del(α1,[γ1|γ2],α2) -> α1/γ3,α2/γ4.
+HERE
+   ))
+(provide permsort-full-evals)
+
+(define permsort-consts (list (abstract-function 'nil (list))))
+(provide permsort-consts)
+
+(define permsort-prior (mk-preprior-graph))
+(begin
+  )
+(provide permsort-prior)

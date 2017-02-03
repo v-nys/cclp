@@ -79,17 +79,12 @@
 (module+ test
   (require
     (prefix-in primes0: "analysis-trees/primes-zero.rkt")
-    (prefix-in primes1: "analysis-trees/primes-one.rkt")
-    (prefix-in primes1cp: "analysis-trees/primes-one-candidate-post.rkt")
     (prefix-in primes2: "analysis-trees/primes-two.rkt")
     (prefix-in primes2cand: "analysis-trees/primes-two-candidate.rkt")
     (prefix-in primes2cp: "analysis-trees/primes-two-candidate-post.rkt")
-    (prefix-in primes3: "analysis-trees/primes-three.rkt")
-    (prefix-in primes3cp: "analysis-trees/primes-three-candidate-post.rkt")
     (prefix-in primes4: "analysis-trees/primes-four.rkt")
     (prefix-in primes4cand: "analysis-trees/primes-four-candidate.rkt")
     (prefix-in primes4cp: "analysis-trees/primes-four-candidate-post.rkt")
-    (prefix-in primes5: "analysis-trees/primes-five.rkt")
     (prefix-in wid: "analysis-trees/widening-tree.rkt")
     (prefix-in widcand: "analysis-trees/widening-tree-candidate.rkt")
     (prefix-in permsort: "analysis-trees/permsort-tree.rkt"))
@@ -121,7 +116,57 @@
   (tree accumulator)
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
-; TODO reintroduce advance-analysis (see VC)
+(define (advance-analysis top clauses full-evaluations concrete-constants prior) 'no-candidate)
+(provide
+ (proc-doc/names
+  advance-analysis
+  (-> node? (listof ck:rule?) (listof full-evaluation?) (listof function?) preprior-graph?
+      (or/c 'no-candidate (cons/c 'underspecified-order node?) (cons/c node? node?)))
+  (top clauses full-evaluations concrete-constants prior)
+  @{Advances the analysis in @racket[top], when the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
+ Functions supplied in @racket[concrete-constants] are considered to be in the abstract domain.
+ The strict partial order used for atom selection is specified in @racket[prior].
+ There are three possible outcomes: @itemlist[@item{there are no more candidates} @item{analysis requires more info about the selection rule} @item{analysis proceeds normally}]
+ In the first case, a symbol is returned.
+ In the second case, a symbol is returned, along with the current candidate, so that the user may be offered a choice from the current conjunction.
+ In the final case, this returns a pair of values: the updated candidate and the updated top-level tree.}))
+
+(module+ test
+  (require 
+    (prefix-in primes1: "analysis-trees/primes-one.rkt")
+    (prefix-in primes1cp: "analysis-trees/primes-one-candidate-post.rkt")
+    (prefix-in primes3: "analysis-trees/primes-three.rkt")
+    (prefix-in primes3cp: "analysis-trees/primes-three-candidate-post.rkt")
+    (prefix-in primes5: "analysis-trees/primes-five.rkt")
+    (prefix-in permsortsanscy: "analysis-trees/permsort-tree-before-cycle.rkt")
+    (prefix-in pscandpost: "analysis-trees/permsort-cycle-candidate-post.rkt"))
+  (define-syntax-rule
+    (advance-permsort-analysis top)
+    (advance-analysis top permsort-clauses (map full-ai-rule->full-evaluation permsort-full-evals) permsort-consts permsort-prior))
+  (check-equal?
+   (advance-permsort-analysis permsort:val)
+   'no-candidate
+   "case without a candidate")
+  (check-equal?
+   (advance-permsort-analysis permsortsanscy:val)
+   (cons pscandpost:val permsort:val)
+   "case introducing a cycle")
+  (define-syntax-rule
+    (advance-primes-analysis top)
+    (advance-analysis top primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts primes-prior))
+  (define-syntax-rule
+    (test-advance top-pre cand-post top-post)
+    (let* ([cp-tp (advance-primes-analysis top-pre)])
+      (begin
+        (check-equal? (car cp-tp) cand-post)
+        (check-equal? (cdr cp-tp) top-post))))
+  ; regular steps, without updates to the selection rule
+  (test-advance primes0:val primes1:val primes1:val)
+  (test-advance primes1:val primes1cp:val primes2:val)
+  (test-advance primes2:val primes2cp:val primes3:val)
+  (test-advance primes3:val primes3cp:val primes4:val)
+  ; fully evaluated atom
+  (test-advance primes4:val primes4cp:val primes5:val))
 
 ; TODO reintroduce code for tests advance in primes trees (see VC)
 

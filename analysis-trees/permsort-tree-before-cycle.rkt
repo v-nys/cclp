@@ -21,5 +21,4 @@
       (9.perm(g6,a3),*leq(g2,g5)*,ord([g5|a3])
        {} ord([X,Y|Z]) :- lte(X,Y),ord([Y|Z]).
        (perm(g6,a3),ord([g5|a3])
-        {} select(a1,[g1|g2],a2) -> {a1/g3, a2/g4}.
-        (CY 5)))))))))
+        {} select(a1,[g1|g2],a2) -> {a1/g3, a2/g4}.))))))))
