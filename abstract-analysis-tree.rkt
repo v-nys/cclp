@@ -117,10 +117,20 @@
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
 (define (advance-analysis top clauses full-evaluations concrete-constants prior)
-  (match-let ([(cons candidate predecessors) (candidate-and-predecessors top (list))])
-    (if candidate
-        (cons 'not-implemented-yet 'not-implemented-yet)
-        'no-candidate)))
+  (match-define (cons candidate predecessors) (candidate-and-predecessors top (list)))
+  (if candidate
+      ; next: candidate is *equivalent* to predecessor -> careful with case splits
+      ; next: prior does not know what to select
+      ; i.e. there is no fully evaluated atom and there is no abstract atom which is equivalent or preferred over all others
+      (let* ([conjunction (label-conjunction (node-label candidate))]
+             [equivalent-predecessor
+              (findf
+               (λ (p-and-i) (renames? (car p-and-i) conjunction))
+               predecessors)])
+        (if equivalent-predecessor
+            (cons 'should-introduce-cycle 'should-introduce-cycle)
+            (cons 'underspecified-order candidate)))
+      'no-candidate))
 (provide
  (proc-doc/names
   advance-analysis
@@ -155,6 +165,10 @@
    (advance-permsort-analysis permsortsanscy:val)
    (cons pscandpost:val permsort:val)
    "case introducing a cycle")
+  (check-equal?
+   (advance-analysis primes2:val primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts (mk-preprior-graph))
+   (cons 'underspecified-order primes2cand:val)
+   "case of an underspecified partial order")
   (define-syntax-rule
     (advance-primes-analysis top)
     (advance-analysis top primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts primes-prior))
