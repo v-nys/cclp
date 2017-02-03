@@ -24,6 +24,20 @@
 
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
+(require racket/stxparam)
+
+; code from Fear of Macros
+(define-syntax-parameter it
+  (lambda (stx)
+    (raise-syntax-error (syntax-e stx) "can only be used inside aif")))
+(provide it)
+(define-syntax-rule (aif condition true-expr false-expr)
+  (let ([tmp condition])
+    (if tmp
+        (syntax-parameterize ([it (make-rename-transformer #'tmp)])
+          true-expr)
+        false-expr)))
+(provide aif)
 
 (define-syntax-rule (while condition body0 body ...)
   (letrec ([f (λ () (when condition body0 body ... (f)))]) (f)))

@@ -12,6 +12,7 @@
   "abstract-resolve.rkt"
   (only-in "concrete-domain.rkt" function?)
   (prefix-in ck: "concrete-knowledge.rkt")
+  (only-in "control-flow.rkt" aif it)
   "data-utils.rkt"
   (only-in "execution.rkt" selected-index)
   "preprior-graph.rkt")
@@ -129,7 +130,7 @@
   (if candidate
       ; next: prior does not know what to select
       ; i.e. there is no fully evaluated atom and there is no abstract atom which is equivalent or preferred over all others
-      (let* ([next-index (or (largest-node-index top) 1)]
+      (let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
              [conjunction (label-conjunction (node-label candidate))]
              [equivalent-predecessor
               (findf
@@ -139,7 +140,7 @@
             (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                    [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
                    [updated-top (replace-first-subtree top candidate updated-candidate)])
-              (cons updated-top updated-candidate))
+              (cons updated-candidate updated-top))
             (cons 'underspecified-order candidate)))
       'no-candidate))
 (provide
@@ -154,7 +155,7 @@
  There are three possible outcomes: @itemlist[@item{there are no more candidates} @item{analysis requires more info about the selection rule} @item{analysis proceeds normally}]
  In the first case, a symbol is returned.
  In the second case, a symbol is returned, along with the current candidate, so that the user may be offered a choice from the current conjunction.
- In the final case, this returns a pair of values: the updated candidate and the updated top-level tree.}))
+ In the final case, this returns a pair of values: the updated candidate followed by the updated top-level tree.}))
 
 (module+ test
   (require 
