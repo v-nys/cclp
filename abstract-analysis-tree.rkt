@@ -116,7 +116,11 @@
   (tree accumulator)
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
-(define (advance-analysis top clauses full-evaluations concrete-constants prior) 'no-candidate)
+(define (advance-analysis top clauses full-evaluations concrete-constants prior)
+  (match-let ([(cons candidate predecessors) (candidate-and-predecessors top (list))])
+    (if candidate
+        (cons 'not-implemented-yet 'not-implemented-yet)
+        'no-candidate)))
 (provide
  (proc-doc/names
   advance-analysis
