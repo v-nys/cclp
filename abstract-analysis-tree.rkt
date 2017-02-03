@@ -117,18 +117,29 @@
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
 (define (advance-analysis top clauses full-evaluations concrete-constants prior)
+  (define (update-candidate candidate idx sel new-edges children)
+    (match candidate
+      [(node (tree-label c _ sub r _ _) _)
+       (node (tree-label c sel sub r idx new-edges) children)]
+      [(node (widening c _ m _ _) _)
+       (node (widening c sel m idx new-edges) children)]
+      [(node (case c _ _ _) _)
+       (node (case c sel idx new-edges) children)]))
   (match-define (cons candidate predecessors) (candidate-and-predecessors top (list)))
   (if candidate
-      ; next: candidate is *equivalent* to predecessor -> careful with case splits
       ; next: prior does not know what to select
       ; i.e. there is no fully evaluated atom and there is no abstract atom which is equivalent or preferred over all others
-      (let* ([conjunction (label-conjunction (node-label candidate))]
+      (let* ([next-index (or (largest-node-index top) 1)]
+             [conjunction (label-conjunction (node-label candidate))]
              [equivalent-predecessor
               (findf
                (λ (p-and-i) (renames? (car p-and-i) conjunction))
                predecessors)])
         (if equivalent-predecessor
-            (cons 'should-introduce-cycle 'should-introduce-cycle)
+            (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
+                   [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
+                   [updated-top (replace-first-subtree top candidate updated-candidate)])
+              (cons updated-top updated-candidate))
             (cons 'underspecified-order candidate)))
       'no-candidate))
 (provide

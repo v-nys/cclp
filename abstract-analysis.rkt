@@ -75,25 +75,6 @@
      The latter is normally represented as the parent of the @racket[cycle].}))
 
 (serializable-struct
- similarity-cycle (index)
- #:methods
- gen:equal+hash
- [(define (equal-proc c1 c2 equal?-recur)
-    (equal?-recur (cycle-index c1) (cycle-index c2)))
-  (define (hash-proc c hash-recur)
-    (hash-recur (cycle-index c)))
-  (define (hash2-proc c hash2-recur)
-    (hash2-recur (cycle-index c)))])
-(provide
- (struct*-doc
-  similarity-cycle
-  ([index exact-positive-integer?])
-  @{A cycle detected during abstract analysis, based on similarity (rather than pure renaming).
-     The field @racket[index] stands for the index of a previously handled conjunction which is similar to that which introduces the @racket[similarity-cycle].
-     The latter is normally represented as the parent of the @racket[similarity-cycle] in the abstract analysis tree.
-     This struct should be deprecated ASAP.}))
-
-(serializable-struct
  tree-label (conjunction selection substitution rule index introduced-edges)
  #:methods
  gen:equal+hash
