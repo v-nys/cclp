@@ -3,7 +3,9 @@
   racket/match
   racket/serialize ; trees can be saved and loaded
   scribble/srcdoc)
-(require racket-tree-utils/src/tree)
+(require
+  graph
+  racket-tree-utils/src/tree)
 (require
   "abstract-analysis.rkt"
   (only-in "abstract-domain-ordering.rkt" renames? >=-extension)
@@ -128,8 +130,6 @@
        (node (case c sel idx new-edges) children)]))
   (match-define (cons candidate predecessors) (candidate-and-predecessors top (list)))
   (if candidate
-      ; next: prior does not know what to select
-      ; i.e. there is no fully evaluated atom and there is no abstract atom which is equivalent or preferred over all others
       (let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
              [conjunction (label-conjunction (node-label candidate))]
              [equivalent-predecessor
@@ -141,7 +141,11 @@
                    [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
                    [updated-top (replace-first-subtree top candidate updated-candidate)])
               (cons updated-candidate updated-top))
-            (cons 'underspecified-order candidate)))
+            (begin
+              (map (λ (a) (add-vertex! prior a)) conjunction)
+              (aif (selected-index conjunction prior full-evaluations)
+                   (cons top candidate) ; TODO
+                   (cons 'underspecified-order candidate)))))
       'no-candidate))
 (provide
  (proc-doc/names

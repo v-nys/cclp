@@ -64,7 +64,7 @@
   (if full-eval-index
       full-eval-index
       (let* ([unique (unique-atoms (map normalize-abstract-atom conjunction))]
-             ; remember, tc always has reachability of self
+             ; note: tc always has reachability of self, even when there are no self loops!
              [tc (transitive-closure preprior)]
              [first-choice
               (findf
@@ -83,7 +83,8 @@
          [conjunction (interpret-abstract-conjunction "foo(γ1,α1)")])
     (begin
       (add-vertex! preprior (first conjunction))
-      (check-equal? (selected-index conjunction preprior '()) 0)))
+      (check-equal? (selected-index conjunction preprior '()) 0)
+      (check-equal? #t #f)))
   (let* ([preprior (mk-preprior-graph)]
          [conjunction (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")])
     (begin
