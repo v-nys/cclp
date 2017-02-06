@@ -59,7 +59,7 @@
       (match outcome
         ['no-candidate
          (begin
-           (display "There are no more candidates. Analysis is complete.")
+           (displayln "There are no more candidates. Analysis is complete.")
            (interactive-analysis tree clauses full-evaluations filename concrete-constants prior))]
         [(cons 'underspecified-order candidate)
          (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
