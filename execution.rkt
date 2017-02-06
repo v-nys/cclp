@@ -53,6 +53,12 @@
     (check-equal?
      filtered
      (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)"))))
+(provide
+ (proc-doc/names
+  unique-atoms
+  (-> (listof abstract-atom?) (listof abstract-atom?))
+  (conjunction)
+  @{Returns a list of all atoms in @racket[conjunction] which are either the first or only representative of their equivalence class.}))
 
 (define (selected-index conjunction preprior full-ai-rules)
   (define full-eval-index

@@ -38,11 +38,11 @@
 (require racket/serialize)
 (require "abstract-analysis.rkt")
 (require "abstract-analysis-tree.rkt")
-(require "generational-tree.rkt")
 (require (only-in "concrete-domain.rkt" function?))
 (require "cclp-interpreter.rkt")
-(require "similarity.rkt")
 (require "preprior-graph.rkt")
+(require "abstract-renaming.rkt")
+(require graph)
 
 (require racket/logging)
 (require (for-doc scribble/manual))
@@ -53,34 +53,60 @@
 (struct cclp (clauses full-ai-rules concrete-constants query))
 (provide (struct-out cclp))
 
-
-
-(define (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)
-  (interactive-dispatch
-   "What do you want to do?"
-   ; note: if advance is doing to say whether we need extra info anyway, we should not supply candidate *or* predecessors and should get all that info in advance itself
-   ("proceed"
-    (match (candidate-and-predecessors tree '())
-      [(cons (none) _)
-       (begin (displayln "There are no nodes left to analyze.")
-              (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants))]
-      [(cons (some candidate) preds)
-       ; TODO we can select a candidate (conjunction) regardless of preprior
-       ; but to advance the analysis, we may need to update the partial order
-       ; if the candidate contains conjuncts which are not in its topmost partial order,
-       ; or if it contains a new combination of conjuncts seen before but not ordered wrt to one another
-       ; we need additional interaction
-       ; also, what happens when a branch is completed?
-       ; sibling branches are updated
-       ; 
-       (let-values ([(updated-candidate updated-top)
-                     (advance-analysis tree candidate clauses full-evaluations concrete-constants next-index preds)])
+(define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
+  (define (proceed #:new-edges [new-edges (list)])
+    (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior #:new-edges new-edges)])
+      (match outcome
+        ['no-candidate
+         (begin
+           (display "There are no more candidates. Analysis is complete.")
+           (interactive-analysis tree clauses full-evaluations filename concrete-constants prior))]
+        [(cons 'underspecified-order candidate)
+         (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
+         (let* ([options (remove-duplicates (map normalize-abstract-atom (label-conjunction (node-label candidate))))]
+                [user-selection (prompt-for-selection options)]
+                [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])
+           (with-handlers
+               ([exn:fail?
+                 (lambda (_)
+                   (begin (display "Selection breaks the strict partial ordering requirement. Selection rule will not be updated.")
+                          (for ([precedence new-precedences]) (remove-directed-edge! prior (car precedence) (cdr precedence)))
+                          (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)))])
+             (begin (proceed #:new-edges new-precedences))))]
+        [(cons updated-candidate updated-top)
          (begin
            (newline)
            (tree-display updated-candidate print-tree-label)
            (newline)
            (interactive-analysis
-            updated-top clauses full-evaluations (+ next-index 1) filename concrete-constants)))]))))
+            updated-top clauses full-evaluations filename concrete-constants prior))])))
+  (interactive-dispatch
+   "What do you want to do?"
+   ("proceed"
+    (proceed))))
+
+;    (match (candidate-and-predecessors tree '())
+;      [(cons #f _)
+;       (begin (displayln "There are no nodes left to analyze.")
+;              (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants))]
+;      [(cons candidate preds)
+;       ; TODO we can select a candidate (conjunction) regardless of preprior
+;       ; but to advance the analysis, we may need to update the partial order
+;       ; if the candidate contains conjuncts which are not in its topmost partial order,
+;       ; or if it contains a new combination of conjuncts seen before but not ordered wrt to one another
+;       ; we need additional interaction
+;       ; also, what happens when a branch is completed?
+;       ; sibling branches are updated
+;       ; 
+;       (let-values ([(updated-candidate updated-top)
+;                     (advance-analysis tree candidate clauses full-evaluations concrete-constants next-index preds)])
+;         (begin
+;           (newline)
+;           (tree-display updated-candidate print-tree-label)
+;           (newline)
+;           (interactive-analysis
+;            updated-top clauses full-evaluations (+ next-index 1) filename concrete-constants)))]))))
+
 ;(define-values (show-top proceed go-back save widen case-split genealogy end)
 ;  (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "apply a case split" "show genealogical analysis" "end analysis"))
 ;(define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen case-split genealogy end))
@@ -173,9 +199,8 @@
 ; TODO check if file exists
 (define (load-analysis clauses full-evaluations filename concrete-constants)
   (let* ([loaded-tree (deserialize (read (open-input-file filename)))]
-         [largest-index (largest-node-index loaded-tree)]
-         [fresh-index (if largest-index (+ largest-index 1) 1)])
-    (interactive-analysis loaded-tree clauses full-evaluations fresh-index filename concrete-constants)))
+         [largest-index (largest-node-index loaded-tree)])
+    (interactive-analysis loaded-tree clauses full-evaluations filename concrete-constants)))
 
 (define (begin-analysis program-data filename)
   (match program-data
@@ -184,9 +209,9 @@
      ; using list for substitution because it is not wrong and is consistent
      ; using #f for rule because this is the only case where there is no associated clause
      (begin (define initial-tree-label
-              (tree-label (list initial-query) (none) (list) #f #f (list (mk-preprior-graph))))
+              (tree-label (list initial-query) (none) (list) #f #f (list)))
             (define initial-tree (node initial-tree-label (list)))
-            (interactive-analysis initial-tree clauses full-evaluations 1 filename concrete-constants))]))
+            (interactive-analysis initial-tree clauses full-evaluations filename concrete-constants (mk-preprior-graph)))]))
 
 (define (cclp-top filename program-data)
   (define logger (make-logger 'cc #f))
@@ -204,32 +229,22 @@
   @{Top-level function used to run a compiling control logic program.}))
 
 (define (cclp-run filename program-data)
-  (log-info "Entered top-level menu for program ~a with data ~s" filename program-data)
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
-  (define-values (analysis load quit)
-    (values "analyze this program" "load existing analysis" "quit"))
-  (define choice (prompt-for-answer "What do you want to do?" analysis load quit))
   (define (full-ai-rule->full-evaluation r)
     (full-evaluation
      (full-ai-rule-input-pattern r)
      (apply-substitution (full-ai-rule-output-substitution r) (full-ai-rule-input-pattern r))))
   (define full-evaluations (map full-ai-rule->full-evaluation (cclp-full-ai-rules program-data)))
   (define program-data-aux (struct-copy cclp program-data [full-ai-rules full-evaluations]))
-  (cond [(equal? choice analysis)
-         (begin (begin-analysis program-data-aux serialized-filename)
-                (cclp-run filename program-data))]
-        ; TODO restore
-        ;        [(equal? choice load)
-        ;         (begin
-        ;           (load-analysis
-        ;            (cclp-clauses program-data)
-        ;            full-evaluations
-        ;            serialized-filename
-        ;            (cclp-concrete-constants program-data))
-        ;           (cclp-run filename program-data))]
-        [(equal? choice quit) (void)]
-        [else (error 'unsupported)]))
+  (interactive-dispatch
+   "What do you want to do?"
+   ("analyze this program"
+    (begin (begin-analysis program-data-aux serialized-filename)
+           (cclp-run filename program-data)))
+   ("load existing analysis"
+    (error "TODO: restore this functionality"))
+   ("quit" (void))))
 
 ;                                                                          
 ;                                                                          
@@ -256,11 +271,11 @@
   (map (λ (x) (if (string? x) (display x out) (print x out))) (add-between s ";"))
   (display "}" out))
 
-(define (print-atom-with-generation-node n [out (current-output-port)])
-  (match n
-    [(node ag _)
-     (fprintf out "~v {~v}" (identified-atom-atom (identified-atom-with-generation-id-atom ag)) (identified-atom-with-generation-generation ag))]))
-(provide print-atom-with-generation-node)
+;(define (print-atom-with-generation-node n [out (current-output-port)])
+;  (match n
+;    [(node ag _)
+;     (fprintf out "~v {~v}" (identified-atom-atom (identified-atom-with-generation-id-atom ag)) (identified-atom-with-generation-generation ag))]))
+;(provide print-atom-with-generation-node)
 
 (define (print-conjunction c ms [out (current-output-port)])
   (define last-i (- (length c) 1))
@@ -280,7 +295,7 @@
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
-    [(tree-label con sel sub r i)
+    [(tree-label con sel sub r i edges)
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out))]
@@ -288,7 +303,7 @@
      (if use-color
          (display-color (format "cycle back to node ~a" i) out #:fg 'green)
          (display (format "cycle back to node ~a" i) out))]
-    [(widening con sel msg idx)
+    [(widening con sel msg idx edges)
      (begin
        (display "[widening]")
        (when idx (display (format "~v:" idx)))
@@ -314,104 +329,104 @@
 ;                                               
 
 
-(module+ test
-  (require rackunit)
-  (test-case
-   "finding the most recently applied operation"
-   (let ([root-only-tree
-          (node
-           (tree-label
-            (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
-            (none)
-            (list)
-            #f
-            #f) '())])
-     (check-equal? (candidate-for-undo root-only-tree) #f))
-   (let* ([unwound-leaf
-           (node
-            (tree-label
-             (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),eq(α1,α2)")
-             (none)
-             (list)
-             #f ; doesn't matter for purpose of this test
-             #f) '())]
-          [unwound-tree
-           (node
-            (tree-label
-             (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
-             (some 0)
-             (list)
-             #f
-             1) (list unwound-leaf))]
-          [rewound-tree
-           (node
-            (tree-label
-             (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
-             (none)
-             (list)
-             #f
-             #f) '())])
-     (check-equal? (candidate-for-undo unwound-tree) unwound-tree)))
-
-  (test-case
-   "rewinding the most recently applied operation"
-   (let ([root-only-tree
-          (node
-           (tree-label
-            (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
-            (none)
-            (list)
-            #f
-            #f) '())])
-     (check-equal? (rewind root-only-tree) #f))
-   (let* ([unwound-leaf
-           (node
-            (tree-label
-             (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),eq(α1,α2)")
-             (none)
-             (list)
-             #f ; doesn't matter for purpose of this test
-             #f) '())]
-          [unwound-tree
-           (node
-            (tree-label
-             (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
-             (some 0)
-             (list)
-             #f
-             1) (list unwound-leaf))]
-          [rewound-tree
-           (node
-            (tree-label
-             (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
-             (none)
-             (list)
-             #f
-             #f) '())])
-     (check-equal? (rewind unwound-tree) (cons rewound-tree rewound-tree)))
-   (let* ([leaf1 (node (tree-label (list) (none) (list) #f #f) (list))]
-          [leaf2 leaf1]
-          [grandchild1 (node (tree-label (interpret-abstract-conjunction "quux") 0 (list) #f 3) (list leaf1))]
-          [grandchild2 (node (tree-label (interpret-abstract-conjunction "zoom") 0 (list) #f 4) (list leaf2))]
-          [child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 grandchild2))]
-          [unwound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list child))]
-          [rewound-node (node (tree-label (interpret-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
-          [rewound-child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node))]
-          [rewound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
-     (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
-   (let* ([leaf1 (node (tree-label (list) (none) (list) #f #f) (list))]
-          [leaf2 (node (cycle 3) (list))]
-          [grandchild1 (node (tree-label (interpret-abstract-conjunction "quux") 0 (list) #f 3) (list leaf1))]
-          [grandchild2 (node (tree-label (interpret-abstract-conjunction "zoom") 0 (list) #f 4) (list leaf2))]
-          [grandchild3 (node (tree-label (interpret-abstract-conjunction "baz") (none) (list) #f 4) (list))]
-          [child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 grandchild2 grandchild3))]
-          [unwound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list child))]
-          [rewound-node (node (tree-label (interpret-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
-          [rewound-child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node grandchild3))]
-          [rewound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
-     (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
-   (let* ([leaf (node (widening (interpret-abstract-conjunction "foo(γ1)") #f "some message" #f) '())]
-          [root-before (node (tree-label (interpret-abstract-conjunction "foo(nil)") 0 (list) #f 1) (list leaf))]
-          [root-after (node (tree-label (interpret-abstract-conjunction "foo(nil)") (none) (list) #f #f) (list))])
-     (check-equal? (car (rewind root-before)) root-after)
-     (check-equal? (cdr (rewind root-before)) root-after))))
+;(module+ test
+;  (require rackunit)
+;  (test-case
+;   "finding the most recently applied operation"
+;   (let ([root-only-tree
+;          (node
+;           (tree-label
+;            (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+;            (none)
+;            (list)
+;            #f
+;            #f) '())])
+;     (check-equal? (candidate-for-undo root-only-tree) #f))
+;   (let* ([unwound-leaf
+;           (node
+;            (tree-label
+;             (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),eq(α1,α2)")
+;             (none)
+;             (list)
+;             #f ; doesn't matter for purpose of this test
+;             #f) '())]
+;          [unwound-tree
+;           (node
+;            (tree-label
+;             (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+;             (some 0)
+;             (list)
+;             #f
+;             1) (list unwound-leaf))]
+;          [rewound-tree
+;           (node
+;            (tree-label
+;             (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+;             (none)
+;             (list)
+;             #f
+;             #f) '())])
+;     (check-equal? (candidate-for-undo unwound-tree) unwound-tree)))
+;
+;  (test-case
+;   "rewinding the most recently applied operation"
+;   (let ([root-only-tree
+;          (node
+;           (tree-label
+;            (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+;            (none)
+;            (list)
+;            #f
+;            #f) '())])
+;     (check-equal? (rewind root-only-tree) #f))
+;   (let* ([unwound-leaf
+;           (node
+;            (tree-label
+;             (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),eq(α1,α2)")
+;             (none)
+;             (list)
+;             #f ; doesn't matter for purpose of this test
+;             #f) '())]
+;          [unwound-tree
+;           (node
+;            (tree-label
+;             (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+;             (some 0)
+;             (list)
+;             #f
+;             1) (list unwound-leaf))]
+;          [rewound-tree
+;           (node
+;            (tree-label
+;             (interpret-abstract-conjunction "sameleaves(γ1,γ2)")
+;             (none)
+;             (list)
+;             #f
+;             #f) '())])
+;     (check-equal? (rewind unwound-tree) (cons rewound-tree rewound-tree)))
+;   (let* ([leaf1 (node (tree-label (list) (none) (list) #f #f) (list))]
+;          [leaf2 leaf1]
+;          [grandchild1 (node (tree-label (interpret-abstract-conjunction "quux") 0 (list) #f 3) (list leaf1))]
+;          [grandchild2 (node (tree-label (interpret-abstract-conjunction "zoom") 0 (list) #f 4) (list leaf2))]
+;          [child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 grandchild2))]
+;          [unwound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list child))]
+;          [rewound-node (node (tree-label (interpret-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
+;          [rewound-child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node))]
+;          [rewound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
+;     (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
+;   (let* ([leaf1 (node (tree-label (list) (none) (list) #f #f) (list))]
+;          [leaf2 (node (cycle 3) (list))]
+;          [grandchild1 (node (tree-label (interpret-abstract-conjunction "quux") 0 (list) #f 3) (list leaf1))]
+;          [grandchild2 (node (tree-label (interpret-abstract-conjunction "zoom") 0 (list) #f 4) (list leaf2))]
+;          [grandchild3 (node (tree-label (interpret-abstract-conjunction "baz") (none) (list) #f 4) (list))]
+;          [child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 grandchild2 grandchild3))]
+;          [unwound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list child))]
+;          [rewound-node (node (tree-label (interpret-abstract-conjunction "zoom") (none) (list) #f #f) (list))]
+;          [rewound-child (node (tree-label (interpret-abstract-conjunction "bar") 0 (list) #f 2) (list grandchild1 rewound-node grandchild3))]
+;          [rewound-tree (node (tree-label (interpret-abstract-conjunction "foo") 0 (list) #f 1) (list rewound-child))])
+;     (check-equal? (rewind unwound-tree) (cons rewound-node rewound-tree)))
+;   (let* ([leaf (node (widening (interpret-abstract-conjunction "foo(γ1)") #f "some message" #f) '())]
+;          [root-before (node (tree-label (interpret-abstract-conjunction "foo(nil)") 0 (list) #f 1) (list leaf))]
+;          [root-after (node (tree-label (interpret-abstract-conjunction "foo(nil)") (none) (list) #f #f) (list))])
+;     (check-equal? (car (rewind root-before)) root-after)
+;     (check-equal? (cdr (rewind root-before)) root-after))))

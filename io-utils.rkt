@@ -2,6 +2,7 @@
 (require syntax/macro-testing)
 (require (only-in "control-flow.rkt" until))
 (require scribble/srcdoc)
+(require (for-doc scribble/manual))
 
 (define (prompt-for-integer)
   (define read-something (read))
@@ -23,6 +24,20 @@
   (-> exact-positive-integer?)
   ()
   @{"Asks the user to enter a positive integer and returns it."}))
+
+(define (prompt-for-selection options)
+  (for ([option options] [idx (range 1 (+ (length options) 1))]) (displayln (format "~v.~v" idx option)))
+  (define int (prompt-for-integer))
+  (until (between? int 1 (length options))
+         (displayln "Not a valid choice!")
+         (set! int (prompt-for-integer)))
+  (list-ref options (- int 1)))
+(provide
+ (proc-doc/names
+  prompt-for-selection
+  (-> (listof any/c) any/c)
+  (options)
+  @{"Asks the user to select an item from @racket[options] and returns it."}))
 
 (define (between? val lower upper)
   (and (>= val lower) (<= val upper)))

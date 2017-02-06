@@ -154,6 +154,7 @@
             (begin
               (for ([conjunct conjunction]) (add-vertex! prior conjunct))
               (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
+              (unless (strict-partial-order? prior) (error "Selection rule is no longer a strict partial order!"))
               (aif (selected-index conjunction prior full-evaluations)
                    (let* ([resolvents (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))]
                           [child-nodes (map resolvent->node resolvents)]
@@ -162,19 +163,21 @@
                      (cons updated-candidate updated-top))
                    (cons 'underspecified-order candidate)))))
       'no-candidate))
-(provide
- (proc-doc/names
-  advance-analysis
-  (-> node? (listof ck:rule?) (listof full-evaluation?) (listof function?) preprior-graph?
-      (or/c 'no-candidate (cons/c 'underspecified-order node?) (cons/c node? node?)))
-  (top clauses full-evaluations concrete-constants prior)
-  @{Advances the analysis in @racket[top], when the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
- Functions supplied in @racket[concrete-constants] are considered to be in the abstract domain.
- The strict partial order used for atom selection is specified in @racket[prior].
- There are three possible outcomes: @itemlist[@item{there are no more candidates} @item{analysis requires more info about the selection rule} @item{analysis proceeds normally}]
- In the first case, a symbol is returned.
- In the second case, a symbol is returned, along with the current candidate, so that the user may be offered a choice from the current conjunction.
- In the final case, this returns a pair of values: the updated candidate followed by the updated top-level tree.}))
+(provide advance-analysis)
+;(provide
+; (proc-doc/names
+;  advance-analysis
+;  (->* (node? (listof ck:rule?) (listof full-evaluation?) (listof function?) preprior-graph?)
+;       (#:new-edges (listof (cons/c abstract-atom? abstract-atom?)))
+;       (or/c 'no-candidate (cons/c 'underspecified-order node?) (cons/c node? node?)))
+;  (top clauses full-evaluations concrete-constants prior)
+;  @{Advances the analysis in @racket[top], when the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
+; Functions supplied in @racket[concrete-constants] are considered to be in the abstract domain.
+; The strict partial order used for atom selection is specified in @racket[prior].
+; There are three possible outcomes: @itemlist[@item{there are no more candidates} @item{analysis requires more info about the selection rule} @item{analysis proceeds normally}]
+; In the first case, a symbol is returned.
+; In the second case, a symbol is returned, along with the current candidate, so that the user may be offered a choice from the current conjunction.
+; In the final case, this returns a pair of values: the updated candidate followed by the updated top-level tree.}))
 
 (module+ test
   (require 
