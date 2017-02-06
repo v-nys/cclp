@@ -20,13 +20,18 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
-(require racket/serialize)
+#lang at-exp racket
+(require racket/serialize
+         racket/struct
+         scribble/srcdoc)
+(require (for-doc scribble/manual))
+
 (module+ test (require rackunit))
 
 (define (write-a obj port mode)
   (if (eq? mode #t) (fprintf port "#<struct:a ~s>" (a-index obj)) (fprintf port "a~a" (a-index obj))))
 (serializable-struct a (index)
+                     #:transparent
                      #:methods
                      gen:custom-write [(define write-proc write-a)]
                      #:methods
@@ -42,6 +47,7 @@
 (define (write-g obj port mode)
   (if (eq? mode #t) (fprintf port "#<struct:g ~s>" (g-index obj)) (fprintf port "g~a" (g-index obj))))
 (serializable-struct g (index)
+                     #:transparent
                      #:methods
                      gen:custom-write [(define write-proc write-g)]
                      #:methods
@@ -64,14 +70,31 @@
     [(g i) i]))
 (provide avar-index)
 
-(define (write-abstract-function obj port mode)
-  (if (boolean? mode)
-      (fprintf port "#(struct:abstract-function ~s ~s)" (abstract-function-functor obj) (abstract-function-args obj))
-      (begin (fprintf port "~a(" (abstract-function-functor obj))
-             (for ([arg-or-comma (add-between (abstract-function-args obj) ",")]) (if (string? arg-or-comma) (fprintf port arg-or-comma) (fprintf port "~v" arg-or-comma)))
-             (fprintf port ")"))))
-(serializable-struct abstract-function (functor args) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-function)])
-(provide (struct-out abstract-function))
+(serializable-struct
+ abstract-function (functor args)
+ #:methods
+ gen:custom-write
+ [(define write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'abstract-function)
+     (λ (obj) (list (abstract-function-functor obj)
+                    (abstract-function-args obj)))))]
+ #:methods
+ gen:equal+hash
+ [(define (equal-proc af1 af2 equal?-recur)
+    (and (equal?-recur (abstract-function-functor af1) (abstract-function-functor af2))
+         (equal?-recur (abstract-function-args af1) (abstract-function-args af2))))
+  (define (hash-proc af hash-recur)
+    (+ (hash-recur (abstract-function-functor af))
+       (hash-recur (abstract-function-args af))))
+  (define (hash2-proc af hash2-recur)
+    (+ (hash2-recur (abstract-function-functor af))
+       (hash2-recur (abstract-function-args af))))])
+(provide
+ (struct*-doc
+  abstract-function
+  ([functor symbol?] [args (listof abstract-term?)])
+  @{Abstract counterpart of a function.}))
 
 (define (write-abstract-atom obj port mode)
   (if (boolean? mode)

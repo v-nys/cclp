@@ -32,6 +32,7 @@
          (prefix-in ck: "concrete-knowledge.rkt"))
 (require (only-in racket-list-utils/utils odd-elems))
 (require "abstract-substitution.rkt")
+(require (only-in sugar/coerce ->symbol))
 
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
@@ -64,7 +65,7 @@
       [((~literal term) ((~literal variable) NESTED-VAR))
        (interpret-concrete-variable-syntax #'NESTED-VAR)]
       [((~literal term) ((~literal function-term) ((~literal number-term) NUM)))
-       (syntax->datum #'NUM)]
+       (cd:function (->symbol (syntax->datum #'NUM)) '())]
       [((~literal term) ((~literal function-term) FUNCTOR))
        (cd:function (string->symbol (syntax->datum #'FUNCTOR)) '())]
       [((~literal term) ((~literal function-term) FUNCTOR "(" ARG-OR-SEP ... ")"))
@@ -135,7 +136,7 @@
     [((~literal abstract-term) ((~literal abstract-function-term)
                                 ((~literal abstract-number-term)
                                  ((~literal abstract-number) NUM))))
-     (syntax->datum #'NUM)]
+     (ad:abstract-function (syntax->datum #'NUM) '())]
     [((~literal abstract-term) ((~literal abstract-function-term) FUNCTOR))
      (ad:abstract-function (string->symbol (syntax->datum #'FUNCTOR)) '())]
     [((~literal abstract-term) ((~literal abstract-function-term) FUNCTOR "(" ARG-OR-SEP ... ")"))

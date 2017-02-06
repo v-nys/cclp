@@ -209,6 +209,7 @@
   (as:abstract-equality lhs rhs))
 (provide abstract-substitution-pair)
 
+; TODO: this is not consistent with the rest for numbers
 (define-syntax (concrete-constant stx)
   (syntax-parse stx
     [(_ _CONSTANT-SYMBOL)

@@ -157,7 +157,7 @@
                    (let* ([resolvents (abstract-resolve conjunction it clauses full-evaluations concrete-constants)]
                           [child-nodes (map resolvent->node resolvents)]
                           ; TODO make sure introduced edges are stored (instead of just using empty list)
-                          [updated-candidate (update-candidate candidate next-index (some it (list) child-nodes)]
+                          [updated-candidate (update-candidate candidate next-index (some it) (list) child-nodes)]
                           [updated-top (replace-first-subtree top candidate updated-candidate)])
                      (cons updated-candidate updated-top))
                    (cons 'underspecified-order candidate)))))

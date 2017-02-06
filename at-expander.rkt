@@ -1,6 +1,7 @@
 #lang br
 (require (for-syntax syntax/parse))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
+(require (only-in sugar/coerce ->symbol))
 
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
 (require (prefix-in as: "abstract-substitution.rkt"))
@@ -139,7 +140,7 @@
 (define-syntax (abstract-function-term stx)
   (syntax-parse stx
     [(_ symbol:str) (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) '()))]
-    [(_ NUMBER:number) (syntax/loc stx (ad:abstract-function (quote NUMBER)))]
+    [(_ NUMBER:number) (syntax/loc stx (ad:abstract-function (->symbol (quote NUMBER))))]
     [(_ symbol:str "(" arg ... ")")
      (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
 (provide abstract-function-term)
@@ -234,7 +235,7 @@
   (syntax-parse stx
     [(_ symbol:str)
      (syntax/loc stx (cd:function (string->symbol (quote symbol)) '()))]
-    [(_ NUMBER:number) (syntax/loc stx (cd:function (quote NUMBER) (list)))]
+    [(_ NUMBER:number) (syntax/loc stx (cd:function (->symbol (quote NUMBER)) (list)))]
     [(_ symbol "(" arg ... ")")
      (syntax/loc stx (cd:function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
 (provide function-term)

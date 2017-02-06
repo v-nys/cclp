@@ -20,47 +20,66 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
-(require racket/serialize)
-(serializable-struct variable (name)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc v1 v2 equal?-recur)
-     (equal?-recur (variable-name v1) (variable-name v2)))
-   (define (hash-proc my-variable hash-recur)
-     (hash-recur (variable-name my-variable)))
-   (define (hash2-proc my-variable hash2-recur)
-     (hash2-recur (variable-name my-variable)))])
+#lang at-exp racket
+(require racket/serialize
+         racket/struct
+         scribble/srcdoc)
+(require (for-doc scribble/manual))
+(serializable-struct
+ variable (name)
+ #:transparent
+ #:methods
+ gen:equal+hash
+ [(define (equal-proc v1 v2 equal?-recur)
+    (equal?-recur (variable-name v1) (variable-name v2)))
+  (define (hash-proc my-variable hash-recur)
+    (hash-recur (variable-name my-variable)))
+  (define (hash2-proc my-variable hash2-recur)
+    (hash2-recur (variable-name my-variable)))])
 (provide (struct-out variable))
 
-(serializable-struct function (functor args)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc f1 f2 equal?-recur)
-     (and (equal?-recur (function-functor f1) (function-functor f2))
-          (equal?-recur (function-args f1) (function-args f2))))
-   (define (hash-proc my-function hash-recur)
-     (+ (hash-recur (function-functor my-function))
-        (* 3 (hash-recur (function-args my-function)))))
-   (define (hash2-proc my-function hash2-recur)
-     (+ (hash2-recur (function-functor my-function))
-        (hash2-recur (function-args my-function))))])
-(provide (struct-out function))
+(serializable-struct
+ function (functor args)
+ #:methods
+ gen:equal+hash
+ [(define (equal-proc f1 f2 equal?-recur)
+    (and (equal?-recur (function-functor f1) (function-functor f2))
+         (equal?-recur (function-args f1) (function-args f2))))
+  (define (hash-proc my-function hash-recur)
+    (+ (hash-recur (function-functor my-function))
+       (* 3 (hash-recur (function-args my-function)))))
+  (define (hash2-proc my-function hash2-recur)
+    (+ (hash2-recur (function-functor my-function))
+       (hash2-recur (function-args my-function))))]
+ #:methods
+ gen:custom-write
+ [(define write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'function)
+     (λ (obj) (list (function-functor obj)
+                    (function-args obj)))))])
+(provide
+ (struct*-doc
+  function
+  ([functor symbol?] [args (listof term?)])
+  @{A function in the concrete domain.}))
 
 (define (term? t)
   (or (variable? t) (function? t)))
 (provide term?)
 
-(serializable-struct atom (symbol args)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc a1 a2 equal?-recur)
-     (and (equal?-recur (atom-symbol a1) (atom-symbol a2))
-          (equal?-recur (atom-args a1) (atom-args a2))))
-   (define (hash-proc my-atom hash-recur)
-     (+ (hash-recur (atom-symbol my-atom))
-        (* 3 (hash-recur (atom-args my-atom)))))
-   (define (hash2-proc my-atom hash2-recur)
-     (+ (hash2-recur (atom-symbol my-atom))
-        (hash2-recur (atom-args my-atom))))])
+(serializable-struct
+ atom (symbol args)
+ #:transparent
+ #:methods
+ gen:equal+hash
+ [(define (equal-proc a1 a2 equal?-recur)
+    (and (equal?-recur (atom-symbol a1) (atom-symbol a2))
+         (equal?-recur (atom-args a1) (atom-args a2))))
+  (define (hash-proc my-atom hash-recur)
+    (+ (hash-recur (atom-symbol my-atom))
+       (* 3 (hash-recur (atom-args my-atom)))))
+  (define (hash2-proc my-atom hash2-recur)
+    (+ (hash2-recur (atom-symbol my-atom))
+       (hash2-recur (atom-args my-atom))))])
 (provide (struct-out atom))
