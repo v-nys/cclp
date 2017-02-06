@@ -76,9 +76,9 @@
   (check-equal? (assemble-var-indices g? (interpret-abstract-term "α1")) (list))
   (check-equal? (assemble-var-indices a? (interpret-abstract-term "γ1")) (list))
   (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar)")) (list))
-  (check-equal? (assemble-var-indices g? (abstract-function "bar" (list))) (list))
+  (check-equal? (assemble-var-indices g? (abstract-function 'bar (list))) (list))
   (check-equal?
-   (assemble-var-indices g? (abstract-function "foo" (list (abstract-function "bar" '()))))
+   (assemble-var-indices g? (abstract-function 'bar (list (abstract-function 'bar'()))))
    (list))
   (check-equal? (assemble-var-indices a? (interpret-abstract-term "foo(bar)")) (list))
   (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar(γ1,γ2,α3,α4))")) (list 1 2))
