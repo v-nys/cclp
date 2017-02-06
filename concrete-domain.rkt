@@ -27,7 +27,6 @@
 (require (for-doc scribble/manual))
 (serializable-struct
  variable (name)
- #:transparent
  #:methods
  gen:equal+hash
  [(define (equal-proc v1 v2 equal?-recur)
@@ -35,8 +34,18 @@
   (define (hash-proc my-variable hash-recur)
     (hash-recur (variable-name my-variable)))
   (define (hash2-proc my-variable hash2-recur)
-    (hash2-recur (variable-name my-variable)))])
-(provide (struct-out variable))
+    (hash2-recur (variable-name my-variable)))]
+ #:methods
+ gen:custom-write
+ [(define write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'variable)
+     (λ (obj) (list (variable-name obj)))))])
+(provide
+ (struct*-doc
+  variable
+  ([name symbol?])
+  @{A variable in the concrete domain.}))
 
 (serializable-struct
  function (functor args)
@@ -70,7 +79,6 @@
 
 (serializable-struct
  atom (symbol args)
- #:transparent
  #:methods
  gen:equal+hash
  [(define (equal-proc a1 a2 equal?-recur)
@@ -81,5 +89,15 @@
        (* 3 (hash-recur (atom-args my-atom)))))
   (define (hash2-proc my-atom hash2-recur)
     (+ (hash2-recur (atom-symbol my-atom))
-       (hash2-recur (atom-args my-atom))))])
-(provide (struct-out atom))
+       (hash2-recur (atom-args my-atom))))]
+ #:methods
+ gen:custom-write
+ [(define write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'atom)
+     (λ (obj) (list (atom-symbol obj) (atom-args obj)))))])
+(provide
+ (struct*-doc
+  atom
+  ([symbol symbol?] [args (listof term?)])
+  @{An atom in the concrete domain.}))

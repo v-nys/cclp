@@ -37,6 +37,7 @@
 (require (for-syntax (only-in racket remove-duplicates match second third)))
 (require "abstract-domain-ordering.rkt")
 (require "preprior-graph.rkt")
+(require (only-in sugar/coerce ->symbol))
 
 ; PUTTING THE THREE PARTS TOGETHER
 
@@ -174,14 +175,14 @@
 (provide abstract-function-term)
 
 (define-syntax-rule (abstract-number NUMBER)
-  (ad:abstract-function (quote NUMBER) '()))
+  (ad:abstract-function (->symbol (quote NUMBER)) '()))
 (provide abstract-number)
 
 (define-syntax-rule (abstract-number-term TERM) TERM)
 (provide abstract-number-term)
 
 (define-syntax-rule (number-term TERM)
-  (cd:function (quote TERM) '()))
+  (cd:function (->symbol (quote TERM)) '()))
 (provide number-term)
 
 (define-syntax (abstract-lplist stx)
@@ -209,7 +210,6 @@
   (as:abstract-equality lhs rhs))
 (provide abstract-substitution-pair)
 
-; TODO: this is not consistent with the rest for numbers
 (define-syntax (concrete-constant stx)
   (syntax-parse stx
     [(_ _CONSTANT-SYMBOL)
@@ -225,15 +225,15 @@
 
 (module+ test
   (require rackunit)
-  (check-equal? (number-term 4) (cd:function 4 '()))
+  (check-equal? (number-term 4) (cd:function (->symbol 4) '()))
   (check-equal? (lplist "[" "]") (cd:function 'nil '()))
 
   (check-equal? (abstract-variable-a "α" 1) (ad:a 1))
   (check-equal? (abstract-variable-g "γ" 2) (ad:g 2))
-  (check-equal? (abstract-number 3) (ad:abstract-function 3 '()))
+  (check-equal? (abstract-number 3) (ad:abstract-function (->symbol 3) '()))
   (check-equal? (abstract-variable (abstract-variable-a "α" 1)) (ad:a 1))
   (check-equal? (abstract-variable (abstract-variable-g "γ" 2)) (ad:g 2))
-  (check-equal? (abstract-number-term (abstract-number 3)) (ad:abstract-function 3 '()))
+  (check-equal? (abstract-number-term (abstract-number 3)) (ad:abstract-function (->symbol 3) '()))
   (check-equal? (abstract-function-term "my-func") (ad:abstract-function 'my-func '()))
   (check-equal? (abstract-atom-without-args "my-atom") (ad:abstract-atom 'my-atom '()))
   (check-equal? (abstract-atom (abstract-atom-without-args "my-atom"))
