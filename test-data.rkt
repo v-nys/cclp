@@ -41,17 +41,6 @@ HERE
 (define primes-consts (list (function 'nil (list))))
 (provide primes-consts)
 
-(define primes-prior (mk-preprior-graph))
-(begin
-  (add-vertex! primes-prior (interpret-abstract-atom "integers(γ1,α1)"))
-  (add-vertex! primes-prior (interpret-abstract-atom "sift(α1,α2)"))
-  (add-vertex! primes-prior (interpret-abstract-atom "len(α1,γ2)"))
-  (add-vertex! primes-prior (interpret-abstract-atom "sift([],α1)"))
-  (add-directed-edge! primes-prior (interpret-abstract-atom "integers(γ1,α1)") (interpret-abstract-atom "sift(α1,α2)"))
-  (add-directed-edge! primes-prior (interpret-abstract-atom "integers(γ1,α1)") (interpret-abstract-atom "len(α1,γ2)"))
-  (add-directed-edge! primes-prior (interpret-abstract-atom "sift([],α1)") (interpret-abstract-atom "len(α1,γ2)")))
-(provide primes-prior)
-
 (define permsort-clauses
   (map interpret-concrete-rule
        (string-split

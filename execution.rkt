@@ -21,6 +21,9 @@
 ; SOFTWARE.
 
 #lang at-exp racket
+(require racket/set
+         scribble/srcdoc)
+
 (require "abstract-multi-domain.rkt")
 (require "abstract-domain-ordering.rkt")
 (require "abstract-knowledge.rkt")
@@ -28,8 +31,7 @@
 (require "abstract-renaming.rkt")
 (require (only-in racket-list-utils/utils findf-index))
 (require graph)
-(require racket/set)
-(require scribble/srcdoc)
+
 (require (for-doc scribble/manual))
 (module+ test (require rackunit "cclp-interpreter.rkt"))
 
@@ -83,14 +85,21 @@
          [conjunction (interpret-abstract-conjunction "foo(γ1,α1)")])
     (begin
       (add-vertex! preprior (first conjunction))
-      (check-equal? (selected-index conjunction preprior '()) 0)
-      (check-equal? #t #f)))
+      (check-equal? (selected-index conjunction preprior '()) 0)))
   (let* ([preprior (mk-preprior-graph)]
          [conjunction (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")])
     (begin
       (add-vertex! preprior (first conjunction))
       (add-vertex! preprior (second conjunction))
       (check-equal? (selected-index conjunction preprior '()) #f)))
+  (let* ([preprior (mk-preprior-graph)]
+         [conjunction1 (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")]
+         [conjunction2 (interpret-abstract-conjunction "foo(γ3,α3),bar(γ4,α4)")])
+    (begin
+      (add-vertex! preprior (first conjunction1))
+      (add-vertex! preprior (second conjunction1))
+      (add-directed-edge! preprior (first conjunction1) (second conjunction1))
+      (check-equal? (selected-index conjunction2 preprior '()) 0)))
   (let* ([preprior (mk-preprior-graph)]
          [conjunction (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")])
     (begin

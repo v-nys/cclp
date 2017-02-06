@@ -1,3 +1,3 @@
 #lang reader "../at.rkt"
-(sift([],a1),len(a1,g1)
- {a2/[]} integers(N,[]).)
+(sift([],a5),length(a5,g1)
+  {a7/g2, a6/[]} integers(N,[]).)

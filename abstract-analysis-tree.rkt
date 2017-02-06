@@ -95,14 +95,14 @@
   (check-equal?
    (candidate-and-predecessors primes2:val (list))
    (cons primes2cand:val
-         (list (cons (interpret-abstract-conjunction "integers(γ2,α2),sift(α2,α1),len(α1,γ1)") 2)
+         (list (cons (interpret-abstract-conjunction "integers(γ2,α6),sift(α6,α5),length(α5,γ1)") 2)
                (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1))))
   (check-equal?
    (candidate-and-predecessors primes4:val (list))
    (cons primes4cand:val
-         (list (cons (interpret-abstract-conjunction "len([],γ1)") 4)
-               (cons (interpret-abstract-conjunction "sift([],α1),len(α1,γ1)") 3)
-               (cons (interpret-abstract-conjunction "integers(γ2,α2),sift(α2,α1),len(α1,γ1)") 2)
+         (list (cons (interpret-abstract-conjunction "length([],γ1)") 4)
+               (cons (interpret-abstract-conjunction "sift([],α5),length(α5,γ1)") 3)
+               (cons (interpret-abstract-conjunction "integers(γ2,α6),sift(α6,α5),length(α5,γ1)") 2)
                (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1))))
   (check-equal?
    (candidate-and-predecessors wid:val (list))
@@ -119,7 +119,7 @@
   (tree accumulator)
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
-(define (advance-analysis top clauses full-evaluations concrete-constants prior)
+(define (advance-analysis top clauses full-evaluations concrete-constants prior #:new-edges [new-edges (list)])
   (define (update-candidate candidate idx sel new-edges children)
     (match candidate
       [(node (tree-label c _ sub r _ _) _)
@@ -152,12 +152,12 @@
                    [updated-top (replace-first-subtree top candidate updated-candidate)])
               (cons updated-candidate updated-top))
             (begin
-              (map (λ (a) (add-vertex! prior a)) conjunction)
+              (for ([conjunct conjunction]) (add-vertex! prior conjunct))
+              (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
               (aif (selected-index conjunction prior full-evaluations)
-                   (let* ([resolvents (abstract-resolve conjunction it clauses full-evaluations concrete-constants)]
+                   (let* ([resolvents (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))]
                           [child-nodes (map resolvent->node resolvents)]
-                          ; TODO make sure introduced edges are stored (instead of just using empty list)
-                          [updated-candidate (update-candidate candidate next-index (some it) (list) child-nodes)]
+                          [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
                           [updated-top (replace-first-subtree top candidate updated-candidate)])
                      (cons updated-candidate updated-top))
                    (cons 'underspecified-order candidate)))))
@@ -200,22 +200,29 @@
    (advance-analysis primes2:val primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts (mk-preprior-graph))
    (cons 'underspecified-order primes2cand:val)
    "case of an underspecified partial order")
+  (define primes-prior (mk-preprior-graph))
   (define-syntax-rule
-    (advance-primes-analysis top)
-    (advance-analysis top primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts primes-prior))
+    (advance-primes-analysis top new-edges)
+    (advance-analysis top primes-clauses (map full-ai-rule->full-evaluation primes-full-evals) primes-consts primes-prior #:new-edges new-edges))
   (define-syntax-rule
-    (test-advance top-pre cand-post top-post)
-    (let* ([cp-tp (advance-primes-analysis top-pre)])
+    (test-advance top-pre cand-post top-post new-edges)
+    (let* ([cp-tp (advance-primes-analysis top-pre new-edges)])
       (begin
         (check-equal? (car cp-tp) cand-post)
         (check-equal? (cdr cp-tp) top-post))))
   ; regular steps, without updates to the selection rule
-  (test-advance primes0:val primes1:val primes1:val)
-  (test-advance primes1:val primes1cp:val primes2:val)
-  (test-advance primes2:val primes2cp:val primes3:val)
-  (test-advance primes3:val primes3cp:val primes4:val)
+  (test-advance primes0:val primes1:val primes1:val (list))
+  (define edge1 (cons (interpret-abstract-atom "integers(γ1,α1)") (interpret-abstract-atom "sift(α1,α2)")))
+  (define edge2 (cons (interpret-abstract-atom "integers(γ1,α1)") (interpret-abstract-atom "length(α1,γ1)")))
+  (add-directed-edge! primes-prior (car edge1) (cdr edge1))
+  (add-directed-edge! primes-prior (car edge2) (cdr edge2))
+  (test-advance primes1:val primes1cp:val primes2:val (list edge1 edge2))
+  (define edge3 (cons (interpret-abstract-atom "sift([],α1)") (interpret-abstract-atom "length(α1,γ1)")))
+  (add-directed-edge! primes-prior (car edge3) (cdr edge3))
+  (test-advance primes2:val primes2cp:val primes3:val (list edge3))
+  (test-advance primes3:val primes3cp:val primes4:val (list))
   ; fully evaluated atom
-  (test-advance primes4:val primes4cp:val primes5:val))
+  (test-advance primes4:val primes4cp:val primes5:val (list)))
 
 ; TODO reintroduce code for tests advance in primes trees (see VC)
 

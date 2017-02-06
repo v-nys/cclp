@@ -1,5 +1,5 @@
 #lang reader "../at.rkt"
-(4.*len([],g1)*
- {} sift([],[]).
+(4.*length([],g1)*
+ {a5/[]} sift([],[]).
  (□
-  {} length([],0).))
+  {g1/g2} length([],0).))
