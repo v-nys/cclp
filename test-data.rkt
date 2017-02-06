@@ -2,6 +2,7 @@
 (require graph
          "abstract-multi-domain.rkt"
          "cclp-interpreter.rkt"
+         "concrete-domain.rkt"
          "concrete-knowledge.rkt"
          "preprior-graph.rkt")
 
@@ -37,7 +38,7 @@ HERE
    ))
 (provide primes-full-evals)
 
-(define primes-consts (list (abstract-function 'nil (list))))
+(define primes-consts (list (function 'nil (list))))
 (provide primes-consts)
 
 (define primes-prior (mk-preprior-graph))
@@ -74,7 +75,7 @@ HERE
    ))
 (provide permsort-full-evals)
 
-(define permsort-consts (list (abstract-function 'nil (list))))
+(define permsort-consts (list (function 'nil (list))))
 (provide permsort-consts)
 
 (define permsort-prior (mk-preprior-graph))

@@ -128,6 +128,16 @@
        (node (widening c sel m idx new-edges) children)]
       [(node (case c _ _ _) _)
        (node (case c sel idx new-edges) children)]))
+  (define (resolvent->node res)
+    (node
+     (tree-label
+      (resolvent-conjunction res)
+      (none)
+      (resolvent-substitution res)
+      (resolvent-knowledge res)
+      #f ; resolvents have not yet been visited, so no index
+      (list))
+     (list)))
   (match-define (cons candidate predecessors) (candidate-and-predecessors top (list)))
   (if candidate
       (let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
@@ -144,7 +154,12 @@
             (begin
               (map (λ (a) (add-vertex! prior a)) conjunction)
               (aif (selected-index conjunction prior full-evaluations)
-                   (cons top candidate) ; TODO
+                   (let* ([resolvents (abstract-resolve conjunction it clauses full-evaluations concrete-constants)]
+                          [child-nodes (map resolvent->node resolvents)]
+                          ; TODO make sure introduced edges are stored (instead of just using empty list)
+                          [updated-candidate (update-candidate candidate next-index (some it (list) child-nodes)]
+                          [updated-top (replace-first-subtree top candidate updated-candidate)])
+                     (cons updated-candidate updated-top))
                    (cons 'underspecified-order candidate)))))
       'no-candidate))
 (provide

@@ -76,6 +76,7 @@
 
 (serializable-struct
  tree-label (conjunction selection substitution rule index introduced-edges)
+ #:transparent
  #:methods
  gen:equal+hash
  [(define (equal-proc l1 l2 equal?-recur)
