@@ -11,9 +11,9 @@
 (require "preprior-graph.rkt")
 (require "abstract-analysis.rkt")
 (require racket-tree-utils/src/tree)
-(require (only-in graph add-vertex! add-edge!))
 (require (for-syntax syntax/strip-context))
 (require "data-utils.rkt")
+(require (only-in "syntax-utils.rkt" odd-elems-as-list))
 
 (define-syntax (at-module-begin stx)
   (syntax-parse stx

@@ -1,8 +1,8 @@
 #lang br
 
-(require parser-tools/lex brag/support)
-(require (prefix-in re- parser-tools/lex-sre))
-(require syntax/strip-context)
+(require brag/support
+         (prefix-in re- br-parser-tools/lex-sre)
+         syntax/strip-context)
 
 (define (tokenize input-port)
   (define (next-token)
