@@ -181,8 +181,8 @@
            (generational-graph-skeleton l-rest next-uid graph add-edges))))]))
 (module+ test
   (define branch (active-branch-info slbranch:val))
-  (define graph (generational-graph-skeleton branch))
-  (display (graphviz graph)))
+  (define sl-graph (generational-graph-skeleton branch))
+  (display (graphviz sl-graph)))
 
 (define (active-branch-info t)
   (match t
@@ -204,54 +204,21 @@
  The active branch is the first branch, considered from left to right, with a leaf node eligible for further unfolding.
  If there is no such leaf node in the tree, the result is @racket[#f].}))
 
-;(define (annotate-generational-tree tree target-identified-atom generation-acc live-depth depth-acc)
-;  (match tree
-;    [(node id-atom-label (list))
-;     (node (identified-atom-with-generation id-atom-label generation-acc) (list))]
-;    [(node id-atom-label (list single-elem))
-;     (node (identified-atom-with-generation id-atom-label generation-acc)
-;           (list
-;            (annotate-generational-tree single-elem target-identified-atom generation-acc live-depth (add1 depth-acc))))]
-;    [(node atom-label (list-rest h t))
-;     #:when (and (or (equal? (identified-atom-uid target-identified-atom) (identified-atom-uid atom-label))
-;                     (and (renames?
-;                           (identified-atom-atom target-identified-atom)
-;                           (identified-atom-atom atom-label))
-;                          (> generation-acc 0)))
-;                 (multiple-direct-live-lines? (node atom-label (cons h t)) live-depth depth-acc))
-;     (node (identified-atom-with-generation atom-label generation-acc)
-;           (map
-;            (λ (subtree)
-;              (annotate-generational-tree subtree target-identified-atom (add1 generation-acc) live-depth (add1 depth-acc)))
-;            (cons h t)))]
-;    [(node atom-label (list-rest h t))
-;     (node (identified-atom-with-generation atom-label generation-acc)
-;           (map
-;            (λ (subtree)
-;              (annotate-generational-tree subtree target-identified-atom generation-acc live-depth (add1 depth-acc)))
-;            (cons h t)))]))
-;(provide
-; (proc-doc/names
-;  annotate-generational-tree
-;  (-> node? identified-atom? exact-nonnegative-integer? exact-nonnegative-integer? exact-nonnegative-integer? node?)
-;  (raw-tree target-atom gen-acc live-depth depth-acc)
-;  @{Assign generation numbers to each atom in an unnumbered generational tree @racket[raw-tree].
-; The generation is incremented on unfolding a renaming of @racket[target-atom], but the first increment only occurs for the exact instance of the target atom.
-; The generation is tracked using @racket[gen-acc].
-; If an atom is still present at depth @racket[live-depth], the analysis does not provide proof that it will be dealt with in the future.
-; The value @racket[depth-acc] is used to track the depth at which atoms occur.
-; }))
-; TODO should use default arguments 0 for gen-acc and depth-acc
-
-; TODO test candidate-target-atoms
-;
+;; checks whether any descendant of root in graph is a renaming of root
+;; does not check whether common arguments are in corresponding position (which is required for generation increment)
 (define (descendant-renames? graph root)
   (define tc (transitive-closure graph))
   (hash-set! tc (list root root) #f)
-  (define reached (filter (λ (p) (and (hash-ref tc p) (equal? (first p) root))) (hash-keys tc)))
+  (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) root))) (hash-keys tc))))
   (define just-atoms (map identified-atom-atom reached))
   (define root-atom (identified-atom-atom root))
   (ormap (λ (a) (renames? root-atom a)) just-atoms))
+(module+ test
+  (require rackunit)
+  (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)))
+  (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'collect (list (g 2) (a 2))) 3)))
+  (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'eq (list (a 1) (a 2))) 4)))
+  (check-false (descendant-renames? sl-graph (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))))
 
 (define (candidate-target-identified-atoms skeleton root live-depth)
   (define (candidate-target-identified-atoms-aux skeleton root live-depth [depth-acc 0])
@@ -261,16 +228,20 @@
                (foldl
                 (λ (c candidate-acc)
                   (append candidate-acc (candidate-target-identified-atoms-aux skeleton c live-depth (+ depth-acc 1))))
-                (if (and (multiple-direct-live-lines? skeleton root live-depth depth-acc)
-                         (descendant-renames? skeleton root))
-                    (list (node-label skeleton))
-                    (list))
+                (list)
                 (reached-neighbors skeleton root))])
           (if (and (multiple-direct-live-lines? skeleton root live-depth depth-acc)
                    (descendant-renames? skeleton root))
-              (cons root candidates-among-descendants)
+              (list root)
               candidates-among-descendants))))
   (remove-duplicates (candidate-target-identified-atoms-aux skeleton root live-depth 0)))
+(module+ test
+  (check-equal?
+   (candidate-target-identified-atoms
+    sl-graph
+    (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1)
+    3)
+   (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2))))
 (provide
  (proc-doc/names
   candidate-target-identified-atoms
@@ -299,8 +270,8 @@
 
 (define (can-reach-depth? vertex graph target-depth curr-depth)
   (cond [(>= curr-depth target-depth) #t]
-        [(null? (reached-neighbors vertex graph)) #f]
+        [(null? (reached-neighbors graph vertex)) #f]
         [else
          (ormap
           (λ (c) can-reach-depth? c graph target-depth (+ curr-depth) 1)
-          (reached-neighbors vertex graph))]))
+          (reached-neighbors graph vertex))]))
