@@ -236,7 +236,7 @@
     (interpret-abstract-atom "atom(γ5,γ6,α7,α8)"))))
 
 ;; checks whether any descendant of root in graph is a renaming of root and whether shared vars are in the same position
-(define (descendant-renames? graph root)
+(define (descendant-renames-with-corresponding-args? graph root)
   (define tc (transitive-closure graph))
   (hash-set! tc (list root root) #f)
   (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) root))) (hash-keys tc))))
@@ -244,10 +244,10 @@
   (define root-atom (identified-atom-atom root))
   (ormap (λ (a) (renames-with-corresponding-args? root-atom a)) just-atoms))
 (module+ test
-  (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)))
-  (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'collect (list (g 2) (a 2))) 3)))
-  (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'eq (list (a 1) (a 2))) 4)))
-  (check-false (descendant-renames? sl-graph (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-atom (abstract-atom 'collect (list (g 2) (a 2))) 3)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-atom (abstract-atom 'eq (list (a 1) (a 2))) 4)))
+  (check-false (descendant-renames-with-corresponding-args? sl-graph (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))))
 
 (define (candidate-target-identified-atoms skeleton root live-depth)
   (define (candidate-target-identified-atoms-aux skeleton root live-depth [depth-acc 0])
@@ -260,7 +260,7 @@
                 (list)
                 (reached-neighbors skeleton root))])
           (if (and (multiple-direct-live-lines? skeleton root live-depth depth-acc)
-                   (descendant-renames? skeleton root))
+                   (descendant-renames-with-corresponding-args? skeleton root))
               (list root)
               candidates-among-descendants))))
   (remove-duplicates (candidate-target-identified-atoms-aux skeleton root live-depth 0)))
@@ -305,38 +305,42 @@
           (λ (c) can-reach-depth? c graph target-depth (+ curr-depth) 1)
           (reached-neighbors graph vertex))]))
 
-(define (annotate-general! skeleton root relevant-targets)
+(define (annotate-general! skeleton root relevant-targets rdag-depth)
   ; annotate when the relevant target atom for a subgraph is known
-  (define (annotate-specific-aux! skeleton aux-root relevant-target-atom)
+  (define (annotate-specific-aux! skeleton aux-root relevant-target-atom rdag-depth depth-acc)
     (match-define (generation root-gen-number root-origin)
       (identified-atom-with-generation-generation aux-root))
     (define next-layer-gen-number
-      (if (renames-with-corresponding-args? relevant-target-atom (identified-atom-atom (identified-atom-with-generation-id-atom aux-root)))
+      (if (and
+           (renames-with-corresponding-args?
+            relevant-target-atom
+            (identified-atom-atom (identified-atom-with-generation-id-atom aux-root)))
+           (multiple-direct-live-lines? skeleton aux-root rdag-depth depth-acc))
           (add1 root-gen-number)
           root-gen-number))
     (define next-gen (generation next-layer-gen-number root-origin))
     (for ([c (reached-neighbors skeleton aux-root)])
       (let ([annotated-c (identified-atom-with-generation c next-gen)])
         (rename-vertex! skeleton c annotated-c)
-        (annotate-specific-aux! skeleton annotated-c relevant-target-atom))))
+        (annotate-specific-aux! skeleton annotated-c relevant-target-atom rdag-depth (add1 depth-acc)))))
   ; annotate when the relevant target atom a subgraph is not yet known
-  (define (annotate-general-aux! skeleton aux-root relevant-targets)
+  (define (annotate-general-aux! skeleton aux-root relevant-targets rdag-depth depth-acc)
     (if (member (identified-atom-with-generation-id-atom aux-root) relevant-targets)
         (for ([c (reached-neighbors skeleton aux-root)])
           (let* ([root-id-atom (identified-atom-with-generation-id-atom aux-root)]
                  [origin (index-of relevant-targets root-id-atom)]
                  [annotated-c (identified-atom-with-generation c (generation 1 origin))])
             (rename-vertex! skeleton c annotated-c)
-            (annotate-specific-aux! skeleton annotated-c (identified-atom-atom root-id-atom))))
+            (annotate-specific-aux! skeleton annotated-c (identified-atom-atom root-id-atom) rdag-depth (add1 depth-acc))))
         (for ([c (reached-neighbors skeleton aux-root)])
           (let ([annotated-c (identified-atom-with-generation c (generation 0 #f))])
             (rename-vertex! skeleton c annotated-c)
-            (annotate-general-aux! skeleton annotated-c relevant-targets)))))
+            (annotate-general-aux! skeleton annotated-c relevant-targets rdag-depth (add1 depth-acc))))))
   ; start by giving top level generation 0
   (define annotated-root (identified-atom-with-generation root (generation 0 #f)))
   (rename-vertex! skeleton root annotated-root)
-  (annotate-general-aux! skeleton annotated-root relevant-targets))
+  (annotate-general-aux! skeleton annotated-root relevant-targets rdag-depth 1))
 (module+ test
   (define sl-root (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))
-  (annotate-general! sl-graph sl-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)))
+  (annotate-general! sl-graph sl-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length branch))
   (display (graphviz sl-graph)))
