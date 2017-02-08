@@ -32,6 +32,8 @@
   "abstract-domain-ordering.rkt"
   "abstract-knowledge.rkt"
   "abstract-multi-domain.rkt"
+  "abstract-substitution.rkt"
+  "abstraction-inspection-utils.rkt"
   (prefix-in slbranch: "analysis-trees/sameleaves-branch.rkt")
   (prefix-in ck: "concrete-knowledge.rkt")
   "data-utils.rkt"
@@ -205,17 +207,43 @@
  The active branch is the first branch, considered from left to right, with a leaf node eligible for further unfolding.
  If there is no such leaf node in the tree, the result is @racket[#f].}))
 
-;; checks whether any descendant of root in graph is a renaming of root
-;; does not check whether common arguments are in corresponding position (which is required for generation increment)
+;; checks if a1 renames a2 *and* whether any shared abstract variables occur in corresponding positions
+(define (renames-with-corresponding-args? a1 a2)
+  (define (as at) (list->set (map a (assemble-var-indices a? at))))
+  (define (gs at) (list->set (map g (assemble-var-indices g? at))))
+  (define shared
+    (set-union (set-intersect (as a1) (as a2)) (set-intersect (gs a1) (gs a2))))
+  (define subst (map (λ (v) (abstract-equality v (abstract-function (gensym "dummy") (list)))) (set->list shared)))
+  (renames? (apply-substitution subst a1) (apply-substitution subst a2)))
+(module+ test
+  (require rackunit)
+  (require "cclp-interpreter.rkt")
+  (check-true
+   (renames-with-corresponding-args?
+    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
+    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")))
+  (check-true
+   (renames-with-corresponding-args?
+    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
+    (interpret-abstract-atom "atom(γ1,γ3,α3,α5)")))
+  (check-false
+   (renames-with-corresponding-args?
+    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
+    (interpret-abstract-atom "atom(γ2,γ1,α3,α5)")))
+  (check-true
+   (renames-with-corresponding-args?
+    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
+    (interpret-abstract-atom "atom(γ5,γ6,α7,α8)"))))
+
+;; checks whether any descendant of root in graph is a renaming of root and whether shared vars are in the same position
 (define (descendant-renames? graph root)
   (define tc (transitive-closure graph))
   (hash-set! tc (list root root) #f)
   (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) root))) (hash-keys tc))))
   (define just-atoms (map identified-atom-atom reached))
   (define root-atom (identified-atom-atom root))
-  (ormap (λ (a) (renames? root-atom a)) just-atoms))
+  (ormap (λ (a) (renames-with-corresponding-args? root-atom a)) just-atoms))
 (module+ test
-  (require rackunit)
   (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)))
   (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'collect (list (g 2) (a 2))) 3)))
   (check-true (descendant-renames? sl-graph (identified-atom (abstract-atom 'eq (list (a 1) (a 2))) 4)))
@@ -283,15 +311,14 @@
     (match-define (generation root-gen-number root-origin)
       (identified-atom-with-generation-generation aux-root))
     (define next-layer-gen-number
-      (if (and (renames? (identified-atom-atom aux-root) relevant-target-atom)
-               #f)
+      (if (renames-with-corresponding-args? relevant-target-atom (identified-atom-atom (identified-atom-with-generation-id-atom aux-root)))
           (add1 root-gen-number)
           root-gen-number))
     (define next-gen (generation next-layer-gen-number root-origin))
     (for ([c (reached-neighbors skeleton aux-root)])
-          (let ([annotated-c (identified-atom-with-generation c next-gen)])
-            (rename-vertex! skeleton c annotated-c)
-            (annotate-specific-aux! skeleton annotated-c relevant-target-atom))))
+      (let ([annotated-c (identified-atom-with-generation c next-gen)])
+        (rename-vertex! skeleton c annotated-c)
+        (annotate-specific-aux! skeleton annotated-c relevant-target-atom))))
   ; annotate when the relevant target atom a subgraph is not yet known
   (define (annotate-general-aux! skeleton aux-root relevant-targets)
     (if (member (identified-atom-with-generation-id-atom aux-root) relevant-targets)
@@ -310,4 +337,6 @@
   (rename-vertex! skeleton root annotated-root)
   (annotate-general-aux! skeleton annotated-root relevant-targets))
 (module+ test
-  (check-true #f)) ; not done implementing yet!
+  (define sl-root (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))
+  (annotate-general! sl-graph sl-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)))
+  (display (graphviz sl-graph)))
