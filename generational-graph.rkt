@@ -39,6 +39,7 @@
 
 (require (for-doc scribble/manual))
 
+
 (struct generation (number origin)
   #:methods
   gen:custom-write
@@ -51,7 +52,7 @@
  (struct*-doc
   generation
   ([number (or/c exact-positive-integer? (cons/c symbol? exact-integer?))]
-   [origin exact-positive-integer?])
+   [origin (or/c #f exact-positive-integer?)])
   @{Used to track the recursion depth of an atom with respect to a uniquely identified target atom.}))
 
 (struct identified-atom-with-generation (id-atom generation)
@@ -275,3 +276,38 @@
          (ormap
           (λ (c) can-reach-depth? c graph target-depth (+ curr-depth) 1)
           (reached-neighbors graph vertex))]))
+
+(define (annotate-general! skeleton root relevant-targets)
+  ; annotate when the relevant target atom for a subgraph is known
+  (define (annotate-specific-aux! skeleton aux-root relevant-target-atom)
+    (match-define (generation root-gen-number root-origin)
+      (identified-atom-with-generation-generation aux-root))
+    (define next-layer-gen-number
+      (if (and (renames? (identified-atom-atom aux-root) relevant-target-atom)
+               #f)
+          (add1 root-gen-number)
+          root-gen-number))
+    (define next-gen (generation next-layer-gen-number root-origin))
+    (for ([c (reached-neighbors skeleton aux-root)])
+          (let ([annotated-c (identified-atom-with-generation c next-gen)])
+            (rename-vertex! skeleton c annotated-c)
+            (annotate-specific-aux! skeleton annotated-c relevant-target-atom))))
+  ; annotate when the relevant target atom a subgraph is not yet known
+  (define (annotate-general-aux! skeleton aux-root relevant-targets)
+    (if (member (identified-atom-with-generation-id-atom aux-root) relevant-targets)
+        (for ([c (reached-neighbors skeleton aux-root)])
+          (let* ([root-id-atom (identified-atom-with-generation-id-atom aux-root)]
+                 [origin (index-of relevant-targets root-id-atom)]
+                 [annotated-c (identified-atom-with-generation c (generation 1 origin))])
+            (rename-vertex! skeleton c annotated-c)
+            (annotate-specific-aux! skeleton annotated-c (identified-atom-atom root-id-atom))))
+        (for ([c (reached-neighbors skeleton aux-root)])
+          (let ([annotated-c (identified-atom-with-generation c (generation 0 #f))])
+            (rename-vertex! skeleton c annotated-c)
+            (annotate-general-aux! skeleton annotated-c relevant-targets)))))
+  ; start by giving top level generation 0
+  (define annotated-root (identified-atom-with-generation root (generation 0 #f)))
+  (rename-vertex! skeleton root annotated-root)
+  (annotate-general-aux! skeleton annotated-root relevant-targets))
+(module+ test
+  (check-true #f)) ; not done implementing yet!

@@ -9,6 +9,7 @@
     (define get-token
       (lexer-src-pos
        [(re-+ whitespace) (token 'WS lexeme)]
+       ; can just use literal lexemes in most cases...
        ["(" (token 'OPEN-PAREN lexeme)]
        [")" (token 'CLOSE-PAREN lexeme)]
        ["[" (token 'OPEN-RECTANGULAR-PAREN lexeme)]
