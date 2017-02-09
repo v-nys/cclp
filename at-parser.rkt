@@ -1,41 +1,53 @@
 #lang brag
+at : "(" (cyclenode | generalization | label-edges-origin | (label-edges-origin-sel at*)) ")"
 
-# note: I am not very flexible about whitespace (e.g. after most commas) - this is just to facilitate writing data, so I should stick to one style anyway
+cyclenode : "!CY" NUMBER
 
-top : [WS] at
-at : OPEN-PAREN (label-edges-origin | widening-edges | case-split-edges | cyclenode) [WS subtrees] CLOSE-PAREN  # keep label, edges and origin together as they are the all stored in the node label
-label-edges-origin : at-label [WS graph-edges] [WS substitution WS knowledge]
-
-at-label : [NUMBER PERIOD] (acon-with-selection | acon-without-selection) # this currently assumes a treelabel, not widening, case-split, or loop
-acon-with-selection : [nonempty-acon-without-selection COMMA] ASTERISK abstract-atom ASTERISK [COMMA nonempty-acon-without-selection]
-nonempty-acon-without-selection : abstract-atom (COMMA abstract-atom)*
-abstract-atom : SYMBOL [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]
+generalization : "!GEN" (acon-without-selection | (bare-label-sel at*))
+acon-without-selection : "□" | nonempty-acon-without-selection
+nonempty-acon-without-selection : abstract-conjunct ("," abstract-conjunct)*
+abstract-conjunct : abstract-atom | multi-abstraction
+abstract-atom : SYMBOL ["(" abstract-term ("," abstract-term)* ")"]
 abstract-term : abstract-variable | abstract-function-term | abstract-lplist
 abstract-variable : SYMBOL NUMBER
-abstract-function-term : (SYMBOL [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]) | NUMBER
-abstract-lplist : OPEN-RECTANGULAR-PAREN [abstract-term (COMMA abstract-term)* [LIST-SEPARATOR (abstract-lplist | abstract-variable)]] CLOSE-RECTANGULAR-PAREN
-acon-without-selection : EMPTY-GOAL | nonempty-acon-without-selection
+abstract-function-term : (SYMBOL ["(" abstract-term ("," abstract-term)* ")"]) | NUMBER
+abstract-lplist : "[" [abstract-term ("," abstract-term)* ["|" (abstract-lplist | abstract-variable)]] "]"
+multi-abstraction : "multi" "(" parameterized-conjunction "," boolean "," init-set "," consecutive-set "," final-set ")"
 
-graph-edges : OPEN-RECTANGULAR-PAREN [precedence (COMMA WS precedence)*] CLOSE-RECTANGULAR-PAREN
-precedence : abstract-atom WS LT WS abstract-atom
+# parameterized-conjunction = collect(g<1,i,1>,a<1,i,1>),append(a<1,i,2>,a<1,i,1>,a<1,i,3>)
+# init-set = {g<1,1,1>=g8,a<1,1,1>=a8,a<1,1,2>=a7,a<1,1,3>=a5}
+# consecutive-set = {a<1,i+1,2>=a<1,i,3>}
+# final-set = {g<1,L,1>=g4,a<1,L,1>=a4,a<1,L,2>=a3,a<1,L,3>=a1}
 
-substitution : OPEN-CURLY-PAREN [substitution-pair (COMMA WS substitution-pair)*] CLOSE-CURLY-PAREN
-substitution-pair : abstract-variable SLASH abstract-term
+parameterized-conjunction : parameterized-atom ["," parameterized-atom]*
+parameterized-atom : SYMBOL ["(" parameterized-term ("," parameterized-term)* ")"]
+parameterized-term : parameterized-variable | parameterized-function-term | parameterized-lplist
 
-knowledge : (rule | fullai-rule) PERIOD
-rule : (atom WS IMPLIES WS conjunction) | atom
-atom : SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]
+boolean : "#t" | "#f"
+
+
+at-label : [NUMBER "."] (acon-with-selection | acon-without-selection) # this currently assumes a treelabel, not widening, case-split, or loop
+acon-with-selection : [nonempty-acon-without-selection ","] "*" abstract-atom "*" ["," nonempty-acon-without-selection]
+
+
+
+graph-edges : "[" [precedence ("," precedence)*] "]"
+precedence : abstract-atom "<" abstract-atom
+
+substitution : "{" [substitution-pair ("," substitution-pair)*] "}"
+substitution-pair : abstract-variable "/" abstract-term
+
+knowledge : (rule | fullai-rule) "."
+rule : (atom ":-" conjunction) | atom
+atom : SYMBOL ["(" term ("," term)* ")"]
 term : variable | function-term | lplist
 variable : VARIABLE-IDENTIFIER
-function-term : (SYMBOL [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | NUMBER
-lplist : OPEN-RECTANGULAR-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-RECTANGULAR-PAREN
-conjunction : atom (COMMA atom)*
-fullai-rule : abstract-atom WS LEADS-TO WS substitution
+function-term : (SYMBOL ["(" term ("," term)* ")"]) | NUMBER
+lplist : "[" [term ("," term)* ["|" (lplist | variable)]] "]"
+conjunction : atom ("," atom)*
+fullai-rule : abstract-atom "->" substitution
 
 # this is tricky: cannot distinguish between widening and case split based on current tokens
 # expander uses a trick to make this work, but it's sketchy
-widening-edges : VARIABLE-IDENTIFIER WS [NUMBER PERIOD] (acon-with-selection | acon-without-selection) [WS graph-edges]
-case-split-edges : VARIABLE-IDENTIFIER WS [NUMBER PERIOD] (acon-with-selection | acon-without-selection) [WS graph-edges]
-cyclenode : VARIABLE-IDENTIFIER WS NUMBER
-
-subtrees : at (WS at)*
+widening-edges : VARIABLE-IDENTIFIER [NUMBER "."] (acon-with-selection | acon-without-selection) [graph-edges]
+case-split-edges : VARIABLE-IDENTIFIER [NUMBER "."] (acon-with-selection | acon-without-selection) [graph-edges]

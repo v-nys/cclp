@@ -1,60 +1,10 @@
-#lang br
-
-(require brag/support
-         (prefix-in re- br-parser-tools/lex-sre)
-         syntax/strip-context)
-
-(define (tokenize input-port)
-  (define (next-token)
-    (define get-token
-      (lexer-src-pos
-       [(re-+ whitespace) (token 'WS lexeme)]
-       ; can just use literal lexemes in most cases...
-       ["(" (token 'OPEN-PAREN lexeme)]
-       [")" (token 'CLOSE-PAREN lexeme)]
-       ["[" (token 'OPEN-RECTANGULAR-PAREN lexeme)]
-       ["]" (token 'CLOSE-RECTANGULAR-PAREN lexeme)]
-       ["|" (token 'LIST-SEPARATOR lexeme)]
-       ["{" (token 'OPEN-CURLY-PAREN lexeme)]
-       ["}" (token 'CLOSE-CURLY-PAREN lexeme)]
-       ["," (token 'COMMA lexeme)]
-       [(re-seq numeric (re-* numeric)) (token 'NUMBER (string->number lexeme))]
-       ["/" (token 'SLASH lexeme)]
-       ["." (token 'PERIOD lexeme)]
-       ["*" (token 'ASTERISK lexeme)]
-       ["□" (token 'EMPTY-GOAL lexeme)]
-       [(re-seq
-         (char-range "A" "Z")
-         (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_")))
-        (token 'VARIABLE-IDENTIFIER lexeme)]
-       [(re--
-         (re-seq (char-range "a" "z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_")))
-         (re-or (re-seq "g" (re-+ numeric))
-                (re-seq "a" (re-+ numeric)))) (token 'SYMBOL lexeme)]
-       ["->" (token 'LEADS-TO lexeme)]
-       ["<" (token 'LT lexeme)]
-       [":-" (token 'IMPLIES lexeme)]
-       [(eof) eof]
-       [(re-seq "%" (re-* (char-complement "\n"))) (token 'COMMENT lexeme #:skip? #t)]))
-    (get-token input-port))
-  next-token)
-(provide tokenize)
-
-(define (all-tokens str)
-  (define (exhaust t)
-    (let ([next (t)])
-      (if (equal? (position-token-token next) eof)
-          (list next)
-          (cons next (exhaust t)))))
-  (let* ([string-port (open-input-string str)]
-         [tokenizer (tokenize string-port)])
-    (exhaust tokenizer)))
-(provide all-tokens)
-
-(require "at-parser.rkt")
+#lang br/quicklang
+(require
+  "at-parser.rkt"
+  "at-tokenizer.rkt")
 (define (read-syntax source-path input-port)
-  (define parse-tree (parse source-path (tokenize input-port)))
-  (strip-context
+  (define parse-tree (parse source-path (make-tokenizer input-port source-path)))
+  (strip-bindings
    (with-syntax
        ([_PARSE-TREE parse-tree])
      #'(module at-mod cclp/at-expander
