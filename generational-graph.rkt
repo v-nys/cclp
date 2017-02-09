@@ -344,3 +344,16 @@
   (define sl-root (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))
   (annotate-general! sl-graph sl-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length branch))
   (display (graphviz sl-graph)))
+
+(define (generalize t) (cons t #f))
+(module+ test
+  (check-equal? (generalize primes5:val) (cons primes5:val #f))
+  (check-equal? (generalize slbranch:val) (cons generalizedslbranch:val #t)))
+(provide
+ (proc-doc/names
+  generalize
+  (-> node? (cons/c node? boolean?))
+  (top)
+  @{Attempts to generalize the candidate node in @racket[t].
+ If generalization is successful, the first element of the returned pair is @racket[t], extended with a @racket[node?] whose label is a @racket[generalization?] and the second element is @racket[#t].
+ Otherwise, the first element is @racket[t] and the second element is @racket[#f].}))
