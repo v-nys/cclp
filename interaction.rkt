@@ -33,7 +33,6 @@
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")
 (require scribble/srcdoc)
-(require terminal-color)
 (require "abstract-domain-ordering.rkt")
 (require racket/serialize)
 (require "abstract-analysis.rkt")
@@ -46,7 +45,6 @@
 
 (require racket/logging)
 (require (for-doc scribble/manual))
-(define use-color #f)
 
 ; full-ai-rules is tricky
 ; these are converted to full-evaluations pretty fast...
@@ -83,7 +81,11 @@
   (interactive-dispatch
    "What do you want to do?"
    ("proceed"
-    (proceed))))
+    (proceed))
+   ("rewind"
+    (error "not implemented yet"))
+   ("show top level"
+    (error "not implemented yet"))))
 
 ;    (match (candidate-and-predecessors tree '())
 ;      [(cons #f _)
@@ -284,14 +286,10 @@
             [atom c])
         (begin
           (if (and (some? ms) (eq? i (some-v ms)))
-              (if use-color
-                  (print-color atom out #:fg 'red)
-                  (display (format "*~v*" atom) out))
+              (display (format "*~v*" atom) out)
               (print atom out))
           (when (< i last-i) (display "," out))))
-      (if use-color
-          (display-color "□" #:fg 'green)
-          (display "□"))))
+      (display "□")))
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
@@ -300,9 +298,7 @@
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out))]
     [(cycle i)
-     (if use-color
-         (display-color (format "cycle back to node ~a" i) out #:fg 'green)
-         (display (format "cycle back to node ~a" i) out))]
+     (display (format "cycle back to node ~a" i) out)]
     [(widening con sel msg idx edges)
      (begin
        (display "[widening]")
