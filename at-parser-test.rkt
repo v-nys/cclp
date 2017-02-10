@@ -21,5 +21,13 @@
  '(at
    (treelabel
     (selectionless-conjunction
+     (abstract-atom "myatom" (abstract-function "a"))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(myatom(a(b(c))))"))
+ '(at
+   (treelabel
+    (selectionless-conjunction
      (abstract-atom "myatom"
-                    (abstract-term (abstract-function "a")))))))
+                    (abstract-function "a"
+                                       (abstract-function "b"
+                                                          (abstract-function "c"))))))))
