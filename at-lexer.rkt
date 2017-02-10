@@ -3,24 +3,27 @@
 (require brag/support
          syntax/strip-context)
 
+(define-lex-abbrev digits (:+ (char-set "0123456789"))) ; numeric includes non-latin scripts,...
 (define at-lexer
   (lexer-srcloc
    [(eof) (return-without-srcloc eof)]
    [(:+ whitespace) (token lexeme #:skip? #t)]
-   [(:+ numeric) (token 'NUMBER (string->number lexeme))]
+   [(:+ digits) (token 'NUMBER (string->number lexeme))]
    [(:seq
      (char-range "A" "Z")
-     (:* (:or (char-range "a" "z") (char-range "A" "Z") numeric "_")))
+     (:* (:or (char-range "a" "z") (char-range "A" "Z") digits "_")))
     (token 'VARIABLE-IDENTIFIER lexeme)]
    [(:-
-     (:seq (char-range "a" "z") (:* (:or (char-range "a" "z") (char-range "A" "Z") numeric  "_")))
-     (:or (:seq "g" (:+ numeric))
-          (:seq "a" (:+ numeric)))
+     (:seq (char-range "a" "z") (:* (:or (char-range "a" "z") (char-range "A" "Z") digits  "_")))
+     (:or (:seq "g" (:+ digits))
+          (:seq "a" (:+ digits)))
      "multi")
     (token 'SYMBOL lexeme)]
-   [(:or "#t" "#f" "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
-   [(:seq "g" (:+ numeric)) (token 'AVAR-G (string->number (substring lexeme 1)))]
-   [(:seq "a" (:+ numeric)) (token 'AVAR-A (string->number (substring lexeme 1)))]
+   [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
+   ["#t" (token 'BOOLEAN #t)]
+   ["#f" (token 'BOOLEAN #f)]
+   [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
+   [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
 
 (module+ test
@@ -34,16 +37,16 @@
     (srcloc-token (token 'NUMBER 1) (srcloc 'string #f #f 3 1))))
   (check-equal?
    (lex "g1")
-   (list (srcloc-token (token 'AVAR "g1") (srcloc 'string #f #f 1 2))))
+   (list (srcloc-token (token 'AVAR-G 1) (srcloc 'string #f #f 1 2))))
   (check-equal?
    (lex "multiabc")
    (list (srcloc-token (token 'SYMBOL "multiabc") (srcloc 'string #f #f 1 8))))
   (check-equal?
    (lex "multi()")
    (list
-    (srcloc-token (token "multi") (srcloc 'string #f #f 1 5))
-    (srcloc-token (token "(") (srcloc 'string #f #f 6 1))
-    (srcloc-token (token ")") (srcloc 'string #f #f 7 1))))
+    (srcloc-token (token "multi" "multi") (srcloc 'string #f #f 1 5))
+    (srcloc-token (token "(" "(") (srcloc 'string #f #f 6 1))
+    (srcloc-token (token ")" ")") (srcloc 'string #f #f 7 1))))
   (check-equal?
    (lex "hello % world\ntest")
    (list
