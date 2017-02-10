@@ -82,5 +82,5 @@
    (treelabel
     (selectionless-abstract-conjunction (multi-abstraction (parameterized-abstract-conjunction (parameterized-abstract-atom "abc")) #t (init) (consecutive) (final))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom) {} myfact."))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(myatom {} myfact.)"))
  '(at (treelabel (selectionless-abstract-conjunction (abstract-atom "myatom")) (substitution) (fact (atom "myfact")))))

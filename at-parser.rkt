@@ -25,12 +25,14 @@ precedence-list : /"[" [precedence (/"," precedence)*] /"]"
 precedence : abstract-atom /"<" abstract-atom
 substitution : /"{" [substitution-pair (/"," substitution-pair)*] /"}"
 substitution-pair : abstract-variable /"/" abstract-term
+@knowledge : rule | fullai-rule
+fullai-rule : abstract-atom /"->" substitution
 
 
 
 
 
-knowledge : rule
+
 @rule : fact
 fact : atom /"."
 atom : SYMBOL
