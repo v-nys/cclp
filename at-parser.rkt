@@ -2,7 +2,7 @@
 at : /"(" at-content /")"
 
 cyclenode : /"!CY" NUMBER
-treelabel : selectionless-abstract-conjunction
+treelabel : selectionless-abstract-conjunction [substitution knowledge]
           | NUMBER /"." abstract-conjunction-selection [precedence-list] [substitution knowledge]
 selectionless-abstract-conjunction : /"□"
                                    | nonempty-selectionless-abstract-conjunction
@@ -25,6 +25,9 @@ precedence-list : /"[" [precedence (/"," precedence)*] /"]"
 precedence : abstract-atom /"<" abstract-atom
 substitution : /"{" [substitution-pair (/"," substitution-pair)*] /"}"
 substitution-pair : abstract-variable /"/" abstract-term
+
+
+
 
 
 knowledge : rule
