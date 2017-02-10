@@ -31,3 +31,9 @@
                     (abstract-function "a"
                                        (abstract-function "b"
                                                           (abstract-function "c"))))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(myatom(a,b))"))
+ '(at
+   (treelabel
+    (selectionless-conjunction
+     (abstract-atom "myatom" (abstract-function "a") (abstract-function "b"))))))
