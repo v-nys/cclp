@@ -18,7 +18,7 @@
           (:seq "a" (:+ numeric)))
      "multi")
     (token 'SYMBOL lexeme)]
-   [(:or "#t" "#f" "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme)]
+   [(:or "#t" "#f" "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
    [(:seq "g" (:+ numeric)) (token 'AVAR-G (string->number (substring lexeme 1)))]
    [(:seq "a" (:+ numeric)) (token 'AVAR-A (string->number (substring lexeme 1)))]
    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))

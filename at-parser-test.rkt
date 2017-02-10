@@ -49,3 +49,27 @@
    (treelabel
     (selectionless-abstract-conjunction
      (abstract-atom "myatom" (abstract-g-variable 1))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([]))"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "myatom" (abstract-list))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([g1]))"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "myatom" (abstract-list (abstract-g-variable 1)))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([g1,g2]))"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "myatom" (abstract-list (abstract-g-variable 1) "," (abstract-g-variable 2)))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([g1|g2]))"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "myatom" (abstract-list (abstract-g-variable 1) "|" (abstract-g-variable 2)))))))
