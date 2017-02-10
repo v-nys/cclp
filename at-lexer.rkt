@@ -23,6 +23,7 @@
          (:seq "a" (:+ numeric)))
     (token 'AVAR lexeme)]
    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
+
 (module+ test
   (require rackunit)
   (define (lex str) (apply-lexer at-lexer str))
