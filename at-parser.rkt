@@ -3,9 +3,9 @@ at : /"(" at-content /")"
 
 cyclenode : /"!CY" NUMBER
 treelabel : selectionless-abstract-conjunction
-          | NUMBER /"." abstract-conjunction-selection [precedence-list] substitution knowledge
-/selectionless-abstract-conjunction : /"□"
-                                    | nonempty-selectionless-abstract-conjunction
+          | NUMBER /"." abstract-conjunction-selection [precedence-list] [substitution knowledge]
+selectionless-abstract-conjunction : /"□"
+                                   | nonempty-selectionless-abstract-conjunction
 @nonempty-selectionless-abstract-conjunction : abstract-conjunct (/"," abstract-conjunct)*
 abstract-atom : SYMBOL [/"(" abstract-term (/"," abstract-term)* /")"]
 @abstract-term : abstract-function | abstract-variable | abstract-list
@@ -19,22 +19,20 @@ abstract-list : /"[" [abstract-term term-tail ["|" (abstract-list | abstract-var
                    | multi-abstraction
 multi-abstraction : /"multi" /"(" parameterized-abstract-conjunction /"," BOOLEAN /"," init /"," consecutive /"," final  /")"
 parameterized-abstract-conjunction : /"(" parameterized-abstract-atom (/"," parameterized-abstract-atom)* /")"
+abstract-conjunction-selection : [selectionless-abstract-conjunction /","] selected-abstract-conjunct [/"," selectionless-abstract-conjunction]
+selected-abstract-conjunct : /"*" abstract-conjunct /"*"
+precedence-list : /"[" [precedence (/"," precedence)*] /"]"
+precedence : abstract-atom /"<" abstract-atom
+substitution : /"{" [substitution-pair (/"," substitution-pair)*] /"}"
+substitution-pair : abstract-variable /"/" abstract-term
 
 
-
-
-
-
-parameterized-abstract-atom : SYMBOL
-init : /"{" /"}"
-consecutive : /"{" /"}"
-final : /"{" /"}"
-abstract-conjunction-selection : [selectionless-abstract-conjunction] /"*" abstract-conjunct /"*" [selectionless-abstract-conjunction]
-precedence-list : /"[" /"]"
-substitution : /"{" /"}"
 knowledge : rule
 @rule : fact
 fact : atom /"."
 atom : SYMBOL
-
+parameterized-abstract-atom : SYMBOL
+init : /"{" /"}"
+consecutive : /"{" /"}"
+final : /"{" /"}"
 @at-content : cyclenode | treelabel
