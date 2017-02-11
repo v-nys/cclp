@@ -9,40 +9,41 @@
   (lexer-srcloc
    [(eof) (return-without-srcloc eof)]
    [(:or "a" "g" "<" "," "i" "i+1" "L" ">") (token lexeme lexeme)]
-   [(:+ digits) (token 'NUMBER (string->number lexeme))]))
-
-(define at-lexer
-  (lexer-srcloc
-   [(eof) (return-without-srcloc eof)]
-   [(:+ whitespace) (token lexeme #:skip? #t)]
    [(:+ digits) (token 'NUMBER (string->number lexeme))]
-   [(:seq
-     (char-range "A" "Z")
-     (:* (:or (char-range "a" "z") (char-range "A" "Z") digits "_")))
-    (token 'VARIABLE-IDENTIFIER lexeme)]
-   [(:-
-     (:seq (char-range "a" "z") (:* (:or (char-range "a" "z") (char-range "A" "Z") digits  "_")))
-     (:or (:seq "g" (:+ digits))
-          (:seq "a" (:+ digits)))
-     (:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
+   [any-char (return-without-srcloc (begin (set! top-lexer #t) (unget input-port 1) (void)))]))
+
+(define top-lexer #t)
+(define (unget port num)
+  (file-position port (- (file-position port) num)))
+(define at-lexer
+  (if
+   top-lexer
+   (lexer-srcloc
+    [(eof) (return-without-srcloc eof)]
+    [(:+ whitespace) (token lexeme #:skip? #t)]
+    [(:+ digits) (token 'NUMBER (string->number lexeme))]
+    [(:seq
+      (char-range "A" "Z")
+      (:* (:or (char-range "a" "z") (char-range "A" "Z") digits "_")))
+     (token 'VARIABLE-IDENTIFIER lexeme)]
+    [(:-
+      (:seq (char-range "a" "z") (:* (:or (char-range "a" "z") (char-range "A" "Z") digits  "_")))
+      (:or (:seq "g" (:+ digits))
+           (:seq "a" (:+ digits)))
+      (:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
+           (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
+      "multi")
+     (token 'SYMBOL lexeme)]
+    [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
+    ["#t" (token 'BOOLEAN #t)]
+    ["#f" (token 'BOOLEAN #f)]
+    [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
+    [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
+    [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
           (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
-     "multi")
-    (token 'SYMBOL lexeme)]
-   [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
-   ["#t" (token 'BOOLEAN #t)]
-   ["#f" (token 'BOOLEAN #f)]
-   [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
-   [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
-   [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
-         (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
-    ; this is wrong
-    ; it also loses source location
-    ; should rewind characters, apply parameterized variable lexer to port, not lexeme
-    ; question is: how do I switch back and forth?
-    ; at-lexer returns a lexer -> can I make it return a different one next time?
-    ; e.g. set a flag and return void if the regex matches
-    (return-without-srcloc (parameterized-variable-lexer (open-input-string lexeme)))]
-   [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
+     (return-without-srcloc (begin (unget input-port (string-length lexeme)) (set! top-lexer #f) (void)))]
+    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)])
+   parameterized-variable-lexer))
 
 (module+ test
   (require rackunit)
