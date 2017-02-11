@@ -5,8 +5,6 @@
 
 (define-lex-abbrev digits (:+ (char-set "0123456789"))) ; numeric includes non-latin scripts,...
 
-(define (unget port)
-  (file-position port (- (file-position port) 1)))
 (define parameterized-variable-lexer
   (lexer-srcloc
    [(eof) (return-without-srcloc eof)]
@@ -14,36 +12,43 @@
    [(:+ digits) (token 'NUMBER (string->number lexeme))]))
 
 (define at-lexer
-  (lexer-srcloc
-   [(eof) (return-without-srcloc eof)]
-   [(:+ whitespace) (token lexeme #:skip? #t)]
-   [(:+ digits) (token 'NUMBER (string->number lexeme))]
-   [(:seq
-     (char-range "A" "Z")
-     (:* (:or (char-range "a" "z") (char-range "A" "Z") digits "_")))
-    (token 'VARIABLE-IDENTIFIER lexeme)]
-   [(:-
-     (:seq (char-range "a" "z") (:* (:or (char-range "a" "z") (char-range "A" "Z") digits  "_")))
-     (:or (:seq "g" (:+ digits))
-          (:seq "a" (:+ digits)))
-     (:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
-          (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
-     "multi")
-    (token 'SYMBOL lexeme)]
-   [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
-   ["#t" (token 'BOOLEAN #t)]
-   ["#f" (token 'BOOLEAN #f)]
-   [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
-   [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
-   [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
-         (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
-    (begin (unget (length lexeme)) (return-without-srcloc (apply-lexer parameterized-variable-lexer lexeme)))]
-   [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
+  (let* ([parameterized-variable-lexer
+          (lexer-srcloc
+           [(eof) (return-without-srcloc eof)]
+           [(:or "a" "g" "<" "," "i" "i+1" "L" ">") (token lexeme lexeme)]
+           [(:+ digits) (token 'NUMBER (string->number lexeme))])]
+         [main-lexer
+          (lexer-srcloc
+           [(eof) (return-without-srcloc eof)]
+           [(:+ whitespace) (token lexeme #:skip? #t)]
+           [(:+ digits) (token 'NUMBER (string->number lexeme))]
+           [(:seq
+             (char-range "A" "Z")
+             (:* (:or (char-range "a" "z") (char-range "A" "Z") digits "_")))
+            (token 'VARIABLE-IDENTIFIER lexeme)]
+           [(:-
+             (:seq (char-range "a" "z") (:* (:or (char-range "a" "z") (char-range "A" "Z") digits  "_")))
+             (:or (:seq "g" (:+ digits))
+                  (:seq "a" (:+ digits)))
+             (:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
+                  (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
+             "multi")
+            (token 'SYMBOL lexeme)]
+           [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
+           ["#t" (token 'BOOLEAN #t)]
+           ["#f" (token 'BOOLEAN #f)]
+           [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
+           [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
+           [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
+                 (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
+            (return-without-srcloc (begin (apply-lexer parameterized-variable-lexer lexeme)))]
+           [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)])])
+    (main-lexer)))
 
 (module+ test
   (require rackunit)
-  (define (lex str) (apply-lexer at-lexer str))
-  (define (lex-param str) (apply-lexer parameterized-variable-lexer str))
+  (define (lex str) (apply-lexer at-lexer (open-input-string str))) ; use a port so we can unget
+  (define (lex-param str) (apply-lexer parameterized-variable-lexer (open-input-string str)))
   (check-equal?
    (lex "g 1")
    (list
@@ -79,5 +84,8 @@
     (srcloc-token (token "i+1" "i+1") (srcloc 'string #f #f 5 3))
     (srcloc-token (token "," ",") (srcloc 'string #f #f 8 1))
     (srcloc-token (token 'NUMBER 3) (srcloc 'string #f #f 9 1))
-    (srcloc-token (token ">" ">") (srcloc 'string #f #f 10 1)))))
+    (srcloc-token (token ">" ">") (srcloc 'string #f #f 10 1))))
+  (check-equal?
+   (lex "g<1,i+1,3>")
+   (lex-param "g<1,i+1,3>")))
 (provide at-lexer)
