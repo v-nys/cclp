@@ -98,3 +98,12 @@
      (substitution
       (substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
       (substitution-pair (abstract-a-variable 2) (abstract-function "nil")))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(b,c {} a :- b,c)"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "b")
+     (abstract-atom "c"))
+    (substitution)
+    (clause (atom "a") (conjunction (atom "b") (atom "c"))))))
