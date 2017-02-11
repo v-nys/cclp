@@ -13,8 +13,8 @@ abstract-function : SYMBOL [/"(" abstract-term (/"," abstract-term)* /")"]
 @abstract-variable : abstract-a-variable | abstract-g-variable
 abstract-a-variable : AVAR-A
 abstract-g-variable : AVAR-G
-abstract-list : /"[" [abstract-term term-tail ["|" (abstract-list | abstract-variable)]] /"]" # can't cut comma or separator (need to distinguish during expansion)
-@term-tail : ("," abstract-term)*
+abstract-list : /"[" [abstract-term abstract-term-tail ["|" (abstract-list | abstract-variable)]] /"]" # can't cut comma or separator (need to distinguish during expansion)
+@abstract-term-tail : ("," abstract-term)*
 @abstract-conjunct : abstract-atom
                    | multi-abstraction
 multi-abstraction : /"multi" /"(" parameterized-abstract-conjunction /"," BOOLEAN /"," init /"," consecutive /"," final  /")"
@@ -31,12 +31,15 @@ fullai-rule : abstract-atom /"->" substitution
 fact : atom /"."
 clause : atom /":-" conjunction
 conjunction : atom (/"," atom)*
+atom : SYMBOL [/"(" term (/"," term)* /")"]
+@term : variable | function | list
+variable : VARIABLE-IDENTIFIER
+function : SYMBOL [/"(" term (/"," term)* /")"]
+         | NUMBER
+list : /"[" [term term-tail ["|" (list | variable)]] /"]"
+@term-tail : ("," term)*
 
 
-
-
-
-atom : SYMBOL
 parameterized-abstract-atom : SYMBOL
 init : /"{" /"}"
 consecutive : /"{" /"}"

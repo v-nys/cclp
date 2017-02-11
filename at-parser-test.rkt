@@ -107,3 +107,13 @@
      (abstract-atom "c"))
     (substitution)
     (clause (atom "a") (conjunction (atom "b") (atom "c"))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(b,c {} a(X,foo,[X,Y]) :- b,c)"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "b")
+     (abstract-atom "c"))
+    (substitution)
+    (clause (atom "a" (variable "X") (function "foo") (list (variable "X") "," (variable "Y")))
+            (conjunction (atom "b") (atom "c"))))))
