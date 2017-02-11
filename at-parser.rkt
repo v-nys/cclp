@@ -27,14 +27,15 @@ substitution : /"{" [substitution-pair (/"," substitution-pair)*] /"}"
 substitution-pair : abstract-variable /"/" abstract-term
 @knowledge : rule | fullai-rule
 fullai-rule : abstract-atom /"->" substitution
-
-
-
-
-
-
-@rule : fact
+@rule : fact | clause
 fact : atom /"."
+clause : atom /":-" conjunction
+conjunction : atom (/"," atom)*
+
+
+
+
+
 atom : SYMBOL
 parameterized-abstract-atom : SYMBOL
 init : /"{" /"}"

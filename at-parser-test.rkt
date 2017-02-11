@@ -84,3 +84,17 @@
 (check-equal?
  (parse-to-datum (apply-tokenizer make-tokenizer "(myatom {} myfact.)"))
  '(at (treelabel (selectionless-abstract-conjunction (abstract-atom "myatom")) (substitution) (fact (atom "myfact")))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(myatom {a1/g1, g2/nil} myhead(a1,a2) -> {a1/g1, a2/nil})"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "myatom"))
+    (substitution
+     (substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
+     (substitution-pair (abstract-g-variable 2) (abstract-function "nil")))
+    (fullai-rule
+     (abstract-atom "myhead" (abstract-a-variable 1) (abstract-a-variable 2))
+     (substitution
+      (substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
+      (substitution-pair (abstract-a-variable 2) (abstract-function "nil")))))))
