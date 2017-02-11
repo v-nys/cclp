@@ -117,3 +117,17 @@
     (substitution)
     (clause (atom "a" (variable "X") (function "foo") (list (variable "X") "," (variable "Y")))
             (conjunction (atom "b") (atom "c"))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(multi((abc(a<1,i,1>,a<1,i,2>)),#t,{},{},{}))"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (multi-abstraction
+      (parameterized-abstract-conjunction
+       (parameterized-abstract-atom "abc"
+                                    (parameterized-abstract-a-variable 1  1)
+                                    (parameterized-abstract-a-variable 1  2)))
+      #t
+      (init)
+      (consecutive)
+      (final))))))

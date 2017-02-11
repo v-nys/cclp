@@ -40,7 +40,13 @@ list : /"[" [term term-tail ["|" (list | variable)]] /"]"
 @term-tail : ("," term)*
 
 
-parameterized-abstract-atom : SYMBOL
+parameterized-abstract-atom : SYMBOL [/"(" parameterized-abstract-term (/"," parameterized-abstract-term)* /")"]
+@parameterized-abstract-term : parameterized-abstract-function | parameterized-abstract-variable | parameterized-abstract-list
+parameterized-abstract-list : /"[" [parameterized-abstract-term parameterized-abstract-term-tail ["|" (parameterized-abstract-list | parameterized-abstract-variable)]] /"]"
+@parameterized-abstract-term-tail : ("," parameterized-abstract-term)*
+@parameterized-abstract-variable : parameterized-abstract-a-variable | parameterized-abstract-g-variable
+parameterized-abstract-a-variable : /"a" /"<" NUMBER /"," parameterization-index /"," NUMBER /">"
+
 init : /"{" /"}"
 consecutive : /"{" /"}"
 final : /"{" /"}"
