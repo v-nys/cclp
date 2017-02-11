@@ -9,6 +9,7 @@
   (file-position port (- (file-position port) 1)))
 (define parameterized-variable-lexer
   (lexer-srcloc
+   [(eof) (return-without-srcloc eof)]
    [(:or "a" "g" "<" "," "i" "i+1" "L" ">") (token lexeme lexeme)]
    [(:+ digits) (token 'NUMBER (string->number lexeme))]))
 
@@ -35,7 +36,7 @@
    [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
    [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
    [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
-          (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
+         (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
     (begin (unget (length lexeme)) (return-without-srcloc (apply-lexer parameterized-variable-lexer lexeme)))]
    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
 
@@ -68,18 +69,15 @@
     (srcloc-token (token " " #:skip? #t) (srcloc 'string #f #f 6 1))
     (srcloc-token (token 'COMMENT "% world\n" #:skip? #t) (srcloc 'string #f #f 7 8))
     (srcloc-token (token 'SYMBOL "test") (srcloc 'string #f #f 15 4))))
-;  (check-equal?
-;   (lex-param "g<1,i+1,3>")
-;   (list
-;    (srcloc-token (token "g" "g") (srcloc 'string #f #f 1 1))
-;    (srcloc-token (token "<" "<") (srcloc 'string #f #f 2 1))
-;    (srcloc-token (token 'NUMBER "1") (srcloc 'string #f #f 3 1))
-;    (srcloc-token (token "," ",") (srcloc 'string #f #f 4 1))
-;    (srcloc-token (token "i" "i") (srcloc 'string #f #f 5 1))
-;    (srcloc-token (token "+" "+") (srcloc 'string #f #f 6 1))
-;    (srcloc-token (token "1" "1") (srcloc 'string #f #f 7 1)) ; this is not just any number, it is symbolic
-;    (srcloc-token (token "," ",") (srcloc 'string #f #f 8 1))
-;    (srcloc-token (token 'NUMBER "3") (srcloc 'string #f #f 9 1))
-;    (srcloc-token (token "<" "<") (srcloc 'string #f #f 10 1))))
-  )
+  (check-equal?
+   (lex-param "g<1,i+1,3>")
+   (list
+    (srcloc-token (token "g" "g") (srcloc 'string #f #f 1 1))
+    (srcloc-token (token "<" "<") (srcloc 'string #f #f 2 1))
+    (srcloc-token (token 'NUMBER 1) (srcloc 'string #f #f 3 1))
+    (srcloc-token (token "," ",") (srcloc 'string #f #f 4 1))
+    (srcloc-token (token "i+1" "i+1") (srcloc 'string #f #f 5 3))
+    (srcloc-token (token "," ",") (srcloc 'string #f #f 8 1))
+    (srcloc-token (token 'NUMBER 3) (srcloc 'string #f #f 9 1))
+    (srcloc-token (token ">" ">") (srcloc 'string #f #f 10 1)))))
 (provide at-lexer)
