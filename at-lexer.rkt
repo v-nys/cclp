@@ -7,16 +7,16 @@
 
 (define parameterized-variable-lexer
   (lexer-srcloc
-   [(eof) (return-without-srcloc eof)]
-   [(:or "a" "g" "<" "," "i" "i+1" "L" ">") (token lexeme lexeme)]
-   [(:+ digits) (token 'NUMBER (string->number lexeme))]
-   [any-char (return-without-srcloc (unget input-port 1))]))
+   [(eof) (begin (set! state 'unparameterized) (return-without-srcloc eof))]
+   [(:or "a" "g" "<" "," "i" "i+1" "L") (token lexeme lexeme)]
+   [">" (begin (set! state 'unparameterized) (token lexeme lexeme))]
+   [(:+ digits) (token 'NUMBER (string->number lexeme))]))
 
 (define (unget port num)
   (file-position port (- (file-position port) num)))
 (define at-lexer
   (lexer-srcloc
-   [(eof) (return-without-srcloc eof)]
+   [(eof) (begin (set! state 'unparameterized) (return-without-srcloc eof))]
    [(:+ whitespace) (token lexeme #:skip? #t)]
    [(:+ digits) (token 'NUMBER (string->number lexeme))]
    [(:seq
@@ -38,12 +38,22 @@
    [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
    [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
          (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
-    (return-without-srcloc eof)]
+    (return-without-srcloc (begin (file-position input-port (- (file-position input-port) (string-length lexeme))) (set! state 'parameterized) (token 'COMMENT "a-void-ing token" #:skip? #t)))]
    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
+
+(define state 'unparameterized)
+(define top-lexer
+  (let ([unparameterized-lexer at-lexer]
+        [parameterized-lexer parameterized-variable-lexer])
+    (λ (input-port)
+      (begin
+        (cond [(eq? state 'unparameterized) (unparameterized-lexer input-port)]
+              [(eq? state 'parameterized) (parameterized-lexer input-port)]
+              [else (error "undefined state")])))))
 
 (module+ test
   (require rackunit)
-  (define (lex str) (apply-lexer at-lexer (open-input-string str))) ; use a port so we can unget
+  (define (lex str) (apply-lexer top-lexer (open-input-string str))) ; use a port so we can unget
   (define (lex-param str) (apply-lexer parameterized-variable-lexer (open-input-string str)))
   (check-equal?
    (lex "g 1")
@@ -83,5 +93,14 @@
     (srcloc-token (token ">" ">") (srcloc 'string #f #f 10 1))))
   (check-equal?
    (lex "g<1,i+1,3>")
-   (lex-param "g<1,i+1,3>")))
+   (list
+    (token 'COMMENT "a-void-ing token" #:skip? #t)
+    (srcloc-token (token "g" "g") (srcloc 'string #f #f 1 1))
+    (srcloc-token (token "<" "<") (srcloc 'string #f #f 2 1))
+    (srcloc-token (token 'NUMBER 1) (srcloc 'string #f #f 3 1))
+    (srcloc-token (token "," ",") (srcloc 'string #f #f 4 1))
+    (srcloc-token (token "i+1" "i+1") (srcloc 'string #f #f 5 3))
+    (srcloc-token (token "," ",") (srcloc 'string #f #f 8 1))
+    (srcloc-token (token 'NUMBER 3) (srcloc 'string #f #f 9 1))
+    (srcloc-token (token ">" ">") (srcloc 'string #f #f 10 1)))))
 (provide at-lexer)
