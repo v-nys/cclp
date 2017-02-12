@@ -6,17 +6,17 @@
 (define-lex-abbrev digits (:+ (char-set "0123456789"))) ; numeric includes non-latin scripts,...
 
 (define parameterized-variable-lexer
-  (lexer-srcloc
-   [(eof) (begin (set! state 'unparameterized) (return-without-srcloc eof))]
+  (lexer
+   [(eof) (begin (set! lexer-state 'unparameterized) eof)]
    [(:or "a" "g" "<" "," "i" "i+1" "L") (token lexeme lexeme)]
-   [">" (begin (set! state 'unparameterized) (token lexeme lexeme))]
+   [">" (begin (set! lexer-state 'unparameterized) (token lexeme lexeme))]
    [(:+ digits) (token 'NUMBER (string->number lexeme))]))
 
 (define (unget port num)
   (file-position port (- (file-position port) num)))
 (define at-lexer
-  (lexer-srcloc
-   [(eof) (begin (set! state 'unparameterized) (return-without-srcloc eof))]
+  (lexer
+   [(eof) eof]
    [(:+ whitespace) (token lexeme #:skip? #t)]
    [(:+ digits) (token 'NUMBER (string->number lexeme))]
    [(:seq
@@ -36,20 +36,19 @@
    ["#f" (token 'BOOLEAN #f)]
    [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
    [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
-   [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
-         (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
-    (return-without-srcloc (begin (file-position input-port (- (file-position input-port) (string-length lexeme))) (set! state 'parameterized) (token 'COMMENT "a-void-ing token" #:skip? #t)))]
    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
 
-(define state 'unparameterized)
+(define lexer-state 'unparameterized)
 (define top-lexer
   (let ([unparameterized-lexer at-lexer]
         [parameterized-lexer parameterized-variable-lexer])
     (λ (input-port)
       (begin
-        (cond [(eq? state 'unparameterized) (unparameterized-lexer input-port)]
-              [(eq? state 'parameterized) (parameterized-lexer input-port)]
-              [else (error "undefined state")])))))
+        (let* ([peeked (peek-string 2 0 input-port)] ; HACK!
+               [peeked-param (and (not (eof-object? peeked)) (regexp-match #rx"^g<|a<" peeked))])
+        (if (or peeked-param (eq? lexer-state 'parameterized))
+            (begin (set! lexer-state 'parameterized) (parameterized-lexer input-port))
+            (unparameterized-lexer input-port)))))))
 
 (module+ test
   (require rackunit)
@@ -94,7 +93,7 @@
   (check-equal?
    (lex "g<1,i+1,3>")
    (list
-    (token 'COMMENT "a-void-ing token" #:skip? #t)
+    (void)
     (srcloc-token (token "g" "g") (srcloc 'string #f #f 1 1))
     (srcloc-token (token "<" "<") (srcloc 'string #f #f 2 1))
     (srcloc-token (token 'NUMBER 1) (srcloc 'string #f #f 3 1))
