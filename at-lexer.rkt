@@ -10,40 +10,36 @@
    [(eof) (return-without-srcloc eof)]
    [(:or "a" "g" "<" "," "i" "i+1" "L" ">") (token lexeme lexeme)]
    [(:+ digits) (token 'NUMBER (string->number lexeme))]
-   [any-char (return-without-srcloc (begin (set! top-lexer #t) (unget input-port 1) (void)))]))
+   [any-char (return-without-srcloc (unget input-port 1))]))
 
-(define top-lexer #t)
 (define (unget port num)
   (file-position port (- (file-position port) num)))
 (define at-lexer
-  (if
-   top-lexer
-   (lexer-srcloc
-    [(eof) (return-without-srcloc eof)]
-    [(:+ whitespace) (token lexeme #:skip? #t)]
-    [(:+ digits) (token 'NUMBER (string->number lexeme))]
-    [(:seq
-      (char-range "A" "Z")
-      (:* (:or (char-range "a" "z") (char-range "A" "Z") digits "_")))
-     (token 'VARIABLE-IDENTIFIER lexeme)]
-    [(:-
-      (:seq (char-range "a" "z") (:* (:or (char-range "a" "z") (char-range "A" "Z") digits  "_")))
-      (:or (:seq "g" (:+ digits))
-           (:seq "a" (:+ digits)))
-      (:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
-           (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
-      "multi")
-     (token 'SYMBOL lexeme)]
-    [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
-    ["#t" (token 'BOOLEAN #t)]
-    ["#f" (token 'BOOLEAN #f)]
-    [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
-    [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
-    [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
+  (lexer-srcloc
+   [(eof) (return-without-srcloc eof)]
+   [(:+ whitespace) (token lexeme #:skip? #t)]
+   [(:+ digits) (token 'NUMBER (string->number lexeme))]
+   [(:seq
+     (char-range "A" "Z")
+     (:* (:or (char-range "a" "z") (char-range "A" "Z") digits "_")))
+    (token 'VARIABLE-IDENTIFIER lexeme)]
+   [(:-
+     (:seq (char-range "a" "z") (:* (:or (char-range "a" "z") (char-range "A" "Z") digits  "_")))
+     (:or (:seq "g" (:+ digits))
+          (:seq "a" (:+ digits)))
+     (:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
           (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
-     (return-without-srcloc (begin (unget input-port (string-length lexeme)) (set! top-lexer #f) (void)))]
-    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)])
-   parameterized-variable-lexer))
+     "multi")
+    (token 'SYMBOL lexeme)]
+   [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "*" "□" "->" "<" ">" ":-" "!CY" "!GEN" "multi") (token lexeme lexeme)]
+   ["#t" (token 'BOOLEAN #t)]
+   ["#f" (token 'BOOLEAN #f)]
+   [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
+   [(:seq "a" (:+ digits)) (token 'AVAR-A (string->number (substring lexeme 1)))]
+   [(:or (:seq "g" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">")
+         (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
+    (return-without-srcloc eof)]
+   [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
 
 (module+ test
   (require rackunit)
