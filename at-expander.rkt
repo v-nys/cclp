@@ -235,14 +235,6 @@
 ;(define-syntax-rule (variable VARIABLE-NAME) (cd:variable (string->symbol (quote VARIABLE-NAME))))
 ;(provide variable)
 ;
-;(define-syntax (function-term stx)
-;  (syntax-parse stx
-;    [(_ symbol:str)
-;     (syntax/loc stx (cd:function (string->symbol (quote symbol)) '()))]
-;    [(_ NUMBER:number) (syntax/loc stx (cd:function (->symbol (quote NUMBER)) (list)))]
-;    [(_ symbol "(" arg ... ")")
-;     (syntax/loc stx (cd:function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
-;(provide function-term)
 ;
 ;(define-syntax (lplist stx)
 ;  (syntax-parse stx
@@ -370,3 +362,6 @@
   (check-equal?
    (function 3)
    (cd:function (->symbol 3) (list))))
+(provide function)
+
+(define-syntax-rule (cyclenode num) (cycle num))
