@@ -215,11 +215,51 @@
      The field @racket[introduced-edges] tracks the explicit edges which were introduced when selection from @racket[conjunction] took place.
      It does not track implicit edges (those between more/less general abstract atoms).}))
 
+(serializable-struct
+ generalization (conjunction selection index introduced-edges)
+ #:methods
+ gen:equal+hash
+ [(define (equal-proc l1 l2 equal?-recur)
+    (and (equal?-recur (generalization-conjunction l1) (generalization-conjunction l2))
+         (equal?-recur (generalization-selection l1) (generalization-selection l2))
+         (equal?-recur (generalization-index l1) (generalization-index l2))
+         (equal?-recur (generalization-introduced-edges l1) (generalization-introduced-edges l2))))
+  (define (hash-proc l hash-recur)
+    (+ (hash-recur (generalization-conjunction l))
+       (* 3 (hash-recur (generalization-selection l)))
+       (* 13 (hash-recur (generalization-index l)))
+       (* 17 (hash-recur (generalization-introduced-edges l)))))
+  (define (hash2-proc l hash2-recur)
+    (+ (hash2-recur (generalization-conjunction l))
+       (hash2-recur (generalization-selection l))
+       (hash2-recur (generalization-index l))
+       (hash2-recur (generalization-introduced-edges l))))]
+ #:methods
+ gen:custom-write
+ [(define write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'generalization)
+     (λ (obj)
+       (list
+        (generalization-conjunction obj)
+        (generalization-selection obj)
+        (generalization-index obj)
+        (generalization-introduced-edges obj)))))])
+(provide
+ (struct*-doc
+  generalization
+  ([conjunction (listof abstract-atom?)]
+   [selection any/c]
+   [index (or/c #f exact-positive-integer?)]
+   [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))])
+  @{The contents of a node in the abstract analysis tree which was obtained by grouping conjuncts into a multi abstraction.}))
+
 (define (label-index l)
   (cond
     [(tree-label? l) (tree-label-index l)]
     [(widening? l) (widening-index l)]
-    [(case? l) (case-index l)]))
+    [(case? l) (case-index l)]
+    [(generalization? l) (generalization-index l)]))
 (provide
  (proc-doc/names
   label-index
@@ -231,7 +271,8 @@
   (cond
     [(tree-label? l) (tree-label-conjunction l)]
     [(widening? l) (widening-conjunction l)]
-    [(case? l) (case-conjunction l)]))
+    [(case? l) (case-conjunction l)]
+    [(generalization? l) (generalization-conjunction l)]))
 (provide
  (proc-doc/names
   label-conjunction
@@ -243,7 +284,8 @@
   (cond
     [(tree-label? l) (tree-label-selection l)]
     [(widening? l) (widening-selection l)]
-    [(case? l) (case-selection l)]))
+    [(case? l) (case-selection l)]
+    [(generalization? l) (generalization-selection l)]))
 (provide
  (proc-doc/names
   label-selection
@@ -255,7 +297,8 @@
   (cond
     [(tree-label? l) (tree-label-introduced-edges l)]
     [(widening? l) (widening-introduced-edges l)]
-    [(case? l) (case-introduced-edges l)]))
+    [(case? l) (case-introduced-edges l)]
+    [(generalization? l) (generalization-introduced-edges l)]))
 (provide
  (proc-doc/names
   label-introduced-edges
@@ -264,8 +307,7 @@
   @{Extracts the list of introduced edges from any tree label type which has it.}))
 
 (define (label-with-conjunction? l)
-  ; so this excludes cycles and similarity cycles
-  (or (tree-label? l) (widening? l) (case? l)))
+  (or (tree-label? l) (widening? l) (case? l) (generalization? l)))
 (provide
  (proc-doc/names
   label-with-conjunction?

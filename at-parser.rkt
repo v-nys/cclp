@@ -1,5 +1,5 @@
 #lang brag
-at : /"(" at-content /")"
+at : /"(" /"." at-content at* /")"
 
 cyclenode : /"!CY" NUMBER
 treelabel : selectionless-abstract-conjunction [substitution knowledge]
@@ -38,16 +38,19 @@ function : SYMBOL [/"(" term (/"," term)* /")"]
          | NUMBER
 list : /"[" [term term-tail ["|" (list | variable)]] /"]"
 @term-tail : ("," term)*
-
-
 parameterized-abstract-atom : SYMBOL [/"(" parameterized-abstract-term (/"," parameterized-abstract-term)* /")"]
 @parameterized-abstract-term : parameterized-abstract-function | parameterized-abstract-variable | parameterized-abstract-list
 parameterized-abstract-list : /"[" [parameterized-abstract-term parameterized-abstract-term-tail ["|" (parameterized-abstract-list | parameterized-abstract-variable)]] /"]"
 @parameterized-abstract-term-tail : ("," parameterized-abstract-term)*
 @parameterized-abstract-variable : parameterized-abstract-a-variable | parameterized-abstract-g-variable
-parameterized-abstract-a-variable : /"a" /"<" NUMBER /"," parameterization-index /"," NUMBER /">"
+parameterized-abstract-a-variable : /"a" /"<" NUMBER /"," (NUMBER|"i+1"|"i"|"L") /"," NUMBER /">"
+parameterized-abstract-g-variable : /"g" /"<" NUMBER /"," (NUMBER|"i+1"|"i"|"L") /"," NUMBER /">"
+parameterized-abstract-function : SYMBOL [/"(" parameterized-abstract-term (/"," parameterized-abstract-term)* /")"]
 
-init : /"{" /"}"
-consecutive : /"{" /"}"
-final : /"{" /"}"
-@at-content : cyclenode | treelabel
+init : /"{" [parameterized-abstract-variable /"/" abstract-term (/"," parameterized-abstract-variable /"/" abstract-term)*] /"}"
+consecutive : /"{" [parameterized-abstract-variable /"/" parameterized-abstract-variable (/"," parameterized-abstract-variable /"/" parameterized-abstract-variable)*] /"}"
+final : /"{" [parameterized-abstract-variable /"/" abstract-variable (/"," parameterized-abstract-variable /"/" abstract-variable)*] /"}"
+@at-content : cyclenode | treelabel | generalization
+
+generalization : /"!GEN" selectionless-abstract-conjunction
+               | /"!GEN" NUMBER /"." abstract-conjunction-selection [precedence-list]

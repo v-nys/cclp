@@ -5,24 +5,24 @@
          "at-tokenizer.rkt")
 
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(!CY 1)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.!CY 1)"))
  '(at (cyclenode 1)))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(□)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.□)"))
  '(at (treelabel (selectionless-abstract-conjunction))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom)"))
  '(at (treelabel (selectionless-abstract-conjunction (abstract-atom "myatom")))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom1,myatom2)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom1,myatom2)"))
  '(at (treelabel (selectionless-abstract-conjunction (abstract-atom "myatom1") (abstract-atom "myatom2")))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom(a))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom(a))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-function "a"))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom(a(b(c))))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom(a(b(c))))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom"
@@ -30,62 +30,62 @@
                                                                           (abstract-function "b"
                                                                                              (abstract-function "c"))))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom(a,b))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom(a,b))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-function "a") (abstract-function "b"))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom(a1))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom(a1))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-a-variable 1))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom(g1))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom(g1))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-g-variable 1))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([]))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom([]))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-list))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([g1]))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom([g1]))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-list (abstract-g-variable 1)))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([g1,g2]))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom([g1,g2]))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-list (abstract-g-variable 1) "," (abstract-g-variable 2)))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([g1,g2,g3]))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom([g1,g2,g3]))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-list (abstract-g-variable 1) "," (abstract-g-variable 2) "," (abstract-g-variable 3)))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom([g1|g2]))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom([g1|g2]))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (abstract-atom "myatom" (abstract-list (abstract-g-variable 1) "|" (abstract-g-variable 2)))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(1.myatom,*myotheratom*,mythirdatom [myotheratom < myatom, myotheratom < mythirdatom])"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.1.myatom,*myotheratom*,mythirdatom [myotheratom < myatom, myotheratom < mythirdatom])"))
  '(at
    (treelabel
     1
     (abstract-conjunction-selection (selectionless-abstract-conjunction (abstract-atom "myatom")) (selected-abstract-conjunct (abstract-atom "myotheratom")) (selectionless-abstract-conjunction (abstract-atom "mythirdatom")))
     (precedence-list (precedence (abstract-atom "myotheratom") (abstract-atom "myatom")) (precedence (abstract-atom "myotheratom") (abstract-atom "mythirdatom"))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(multi((abc),#t,{},{},{}))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.multi((abc),#t,{},{},{}))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction (multi-abstraction (parameterized-abstract-conjunction (parameterized-abstract-atom "abc")) #t (init) (consecutive) (final))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom {} myfact.)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom {} myfact.)"))
  '(at (treelabel (selectionless-abstract-conjunction (abstract-atom "myatom")) (substitution) (fact (atom "myfact")))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(myatom {a1/g1, g2/nil} myhead(a1,a2) -> {a1/g1, a2/nil})"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom {a1/g1, g2/nil} myhead(a1,a2) -> {a1/g1, a2/nil})"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction
@@ -99,7 +99,7 @@
       (substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
       (substitution-pair (abstract-a-variable 2) (abstract-function "nil")))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(b,c {} a :- b,c)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.b,c {} a :- b,c)"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction
@@ -108,7 +108,7 @@
     (substitution)
     (clause (atom "a") (conjunction (atom "b") (atom "c"))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(b,c {} a(X,foo,[X,Y]) :- b,c)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.b,c {} a(X,foo,[X,Y]) :- b,c)"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction
@@ -118,16 +118,34 @@
     (clause (atom "a" (variable "X") (function "foo") (list (variable "X") "," (variable "Y")))
             (conjunction (atom "b") (atom "c"))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(multi((abc(a<1,i,1>,a<1,i,2>)),#t,{},{},{}))"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.multi((abc(a<1,i,1>,a<1,i,2>)),#t,{},{},{}))"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction
      (multi-abstraction
       (parameterized-abstract-conjunction
-       (parameterized-abstract-atom "abc"
-                                    (parameterized-abstract-a-variable 1  1)
-                                    (parameterized-abstract-a-variable 1  2)))
+       (parameterized-abstract-atom
+        "abc"
+        (parameterized-abstract-a-variable 1 "i" 1)
+        (parameterized-abstract-a-variable 1 "i" 2)))
       #t
       (init)
       (consecutive)
       (final))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.!GEN multi((abc),#t,{},{},{}))"))
+ '(at
+   (generalization
+    (selectionless-abstract-conjunction
+     (multi-abstraction
+      (parameterized-abstract-conjunction
+       (parameterized-abstract-atom "abc"))
+      #t
+      (init)
+      (consecutive)
+      (final))))))
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.collect(g1,a1),collect(g2,a2),append(a1,a2,a3) (.!GEN collect(g1,a1),multi((collect(g<1,i,1>,a<1,i,1>),append(a<1,i,2>,a<1,i,1>,a<1,i,3>)),#f,{a<1,1,1>/a1},{a<1,i+1,2>/a<1,i,3>},{a<1,L,3>/a3})))"))
+ '(at
+   (tree-label)
+   (generalization)))

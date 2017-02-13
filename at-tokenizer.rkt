@@ -6,6 +6,6 @@
 
 (define (make-tokenizer input-port)
   (port-count-lines! input-port)
-  (define (next-token) (at-lexer input-port))
+  (define (next-token) (top-lexer input-port))
   next-token)
 (provide make-tokenizer)

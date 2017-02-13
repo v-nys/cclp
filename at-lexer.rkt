@@ -92,5 +92,21 @@
     (token ">" ">")))
   (check-equal?
    (lex "g<1,i+1,3>")
-   (lex-param "g<1,i+1,3>")))
-(provide at-lexer)
+   (lex-param "g<1,i+1,3>"))
+  (check-equal?
+   (lex "multi((abc(a<1,i,1>")
+   (list
+    (token "multi" "multi")
+    (token "(" "(")
+    (token "(" "(")
+    (token 'SYMBOL "abc")
+    (token "(" "(")
+    (token "a" "a")
+    (token "<" "<")
+    (token 'NUMBER 1)
+    (token "," ",")
+    (token "i" "i")
+    (token "," ",")
+    (token 'NUMBER 1)
+    (token ">" ">"))))
+(provide top-lexer)
