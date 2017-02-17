@@ -45,17 +45,45 @@
 (define-macro-cases treelabel
   [(treelabel (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...))
    (syntax/loc caller-stx
-     (tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f #f (list)))])
+     (tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f #f (list)))]
+  [(treelabel (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
+   (syntax/loc caller-stx
+     (tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) #f (list)))]
+  [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
+   (syntax/loc caller-stx
+     (tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f NUMBER (list)))]
+  [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...))
+   (syntax/loc caller-stx
+     (tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f NUMBER (precedence-list PRECEDENCE ...)))]
+  [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
+   (syntax/loc caller-stx
+     (tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) NUMBER (list)))]
+  [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) (precedence-list PRECEDENCE ...))
+   (syntax/loc caller-stx
+     (tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) NUMBER (precedence-list PRECEDENCE ...)))])
 (module+ test
   (check-equal?
    (treelabel (selectionless-abstract-conjunction (abstract-atom "foo") (abstract-atom "bar")))
    (tree-label (list (ad:abstract-atom 'foo (list)) (ad:abstract-atom 'bar (list))) (none) (list) #f #f (list)))
   (check-equal?
-   (treelabel (selectionless-abstract-conjunction (abstract-atom "foo")) (substitution) (fact (atom "bar")))
-   (tree-label (list (ad:abstract-atom 'foo (list))) (none) (list) (ck:rule (cd:atom 'bar (list)) (list)) #f (list))))
+   (treelabel (selectionless-abstract-conjunction (abstract-atom "foo")) (abstract-substitution) (knowledge (fact (atom "bar"))))
+   (tree-label (list (ad:abstract-atom 'foo (list))) (none) (list) (ck:rule (cd:atom 'bar (list)) (list)) #f (list)))
+  (check-equal?
+   (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)))
+   (tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) #f 1 (list)))
+  (check-equal?
+   (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)) (precedence-list))
+   (tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) #f 1 (list)))
+  (check-equal?
+   (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)) (abstract-substitution) (knowledge (fact (atom "bar"))))
+   (tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) (ck:rule (cd:atom 'bar (list)) (list)) 1 (list)))
+  (check-equal?
+   (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)) (abstract-substitution) (knowledge (fact (atom "bar"))) (precedence-list))
+   (tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) (ck:rule (cd:atom 'bar (list)) (list)) 1 (list))))
 (provide treelabel)
 
 (define-syntax-rule (selectionless-abstract-conjunction conjunct ...) (list conjunct ...))
+(provide selectionless-abstract-conjunction)
 
 ; abstract-atom : SYMBOL [/"(" abstract-term (/"," abstract-term)* /")"]
 (define-syntax abstract-atom
@@ -65,6 +93,30 @@
   (check-equal?
    (abstract-atom "foo")
    (ad:abstract-atom 'foo (list))))
+
+(define-syntax-rule (abstract-substitution pair ...) (list pair ...))
+(provide abstract-substitution)
+
+(define-syntax-rule (knowledge k) k)
+(provide knowledge)
+
+(define-syntax-rule (fact a) (ck:rule a (list)))
+(provide fact)
+
+(define-syntax atom
+  (syntax-rules ()
+    [(atom symbol) (cd:atom (->symbol symbol) (list))]))
+(provide atom)
+
+; this needs to be a pair, first conjunction, then index
+
+;(define-macro (abstract-conjunction-selection UNSEL1 SEL UNSEL2)
+;  (syntax/loc caller-stx
+;    (cons () (length UNSEL1))))
+(define-syntax-rule (abstract-conjunction-selection unsel1 sel unsel2)
+  (cons (append unsel1 (list sel) unsel2) (length unsel1)))
+
+(define-syntax-rule (precedence-list precedence ...) (list precedence ...))
 
 ;
 ;

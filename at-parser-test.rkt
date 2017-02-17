@@ -74,7 +74,7 @@
  '(at
    (treelabel
     1
-    (abstract-conjunction-selection (selectionless-abstract-conjunction (abstract-atom "myatom")) (selected-abstract-conjunct (abstract-atom "myotheratom")) (selectionless-abstract-conjunction (abstract-atom "mythirdatom")))
+    (abstract-conjunction-selection (selectionless-abstract-conjunction (abstract-atom "myatom")) (abstract-atom "myotheratom") (selectionless-abstract-conjunction (abstract-atom "mythirdatom")))
     (precedence-list (precedence (abstract-atom "myotheratom") (abstract-atom "myatom")) (precedence (abstract-atom "myotheratom") (abstract-atom "mythirdatom"))))))
 (check-equal?
  (parse-to-datum (apply-tokenizer make-tokenizer "(.multi((abc),#t,{},{},{}))"))
@@ -83,21 +83,22 @@
     (selectionless-abstract-conjunction (multi-abstraction (parameterized-abstract-conjunction (parameterized-abstract-atom "abc")) #t (init) (consecutive) (final))))))
 (check-equal?
  (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom {} myfact.)"))
- '(at (treelabel (selectionless-abstract-conjunction (abstract-atom "myatom")) (substitution) (fact (atom "myfact")))))
+ '(at (treelabel (selectionless-abstract-conjunction (abstract-atom "myatom")) (abstract-substitution) (knowledge (fact (atom "myfact"))))))
 (check-equal?
  (parse-to-datum (apply-tokenizer make-tokenizer "(.myatom {a1/g1, g2/nil} myhead(a1,a2) -> {a1/g1, a2/nil})"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction
      (abstract-atom "myatom"))
-    (substitution
-     (substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
-     (substitution-pair (abstract-g-variable 2) (abstract-function "nil")))
-    (fullai-rule
-     (abstract-atom "myhead" (abstract-a-variable 1) (abstract-a-variable 2))
-     (substitution
-      (substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
-      (substitution-pair (abstract-a-variable 2) (abstract-function "nil")))))))
+    (abstract-substitution
+     (abstract-substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
+     (abstract-substitution-pair (abstract-g-variable 2) (abstract-function "nil")))
+    (knowledge
+     (fullai-rule
+      (abstract-atom "myhead" (abstract-a-variable 1) (abstract-a-variable 2))
+      (abstract-substitution
+       (abstract-substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
+       (abstract-substitution-pair (abstract-a-variable 2) (abstract-function "nil"))))))))
 (check-equal?
  (parse-to-datum (apply-tokenizer make-tokenizer "(.b,c {} a :- b,c)"))
  '(at
@@ -105,8 +106,8 @@
     (selectionless-abstract-conjunction
      (abstract-atom "b")
      (abstract-atom "c"))
-    (substitution)
-    (clause (atom "a") (conjunction (atom "b") (atom "c"))))))
+    (abstract-substitution)
+    (knowledge (clause (atom "a") (conjunction (atom "b") (atom "c")))))))
 (check-equal?
  (parse-to-datum (apply-tokenizer make-tokenizer "(.b,c {} a(X,foo,[X,Y]) :- b,c)"))
  '(at
@@ -114,9 +115,10 @@
     (selectionless-abstract-conjunction
      (abstract-atom "b")
      (abstract-atom "c"))
-    (substitution)
-    (clause (atom "a" (variable "X") (function "foo") (list (variable "X") "," (variable "Y")))
-            (conjunction (atom "b") (atom "c"))))))
+    (abstract-substitution)
+    (knowledge
+     (clause (atom "a" (variable "X") (function "foo") (list (variable "X") "," (variable "Y")))
+             (conjunction (atom "b") (atom "c")))))))
 (check-equal?
  (parse-to-datum (apply-tokenizer make-tokenizer "(.multi((abc(a<1,i,1>,a<1,i,2>)),#t,{},{},{}))"))
  '(at

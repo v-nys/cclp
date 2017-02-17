@@ -2,8 +2,8 @@
 at : /"(" /"." at-content at* /")"
 @at-content : cyclenode | treelabel | generalization
 cyclenode : /"!CY" NUMBER
-treelabel : selectionless-abstract-conjunction [substitution knowledge]
-          | NUMBER /"." abstract-conjunction-selection [precedence-list] [substitution knowledge]
+treelabel : selectionless-abstract-conjunction [abstract-substitution knowledge]
+          | NUMBER /"." abstract-conjunction-selection [precedence-list] [abstract-substitution knowledge]
 selectionless-abstract-conjunction : /"□"
                                    | nonempty-selectionless-abstract-conjunction
 @nonempty-selectionless-abstract-conjunction : abstract-conjunct (/"," abstract-conjunct)*
@@ -30,13 +30,12 @@ parameterized-abstract-list : /"[" [parameterized-abstract-term parameterized-ab
 init : /"{" [parameterized-abstract-variable /"/" abstract-term (/"," parameterized-abstract-variable /"/" abstract-term)*] /"}"
 consecutive : /"{" [parameterized-abstract-variable /"/" parameterized-abstract-variable (/"," parameterized-abstract-variable /"/" parameterized-abstract-variable)*] /"}"
 final : /"{" [parameterized-abstract-variable /"/" abstract-variable (/"," parameterized-abstract-variable /"/" abstract-variable)*] /"}"
-abstract-conjunction-selection : [selectionless-abstract-conjunction /","] selected-abstract-conjunct [/"," selectionless-abstract-conjunction]
-selected-abstract-conjunct : /"*" abstract-conjunct /"*"
+abstract-conjunction-selection : [selectionless-abstract-conjunction /","] /"*" abstract-conjunct /"*" [/"," selectionless-abstract-conjunction]
 precedence-list : /"[" [precedence (/"," precedence)*] /"]"
 precedence : abstract-atom /"<" abstract-atom
-substitution : /"{" [substitution-pair (/"," substitution-pair)*] /"}"
-substitution-pair : abstract-variable /"/" abstract-term
-@knowledge : rule | fullai-rule
+abstract-substitution : /"{" [abstract-substitution-pair (/"," abstract-substitution-pair)*] /"}"
+abstract-substitution-pair : abstract-variable /"/" abstract-term
+knowledge : rule | fullai-rule
 @rule : fact | clause
 fact : atom /"."
 clause : atom /":-" conjunction
@@ -48,6 +47,6 @@ function : SYMBOL [/"(" term (/"," term)* /")"]
          | NUMBER
 list : /"[" [term term-tail ["|" (list | variable)]] /"]"
 @term-tail : ("," term)*
-fullai-rule : abstract-atom /"->" substitution
+fullai-rule : abstract-atom /"->" abstract-substitution
 generalization : /"!GEN" selectionless-abstract-conjunction
                | /"!GEN" NUMBER /"." abstract-conjunction-selection [precedence-list]
