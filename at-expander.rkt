@@ -97,8 +97,44 @@
    (abstract-atom "foo" (abstract-g-variable 1) (abstract-a-variable 1))
    (ad:abstract-atom 'foo (list (ad:g 1) (ad:a 1)))))
 
+(define-syntax abstract-function
+  (syntax-rules ()
+    [(abstract-function symbol) (ad:abstract-function (->symbol symbol) (list))]
+    [(abstract-function symbol arg ...) (ad:abstract-function (->symbol symbol) (list arg ...))]))
+(module+ test
+  (check-equal?
+   (abstract-function "foo")
+   (ad:abstract-function 'foo (list)))
+  (check-equal?
+   (abstract-function "foo" (abstract-g-variable 1) (abstract-a-variable 1))
+   (ad:abstract-function 'foo (list (ad:g 1) (ad:a 1)))))
+
 (define-syntax-rule (abstract-g-variable num) (ad:g num))
 (define-syntax-rule (abstract-a-variable num) (ad:a num))
+
+(define-syntax (abstract-list stx)
+  (syntax-parse stx
+    [(_) (syntax/loc stx (ad:abstract-function 'nil '()))]
+    [(_ term0)
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '()))))]
+    [(_ term0 "," rest ...)
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 (abstract-list rest ...))))]
+    [(_ term0 "|" rest)
+     (syntax/loc stx (ad:abstract-function 'cons (list term0 rest)))]))
+(module+ test
+  (check-equal?
+   (abstract-list)
+   (ad:abstract-function 'nil '()))
+  (check-equal?
+   (abstract-list (abstract-g-variable 1))
+   (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'nil '()))))
+  (check-equal?
+   (abstract-list (abstract-g-variable 1) "," (abstract-g-variable 1))
+   (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'nil '()))))))
+  (check-equal?
+   (abstract-list (abstract-g-variable 1) "|" (abstract-a-variable 1))
+   (ad:abstract-function 'cons (list (ad:g 1) (ad:a 1)))))
+(provide abstract-list)
 
 (define-syntax-rule (abstract-substitution pair ...) (list pair ...))
 (provide abstract-substitution)
