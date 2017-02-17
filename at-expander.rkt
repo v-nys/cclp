@@ -15,8 +15,6 @@
 (require "data-utils.rkt")
 (require (only-in "syntax-utils.rkt" odd-elems-as-list))
 
-(module+ test (require rackunit))
-
 (define-syntax (at-module-begin stx)
   (syntax-parse stx
     [(_ _PARSE-TREE)
@@ -26,6 +24,20 @@
           (define REPLACED _PARSE-TREE)
           (provide REPLACED))))]))
 (provide (rename-out [at-module-begin #%module-begin]) #%top-interaction)
+
+(define-syntax-rule (at content subtree ...)
+  (node
+   content
+   (list subtree ...)))
+(module+ test
+  (require rackunit)
+  (check-equal?
+   (at (cyclenode 1) (at (cyclenode 2)) (at (cyclenode 3)))
+   (node (cycle 1)
+         (list
+          (node (cycle 2) (list))
+          (node (cycle 3) (list)))))) ; nonsense tree but enough for test
+(provide at)
 
 ;
 ;
