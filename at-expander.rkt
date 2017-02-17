@@ -39,6 +39,33 @@
           (node (cycle 3) (list)))))) ; nonsense tree but enough for test
 (provide at)
 
+(define-syntax-rule (cyclenode num) (cycle num))
+(provide cyclenode)
+
+(define-macro-cases treelabel
+  [(treelabel (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...))
+   (syntax/loc caller-stx
+     (tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f #f (list)))])
+(module+ test
+  (check-equal?
+   (treelabel (selectionless-abstract-conjunction (abstract-atom "foo") (abstract-atom "bar")))
+   (tree-label (list (ad:abstract-atom 'foo (list)) (ad:abstract-atom 'bar (list))) (none) (list) #f #f (list)))
+  (check-equal?
+   (treelabel (selectionless-abstract-conjunction (abstract-atom "foo")) (substitution) (fact (atom "bar")))
+   (tree-label (list (ad:abstract-atom 'foo (list))) (none) (list) (ck:rule (cd:atom 'bar (list)) (list)) #f (list))))
+(provide treelabel)
+
+(define-syntax-rule (selectionless-abstract-conjunction conjunct ...) (list conjunct ...))
+
+; abstract-atom : SYMBOL [/"(" abstract-term (/"," abstract-term)* /")"]
+(define-syntax abstract-atom
+  (syntax-rules ()
+    [(abstract-atom symbol) (ad:abstract-atom (->symbol symbol) (list))]))
+(module+ test
+  (check-equal?
+   (abstract-atom "foo")
+   (ad:abstract-atom 'foo (list))))
+
 ;
 ;
 ;(define-syntax (top stx)
@@ -375,5 +402,3 @@
    (function 3)
    (cd:function (->symbol 3) (list))))
 (provide function)
-
-(define-syntax-rule (cyclenode num) (cycle num))
