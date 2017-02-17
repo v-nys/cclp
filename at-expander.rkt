@@ -85,14 +85,20 @@
 (define-syntax-rule (selectionless-abstract-conjunction conjunct ...) (list conjunct ...))
 (provide selectionless-abstract-conjunction)
 
-; abstract-atom : SYMBOL [/"(" abstract-term (/"," abstract-term)* /")"]
 (define-syntax abstract-atom
   (syntax-rules ()
-    [(abstract-atom symbol) (ad:abstract-atom (->symbol symbol) (list))]))
+    [(abstract-atom symbol) (ad:abstract-atom (->symbol symbol) (list))]
+    [(abstract-atom symbol arg ...) (ad:abstract-atom (->symbol symbol) (list arg ...))]))
 (module+ test
   (check-equal?
    (abstract-atom "foo")
-   (ad:abstract-atom 'foo (list))))
+   (ad:abstract-atom 'foo (list)))
+  (check-equal?
+   (abstract-atom "foo" (abstract-g-variable 1) (abstract-a-variable 1))
+   (ad:abstract-atom 'foo (list (ad:g 1) (ad:a 1)))))
+
+(define-syntax-rule (abstract-g-variable num) (ad:g num))
+(define-syntax-rule (abstract-a-variable num) (ad:a num))
 
 (define-syntax-rule (abstract-substitution pair ...) (list pair ...))
 (provide abstract-substitution)
