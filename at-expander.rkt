@@ -136,6 +136,72 @@
    (ad:abstract-function 'cons (list (ad:g 1) (ad:a 1)))))
 (provide abstract-list)
 
+(define-syntax-rule (multi-abstraction parameterized-conjunction ascending? init consecutive final)
+  (ad:multi parameterized-conjunction ascending? init consecutive final))
+
+(define-syntax-rule (parameterized-abstract-conjunction parameterized-atom ...) (list parameterized-atom ...))
+(provide parameterized-abstract-conjunction)
+
+(define-syntax parameterized-abstract-atom
+  (syntax-rules ()
+    [(_ symbol) (ad:abstract-atom* (->symbol symbol) (list))]
+    [(_ symbol arg ...) (ad:abstract-atom* (->symbol symbol) (list arg ...))]))
+(module+ test
+  (check-equal?
+   (parameterized-abstract-atom "foo")
+   (ad:abstract-atom* 'foo (list)))
+  (check-equal?
+   (parameterized-abstract-atom "foo" (parameterized-abstract-g-variable 1 1 1) (parameterized-abstract-a-variable 1 1 1))
+   (ad:abstract-atom* 'foo (list (ad:g* 1 1 1) (ad:a* 1 1 1)))))
+
+(define-syntax parameterized-abstract-function
+  (syntax-rules ()
+    [(_ symbol) (ad:abstract-function* (->symbol symbol) (list))]
+    [(_ symbol arg ...) (ad:abstract-function* (->symbol symbol) (list arg ...))]))
+(module+ test
+  (check-equal?
+   (parameterized-abstract-function "foo")
+   (ad:abstract-function* 'foo (list)))
+  (check-equal?
+   (parameterized-abstract-function "foo" (parameterized-abstract-g-variable 1 1 1) (parameterized-abstract-a-variable 1 1 1))
+   (ad:abstract-function* 'foo (list (ad:g* 1 1 1) (ad:a* 1 1 1)))))
+
+(define-syntax (parameterized-abstract-a-variable stx)
+  (syntax-parse stx
+    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:a* idx1 (string->symbol idx2) idx3))]
+    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:a* idx1 idx2 idx3))]))
+(module+ test
+  (check-equal?
+   (parameterized-abstract-a-variable 1 1 1)
+   (ad:a* 1 1 1))
+  (check-equal?
+   (parameterized-abstract-a-variable 1 "i" 1)
+   (ad:a* 1 'i 1))
+  (check-equal?
+   (parameterized-abstract-a-variable 1 "i+1" 1)
+   (ad:a* 1 'i+1 1))
+  (check-equal?
+   (parameterized-abstract-a-variable 1 "L" 1)
+   (ad:a* 1 'L 1)))
+
+(define-syntax (parameterized-abstract-g-variable stx)
+  (syntax-parse stx
+    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:g* idx1 (string->symbol idx2) idx3))]
+    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:g* idx1 idx2 idx3))]))
+(module+ test
+  (check-equal?
+   (parameterized-abstract-g-variable 1 1 1)
+   (ad:g* 1 1 1))
+  (check-equal?
+   (parameterized-abstract-g-variable 1 "i" 1)
+   (ad:g* 1 'i 1))
+  (check-equal?
+   (parameterized-abstract-g-variable 1 "i+1" 1)
+   (ad:g* 1 'i+1 1))
+  (check-equal?
+   (parameterized-abstract-g-variable 1 "L" 1)
+   (ad:g* 1 'L 1)))
+
 (define-syntax-rule (abstract-substitution pair ...) (list pair ...))
 (provide abstract-substitution)
 

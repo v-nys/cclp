@@ -196,7 +196,7 @@
  gen:equal+hash
  [(define (equal-proc af*1 af*2 equal?-recur)
     (and (equal?-recur (abstract-function*-functor af*1) (abstract-function*-functor af*2))
-         (equal?-recur (abstract-function-args af*1) (abstract-function-args af*2))))
+         (equal?-recur (abstract-function*-args af*1) (abstract-function*-args af*2))))
   (define (hash-proc af* hash-recur)
     (+ (hash-recur (abstract-function*-functor af*))
        (hash-recur (abstract-function*-args af*))))
@@ -256,17 +256,18 @@
 (provide
  (struct*-doc
   abstract-atom*
-  ([symbol symbol?] [args (listof abstract-term?)])
+  ([symbol symbol?] [args (listof abstract-term*?)])
   @{A template for abstract atoms occurring inside a multi abstraction.}))
 
 (serializable-struct
- multi (conjunction init consecutive final)
+ multi (conjunction ascending? init consecutive final)
  #:methods
  gen:custom-write
  [(define write-proc
     (make-constructor-style-printer
      (λ (obj) 'multi)
      (λ (obj) (list (multi-conjunction obj)
+                    (multi-ascending? obj)
                     (multi-init obj)
                     (multi-consecutive obj)
                     (multi-final obj)))))]
@@ -274,16 +275,19 @@
  gen:equal+hash
  [(define (equal-proc m1 m2 equal?-recur)
     (and (equal?-recur (multi-conjunction m1) (multi-conjunction m2))
+         (equal?-recur (multi-ascending? m1) (multi-ascending? m2))
          (equal?-recur (multi-init m1) (multi-init m2))
          (equal?-recur (multi-consecutive m1) (multi-consecutive m2))
          (equal?-recur (multi-final m1) (multi-final m2))))
   (define (hash-proc m hash-recur)
     (+ (hash-recur (multi-conjunction m))
+       (hash-recur (multi-ascending? m))
        (hash-recur (multi-init m))
        (hash-recur (multi-consecutive m))
        (hash-recur (multi-final m))))
   (define (hash2-proc m hash2-recur)
     (+ (hash2-recur (multi-conjunction m))
+       (hash2-recur (multi-ascending? m))
        (hash2-recur (multi-init m))
        (hash2-recur (multi-consecutive m))
        (hash2-recur (multi-final m))))])
@@ -291,6 +295,7 @@
  (struct*-doc
   multi
   ([conjunction (listof abstract-atom*?)]
+   [ascending? boolean?]
    [init init?]
    [consecutive consecutive?]
    [final final?])
