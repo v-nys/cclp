@@ -100,7 +100,7 @@
        (abstract-substitution-pair (abstract-a-variable 1) (abstract-g-variable 1))
        (abstract-substitution-pair (abstract-a-variable 2) (abstract-function "nil"))))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(.b,c {} a :- b,c)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.b,c {} a :- b,c.)"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction
@@ -109,7 +109,7 @@
     (abstract-substitution)
     (knowledge (clause (atom "a") (conjunction (atom "b") (atom "c")))))))
 (check-equal?
- (parse-to-datum (apply-tokenizer make-tokenizer "(.b,c {} a(X,foo,[X,Y]) :- b,c)"))
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.b,c {} a(X,foo,[X,Y]) :- b,c.)"))
  '(at
    (treelabel
     (selectionless-abstract-conjunction
@@ -117,7 +117,7 @@
      (abstract-atom "c"))
     (abstract-substitution)
     (knowledge
-     (clause (atom "a" (variable "X") (function "foo") (list (variable "X") "," (variable "Y")))
+     (clause (atom "a" (variable "X") (function "foo") (lplist (variable "X") "," (variable "Y")))
              (conjunction (atom "b") (atom "c")))))))
 (check-equal?
  (parse-to-datum (apply-tokenizer make-tokenizer "(.multi((abc(a<1,i,1>,a<1,i,2>)),#t,{},{},{}))"))
@@ -176,6 +176,36 @@
                                      (parameterized-abstract-a-variable 1 "i" 1)
                                      (parameterized-abstract-a-variable 1 "i" 3)))
        #f
-       (init (parameterized-abstract-a-variable 1 1 1) (abstract-a-variable 1))
-       (consecutive (parameterized-abstract-a-variable 1 "i+1" 2) (parameterized-abstract-a-variable 1 "i" 3))
-       (final (parameterized-abstract-a-variable 1 "L" 3) (abstract-a-variable 3))))))))
+       (init (init-pair (parameterized-abstract-a-variable 1 1 1) (abstract-a-variable 1)))
+       (consecutive (consecutive-pair (parameterized-abstract-a-variable 1 "i+1" 2) (parameterized-abstract-a-variable 1 "i" 3)))
+       (final (final-pair (parameterized-abstract-a-variable 1 "L" 3) (abstract-a-variable 3)))))))))
+
+(check-equal?
+ (parse-to-datum
+  (apply-tokenizer
+   make-tokenizer
+   "(.1.*primes(g1,a1)*)"))
+ '(at (treelabel 1 (abstract-conjunction-selection (abstract-atom "primes" (abstract-g-variable 1) (abstract-a-variable 1))))))
+
+(check-equal?
+ (parse-to-datum
+  (apply-tokenizer
+   make-tokenizer
+   "(.integers(g2,a6),sift(a6,a5),length(a5,g1)
+  {a4/g1, a1/a5} primes(N,Primes) :- integers(2,I),sift(I,Primes),length(Primes,N).)"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "integers" (abstract-g-variable 2) (abstract-a-variable 6))
+     (abstract-atom "sift" (abstract-a-variable 6) (abstract-a-variable 5))
+     (abstract-atom "length" (abstract-a-variable 5) (abstract-g-variable 1)))
+    (abstract-substitution
+     (abstract-substitution-pair (abstract-a-variable 4) (abstract-g-variable 1))
+     (abstract-substitution-pair (abstract-a-variable 1) (abstract-a-variable 5)))
+    (knowledge
+     (clause
+      (atom "primes" (variable "N") (variable "Primes"))
+      (conjunction
+       (atom "integers" (function 2) (variable "I"))
+       (atom "sift" (variable "I") (variable "Primes"))
+       (atom "length" (variable "Primes") (variable "N"))))))))

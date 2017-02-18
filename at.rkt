@@ -3,7 +3,7 @@
   "at-parser.rkt"
   "at-tokenizer.rkt")
 (define (read-syntax source-path input-port)
-  (define parse-tree (parse source-path (make-tokenizer input-port source-path)))
+  (define parse-tree (parse source-path (make-tokenizer input-port)))
   (strip-bindings
    (with-syntax
        ([_PARSE-TREE parse-tree])

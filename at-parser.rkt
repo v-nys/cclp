@@ -27,9 +27,12 @@ parameterized-abstract-a-variable : /"a" /"<" NUMBER /"," (NUMBER|"i+1"|"i"|"L")
 parameterized-abstract-g-variable : /"g" /"<" NUMBER /"," (NUMBER|"i+1"|"i"|"L") /"," NUMBER /">"
 parameterized-abstract-list : /"[" [parameterized-abstract-term parameterized-abstract-term-tail ["|" (parameterized-abstract-list | parameterized-abstract-variable)]] /"]"
 @parameterized-abstract-term-tail : ("," parameterized-abstract-term)*
-init : /"{" [parameterized-abstract-variable /"/" abstract-term (/"," parameterized-abstract-variable /"/" abstract-term)*] /"}"
-consecutive : /"{" [parameterized-abstract-variable /"/" parameterized-abstract-variable (/"," parameterized-abstract-variable /"/" parameterized-abstract-variable)*] /"}"
-final : /"{" [parameterized-abstract-variable /"/" abstract-variable (/"," parameterized-abstract-variable /"/" abstract-variable)*] /"}"
+init : /"{" [init-pair (/"," init-pair)*] /"}"
+init-pair : parameterized-abstract-variable /"/" abstract-term
+consecutive : /"{" [consecutive-pair (/"," consecutive-pair)*] /"}"
+consecutive-pair : parameterized-abstract-variable /"/" parameterized-abstract-term
+final : /"{" [final-pair (/"," final-pair)*] /"}"
+final-pair : parameterized-abstract-variable /"/" abstract-variable
 abstract-conjunction-selection : [selectionless-abstract-conjunction /","] /"*" abstract-conjunct /"*" [/"," selectionless-abstract-conjunction]
 precedence-list : /"[" [precedence (/"," precedence)*] /"]"
 precedence : abstract-atom /"<" abstract-atom
@@ -38,14 +41,14 @@ abstract-substitution-pair : abstract-variable /"/" abstract-term
 knowledge : rule | fullai-rule
 @rule : fact | clause
 fact : atom /"."
-clause : atom /":-" conjunction
+clause : atom /":-" conjunction /"."
 conjunction : atom (/"," atom)*
 atom : SYMBOL [/"(" term (/"," term)* /")"]
-@term : variable | function | list
+@term : variable | function | lplist
 variable : VARIABLE-IDENTIFIER
 function : SYMBOL [/"(" term (/"," term)* /")"]
          | NUMBER
-list : /"[" [term term-tail ["|" (list | variable)]] /"]"
+lplist : /"[" [term term-tail ["|" (lplist | variable)]] /"]"
 @term-tail : ("," term)*
 fullai-rule : abstract-atom /"->" abstract-substitution
 generalization : /"!GEN" selectionless-abstract-conjunction

@@ -1,19 +1,18 @@
 #lang br
 (require (for-syntax syntax/parse))
-(require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 (require (only-in sugar/coerce ->symbol))
 
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
+(require (prefix-in ak: "abstract-knowledge.rkt"))
 (require (prefix-in as: "abstract-substitution.rkt"))
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (prefix-in faid: "fullai-domain.rkt"))
 (require "preprior-graph.rkt")
-(require "abstract-analysis.rkt")
+(require (prefix-in aa: "abstract-analysis.rkt"))
 (require racket-tree-utils/src/tree)
 (require (for-syntax syntax/strip-context))
 (require "data-utils.rkt")
-(require (only-in "syntax-utils.rkt" odd-elems-as-list))
 
 (define-syntax (at-module-begin stx)
   (syntax-parse stx
@@ -33,62 +32,68 @@
   (require rackunit)
   (check-equal?
    (at (cyclenode 1) (at (cyclenode 2)) (at (cyclenode 3)))
-   (node (cycle 1)
+   (node (aa:cycle 1)
          (list
-          (node (cycle 2) (list))
-          (node (cycle 3) (list)))))) ; nonsense tree but enough for test
+          (node (aa:cycle 2) (list))
+          (node (aa:cycle 3) (list)))))) ; nonsense tree but enough for test
 (provide at)
 
-(define-syntax-rule (cyclenode num) (cycle num))
+(define-syntax-rule (cyclenode num) (aa:cycle num))
 (provide cyclenode)
 
 (define-macro-cases treelabel
   [(treelabel (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...))
    (syntax/loc caller-stx
-     (tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f #f (list)))]
+     (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f #f (list)))]
   [(treelabel (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
    (syntax/loc caller-stx
-     (tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) #f (list)))]
+     (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) #f (list)))]
+  [(treelabel NUMBER (abstract-conjunction-selection SEL) REST ...)
+   (syntax/loc caller-stx
+     (treelabel NUMBER (abstract-conjunction-selection (selectionless-abstract-conjunction) SEL (selectionless-abstract-conjunction)) REST ...))]
+  [(treelabel NUMBER (abstract-conjunction-selection SEL (selectionless-abstract-conjunction UNSEL2 ...)) REST ...)
+   (syntax/loc caller-stx
+     (treelabel NUMBER (abstract-conjunction-selection (selectionless-abstract-conjunction) SEL (selectionless-abstract-conjunction UNSEL2 ...)) REST ...))]
+  [(treelabel NUMBER (abstract-conjunction-selection (selectionless-abstract-conjunction UNSEL1 ...) SEL) REST ...)
+   (syntax/loc caller-stx
+     (treelabel NUMBER (abstract-conjunction-selection (selectionless-abstract-conjunction UNSEL1 ...) SEL (selectionless-abstract-conjunction)) REST ...))]
   [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
    (syntax/loc caller-stx
-     (tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f NUMBER (list)))]
+     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f (quote NUMBER) (list)))]
   [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...))
    (syntax/loc caller-stx
-     (tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f NUMBER (precedence-list PRECEDENCE ...)))]
+     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f (quote NUMBER) (precedence-list PRECEDENCE ...)))]
   [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
    (syntax/loc caller-stx
-     (tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) NUMBER (list)))]
-  [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) (precedence-list PRECEDENCE ...))
+     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) (quote NUMBER) (list)))]
+  [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
    (syntax/loc caller-stx
-     (tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) NUMBER (precedence-list PRECEDENCE ...)))])
+     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) (quote NUMBER) (precedence-list PRECEDENCE ...)))])
 (module+ test
   (check-equal?
    (treelabel (selectionless-abstract-conjunction (abstract-atom "foo") (abstract-atom "bar")))
-   (tree-label (list (ad:abstract-atom 'foo (list)) (ad:abstract-atom 'bar (list))) (none) (list) #f #f (list)))
+   (aa:tree-label (list (ad:abstract-atom 'foo (list)) (ad:abstract-atom 'bar (list))) (none) (list) #f #f (list)))
   (check-equal?
    (treelabel (selectionless-abstract-conjunction (abstract-atom "foo")) (abstract-substitution) (knowledge (fact (atom "bar"))))
-   (tree-label (list (ad:abstract-atom 'foo (list))) (none) (list) (ck:rule (cd:atom 'bar (list)) (list)) #f (list)))
+   (aa:tree-label (list (ad:abstract-atom 'foo (list))) (none) (list) (ck:rule (cd:atom 'bar (list)) (list)) #f (list)))
   (check-equal?
    (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)))
-   (tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) #f 1 (list)))
+   (aa:tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) #f 1 (list)))
   (check-equal?
    (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)) (precedence-list))
-   (tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) #f 1 (list)))
+   (aa:tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) #f 1 (list)))
   (check-equal?
    (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)) (abstract-substitution) (knowledge (fact (atom "bar"))))
-   (tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) (ck:rule (cd:atom 'bar (list)) (list)) 1 (list)))
+   (aa:tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) (ck:rule (cd:atom 'bar (list)) (list)) 1 (list)))
   (check-equal?
-   (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)) (abstract-substitution) (knowledge (fact (atom "bar"))) (precedence-list))
-   (tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) (ck:rule (cd:atom 'bar (list)) (list)) 1 (list))))
+   (treelabel 1 (abstract-conjunction-selection (selectionless-abstract-conjunction) (abstract-atom "foo") (selectionless-abstract-conjunction)) (precedence-list) (abstract-substitution) (knowledge (fact (atom "bar"))))
+   (aa:tree-label (list (ad:abstract-atom 'foo (list))) (some 0) (list) (ck:rule (cd:atom 'bar (list)) (list)) 1 (list))))
 (provide treelabel)
 
 (define-syntax-rule (selectionless-abstract-conjunction conjunct ...) (list conjunct ...))
 (provide selectionless-abstract-conjunction)
 
-(define-syntax abstract-atom
-  (syntax-rules ()
-    [(abstract-atom symbol) (ad:abstract-atom (->symbol symbol) (list))]
-    [(abstract-atom symbol arg ...) (ad:abstract-atom (->symbol symbol) (list arg ...))]))
+(define-syntax-rule (abstract-atom symbol args ...) (ad:abstract-atom (->symbol (quote symbol)) (list args ...)))
 (module+ test
   (check-equal?
    (abstract-atom "foo")
@@ -96,11 +101,9 @@
   (check-equal?
    (abstract-atom "foo" (abstract-g-variable 1) (abstract-a-variable 1))
    (ad:abstract-atom 'foo (list (ad:g 1) (ad:a 1)))))
+(provide abstract-atom)
 
-(define-syntax abstract-function
-  (syntax-rules ()
-    [(abstract-function symbol) (ad:abstract-function (->symbol symbol) (list))]
-    [(abstract-function symbol arg ...) (ad:abstract-function (->symbol symbol) (list arg ...))]))
+(define-syntax-rule (abstract-function symbol args ...) (ad:abstract-function (->symbol (quote symbol)) (list args ...)))
 (module+ test
   (check-equal?
    (abstract-function "foo")
@@ -108,9 +111,13 @@
   (check-equal?
    (abstract-function "foo" (abstract-g-variable 1) (abstract-a-variable 1))
    (ad:abstract-function 'foo (list (ad:g 1) (ad:a 1)))))
+(provide abstract-function)
 
-(define-syntax-rule (abstract-g-variable num) (ad:g num))
-(define-syntax-rule (abstract-a-variable num) (ad:a num))
+(define-syntax-rule (abstract-g-variable num) (ad:g (quote num)))
+(provide abstract-g-variable)
+
+(define-syntax-rule (abstract-a-variable num) (ad:a (quote num)))
+(provide abstract-a-variable)
 
 (define-syntax (abstract-list stx)
   (syntax-parse stx
@@ -138,6 +145,7 @@
 
 (define-syntax-rule (multi-abstraction parameterized-conjunction ascending? init consecutive final)
   (ad:multi parameterized-conjunction ascending? init consecutive final))
+(provide multi-abstraction)
 
 (define-syntax-rule (parameterized-abstract-conjunction parameterized-atom ...) (list parameterized-atom ...))
 (provide parameterized-abstract-conjunction)
@@ -153,11 +161,12 @@
   (check-equal?
    (parameterized-abstract-atom "foo" (parameterized-abstract-g-variable 1 1 1) (parameterized-abstract-a-variable 1 1 1))
    (ad:abstract-atom* 'foo (list (ad:g* 1 1 1) (ad:a* 1 1 1)))))
+(provide parameterized-abstract-atom)
 
 (define-syntax parameterized-abstract-function
   (syntax-rules ()
-    [(_ symbol) (ad:abstract-function* (->symbol symbol) (list))]
-    [(_ symbol arg ...) (ad:abstract-function* (->symbol symbol) (list arg ...))]))
+    [(_ symbol) (ad:abstract-function* (->symbol (quote symbol)) (list))]
+    [(_ symbol arg ...) (ad:abstract-function* (->symbol (quote symbol)) (list arg ...))]))
 (module+ test
   (check-equal?
    (parameterized-abstract-function "foo")
@@ -165,6 +174,7 @@
   (check-equal?
    (parameterized-abstract-function "foo" (parameterized-abstract-g-variable 1 1 1) (parameterized-abstract-a-variable 1 1 1))
    (ad:abstract-function* 'foo (list (ad:g* 1 1 1) (ad:a* 1 1 1)))))
+(provide parameterized-abstract-function)
 
 (define-syntax (parameterized-abstract-a-variable stx)
   (syntax-parse stx
@@ -183,6 +193,7 @@
   (check-equal?
    (parameterized-abstract-a-variable 1 "L" 1)
    (ad:a* 1 'L 1)))
+(provide parameterized-abstract-a-variable)
 
 (define-syntax (parameterized-abstract-g-variable stx)
   (syntax-parse stx
@@ -201,9 +212,65 @@
   (check-equal?
    (parameterized-abstract-g-variable 1 "L" 1)
    (ad:g* 1 'L 1)))
+(provide parameterized-abstract-g-variable)
+
+(define-syntax (parameterized-abstract-list stx)
+  (syntax-parse stx
+    [(_) (syntax/loc stx (ad:abstract-function* 'nil '()))]
+    [(_ term0)
+     (syntax/loc stx (ad:abstract-function* 'cons (list term0 (ad:abstract-function* 'nil '()))))]
+    [(_ term0 "," rest ...)
+     (syntax/loc stx (ad:abstract-function* 'cons (list term0 (parameterized-abstract-list rest ...))))]
+    [(_ term0 "|" rest)
+     (syntax/loc stx (ad:abstract-function* 'cons (list term0 rest)))]))
+(module+ test
+  (check-equal?
+   (parameterized-abstract-list)
+   (ad:abstract-function* 'nil '()))
+  (check-equal?
+   (parameterized-abstract-list (parameterized-abstract-g-variable 1 1 1))
+   (ad:abstract-function* 'cons (list (ad:g* 1 1 1) (ad:abstract-function* 'nil '()))))
+  (check-equal?
+   (parameterized-abstract-list (parameterized-abstract-g-variable 1 1 1) "," (parameterized-abstract-g-variable 1 1 1))
+   (ad:abstract-function* 'cons (list (ad:g* 1 1 1) (ad:abstract-function* 'cons (list (ad:g* 1 1 1) (ad:abstract-function* 'nil '()))))))
+  (check-equal?
+   (parameterized-abstract-list (parameterized-abstract-g-variable 1 1 1) "|" (parameterized-abstract-a-variable 1 1 1))
+   (ad:abstract-function* 'cons (list (ad:g* 1 1 1) (ad:a* 1 1 1)))))
+(provide parameterized-abstract-list)
+
+(define-syntax-rule (init pair ...) (list pair ...))
+(provide init)
+
+(define-syntax-rule (init-pair avar* aterm) (cons avar* term))
+(provide init-pair)
+
+(define-syntax-rule (consecutive pair ...) (list pair ...))
+(provide consecutive)
+
+(define-syntax-rule (consecutive-pair avar* aterm*) (cons avar* aterm*))
+(provide consecutive-pair)
+
+(define-syntax-rule (final pair ...) (list pair ...))
+(provide final)
+
+(define-syntax-rule (final-pair avar* avar) (cons avar* avar))
+(provide final-pair)
+
+(define-syntax-rule (abstract-conjunction-selection unsel1 sel unsel2)
+  (cons (append unsel1 (list sel) unsel2) (length unsel1)))
+(provide abstract-conjunction-selection)
+
+(define-syntax-rule (precedence-list precedence ...) (list precedence ...))
+(provide precedence-list)
+
+(define-syntax-rule (precedence at1 at2) (cons at1 at2))
+(provide precedence)
 
 (define-syntax-rule (abstract-substitution pair ...) (list pair ...))
 (provide abstract-substitution)
+
+(define-syntax-rule (abstract-substitution-pair av at) (as:abstract-equality av at))
+(provide abstract-substitution-pair)
 
 (define-syntax-rule (knowledge k) k)
 (provide knowledge)
@@ -211,354 +278,72 @@
 (define-syntax-rule (fact a) (ck:rule a (list)))
 (provide fact)
 
-(define-syntax atom
-  (syntax-rules ()
-    [(atom symbol) (cd:atom (->symbol symbol) (list))]))
+(define-syntax-rule (clause a c) (ck:rule a c))
+(provide clause)
+
+(define-syntax-rule (atom symbol args ...) (cd:atom (->symbol (quote symbol)) (list args ...)))
 (provide atom)
 
-; this needs to be a pair, first conjunction, then index
+(define-syntax-rule (conjunction a ...) (list a ...))
+(provide conjunction)
 
-;(define-macro (abstract-conjunction-selection UNSEL1 SEL UNSEL2)
-;  (syntax/loc caller-stx
-;    (cons () (length UNSEL1))))
-(define-syntax-rule (abstract-conjunction-selection unsel1 sel unsel2)
-  (cons (append unsel1 (list sel) unsel2) (length unsel1)))
-
-(define-syntax-rule (precedence-list precedence ...) (list precedence ...))
-
-;
-;
-;(define-syntax (top stx)
-;  (syntax-parse stx
-;    [(_ WS-STX ... AT-STX)
-;     (syntax/loc stx AT-STX)]))
-;(provide top)
-;
-;(define-syntax (at stx)
-;  (syntax-parse stx
-;    [(_ "(" LABEL-EDGES-ORIGIN-STX ")")
-;     (syntax/loc stx
-;       (node
-;        LABEL-EDGES-ORIGIN-STX
-;        (list)))]
-;    [(_ "(" LABEL-EDGES-ORIGIN-STX _ SUBTREES-STX ")")
-;     (syntax/loc stx
-;       (node
-;        LABEL-EDGES-ORIGIN-STX
-;        SUBTREES-STX))]))
-;(provide at)
-;
-;(define-syntax (label-edges-origin stx)
-;  (syntax-parse stx #:literals (graph-edges substitution knowledge)
-;    [(_ LABEL-STX)
-;     (syntax/loc stx LABEL-STX)]
-;    [(_ LABEL-STX _ (graph-edges EDGE-STX ...))
-;     (syntax/loc stx
-;       (struct-copy tree-label LABEL-STX [introduced-edges (graph-edges EDGE-STX ...)]))]
-;    [(_ LABEL-STX _ (substitution SUBST-STX ...) _ (knowledge KNOWLEDGE-STX ...))
-;     (syntax/loc stx
-;       (struct-copy
-;        tree-label
-;        LABEL-STX
-;        [substitution (substitution SUBST-STX ...)]
-;        [rule (knowledge KNOWLEDGE-STX ...)]))]
-;    [(_ LABEL-STX _ (graph-edges EDGE-STX ...) _ (substitution SUBST-STX ...) _ (knowledge KNOWLEDGE-STX ...))
-;     (syntax/loc stx
-;       (struct-copy
-;        tree-label
-;        LABEL-STX
-;        [introduced-edges (graph-edges EDGE-STX ...)]
-;        [substitution (substitution SUBST-STX ...)]
-;        [rule (knowledge KNOWLEDGE-STX ...)]))]))
-;(provide label-edges-origin)
-;
-;(define-syntax (at-label stx)
-;  (syntax-parse stx #:literals (acon-with-selection acon-without-selection)
-;    [(_ NUMBER:number "." (acon-with-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (tree-label
-;        (car (acon-with-selection ACON-STX ...))
-;        (cdr (acon-with-selection ACON-STX ...)) (list) #f (quote NUMBER) (list)))]
-;    [(_ NUMBER:number "." (acon-without-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (tree-label (acon-without-selection ACON-STX ...) (none) (list) #f (quote NUMBER) (list)))]
-;    [(_ (acon-without-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (tree-label (acon-without-selection ACON-STX ...) (none) (list) #f #f (list)))]))
-;(provide at-label)
-;
-;(define-syntax (acon-with-selection stx)
-;  (syntax-parse stx
-;    [(_ "*" SELECTED-ATOM-STX "*")
-;     (syntax/loc stx (cons (list SELECTED-ATOM-STX) (some 0)))]
-;    [(_ PRECEDING-CONJUNCTION "," "*" SELECTED-ATOM-STX "*")
-;     (syntax/loc stx
-;       (cons (append PRECEDING-CONJUNCTION (list SELECTED-ATOM-STX))
-;             (some (length PRECEDING-CONJUNCTION))))]
-;    [(_ PRECEDING-CONJUNCTION "," "*" SELECTED-ATOM-STX "*" "," REMAINING-CONJUNCTION)
-;     (syntax/loc stx
-;       (cons (append PRECEDING-CONJUNCTION (cons SELECTED-ATOM-STX REMAINING-CONJUNCTION))
-;             (some (length PRECEDING-CONJUNCTION))))]
-;    [(_ "*" SELECTED-ATOM-STX "*" "," REMAINING-CONJUNCTION)
-;     (syntax/loc stx
-;       (cons (cons SELECTED-ATOM-STX REMAINING-CONJUNCTION) (some 0)))]))
-;(provide acon-with-selection)
-;
-;(define-syntax (nonempty-acon-without-selection stx)
-;  (syntax-parse stx
-;    [(_) (syntax/loc stx (list))]
-;    [(_ ATOM-STX) (syntax/loc stx (list ATOM-STX))]
-;    [(_ ATOM-STX "," REST-STX ...)
-;     (syntax/loc stx
-;       (cons ATOM-STX (nonempty-acon-without-selection REST-STX ...)))]))
-;(provide nonempty-acon-without-selection)
-;
-;(define-syntax (abstract-atom stx)
-;  (syntax-parse stx
-;    [(_ SYM-STX)
-;     (syntax/loc stx (ad:abstract-atom (string->symbol (quote SYM-STX)) (list)))]
-;    [(_ SYM-STX "(" ARG ")")
-;     (syntax/loc stx
-;       (ad:abstract-atom
-;        (string->symbol (quote SYM-STX))
-;        (list ARG)))]
-;    [(_ SYM-STX "(" ARG "," COMMA-OR-ARG ... ")")
-;     (syntax/loc stx
-;       (ad:abstract-atom
-;        (string->symbol (quote SYM-STX))
-;        (cons ARG (ad:abstract-atom-args (abstract-atom SYM-STX "(" COMMA-OR-ARG ... ")")))))]))
-;(provide abstract-atom)
-;
-;(define-syntax-rule (abstract-term specific-term) specific-term)
-;(provide abstract-term)
-;
-;(define-syntax (abstract-variable stx)
-;  (syntax-parse stx
-;    [(_ "a" NUM-STX)
-;     (syntax/loc stx (ad:a (quote NUM-STX)))]
-;    [(_ "g" NUM-STX)
-;     (syntax/loc stx (ad:g (quote NUM-STX)))]))
-;(provide abstract-variable)
-;
-;(define-syntax (abstract-function-term stx)
-;  (syntax-parse stx
-;    [(_ symbol:str) (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) '()))]
-;    [(_ NUMBER:number) (syntax/loc stx (ad:abstract-function (->symbol (quote NUMBER))))]
-;    [(_ symbol:str "(" arg ... ")")
-;     (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
-;(provide abstract-function-term)
-;
-;(define-syntax (abstract-lplist stx)
-;  (syntax-parse stx
-;    [(_ "[" "]")
-;     (syntax/loc stx (ad:abstract-function 'nil '()))]
-;    [(_ "[" term0 "]")
-;     (syntax/loc stx (ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '()))))]
-;    [(_ "[" term0 "," rest ... "]")
-;     (syntax/loc stx (ad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]"))))]
-;    [(_ "[" term0 "|" rest "]")
-;     (syntax/loc stx (ad:abstract-function 'cons (list term0 rest)))]))
-;(provide abstract-lplist)
-;
-;(define-syntax (acon-without-selection stx)
-;  (syntax-parse stx
-;    [(_ "□")
-;     (syntax/loc stx (list))]
-;    [(_ NONEMPTY-ACON-WITHOUT-SELECTION-STX)
-;     (syntax/loc stx NONEMPTY-ACON-WITHOUT-SELECTION-STX)]))
-;(provide acon-without-selection)
-;
-;(define-syntax (graph-edges stx)
-;  (syntax-parse stx
-;    [(_ "[" PRECEDENCE-STX "]")
-;     (syntax/loc stx (list PRECEDENCE-STX))]
-;    [(_ "[" PRECEDENCE-STX "," _ REST-PRECEDENCE-STX ... "]")
-;     (syntax/loc stx (cons PRECEDENCE-STX (graph-edges "[" REST-PRECEDENCE-STX ... "]")))]))
-;(provide graph-edges)
-;
-;(define-syntax (precedence stx)
-;  (syntax-parse stx
-;    [(_ AATOM-STX-1 _ "<" _ AATOM-STX-2)
-;     (syntax/loc stx
-;       (cons AATOM-STX-1 AATOM-STX-2))]))
-;(provide precedence)
-;
-;(define-syntax (substitution stx)
-;  (syntax-parse stx
-;    [(_ "{" "}") (syntax/loc stx (list))]
-;    [(_ "{" PAIR-STX "}") (syntax/loc stx (list PAIR-STX))]
-;    [(_ "{" PAIR-STX "," WS COMMA-OR-PAIR-OR-WS-STX ... "}")
-;     (syntax/loc stx
-;       (cons PAIR-STX (substitution "{" COMMA-OR-PAIR-OR-WS-STX ... "}")))]))
-;(provide substitution)
-;
-;(define-syntax-rule (substitution-pair lhs "/" rhs)
-;  (as:abstract-equality lhs rhs))
-;(provide substitution-pair)
-;
-;(define-syntax (knowledge stx)
-;  (syntax-parse stx
-;    [(_ NESTED-STX ".")
-;     (syntax/loc stx NESTED-STX)]))
-;(provide knowledge)
-;
-;(define-syntax (rule stx)
-;  (syntax-parse stx
-;    [(_ ATOM-STX)
-;     (syntax/loc stx (ck:rule ATOM-STX (list)))]
-;    [(_ ATOM-STX _ ":-" _ CON-STX)
-;     (syntax/loc stx (ck:rule ATOM-STX CON-STX))]))
-;(provide rule)
-;
-;(define-syntax (atom stx)
-;  (syntax-parse stx
-;    [(_ SYMBOL-STX)
-;     (syntax/loc stx
-;       (cd:atom (string->symbol (quote SYMBOL-STX)) (list)))]
-;    [(_ SYMBOL-STX "(" ARG ")")
-;     (syntax/loc stx
-;       (cd:atom (string->symbol (quote SYMBOL-STX)) (list ARG)))]
-;    [(_ SYMBOL-STX "(" ARG "," ARG-OR-COMMA ... ")")
-;     (syntax/loc stx
-;       (cd:atom
-;        (string->symbol (quote SYMBOL-STX))
-;        (cons ARG (cd:atom-args (atom SYMBOL-STX "(" ARG-OR-COMMA ... ")")))))]))
-;(provide atom)
-;
-;(define-syntax (term stx)
-;  (syntax-parse stx
-;    [(_ VAR-OR-LIST-OR-MISC-FUNCTION)
-;     (syntax/loc stx VAR-OR-LIST-OR-MISC-FUNCTION)]))
-;(provide term)
-;
-;(define-syntax-rule (variable VARIABLE-NAME) (cd:variable (string->symbol (quote VARIABLE-NAME))))
-;(provide variable)
-;
-;
-;(define-syntax (lplist stx)
-;  (syntax-parse stx
-;    [(_ "[" "]")
-;     (syntax/loc stx (cd:function 'nil '()))]
-;    [(_ "[" term0 "]")
-;     (syntax/loc stx (cd:function 'cons (list term0 (cd:function 'nil '()))))]
-;    [(_ "[" term0 "," rest ... "]")
-;     (syntax/loc stx (cd:function 'cons (list term0 (lplist "[" rest ... "]"))))]
-;    [(_ "[" term0 "|" rest ... "]")
-;     (syntax/loc stx (cd:function 'cons (list term0 rest ...)))]))
-;(provide lplist)
-;
-;(define-syntax (conjunction stx)
-;  (syntax-parse stx
-;    [(_ CONJUNCT-STX) (syntax/loc stx (list CONJUNCT-STX))]
-;    [(_ CONJUNCT-STX "," COMMA-OR-CONJUNCT-STX ...)
-;     (syntax/loc stx (cons CONJUNCT-STX (conjunction COMMA-OR-CONJUNCT-STX ...)))]))
-;(provide conjunction)
-;
-;(define-syntax (fullai-rule stx)
-;  (syntax-parse stx
-;    [(_ AATOM-STX _ "->" _ SUBST-STX)
-;     (syntax/loc stx
-;       (full-ai-rule->full-evaluation
-;        (faid:full-ai-rule AATOM-STX SUBST-STX)))]))
-;(provide fullai-rule)
-;
-;(define-syntax (widening-edges stx)
-;  (syntax-parse stx #:literals (graph-edges acon-with-selection acon-without-selection case-split-edges)
-;    ; sketchy trick to disambiguate, despite same grammatical structure (as CS and WI are tokenized the same way)
-;    [(_ "CS" STX ...) (syntax/loc stx (case-split-edges "CS" STX ...))]
-;    [(_ "WI" _ NUMBER:number "." (acon-with-selection ACON-STX ...) _ (graph-edges EDGE-STX ...))
-;     (syntax/loc stx
-;       (widening
-;        (car (acon-with-selection ACON-STX ...))
-;        (cdr (acon-with-selection ACON-STX ...))
-;        "no message"
-;        (quote NUMBER)
-;        (graph-edges EDGE-STX ...)))]
-;    [(_ "WI" _ NUMBER:number "." (acon-with-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (widening
-;        (car (acon-with-selection ACON-STX ...))
-;        (cdr (acon-with-selection ACON-STX ...))
-;        "no message"
-;        (quote NUMBER)
-;        (list)))]
-;    [(_ "WI" _ NUMBER:number "." (acon-without-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (widening
-;        (acon-without-selection ACON-STX ...)
-;        (none)
-;        "no message"
-;        (quote NUMBER)
-;        (list)))]
-;    [(_ "WI" _ (acon-without-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (widening
-;        (acon-without-selection ACON-STX ...)
-;        (none)
-;        "no message"
-;        #f
-;        (list)))]))
-;(provide widening-edges)
-;
-;(define-syntax (case-split-edges stx)
-;  (syntax-parse stx #:literals (graph-edges acon-with-selection acon-without-selection)
-;    [(_ "CS" _ NUMBER:number "." (acon-with-selection ACON-STX ...) _ (graph-edges EDGE-STX ...))
-;     (syntax/loc stx
-;       (case
-;        (car (acon-with-selection ACON-STX ...))
-;        (cdr (acon-with-selection ACON-STX ...))
-;        (quote NUMBER)
-;        (graph-edges EDGE-STX ...)))]
-;    [(_ "CS" _ NUMBER:number "." (acon-with-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (case
-;        (car (acon-with-selection ACON-STX ...))
-;        (cdr (acon-with-selection ACON-STX ...))
-;        (quote NUMBER)
-;        (list)))]
-;    [(_ "CS" _ NUMBER:number "." (acon-without-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (case
-;        (acon-without-selection ACON-STX ...)
-;        (none)
-;        (quote NUMBER)
-;        (list)))]
-;    [(_ "CS" _ (acon-without-selection ACON-STX ...))
-;     (syntax/loc stx
-;       (case
-;        (acon-without-selection ACON-STX ...)
-;        (none)
-;        #f
-;        (list)))]))
-;(provide case-split-edges)
-;
-;(define-syntax (cyclenode stx)
-;  (syntax-parse stx
-;    [(_ "CY" WS IDX:number)
-;     (syntax/loc stx (cycle (quote IDX)))]))
-;(provide cyclenode)
-;
-;(define-syntax (subtrees stx)
-;  (syntax-parse stx
-;    [(_ AT-STX) (syntax/loc stx (list AT-STX))]
-;    [(_ AT-STX _ REST-STX ...+)
-;     (syntax/loc stx (cons AT-STX (subtrees REST-STX ...)))]))
-;(provide subtrees)
+(define-syntax-rule (variable id) (cd:variable (string->symbol (quote id))))
+(provide variable)
 
 (define-syntax (function stx)
   (syntax-parse stx
-    [(_ SYM:id ARG ...)
-     (syntax/loc stx (cd:function (quote SYM) (list ARG ...)))]
+    [(_ SYM:str ARG ...)
+     (syntax/loc stx (cd:function (->symbol (quote SYM)) (list ARG ...)))]
     [(_ NUM:number)
-     (syntax/loc stx (cd:function (->symbol NUM) (list)))]))
+     (syntax/loc stx (cd:function (->symbol (quote NUM)) (list)))]))
 (module+ test
   (check-equal?
-   (function foo)
+   (function "foo")
    (cd:function 'foo (list)))
   (check-equal?
-   (function foo (function bar))
+   (function "foo" (function "bar"))
    (cd:function 'foo (list (cd:function 'bar (list)))))
   (check-equal?
    (function 3)
    (cd:function (->symbol 3) (list))))
 (provide function)
+
+(define-syntax (lplist stx)
+  (syntax-parse stx
+    [(_) (syntax/loc stx (cd:function 'nil '()))]
+    [(_ term0)
+     (syntax/loc stx (cd:function 'cons (list term0 (cd:function 'nil '()))))]
+    [(_ term0 "," rest ...)
+     (syntax/loc stx (cd:function 'cons (list term0 (lplist rest ...))))]
+    [(_ term0 "|" rest)
+     (syntax/loc stx (cd:function 'cons (list term0 rest)))]))
+(module+ test
+  (check-equal?
+   (lplist)
+   (cd:function 'nil '()))
+  (check-equal?
+   (lplist (variable "X"))
+   (cd:function 'cons (list (cd:variable 'X) (cd:function 'nil '()))))
+  (check-equal?
+   (lplist (variable "X") "," (variable "X"))
+   (cd:function 'cons (list (cd:variable 'X) (cd:function 'cons (list (cd:variable 'X) (cd:function 'nil '()))))))
+  (check-equal?
+   (lplist (variable "X") "|" (variable "Y"))
+   (cd:function 'cons (list (cd:variable 'X) (cd:variable 'Y)))))
+(provide lplist)
+
+(define-syntax-rule (fullai-rule aa as) (ak:full-evaluation aa (as:apply-substitution as aa)))
+(provide fullai-rule)
+
+(define-macro-cases generalization
+  [(_ (selectionless-abstract-conjunction ACON ...))
+   (syntax/loc caller-stx (aa:generalization (selectionless-abstract-conjunction ACON ...) (none) #f (list)))]
+  [(generalization NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
+   (syntax/loc caller-stx (aa:generalization NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list)))]
+  [(_ NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...))
+   (syntax/loc caller-stx
+     (aa:generalization
+      (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
+      (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2)))
+      NUM
+      (precedence-list PRECEDENCE ...)))])
