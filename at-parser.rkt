@@ -2,7 +2,7 @@
 at : /"(" /"." at-content at* /")"
 @at-content : cyclenode | treelabel | generalization
 cyclenode : /"!CY" NUMBER
-treelabel : selectionless-abstract-conjunction [abstract-substitution knowledge]
+treelabel : [NUMBER /"."] selectionless-abstract-conjunction [abstract-substitution knowledge]
           | NUMBER /"." abstract-conjunction-selection [precedence-list] [abstract-substitution knowledge]
 selectionless-abstract-conjunction : /"□"
                                    | nonempty-selectionless-abstract-conjunction

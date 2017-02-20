@@ -88,8 +88,6 @@
     (prefix-in primes4: "analysis-trees/primes-four.rkt")
     (prefix-in primes4cand: "analysis-trees/primes-four-candidate.rkt")
     (prefix-in primes4cp: "analysis-trees/primes-four-candidate-post.rkt")
-    (prefix-in wid: "analysis-trees/widening-tree.rkt")
-    (prefix-in widcand: "analysis-trees/widening-tree-candidate.rkt")
     (prefix-in permsort: "analysis-trees/permsort-tree.rkt"))
   (check-equal? (candidate-and-predecessors primes0:val (list)) (cons primes0:val (list)))
   (check-equal?
@@ -104,11 +102,6 @@
                (cons (interpret-abstract-conjunction "sift([],α5),length(α5,γ1)") 3)
                (cons (interpret-abstract-conjunction "integers(γ2,α6),sift(α6,α5),length(α5,γ1)") 2)
                (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1))))
-  (check-equal?
-   (candidate-and-predecessors wid:val (list))
-   (cons widcand:val
-         (list (cons (interpret-abstract-conjunction "foo(γ1)") 2)
-               (cons (interpret-abstract-conjunction "foo([])") 1))))
   (check-equal?
    (car (candidate-and-predecessors permsort:val (list)))
    #f))

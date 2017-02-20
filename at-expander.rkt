@@ -38,16 +38,24 @@
           (node (aa:cycle 3) (list)))))) ; nonsense tree but enough for test
 (provide at)
 
-(define-syntax-rule (cyclenode num) (aa:cycle num))
+(define-syntax-rule (cyclenode num) (aa:cycle (quote num)))
 (provide cyclenode)
 
 (define-macro-cases treelabel
   [(treelabel (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...))
-   (syntax/loc caller-stx
+   (syntax/loc
+       caller-stx
      (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f #f (list)))]
+  [(treelabel NUMBER (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...))
+   (syntax/loc
+       caller-stx
+     (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f (quote NUMBER) (list)))]
   [(treelabel (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
    (syntax/loc caller-stx
      (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) #f (list)))]
+  [(treelabel NUMBER (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
+   (syntax/loc caller-stx
+     (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) (quote NUMBER) (list)))]
   [(treelabel NUMBER (abstract-conjunction-selection SEL) REST ...)
    (syntax/loc caller-stx
      (treelabel NUMBER (abstract-conjunction-selection (selectionless-abstract-conjunction) SEL (selectionless-abstract-conjunction)) REST ...))]
