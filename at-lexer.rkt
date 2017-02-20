@@ -6,8 +6,8 @@
 (define-lex-abbrev digits (:+ (char-set "0123456789"))) ; numeric includes non-latin scripts,...
 
 (define parameterized-variable-lexer
-  (lexer
-   [(eof) (begin (set! lexer-state 'unparameterized) eof)]
+  (lexer-srcloc
+   [(eof) (begin (set! lexer-state 'unparameterized) (return-without-srcloc eof))]
    [(:or "a" "g" "<" "," "i" "i+1" "L") (token lexeme lexeme)]
    [">" (begin (set! lexer-state 'unparameterized) (token lexeme lexeme))]
    [(:+ digits) (token 'NUMBER (string->number lexeme))]))
@@ -15,8 +15,8 @@
 (define (unget port num)
   (file-position port (- (file-position port) num)))
 (define at-lexer
-  (lexer
-   [(eof) eof]
+  (lexer-srcloc
+   [(eof) (return-without-srcloc eof)]
    [(:+ whitespace) (token lexeme #:skip? #t)]
    [(:+ digits) (token 'NUMBER (string->number lexeme))]
    [(:seq
@@ -39,16 +39,12 @@
    [(from/to "%" "\n") (token 'COMMENT lexeme #:skip? #t)]))
 
 (define lexer-state 'unparameterized)
-(define top-lexer
-  (let ([unparameterized-lexer at-lexer]
-        [parameterized-lexer parameterized-variable-lexer])
-    (λ (input-port)
-      (begin
-        (let* ([peeked (peek-string 2 0 input-port)] ; HACK!
-               [peeked-param (and (not (eof-object? peeked)) (regexp-match #rx"^g<|a<" peeked))])
-        (if (or peeked-param (eq? lexer-state 'parameterized))
-            (begin (set! lexer-state 'parameterized) (parameterized-lexer input-port))
-            (unparameterized-lexer input-port)))))))
+(define (top-lexer input-port)
+  (let* ([peeked (peek-string 2 0 input-port)] ; HACK!
+         [peeked-param (and (not (eof-object? peeked)) (regexp-match #rx"^g<|a<" peeked))])
+    (if (or peeked-param (eq? lexer-state 'parameterized))
+        (begin (set! lexer-state 'parameterized) (parameterized-variable-lexer input-port))
+        (at-lexer input-port))))
 
 (module+ test
   (require rackunit)
