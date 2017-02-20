@@ -346,12 +346,13 @@
 (define-macro-cases generalization
   [(_ (selectionless-abstract-conjunction ACON ...))
    (syntax/loc caller-stx (aa:generalization (selectionless-abstract-conjunction ACON ...) (none) #f (list)))]
-  [(generalization NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
-   (syntax/loc caller-stx (aa:generalization NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list)))]
+  [(_ NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
+   (syntax/loc caller-stx (generalization NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list)))]
   [(_ NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...))
    (syntax/loc caller-stx
      (aa:generalization
       (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
       (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2)))
-      NUM
+      (quote NUM)
       (precedence-list PRECEDENCE ...)))])
+(provide generalization)
