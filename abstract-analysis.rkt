@@ -27,7 +27,7 @@
   scribble/srcdoc)
 (require
   "abstract-knowledge.rkt"
-  (only-in "abstract-multi-domain.rkt" abstract-atom?)
+  (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-conjunct?)
   "abstract-substitution.rkt"
   (prefix-in ck: "concrete-knowledge.rkt")
   "data-utils.rkt" ; selection is still expressed as a maybe
@@ -248,7 +248,7 @@
 (provide
  (struct*-doc
   generalization
-  ([conjunction (listof abstract-atom?)]
+  ([conjunction (listof abstract-conjunct?)]
    [selection any/c]
    [index (or/c #f exact-positive-integer?)]
    [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))])

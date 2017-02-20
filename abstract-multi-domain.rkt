@@ -376,6 +376,15 @@
   (val)
   @{Test whether @racket[val] is an abstract term.}))
 
+(define (abstract-conjunct? elem)
+  (or (abstract-atom? elem) (multi? elem)))
+(provide
+ (proc-doc/names
+  abstract-conjunct?
+  (-> any/c boolean?)
+  (val)
+  @{Test whether @racket[val] is an abstract conjunct.}))
+
 (define (abstract-term*? elem)
   (or (abstract-variable*? elem) (abstract-function*? elem)))
 (provide

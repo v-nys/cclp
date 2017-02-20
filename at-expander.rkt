@@ -152,7 +152,7 @@
 (provide abstract-list)
 
 (define-syntax-rule (multi-abstraction parameterized-conjunction ascending? init consecutive final)
-  (ad:multi parameterized-conjunction ascending? init consecutive final))
+  (ad:multi parameterized-conjunction (quote ascending?) init consecutive final))
 (provide multi-abstraction)
 
 (define-syntax-rule (parameterized-abstract-conjunction parameterized-atom ...) (list parameterized-atom ...))
@@ -186,8 +186,8 @@
 
 (define-syntax (parameterized-abstract-a-variable stx)
   (syntax-parse stx
-    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:a* idx1 (string->symbol idx2) idx3))]
-    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:a* idx1 idx2 idx3))]))
+    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:a* (quote idx1) (string->symbol (quote idx2)) (quote idx3)))]
+    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:a* (quote idx1) (quote idx2) (quote idx3)))]))
 (module+ test
   (check-equal?
    (parameterized-abstract-a-variable 1 1 1)
@@ -205,8 +205,8 @@
 
 (define-syntax (parameterized-abstract-g-variable stx)
   (syntax-parse stx
-    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:g* idx1 (string->symbol idx2) idx3))]
-    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:g* idx1 idx2 idx3))]))
+    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:g* (quote idx1) (string->symbol (quote idx2)) (quote idx3)))]
+    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:g* (quote idx1) (quote idx2) (quote idx3)))]))
 (module+ test
   (check-equal?
    (parameterized-abstract-g-variable 1 1 1)
@@ -246,19 +246,19 @@
    (ad:abstract-function* 'cons (list (ad:g* 1 1 1) (ad:a* 1 1 1)))))
 (provide parameterized-abstract-list)
 
-(define-syntax-rule (init pair ...) (list pair ...))
+(define-syntax-rule (init pair ...) (ad:init (list pair ...)))
 (provide init)
 
-(define-syntax-rule (init-pair avar* aterm) (cons avar* term))
+(define-syntax-rule (init-pair avar* aterm) (cons avar* aterm))
 (provide init-pair)
 
-(define-syntax-rule (consecutive pair ...) (list pair ...))
+(define-syntax-rule (consecutive pair ...) (ad:consecutive (list pair ...)))
 (provide consecutive)
 
 (define-syntax-rule (consecutive-pair avar* aterm*) (cons avar* aterm*))
 (provide consecutive-pair)
 
-(define-syntax-rule (final pair ...) (list pair ...))
+(define-syntax-rule (final pair ...) (ad:final (list pair ...)))
 (provide final)
 
 (define-syntax-rule (final-pair avar* avar) (cons avar* avar))
