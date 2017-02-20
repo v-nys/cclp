@@ -1,4 +1,4 @@
-#lang br
+#lang br/quicklang
 (require (for-syntax syntax/parse))
 (require (only-in sugar/coerce ->symbol))
 
@@ -38,7 +38,7 @@
           (node (aa:cycle 3) (list)))))) ; nonsense tree but enough for test
 (provide at)
 
-(define-syntax-rule (cyclenode num) (aa:cycle (quote num)))
+(define-syntax-rule (cyclenode num) (aa:cycle num))
 (provide cyclenode)
 
 (define-macro-cases treelabel
@@ -49,13 +49,13 @@
   [(treelabel NUMBER (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...))
    (syntax/loc
        caller-stx
-     (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f (quote NUMBER) (list)))]
+     (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (list) #f NUMBER (list)))]
   [(treelabel (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
    (syntax/loc caller-stx
      (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) #f (list)))]
   [(treelabel NUMBER (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
    (syntax/loc caller-stx
-     (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) (quote NUMBER) (list)))]
+     (aa:tree-label (selectionless-abstract-conjunction ABSTRACT-CONJUNCT ...) (none) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) NUMBER (list)))]
   [(treelabel NUMBER (abstract-conjunction-selection SEL) REST ...)
    (syntax/loc caller-stx
      (treelabel NUMBER (abstract-conjunction-selection (selectionless-abstract-conjunction) SEL (selectionless-abstract-conjunction)) REST ...))]
@@ -67,16 +67,16 @@
      (treelabel NUMBER (abstract-conjunction-selection (selectionless-abstract-conjunction UNSEL1 ...) SEL (selectionless-abstract-conjunction)) REST ...))]
   [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
    (syntax/loc caller-stx
-     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f (quote NUMBER) (list)))]
+     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f NUMBER (list)))]
   [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...))
    (syntax/loc caller-stx
-     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f (quote NUMBER) (precedence-list PRECEDENCE ...)))]
+     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (list) #f NUMBER (precedence-list PRECEDENCE ...)))]
   [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
    (syntax/loc caller-stx
-     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) (quote NUMBER) (list)))]
+     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) NUMBER (list)))]
   [(treelabel NUMBER (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE))
    (syntax/loc caller-stx
-     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) (quote NUMBER) (precedence-list PRECEDENCE ...)))])
+     (aa:tree-label (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2)) (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2))) (abstract-substitution PAIR ...) (knowledge KNOWLEDGE) NUMBER (precedence-list PRECEDENCE ...)))])
 (module+ test
   (check-equal?
    (treelabel (selectionless-abstract-conjunction (abstract-atom "foo") (abstract-atom "bar")))
@@ -101,7 +101,7 @@
 (define-syntax-rule (selectionless-abstract-conjunction conjunct ...) (list conjunct ...))
 (provide selectionless-abstract-conjunction)
 
-(define-syntax-rule (abstract-atom symbol args ...) (ad:abstract-atom (->symbol (quote symbol)) (list args ...)))
+(define-syntax-rule (abstract-atom symbol args ...) (ad:abstract-atom (->symbol symbol) (list args ...)))
 (module+ test
   (check-equal?
    (abstract-atom "foo")
@@ -111,7 +111,7 @@
    (ad:abstract-atom 'foo (list (ad:g 1) (ad:a 1)))))
 (provide abstract-atom)
 
-(define-syntax-rule (abstract-function symbol args ...) (ad:abstract-function (->symbol (quote symbol)) (list args ...)))
+(define-syntax-rule (abstract-function symbol args ...) (ad:abstract-function (->symbol symbol) (list args ...)))
 (module+ test
   (check-equal?
    (abstract-function "foo")
@@ -121,10 +121,10 @@
    (ad:abstract-function 'foo (list (ad:g 1) (ad:a 1)))))
 (provide abstract-function)
 
-(define-syntax-rule (abstract-g-variable num) (ad:g (quote num)))
+(define-syntax-rule (abstract-g-variable num) (ad:g num))
 (provide abstract-g-variable)
 
-(define-syntax-rule (abstract-a-variable num) (ad:a (quote num)))
+(define-syntax-rule (abstract-a-variable num) (ad:a num))
 (provide abstract-a-variable)
 
 (define-syntax (abstract-list stx)
@@ -152,7 +152,7 @@
 (provide abstract-list)
 
 (define-syntax-rule (multi-abstraction parameterized-conjunction ascending? init consecutive final)
-  (ad:multi parameterized-conjunction (quote ascending?) init consecutive final))
+  (ad:multi parameterized-conjunction ascending? init consecutive final))
 (provide multi-abstraction)
 
 (define-syntax-rule (parameterized-abstract-conjunction parameterized-atom ...) (list parameterized-atom ...))
@@ -160,8 +160,8 @@
 
 (define-syntax parameterized-abstract-atom
   (syntax-rules ()
-    [(_ symbol) (ad:abstract-atom* (->symbol (quote symbol)) (list))]
-    [(_ symbol arg ...) (ad:abstract-atom* (->symbol (quote symbol)) (list arg ...))]))
+    [(_ symbol) (ad:abstract-atom* (->symbol symbol) (list))]
+    [(_ symbol arg ...) (ad:abstract-atom* (->symbol symbol) (list arg ...))]))
 (module+ test
   (check-equal?
    (parameterized-abstract-atom "foo")
@@ -173,8 +173,8 @@
 
 (define-syntax parameterized-abstract-function
   (syntax-rules ()
-    [(_ symbol) (ad:abstract-function* (->symbol (quote symbol)) (list))]
-    [(_ symbol arg ...) (ad:abstract-function* (->symbol (quote symbol)) (list arg ...))]))
+    [(_ symbol) (ad:abstract-function* (->symbol symbol) (list))]
+    [(_ symbol arg ...) (ad:abstract-function* (->symbol symbol) (list arg ...))]))
 (module+ test
   (check-equal?
    (parameterized-abstract-function "foo")
@@ -186,8 +186,8 @@
 
 (define-syntax (parameterized-abstract-a-variable stx)
   (syntax-parse stx
-    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:a* (quote idx1) (string->symbol (quote idx2)) (quote idx3)))]
-    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:a* (quote idx1) (quote idx2) (quote idx3)))]))
+    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:a* idx1 (string->symbol idx2) idx3))]
+    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:a* idx1 idx2 idx3))]))
 (module+ test
   (check-equal?
    (parameterized-abstract-a-variable 1 1 1)
@@ -205,8 +205,8 @@
 
 (define-syntax (parameterized-abstract-g-variable stx)
   (syntax-parse stx
-    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:g* (quote idx1) (string->symbol (quote idx2)) (quote idx3)))]
-    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:g* (quote idx1) (quote idx2) (quote idx3)))]))
+    [(_ idx1 idx2:str idx3) (syntax/loc stx (ad:g* idx1 (string->symbol idx2) idx3))]
+    [(_ idx1 idx2 idx3) (syntax/loc stx (ad:g* idx1 idx2 idx3))]))
 (module+ test
   (check-equal?
    (parameterized-abstract-g-variable 1 1 1)
@@ -289,21 +289,21 @@
 (define-syntax-rule (clause a c) (ck:rule a c))
 (provide clause)
 
-(define-syntax-rule (atom symbol args ...) (cd:atom (->symbol (quote symbol)) (list args ...)))
+(define-syntax-rule (atom symbol args ...) (cd:atom (->symbol symbol) (list args ...)))
 (provide atom)
 
 (define-syntax-rule (conjunction a ...) (list a ...))
 (provide conjunction)
 
-(define-syntax-rule (variable id) (cd:variable (string->symbol (quote id))))
+(define-syntax-rule (variable id) (cd:variable (string->symbol id)))
 (provide variable)
 
 (define-syntax (function stx)
   (syntax-parse stx
     [(_ SYM:str ARG ...)
-     (syntax/loc stx (cd:function (->symbol (quote SYM)) (list ARG ...)))]
+     (syntax/loc stx (cd:function (->symbol SYM) (list ARG ...)))]
     [(_ NUM:number)
-     (syntax/loc stx (cd:function (->symbol (quote NUM)) (list)))]))
+     (syntax/loc stx (cd:function (->symbol NUM) (list)))]))
 (module+ test
   (check-equal?
    (function "foo")
@@ -353,6 +353,6 @@
      (aa:generalization
       (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
       (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2)))
-      (quote NUM)
+      NUM
       (precedence-list PRECEDENCE ...)))])
 (provide generalization)
