@@ -160,8 +160,8 @@
 
 (define-syntax parameterized-abstract-atom
   (syntax-rules ()
-    [(_ symbol) (ad:abstract-atom* (->symbol symbol) (list))]
-    [(_ symbol arg ...) (ad:abstract-atom* (->symbol symbol) (list arg ...))]))
+    [(_ symbol) (ad:abstract-atom* (->symbol (quote symbol)) (list))]
+    [(_ symbol arg ...) (ad:abstract-atom* (->symbol (quote symbol)) (list arg ...))]))
 (module+ test
   (check-equal?
    (parameterized-abstract-atom "foo")
