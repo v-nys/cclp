@@ -49,7 +49,20 @@
      (make-constructor-style-printer
       (λ (obj) 'generation)
       (λ (obj) (list (generation-number obj)
-                     (generation-origin obj)))))])
+                     (generation-origin obj)))))]
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc g1 g2 equal?-recur)
+     (and (equal?-recur (generation-number g1)
+                        (generation-number g2))
+          (equal?-recur (generation-origin g1)
+                        (generation-origin g2))))
+   (define (hash-proc my-gen hash-recur)
+     (+ (hash-recur (generation-number my-gen))
+        (hash-recur (generation-origin my-gen))))
+   (define (hash2-proc my-gen hash-recur)
+     (+ (hash-recur (generation-number my-gen))
+        (hash-recur (generation-origin my-gen))))])
 (provide
  (struct*-doc
   generation
@@ -340,7 +353,9 @@
   (rename-vertex! skeleton root annotated-root)
   (annotate-general-aux! skeleton annotated-root relevant-targets rdag-depth 1))
 
-; TODO document
+;; extract a level from a rooted DAG
+;; the lowest level that can be extracted is 1 (the root)
+;; no guarantees about how the result is sorted, but it does not contain duplicates
 (define (rdag-level rdag root level)
   (define (rdag-level-aux rdag root level depth-acc)
     (if (eqv? depth-acc level)
@@ -359,9 +374,31 @@
     (identified-atom (abstract-atom 'collect (list (g 2) (a 2))) 3)
     (identified-atom (abstract-atom 'eq (list (a 1) (a 2))) 4))))
 
+;; replace sequences with the same origin with multi abstractions at a given level of the generational tree
+(define (gen-tree-level->generalized-conjunction lvl)
+  (map (compose1 identified-atom-atom identified-atom-with-generation-id-atom) lvl))
+(module+ test
+  (annotate-general! sl-graph sl-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length branch))
+  (check-equal?
+   (gen-tree-level->generalized-conjunction (rdag-level sl-graph (identified-atom-with-generation sl-root (generation 0 #f)) 5))
+   (list)) ; TODO: introduce a multi abstraction
+  (check-equal?
+   (gen-tree-level->generalized-conjunction
+    (list
+     (identified-atom-with-generation (identified-atom (abstract-atom 'integers (list (g 1) (a 1))) 3) (generation 0 #f))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'filterA (list (g 2) (a 1) (a 2))) 4) (generation 1 1))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'filterA (list (g 3) (a 2) (a 3))) 5) (generation 2 1))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'filterA (list (g 4) (a 3) (a 4))) 6) (generation 3 1))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'siftA (list (a 4) (a 5))) 7) (generation 3 1))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'filterB (list (g 5) (a 5) (a 6))) 8) (generation 1 2))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'filterB (list (g 6) (a 6) (a 7))) 9) (generation 2 2))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'filterB (list (g 7) (a 7) (a 8))) 10) (generation 3 2))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'siftB (list (a 8) (a 9))) 11) (generation 3 2))
+     (identified-atom-with-generation (identified-atom (abstract-atom 'length (list (a 9) (a 10))) 12) (generation 0 #f))))
+   (list))) ; TODO: introduce two multi abstractions
+
 (define (generalize t) (cons t #f))
 (module+ test
-  ; TODO annotate sameleaves tree
   (require (prefix-in primes5: "analysis-trees/primes-five.rkt"))
   (require (prefix-in generalizedslbranch: "analysis-trees/generalized-sameleaves-branch.rkt"))
   (check-equal? (generalize primes5:val) (cons primes5:val #f))
