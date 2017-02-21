@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang br
+#lang br/quicklang
 ; for abstract variables, functions, atoms,...
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
 ; because output patterns can be obtained by applying a subsitution

@@ -182,10 +182,6 @@
                 (list uid-acc 0 0 (list))
                 tl-con)])
            (generational-graph-skeleton l-rest next-uid graph add-edges))))]))
-(module+ test
-  (define branch (active-branch-info slbranch:val))
-  (define sl-graph (generational-graph-skeleton branch))
-  (display (graphviz sl-graph)))
 
 (define (active-branch-info t)
   (match t
@@ -340,10 +336,6 @@
   (define annotated-root (identified-atom-with-generation root (generation 0 #f)))
   (rename-vertex! skeleton root annotated-root)
   (annotate-general-aux! skeleton annotated-root relevant-targets rdag-depth 1))
-(module+ test
-  (define sl-root (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))
-  (annotate-general! sl-graph sl-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length branch))
-  (display (graphviz sl-graph)))
 
 (define (generalize t) (cons t #f))
 (module+ test
