@@ -1,4 +1,4 @@
-#lang reader "../at.rkt"
+#lang cclp/at
 (.1.*permsort(g1,a1)*
  (.2.*perm(g1,a1)*,ord(a1) [perm(g1,a1) < ord(a1)]
   {} permsort(X,Y) :- perm(X,Y),ord(Y).

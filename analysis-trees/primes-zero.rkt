@@ -1,2 +1,2 @@
-#lang reader "../at.rkt"
+#lang cclp/at
 (.primes(g1,a1))

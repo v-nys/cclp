@@ -1,4 +1,4 @@
-#lang reader "../at.rkt"
+#lang cclp/at
 (.4.*length([],g1)*
  {a5/[]} sift([],[]).
  (.□

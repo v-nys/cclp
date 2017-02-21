@@ -1,4 +1,4 @@
-#lang reader "../at.rkt"
+#lang cclp/at
 (.1.*foo*
  (.2.*bar*,baz [bar < baz]
   {} foo :- bar,baz.

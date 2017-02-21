@@ -1,4 +1,4 @@
-#lang reader "../at.rkt"
+#lang cclp/at
 (.1.*sameleaves(g1,g2)*
  (.2.*collect(g1,a1)*,collect(g2,a2),eq(a1,a2) [collect(g1,a1) < eq(a1,a2)]
   {} sameleaves(X,Y) :- collect(X,XL),collect(Y,YL),eq(XL,YL).
