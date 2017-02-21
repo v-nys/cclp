@@ -183,6 +183,9 @@
                 tl-con)])
            (generational-graph-skeleton l-rest next-uid graph add-edges))))]))
 
+(module+ test
+  (define branch (active-branch-info slbranch:val))
+  (define sl-graph (generational-graph-skeleton branch)))
 (define (active-branch-info t)
   (match t
     [(node (tree-label (list) _ _ _ _ _) '()) #f]
@@ -302,7 +305,7 @@
           (reached-neighbors graph vertex))]))
 
 (define (annotate-general! skeleton root relevant-targets rdag-depth)
-  ; annotate when the relevant target atom for a subgraph is known
+  ;; annotate when the relevant target atom for a subgraph is known
   (define (annotate-specific-aux! skeleton aux-root relevant-target-atom rdag-depth depth-acc)
     (match-define (generation root-gen-number root-origin)
       (identified-atom-with-generation-generation aux-root))
@@ -319,7 +322,7 @@
       (let ([annotated-c (identified-atom-with-generation c next-gen)])
         (rename-vertex! skeleton c annotated-c)
         (annotate-specific-aux! skeleton annotated-c relevant-target-atom rdag-depth (add1 depth-acc)))))
-  ; annotate when the relevant target atom a subgraph is not yet known
+  ;; annotate when the relevant target atom for a subgraph is not yet known
   (define (annotate-general-aux! skeleton aux-root relevant-targets rdag-depth depth-acc)
     (if (member (identified-atom-with-generation-id-atom aux-root) relevant-targets)
         (for ([c (reached-neighbors skeleton aux-root)])
@@ -332,18 +335,37 @@
           (let ([annotated-c (identified-atom-with-generation c (generation 0 #f))])
             (rename-vertex! skeleton c annotated-c)
             (annotate-general-aux! skeleton annotated-c relevant-targets rdag-depth (add1 depth-acc))))))
-  ; start by giving top level generation 0
+  ;; start by giving top level generation 0
   (define annotated-root (identified-atom-with-generation root (generation 0 #f)))
   (rename-vertex! skeleton root annotated-root)
   (annotate-general-aux! skeleton annotated-root relevant-targets rdag-depth 1))
 
+; TODO document
+(define (rdag-level rdag root level)
+  (define (rdag-level-aux rdag root level depth-acc)
+    (if (eqv? depth-acc level)
+        (list root)
+        (apply append (map (λ (s) (rdag-level-aux rdag s level (add1 depth-acc))) (reached-neighbors rdag root)))))
+  (remove-duplicates (rdag-level-aux rdag root level 1)))
+(module+ test
+  (define sl-root (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))
+  (check-equal?
+   (rdag-level sl-graph sl-root 1)
+   (list sl-root))
+  (check-equal?
+   (sort (rdag-level sl-graph sl-root 2) < #:key identified-atom-uid)
+   (list
+    (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)
+    (identified-atom (abstract-atom 'collect (list (g 2) (a 2))) 3)
+    (identified-atom (abstract-atom 'eq (list (a 1) (a 2))) 4))))
+
 (define (generalize t) (cons t #f))
 (module+ test
+  ; TODO annotate sameleaves tree
   (require (prefix-in primes5: "analysis-trees/primes-five.rkt"))
   (require (prefix-in generalizedslbranch: "analysis-trees/generalized-sameleaves-branch.rkt"))
   (check-equal? (generalize primes5:val) (cons primes5:val #f))
-  ;(check-equal? (generalize slbranch:val) (cons generalizedslbranch:val #t))
-  )
+  (check-equal? (generalize slbranch:val) (cons generalizedslbranch:val #t)))
 (provide
  (proc-doc/names
   generalize

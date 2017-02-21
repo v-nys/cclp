@@ -148,7 +148,7 @@
             ; at this point, candidate is known
             ; but generalization needs the whole branch anyway
             ; ideally, candidate-and-predecessors would actually collect candidate, active branch and predecessors, so this is not the most efficient approach
-            ; anyway, generalization gets the whole tree, extracts the active branch
+            ; anyway, generalization gets the whole tree, extracts the active branch, computes the generational tree (do I need to find relevant target atoms first?), does horizontal traversal of level at the appropriate depth, groups atoms with non-zero generation into a multi abstraction
             (begin
               (for ([conjunct conjunction]) (add-vertex! prior conjunct))
               (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
