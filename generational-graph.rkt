@@ -79,6 +79,9 @@
 (struct gen-range (low high origin))
 (provide (struct-out gen-range))
 
+(struct symsum (sym num))
+(provide (struct-out symsum))
+
 (struct identified-atom-with-generation (id-atom generation)
   #:methods
   gen:custom-write

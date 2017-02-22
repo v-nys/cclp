@@ -5,14 +5,18 @@
 (require racket-tree-utils/src/tree)
 (require (for-syntax syntax/strip-context))
 
+(require graph)
+
 (require "generational-graph.rkt")
+
+(require (only-in "at-expander.rkt" abstract-atom))
 
 (define-macro (gg-module-begin (gg (nodes-section NODE-LINE ...) (edges-section EDGE-LINE ...)))
   (with-syntax ([REPLACED (replace-context caller-stx #'val)])
     (syntax/loc caller-stx
       (#%module-begin
        (nodes-section NODE-LINE ...)
-       (define REPLACED (edges-section EDGE-LINE ...))
+       (define REPLACED (graphviz (edges-section EDGE-LINE ...)))
        (provide REPLACED)))))
 (provide (rename-out [gg-module-begin #%module-begin]) #%top-interaction)
 
@@ -50,3 +54,39 @@
      #'(cons (list START-ID DEST0-ID)
              (edge-line START DEST ...)))])
 (provide edge-line)
+
+(require (only-in "at-expander.rkt" abstract-atom))
+(provide abstract-atom)
+
+(require (only-in "at-expander.rkt" abstract-function))
+(provide abstract-function)
+
+(require (only-in "at-expander.rkt" abstract-g-variable))
+(provide abstract-g-variable)
+
+(require (only-in "at-expander.rkt" abstract-a-variable))
+(provide abstract-a-variable)
+
+(require (only-in "at-expander.rkt" multi-abstraction))
+(provide multi-abstraction)
+
+(require (only-in "at-expander.rkt" parameterized-abstract-conjunction))
+(provide parameterized-abstract-conjunction)
+
+(require (only-in "at-expander.rkt" parameterized-abstract-atom))
+(provide parameterized-abstract-atom)
+
+(require (only-in "at-expander.rkt" parameterized-abstract-function))
+(provide parameterized-abstract-function)
+
+(require (only-in "at-expander.rkt" parameterized-abstract-a-variable))
+(provide parameterized-abstract-a-variable)
+
+(require (only-in "at-expander.rkt" parameterized-abstract-g-variable))
+(provide parameterized-abstract-g-variable)
+
+(require (only-in "at-expander.rkt" parameterized-abstract-list))
+(provide parameterized-abstract-list)
+
+(require (only-in "at-expander.rkt" init init-pair consecutive consecutive-pair final final-pair))
+(provide init init-pair consecutive consecutive-pair final final-pair)
