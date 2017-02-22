@@ -2,31 +2,19 @@
 (require (for-syntax syntax/parse))
 (require (only-in sugar/coerce ->symbol))
 
-(require (prefix-in ad: "abstract-multi-domain.rkt"))
-(require (prefix-in ak: "abstract-knowledge.rkt"))
-(require (prefix-in as: "abstract-substitution.rkt"))
-(require (prefix-in cd: "concrete-domain.rkt"))
-(require (prefix-in ck: "concrete-knowledge.rkt"))
-(require (prefix-in faid: "fullai-domain.rkt"))
-(require "preprior-graph.rkt")
-(require (prefix-in aa: "abstract-analysis.rkt"))
 (require racket-tree-utils/src/tree)
 (require (for-syntax syntax/strip-context))
-(require "data-utils.rkt")
 
-(define-syntax (gg-module-begin stx)
-  (syntax-parse stx
-    [(_ _PARSE-TREE)
-     (with-syntax ([REPLACED (replace-context stx #'val)])
-       (syntax/loc stx
-         (#%module-begin
-          (define REPLACED _PARSE-TREE)
-          (provide REPLACED))))]))
+(require "generational-graph.rkt")
+
+(define-macro (gg-module-begin (gg (nodes-section NODE-LINE ...) (edges-section EDGE-LINE ...)))
+  (with-syntax ([REPLACED (replace-context caller-stx #'val)])
+    (syntax/loc caller-stx
+      (#%module-begin
+       (nodes-section NODE-LINE ...)
+       (define REPLACED (edges-section EDGE-LINE ...))
+       (provide REPLACED)))))
 (provide (rename-out [gg-module-begin #%module-begin]) #%top-interaction)
-
-(define-macro (gg NODES-SECTION EDGES-SECTION)
-  #'(begin NODES-SECTION EDGES-SECTION))
-(provide gg)
 
 (define-macro (nodes-section NODE-LINE ...) #'(begin NODE-LINE ...))
 (provide nodes-section)

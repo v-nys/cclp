@@ -70,6 +70,15 @@
    [origin (or/c #f exact-positive-integer?)])
   @{Used to track the recursion depth of an atom with respect to a uniquely identified target atom.}))
 
+(struct identified-abstract-conjunct-with-gen-range (id-conjunct range))
+(provide (struct-out identified-abstract-conjunct-with-gen-range))
+
+(struct identified-abstract-conjunct (conjunct id-number))
+(provide (struct-out identified-abstract-conjunct))
+
+(struct gen-range (low high origin))
+(provide (struct-out gen-range))
+
 (struct identified-atom-with-generation (id-atom generation)
   #:methods
   gen:custom-write
