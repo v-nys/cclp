@@ -282,7 +282,7 @@
 (provide
  (proc-doc/names
   label-conjunction
-  (-> label-with-conjunction? (listof abstract-atom?))
+  (-> label-with-conjunction? (listof abstract-conjunct?))
   (label)
   @{Extracts the conjunction from any tree label type which represents it explicitly.}))
 
@@ -297,7 +297,7 @@
   label-selection
   (-> label-with-conjunction? (maybe exact-nonnegative-integer?))
   (label)
-  @{Extracts the index of the selected atom from any tree label type which has it.}))
+  @{Extracts the index of the selected conjunct from any tree label type which has it.}))
 
 (define (label-introduced-edges l)
   (cond

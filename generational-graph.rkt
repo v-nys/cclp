@@ -54,12 +54,6 @@
   (knowledge)
   @{Computes how many conjuncts will be introduced when @racket[knowledge] is applied.}))
 
-;; associates a unique ID with a conjunct
-(define (identify conjunct idx)
-  (match conjunct
-    ; can do multi when I have an identified multi... (or just identified conjunct)
-    [(abstract-atom s a) (identified-atom (abstract-atom s a) idx)]))
-
 (define (contains range idx)
   (and (>= idx (index-range-start range))
        (< idx (index-range-end-before range))))
@@ -76,10 +70,10 @@
         (match-lambda**
          [(conjunct (cons uid idx))
           (begin
-            (add-vertex! graph (identify conjunct uid))
+            (add-vertex! graph (identified-abstract-conjunct conjunct uid))
             (for ([edge edges])
               (when (contains (cdr edge) idx)
-                (add-directed-edge! graph (car edge) (identify conjunct uid))))
+                (add-directed-edge! graph (car edge) (identified-abstract-conjunct conjunct uid))))
             (cons (add1 uid) (add1 idx)))])
         (cons uid-acc 0)
         (label-conjunction label))
@@ -99,13 +93,13 @@
               (match-lambda**
                [(conjunct (list uid idx range-start introduced-edges))
                 (begin
-                  (add-vertex! graph (identify conjunct uid))
+                  (add-vertex! graph (identified-abstract-conjunct conjunct uid))
                   (for ([edge edges])
                     (when (contains (cdr edge) idx)
-                      (add-directed-edge! graph (car edge) (identify conjunct uid))))
+                      (add-directed-edge! graph (car edge) (identified-abstract-conjunct conjunct uid))))
                   (let ([vertex-edges
                          (cons ; pair of the current conjunct and the range of "spawned" conjuncts
-                          (identify conjunct uid)
+                          (identified-abstract-conjunct conjunct uid)
                           (if (not (equal? idx selected1))
                               (index-range range-start (add1 range-start)) ; unselected conjuncts refer to the conjunct "below" hem
                               (index-range range-start (+ range-start (knowledge-output-length tl-rule2)))))]
@@ -125,15 +119,18 @@
             (match-lambda**
              [(conjunct (list uid idx range-start introduced-edges))
               (begin
-                (add-vertex! graph (identify conjunct uid))
+                (add-vertex! graph (identified-abstract-conjunct conjunct uid))
                 (for ([edge edges])
                   (when (contains (cdr edge) idx)
-                    (add-directed-edge! graph (car edge) (identify conjunct uid))))
+                    (add-directed-edge! graph (car edge) (identified-abstract-conjunct conjunct uid))))
                 (let ([vertex-edges
                        (cons
-                        (identify conjunct uid)
+                        (identified-abstract-conjunct conjunct uid)
                         (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
-                      [new-range-start (if (ormap (λ (r) (contains r idx)) abstracted-ranges) range-start (add1 range-start))])
+                      [new-range-start
+                       (if (ormap (λ (r) (contains (struct-copy index-range r [end-before (sub1 (index-range-end-before r))]) idx)) abstracted-ranges)
+                           range-start ; next conjunct will also be abstracted
+                           (add1 range-start))])
                   (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
             (list uid-acc 0 0 (list))
             tl-con1)])
@@ -205,14 +202,14 @@
   (define tc (transitive-closure graph))
   (hash-set! tc (list root root) #f)
   (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) root))) (hash-keys tc))))
-  (define just-atoms (map identified-atom-atom reached))
-  (define root-atom (identified-atom-atom root))
-  (ormap (λ (a) (renames-with-corresponding-args? root-atom a)) just-atoms))
+  (define just-atoms (map identified-abstract-conjunct-conjunct reached))
+  (define root-atom (identified-abstract-conjunct-conjunct root))
+  (ormap (λ (a) (and (abstract-atom? root-atom) (abstract-atom? a) (renames-with-corresponding-args? root-atom a))) just-atoms))
 (module+ test
-  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)))
-  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-atom (abstract-atom 'collect (list (g 2) (a 2))) 3)))
-  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-atom (abstract-atom 'eq (list (a 1) (a 2))) 4)))
-  (check-false (descendant-renames-with-corresponding-args? sl-graph (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-abstract-conjunct (abstract-atom 'collect (list (g 2) (a 2))) 3)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph (identified-abstract-conjunct (abstract-atom 'eq (list (a 1) (a 2))) 4)))
+  (check-false (descendant-renames-with-corresponding-args? sl-graph (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))))
 
 (define (candidate-target-identified-atoms skeleton root live-depth)
   (define (candidate-target-identified-atoms-aux skeleton root live-depth [depth-acc 0])

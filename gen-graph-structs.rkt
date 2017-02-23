@@ -59,7 +59,7 @@
 (struct identified-abstract-conjunct-with-gen-range (id-conjunct range))
 (provide (struct-out identified-abstract-conjunct-with-gen-range))
 
-(struct identified-abstract-conjunct (conjunct id-number))
+(struct identified-abstract-conjunct (conjunct id-number) #:transparent)
 (provide (struct-out identified-abstract-conjunct))
 
 (struct gen-range (low high origin))
