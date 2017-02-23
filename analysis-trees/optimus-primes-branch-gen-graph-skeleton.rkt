@@ -51,117 +51,117 @@ NODES
 41  filterA(g3,a10,a11)
 42  siftA(a11,a12)
 43  filterB(g2,[g3|a12],a7)
-45  siftB(a7,a8)
-46  length(a8,g4)
+44  siftB(a7,a8)
+45  length(a8,g4)
 
-47  integers(g5,a9)
-48  filterA(g2,a9,a10)
-49  filterA(g3,a10,a11)
-50  siftA(a11,a12)
-51  filterB(g2,a12,a13)
-52  siftB([g3|a13],a8)
-53  length(a8,g4)
+46  integers(g5,a9)
+47  filterA(g2,a9,a10)
+48  filterA(g3,a10,a11)
+49  siftA(a11,a12)
+50  filterB(g2,a12,a13)
+51  siftB([g3|a13],a8)
+52  length(a8,g4)
 
-54  integers(g5,a9)
-55  filterA(g2,a9,a10)
-56  filterA(g3,a10,a11)
-57  siftA(a11,a12)
-58  filterB(g2,a12,a13)
-59  filterB(g3,a13,a14)
-60  siftB(a14,a15)
-61  length([g3|a15],g4)
+53  integers(g5,a9)
+54  filterA(g2,a9,a10)
+55  filterA(g3,a10,a11)
+56  siftA(a11,a12)
+57  filterB(g2,a12,a13)
+58  filterB(g3,a13,a14)
+59  siftB(a14,a15)
+60  length([g3|a15],g4)
 
-62  integers(g5,a9)
-63  filterA(g2,a9,a10)
-64  filterA(g3,a10,a11)
-65  siftA(a11,a12)
-66  filterB(g2,a12,a13)
-67  filterB(g3,a13,a14)
-68  siftB(a14,a15)
-69  length(a15,g6)
+61  integers(g5,a9)
+62  filterA(g2,a9,a10)
+63  filterA(g3,a10,a11)
+64  siftA(a11,a12)
+65  filterB(g2,a12,a13)
+66  filterB(g3,a13,a14)
+67  siftB(a14,a15)
+68  length(a15,g6)
 
-70  integers(g7,a16)
-71  filterA(g2,[g5|a16],a10)
-72  filterA(g3,a10,a11)
-73  siftA(a11,a12)
-74  filterB(g2,a12,a13)
-75  filterB(g3,a13,a14)
-76  siftB(a14,a15)
-77  length(a15,g6)
+69  integers(g7,a16)
+70  filterA(g2,[g5|a16],a10)
+71  filterA(g3,a10,a11)
+72  siftA(a11,a12)
+73  filterB(g2,a12,a13)
+74  filterB(g3,a13,a14)
+75  siftB(a14,a15)
+76  length(a15,g6)
 
-78  integers(g7,a16)
-79  filterA(g2,a16,a17)
-80  filterA(g3,[g5|a17],a11)
-81  siftA(a11,a12)
-82  filterB(g2,a12,a13)
-83  filterB(g3,a13,a14)
-84  siftB(a14,a15)
-85  length(a15,g6)
+77  integers(g7,a16)
+78  filterA(g2,a16,a17)
+79  filterA(g3,[g5|a17],a11)
+80  siftA(a11,a12)
+81  filterB(g2,a12,a13)
+82  filterB(g3,a13,a14)
+83  siftB(a14,a15)
+84  length(a15,g6)
 
-86  integers(g7,a16)
-87  filterA(g2,a16,a17)
-88  filterA(g3,a17,a18)
-89  siftA([g5|a18],a12)
-90  filterB(g2,a12,a13)
-91  filterB(g3,a13,a14)
-92  siftB(a14,a15)
-93  length(a15,g6)
+85  integers(g7,a16)
+86  filterA(g2,a16,a17)
+87  filterA(g3,a17,a18)
+88  siftA([g5|a18],a12)
+89  filterB(g2,a12,a13)
+90  filterB(g3,a13,a14)
+91  siftB(a14,a15)
+92  length(a15,g6)
 
-94  integers(g7,a16)
-95  filterA(g2,a16,a17)
-96  filterA(g3,a17,a18)
-97  filterA(g5,a18,a19)
-98  siftA(a19,a20)
-99  filterB(g2,[g5|a20],a13)
-100 filterB(g3,a13,a14)
-101 siftB(a14,a15)
-102 length(a15,g6)
+93  integers(g7,a16)
+94  filterA(g2,a16,a17)
+95  filterA(g3,a17,a18)
+96  filterA(g5,a18,a19)
+97  siftA(a19,a20)
+98  filterB(g2,[g5|a20],a13)
+99 filterB(g3,a13,a14)
+100 siftB(a14,a15)
+101 length(a15,g6)
 
-103 integers(g7,a16)
-104 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
-105 filterA(g5,a18,a19)
-106 siftA(a19,a20)
-107 filterB(g2,[g5|a20],a13)
-108 filterB(g3,a13,a14)
-109 siftB(a14,a15)
-110 length(a15,g6)
+102 integers(g7,a16)
+103 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
+104 filterA(g5,a18,a19)
+105 siftA(a19,a20)
+106 filterB(g2,[g5|a20],a13)
+107 filterB(g3,a13,a14)
+108 siftB(a14,a15)
+109 length(a15,g6)
 
-111 integers(g7,a16)
-112 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
-113 filterA(g5,a18,a19)
-114 siftA(a19,a20)
-115 filterB(g2,a20,a21)
-116 filterB(g3,[g5|a21],a14)
-117 siftB(a14,a15)
-118 length(a15,g6)
+110 integers(g7,a16)
+111 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
+112 filterA(g5,a18,a19)
+113 siftA(a19,a20)
+114 filterB(g2,a20,a21)
+115 filterB(g3,[g5|a21],a14)
+116 siftB(a14,a15)
+117 length(a15,g6)
 
-119 integers(g7,a16)
-120 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
-121 filterA(g5,a18,a19)
-122 siftA(a19,a20)
-123 filterB(g2,a20,a21)
-124 filterB(g3,a21,a22)
-125 siftB([g5|a22],a15)
-126 length(a15,g6)
+118 integers(g7,a16)
+119 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
+120 filterA(g5,a18,a19)
+121 siftA(a19,a20)
+122 filterB(g2,a20,a21)
+123 filterB(g3,a21,a22)
+124 siftB([g5|a22],a15)
+125 length(a15,g6)
 
-127 integers(g7,a16)
-128 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
-129 filterA(g5,a18,a19)
-130 siftA(a19,a20)
-131 filterB(g2,a20,a21)
-132 filterB(g3,a21,a22)
-133 filterB(g5,a22,a23)
-134 siftB(a23,a24)
-135 length([g5|a24],g6)
+126 integers(g7,a16)
+127 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
+128 filterA(g5,a18,a19)
+129 siftA(a19,a20)
+130 filterB(g2,a20,a21)
+131 filterB(g3,a21,a22)
+132 filterB(g5,a22,a23)
+133 siftB(a23,a24)
+134 length([g5|a24],g6)
 
-136 integers(g7,a16)
-137 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
-138 filterA(g5,a18,a19)
-139 siftA(a19,a20)
-140 multi((filterB(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a20,a<2,1,2>/a21},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g3,a<2,L,1>/a21,a<1,L,2>/a22})
-141 filterB(g5,a22,a23)
-142 siftB(a23,a24)
-143 length([g5|a24],g6)
+135 integers(g7,a16)
+136 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
+137 filterA(g5,a18,a19)
+138 siftA(a19,a20)
+139 multi((filterB(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a20,a<2,1,2>/a21},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g3,a<2,L,1>/a21,a<1,L,2>/a22})
+140 filterB(g5,a22,a23)
+141 siftB(a23,a24)
+142 length([g5|a24],g6)
 
 EDGES
 1 -> 2, 3, 4, 5.
@@ -207,25 +207,26 @@ EDGES
 34 -> 40.
 35 -> 41, 42.
 36 -> 43.
-37 -> 45.
-38 -> 46.
+37 -> 44.
+38 -> 45.
 
-39 -> 47.
-40 -> 48.
-41 -> 49.
-42 -> 50.
-43 -> 51.
+39 -> 46.
+40 -> 47.
+41 -> 48.
+42 -> 49.
+43 -> 50.
+44 -> 51.
 45 -> 52.
-46 -> 53.
 
+46 -> 53.
 47 -> 54.
 48 -> 55.
 49 -> 56.
 50 -> 57.
-51 -> 58.
-52 -> 59, 60.
-53 -> 61.
+51 -> 58, 59.
+52 -> 60.
 
+53 -> 61.
 54 -> 62.
 55 -> 63.
 56 -> 64.
@@ -233,8 +234,8 @@ EDGES
 58 -> 66.
 59 -> 67.
 60 -> 68.
-61 -> 69.
 
+61 -> 69.
 62 -> 70.
 63 -> 71.
 64 -> 72.
@@ -242,8 +243,8 @@ EDGES
 66 -> 74.
 67 -> 75.
 68 -> 76.
-69 -> 77.
 
+69 -> 77.
 70 -> 78.
 71 -> 79.
 72 -> 80.
@@ -251,8 +252,8 @@ EDGES
 74 -> 82.
 75 -> 83.
 76 -> 84.
-77 -> 85.
 
+77 -> 85.
 78 -> 86.
 79 -> 87.
 80 -> 88.
@@ -260,27 +261,27 @@ EDGES
 82 -> 90.
 83 -> 91.
 84 -> 92.
-85 -> 93.
 
+85 -> 93.
 86 -> 94.
 87 -> 95.
-88 -> 96.
-89 -> 97, 98.
+88 -> 96, 97.
+89 -> 98.
 90 -> 99.
 91 -> 100.
 92 -> 101.
-93 -> 102.
 
+93 -> 102.
 94 -> 103.
-95 -> 104.
+95 -> 103.
 96 -> 104.
 97 -> 105.
 98 -> 106.
 99 -> 107.
 100 -> 108.
 101 -> 109.
-102 -> 110.
 
+102 -> 110.
 103 -> 111.
 104 -> 112.
 105 -> 113.
@@ -288,8 +289,8 @@ EDGES
 107 -> 115.
 108 -> 116.
 109 -> 117.
-110 -> 118.
 
+110 -> 118.
 111 -> 119.
 112 -> 120.
 113 -> 121.
@@ -297,23 +298,22 @@ EDGES
 115 -> 123.
 116 -> 124.
 117 -> 125.
-118 -> 126.
 
+118 -> 126.
 119 -> 127.
 120 -> 128.
 121 -> 129.
 122 -> 130.
 123 -> 131.
-124 -> 132.
-125 -> 133, 134.
-126 -> 135.
+124 -> 132, 133.
+125 -> 134.
 
+126 -> 135.
 127 -> 136.
 128 -> 137.
 129 -> 138.
 130 -> 139.
-131 -> 140.
+131 -> 139.
 132 -> 140.
 133 -> 141.
 134 -> 142.
-135 -> 143.
