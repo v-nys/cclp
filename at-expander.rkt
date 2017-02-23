@@ -8,11 +8,11 @@
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (prefix-in faid: "fullai-domain.rkt"))
-(require "preprior-graph.rkt")
 (require (prefix-in aa: "abstract-analysis.rkt"))
 (require racket-tree-utils/src/tree)
 (require (for-syntax syntax/strip-context))
 (require "data-utils.rkt")
+(require (only-in "gen-graph-structs.rkt" index-range))
 
 (define-syntax (at-module-begin stx)
   (syntax-parse stx
@@ -361,5 +361,5 @@
 (define-macro (generalized-index-ranges RANGE ...) (syntax/loc caller-stx (list RANGE ...)))
 (provide generalized-index-ranges)
 
-(define-macro (generalized-index-range NUM1 NUM2) (syntax/loc caller-stx (cons NUM1 NUM2)))
+(define-macro (generalized-index-range NUM1 NUM2) (syntax/loc caller-stx (index-range NUM1 (+ NUM2 1))))
 (provide generalized-index-range)

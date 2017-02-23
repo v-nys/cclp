@@ -32,6 +32,7 @@
   (prefix-in ck: "concrete-knowledge.rkt")
   "data-utils.rkt" ; selection is still expressed as a maybe
   (prefix-in faid: "fullai-domain.rkt")
+  (only-in "gen-graph-structs.rkt" index-range?)
   "preprior-graph.rkt")
 (require (for-doc scribble/manual))
 
@@ -256,7 +257,7 @@
    [selection any/c]
    [index (or/c #f exact-positive-integer?)]
    [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))]
-   [abstracted-ranges (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?))])
+   [abstracted-ranges (listof index-range?)])
   @{The contents of a node in the abstract analysis tree which was obtained by grouping conjuncts into a multi abstraction.}))
 
 (define (label-index l)

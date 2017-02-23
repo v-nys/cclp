@@ -54,21 +54,23 @@
   (knowledge)
   @{Computes how many conjuncts will be introduced when @racket[knowledge] is applied.}))
 
-(struct index-range (start end-before))
-(define (contains range idx)
-  (and (>= idx (index-range-start range))
-       (< idx (index-range-end-before range))))
-
 ;; associates a unique ID with a conjunct
 (define (identify conjunct idx)
   (match conjunct
     ; can do multi when I have an identified multi... (or just identified conjunct)
     [(abstract-atom s a) (identified-atom (abstract-atom s a) idx)]))
 
+(define (contains range idx)
+  (and (>= idx (index-range-start range))
+       (< idx (index-range-end-before range))))
+
 ;; computes the skeleton for a generational graph, i.e. the data structure without any generations
+;; uid-acc is the unique identifier used for an abstract conjunct in the generational graph
+;; graph is the (mutable) generational graph
+;; edges is a list of edges from conjuncts at the previous level to a range of indices at the current level
 (define (generational-graph-skeleton branch [uid-acc 1] [graph (unweighted-graph/directed (list))] [edges (list)])
   (match branch
-    [(list label)
+    [(list label) ; same for tree label and generalization
      (begin
        (foldl
         (match-lambda**
@@ -82,31 +84,60 @@
         (cons uid-acc 0)
         (label-conjunction label))
        graph)]
-    ; case: tree-label followed by tree-label (which is always the case when there is a selection)
-    ; TODO: combinations of tree-label, cycle, generalization, widening, and case split
-    ; at the very least, tree label followed by generalization will be needed for demo
-    [(list-rest (tree-label tl-con (some selected) tl-subst tl-rule tl-idx tl-edges) l-rest)
-     (let* ([first-unselected (take tl-con selected)]
-            [selected-atom (list-ref tl-con selected)]
-            [last-unselected (drop tl-con (+ 1 selected))]
-            [next-conjunction (label-conjunction (first l-rest))])
-       (begin
-         (match-let
-             ([(list next-uid next-idx next-range-start add-edges)
-               (foldl
-                (match-lambda**
-                 [(conjunct (list uid idx range-start introduced-edges))
-                  (begin
-                    (add-vertex! graph (identify conjunct uid))
-                    (for ([edge edges])
-                      (when (contains (cdr edge) idx)
-                        (add-directed-edge! graph (car edge) (identify conjunct uid))))
-                    (let ([vertex-edges (cons (identify conjunct uid) (if (not (equal? idx selected)) (index-range range-start (add1 range-start)) (index-range range-start (+ range-start (knowledge-output-length (tree-label-rule (car l-rest)))))))]
-                          [new-range-start (if (not (equal? idx selected)) (add1 range-start) (+ range-start (knowledge-output-length (tree-label-rule (car l-rest)))))])
-                      (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
-                (list uid-acc 0 0 (list))
-                tl-con)])
-           (generational-graph-skeleton l-rest next-uid graph add-edges))))]))
+    [(list-rest
+      (or (tree-label tl-con1 (some selected1) _ _ _ _)
+          (generalization tl-con1 (some selected1) _ _ _))
+      (tree-label _ _ _ tl-rule2 _ _)
+      l-rest)
+     (let* ([first-unselected (take tl-con1 selected1)]
+            [selected-atom (list-ref tl-con1 selected1)]
+            [last-unselected (drop tl-con1 (+ 1 selected1))])
+       (match-let
+           ;; all these identified values correspond to parameters of the function
+           ([(list next-uid _ _ add-edges)
+             (foldl
+              (match-lambda**
+               [(conjunct (list uid idx range-start introduced-edges))
+                (begin
+                  (add-vertex! graph (identify conjunct uid))
+                  (for ([edge edges])
+                    (when (contains (cdr edge) idx)
+                      (add-directed-edge! graph (car edge) (identify conjunct uid))))
+                  (let ([vertex-edges
+                         (cons ; pair of the current conjunct and the range of "spawned" conjuncts
+                          (identify conjunct uid)
+                          (if (not (equal? idx selected1))
+                              (index-range range-start (add1 range-start)) ; unselected conjuncts refer to the conjunct "below" hem
+                              (index-range range-start (+ range-start (knowledge-output-length tl-rule2)))))]
+                        [new-range-start (if (not (equal? idx selected1)) (add1 range-start) (+ range-start (knowledge-output-length tl-rule2)))])
+                    (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
+              (list uid-acc 0 0 (list))
+              tl-con1)])
+         (generational-graph-skeleton (cdr branch) next-uid graph add-edges)))]
+    [(list-rest
+      (or (tree-label tl-con1 (none) _ _ _ _)
+          (generalization tl-con1 (none) _ _ _))
+      (generalization _ _ _ _ abstracted-ranges)
+      l-rest)
+     (match-let
+         ([(list next-uid _ _ add-edges)
+           (foldl
+            (match-lambda**
+             [(conjunct (list uid idx range-start introduced-edges))
+              (begin
+                (add-vertex! graph (identify conjunct uid))
+                (for ([edge edges])
+                  (when (contains (cdr edge) idx)
+                    (add-directed-edge! graph (car edge) (identify conjunct uid))))
+                (let ([vertex-edges
+                       (cons
+                        (identify conjunct uid)
+                        (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
+                      [new-range-start (if (ormap (λ (r) (contains r idx)) abstracted-ranges) range-start (add1 range-start))])
+                  (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
+            (list uid-acc 0 0 (list))
+            tl-con1)])
+       (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]))
 (module+ test
   (define branch (active-branch-info slbranch:val))
   (define sl-graph (generational-graph-skeleton branch))

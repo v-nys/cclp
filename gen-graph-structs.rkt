@@ -128,3 +128,6 @@
    [uid exact-nonnegative-integer?])
   @{A uniquely identifiable instance of an abstract atom in a generational graph (or skeleton).
      The field @racket[uid] is unique to each atom in a generational graph.}))
+
+(struct index-range (start end-before))
+(provide (struct-out index-range))
