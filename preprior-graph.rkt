@@ -187,25 +187,7 @@
          [v (interpret-abstract-atom "foo(γ1)")])
      (begin (add-vertex! g v)
             (add-vertex! g u)
-            (check-true (has-edge? g u v)))))
-  (test-case
-   "serialization and deserialization work as expected"
-   (let ([g (mk-preprior-graph)]
-         [a (interpret-abstract-atom "a")]
-         [b (interpret-abstract-atom "b")]
-         [c (interpret-abstract-atom "c")]
-         [d (interpret-abstract-atom "d")])
-     (begin
-       (add-vertex! g a)
-       (add-vertex! g b)
-       (add-vertex! g c)
-       (add-vertex! g d)
-       (add-edge! g a b)
-       (add-edge! g a c)
-       (add-edge! g c d)
-       (check-equal?
-        (deserialize (serialize g))
-        g)))))
+            (check-true (has-edge? g u v))))))
 
 (define (strict-partial-order? g)
   ; note: transitive closure always returns #t for self loops
