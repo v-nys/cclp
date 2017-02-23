@@ -34,6 +34,8 @@
   "abstract-substitution.rkt"
   "abstraction-inspection-utils.rkt"
   (prefix-in slbranch: "analysis-trees/sameleaves-branch.rkt")
+  (prefix-in o-primes-branch: "analysis-trees/optimus-primes-branch.rkt")
+  (prefix-in o-primes-branch-skeleton: "analysis-trees/optimus-primes-branch-gen-graph-skeleton.rkt")
   (prefix-in ck: "concrete-knowledge.rkt")
   "data-utils.rkt"
   (only-in "control-flow.rkt" aif it)
@@ -105,10 +107,14 @@
                 (list uid-acc 0 0 (list))
                 tl-con)])
            (generational-graph-skeleton l-rest next-uid graph add-edges))))]))
-
 (module+ test
   (define branch (active-branch-info slbranch:val))
-  (define sl-graph (generational-graph-skeleton branch)))
+  (define sl-graph (generational-graph-skeleton branch))
+  (define o-primes-branch (active-branch-info o-primes-branch:val))
+  (define o-primes-graph (generational-graph-skeleton o-primes-branch))
+  (check-equal?
+   o-primes-graph
+   o-primes-branch-skeleton:val))
 (define (active-branch-info t)
   (match t
     [(node (tree-label (list) _ _ _ _ _) '()) #f]
@@ -116,9 +122,15 @@
     [(node (cycle _) '()) #f]
     [(node (tree-label c (none) s r #f ie) '())
      (list (tree-label c (none) s r #f ie))]
+    [(node (generalization c (none) #f ie) '())
+     (list (generalization c (none) #f ie))]
     [(node (tree-label c sel s r i ie) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch-info c))) #f ch)
           (cons (tree-label c sel s r i ie) it)
+          #f)]
+    [(node (generalization c sel i ie) ch)
+     (aif (foldl (λ (c acc) (if acc acc (active-branch-info c))) #f ch)
+          (cons (generalization c sel i ie) it)
           #f)]))
 (provide
  (proc-doc/names
