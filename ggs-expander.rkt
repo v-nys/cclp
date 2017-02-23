@@ -23,8 +23,8 @@
 (require (only-in "gg-expander.rkt" edges-section edge-line))
 (provide edges-section edge-line)
 
-(require (only-in "at-expander.rkt" abstract-atom abstract-function abstract-g-variable abstract-a-variable))
-(provide abstract-atom abstract-function abstract-g-variable abstract-a-variable)
+(require (only-in "at-expander.rkt" abstract-atom abstract-function abstract-g-variable abstract-a-variable abstract-list))
+(provide abstract-atom abstract-function abstract-g-variable abstract-a-variable abstract-list)
 (require (only-in "at-expander.rkt" multi-abstraction parameterized-abstract-conjunction
                   parameterized-abstract-atom parameterized-abstract-function
                   parameterized-abstract-a-variable parameterized-abstract-g-variable
