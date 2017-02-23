@@ -8,4 +8,11 @@
     (strip-bindings
      #`(module ggs-mod cclp/ggs-expander
          #,parse-tree)))
-  (provide read-syntax))
+  (define (get-info port mod line col pos)
+    (define (handle-query key default)
+      (case key
+        [(color-lexer)
+         (dynamic-require 'cclp/gg-colorer 'gg-colorer)]
+        [else default]))
+    handle-query)
+  (provide read-syntax get-info))
