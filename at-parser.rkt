@@ -51,5 +51,7 @@ function : SYMBOL [/"(" term (/"," term)* /")"]
 lplist : /"[" [term term-tail ["|" (lplist | variable)]] /"]"
 @term-tail : ("," term)*
 fullai-rule : abstract-atom /"->" abstract-substitution
-generalization : /"!GEN" selectionless-abstract-conjunction
-               | /"!GEN" NUMBER /"." abstract-conjunction-selection [precedence-list]
+generalization : /"!GEN" selectionless-abstract-conjunction generalized-index-ranges
+               | /"!GEN" NUMBER /"." abstract-conjunction-selection [precedence-list] generalized-index-ranges
+generalized-index-ranges : /"(" generalized-index-range+ /")"
+generalized-index-range : /"(" NUMBER NUMBER /")"

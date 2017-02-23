@@ -122,15 +122,15 @@
     [(node (cycle _) '()) #f]
     [(node (tree-label c (none) s r #f ie) '())
      (list (tree-label c (none) s r #f ie))]
-    [(node (generalization c (none) #f ie) '())
-     (list (generalization c (none) #f ie))]
+    [(node (generalization c (none) #f ie rngs) '())
+     (list (generalization c (none) #f ie rngs))]
     [(node (tree-label c sel s r i ie) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch-info c))) #f ch)
           (cons (tree-label c sel s r i ie) it)
           #f)]
-    [(node (generalization c sel i ie) ch)
+    [(node (generalization c sel i ie rngs) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch-info c))) #f ch)
-          (cons (generalization c sel i ie) it)
+          (cons (generalization c sel i ie rngs) it)
           #f)]))
 (provide
  (proc-doc/names

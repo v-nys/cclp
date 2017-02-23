@@ -344,15 +344,22 @@
 (provide fullai-rule)
 
 (define-macro-cases generalization
-  [(_ (selectionless-abstract-conjunction ACON ...))
-   (syntax/loc caller-stx (aa:generalization (selectionless-abstract-conjunction ACON ...) (none) #f (list)))]
-  [(_ NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
-   (syntax/loc caller-stx (generalization NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list)))]
-  [(_ NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...))
+  [(_ (selectionless-abstract-conjunction ACON ...) INDEX-RANGES)
+   (syntax/loc caller-stx (aa:generalization (selectionless-abstract-conjunction ACON ...) (none) #f (list) INDEX-RANGES))]
+  [(_ NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) INDEX-RANGES)
+   (syntax/loc caller-stx (generalization NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list) INDEX-RANGES))]
+  [(_ NUM (abstract-conjunction-selection UNSEL1 SEL UNSEL2) (precedence-list PRECEDENCE ...) INDEX-RANGES)
    (syntax/loc caller-stx
      (aa:generalization
       (car (abstract-conjunction-selection UNSEL1 SEL UNSEL2))
       (some (cdr (abstract-conjunction-selection UNSEL1 SEL UNSEL2)))
       NUM
-      (precedence-list PRECEDENCE ...)))])
+      (precedence-list PRECEDENCE ...)
+      INDEX-RANGES))])
 (provide generalization)
+
+(define-macro (generalized-index-ranges RANGE ...) (syntax/loc caller-stx (list RANGE ...)))
+(provide generalized-index-ranges)
+
+(define-macro (generalized-index-range NUM1 NUM2) (syntax/loc caller-stx (cons NUM1 NUM2)))
+(provide generalized-index-range)
