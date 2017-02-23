@@ -286,7 +286,7 @@
 
 ;; replace sequences with the same origin with multi abstractions at a given level of the generational tree
 (define (gen-tree-level->generalized-conjunction lvl)
-  (map (compose1 identified-atom-atom identified-atom-with-generation-id-atom) lvl))
+  (map (compose1 identified-atom-atom identified-atom-with-generation-id-atom) lvl)) ; TODO
 (module+ test
   (annotate-general! sl-graph sl-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length branch))
   (check-equal?

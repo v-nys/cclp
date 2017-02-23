@@ -1,7 +1,7 @@
 #lang br/quicklang
 (require (for-syntax syntax/strip-context))
 (require graph)
-(require "generational-graph.rkt")
+(require "gen-graph-structs.rkt")
 
 (define-macro (gg-module-begin (gg (nodes-section NODE-LINE ...) (edges-section EDGE-LINE ...)))
   (with-syntax ([REPLACED (replace-context caller-stx #'val)])
