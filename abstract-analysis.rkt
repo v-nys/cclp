@@ -115,7 +115,7 @@
 (provide
  (struct*-doc
   tree-label
-  ([conjunction (listof abstract-atom?)]
+  ([conjunction (listof abstract-conjunct?)]
    [selection any/c]
    [substitution abstract-substitution?]
    [rule (or/c #f (or/c full-evaluation? ck:rule?))]
