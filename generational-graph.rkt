@@ -221,7 +221,7 @@
                 (λ (c candidate-acc)
                   (append candidate-acc (candidate-target-identified-atoms-aux skeleton c live-depth (+ depth-acc 1))))
                 (list)
-                (reached-neighbors skeleton root))])
+                (get-neighbors skeleton root))])
           (if (and (multiple-direct-live-lines? skeleton root live-depth depth-acc)
                    (descendant-renames-with-corresponding-args? skeleton root))
               (list root)
@@ -255,22 +255,78 @@
   (let ([children-reaching-live-depth
          (filter
           (λ (c) (can-reach-depth? c graph live-depth (+ curr-depth 1)))
-          (reached-neighbors graph root))])
+          (get-neighbors graph root))])
     (>= (length children-reaching-live-depth) 2)))
-
-(define (reached-neighbors g v)
-  (filter (λ (n) (has-edge? g v n)) (get-neighbors g v)))
 
 (define (can-reach-depth? vertex graph target-depth curr-depth)
   (cond [(>= curr-depth target-depth) #t]
-        [(null? (reached-neighbors graph vertex)) #f]
+        [(null? (get-neighbors graph vertex)) #f]
         [else
          (ormap
           (λ (c) can-reach-depth? c graph target-depth (+ curr-depth) 1)
-          (reached-neighbors graph vertex))]))
+          (get-neighbors graph vertex))]))
 
-;; TODO: use new approach which will also work for multi
-(define (annotate-general! skeleton root relevant-targets rdag-depth) skeleton)
+(define (generic-minmax ltgt elem . elems)
+  (foldl (λ (el acc) (if (ltgt acc el) acc el)) elem elems))
+(module+ test
+  (check-equal? (generic-minmax < 4 9 2 7 6) 2)
+  (check-equal? (generic-minmax > 4 9 2 7 6) 9))
+
+(define (annotate-general! skeleton root relevant-targets rdag-depth)
+  (define l-postfix 1)
+  (define (gen< g1 g2)
+    (match* (g1 g2)
+      [((? number?) (? number?)) (< g1 g2)]
+      [((? number?) (or (? symbol?) (? symsum?))) #t]
+      [((? symbol?) (symsum sym num)) #:when (equal? g1 sym) (> num 1)]
+      [((symsum sym1 num1) (symsum sym2 num2)) #:when (equal? sym1 sym2) (< num1 num2)]
+      [(_ _) (error "unexpected comparison of generations")]))
+  (define (local-min c) ; minimum generation in the range of a conjunct
+    (match c
+      [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
+       (gen-range-first rng)]
+      [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #f _ _ _) id) rng)
+       (gen-range-last rng)]
+      [(identified-abstract-conjunct-with-gen-range _ rng)
+       (generic-minmax gen< (gen-range-first rng) (gen-range-last rng))]))
+  (define (local-max c) ; minimum generation in the range of a conjunct
+    (match c
+      [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
+       (gen-range-last rng)]
+      [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #f _ _ _) id) rng)
+       (gen-range-first rng)]
+      [(identified-abstract-conjunct-with-gen-range _ rng)
+       (generic-minmax (compose not gen<) (gen-range-first rng) (gen-range-last rng))]))
+  ;; annotate a multi that was introduced at the current level
+  (define (annotate-new-multi! new-multi mapping)
+    (define multi-parents (get-neighbors (transpose skeleton) new-multi))
+    (define bare-multi (identified-abstract-conjunct-conjunct new-multi))
+    (define parent-minimum (apply (curry generic-minmax gen<) (map local-min multi-parents)))
+    (define parent-maximum (apply (curry generic-minmax (compose not gen<)) (map local-max multi-parents)))
+    (define parent-origin (gen-range-origin (identified-abstract-conjunct-with-gen-range-range (first multi-parents))))
+    (define range
+      (if (multi-ascending? bare-multi)
+          (gen-range parent-minimum parent-maximum parent-origin)
+          (gen-range parent-maximum parent-origin parent-minimum)))
+    (define symbolic-maximum (string->symbol (format "l~a" l-postfix)))
+    (set! l-postfix (add1 l-postfix))
+    (hash-set mapping (cons parent-maximum parent-origin) symbolic-maximum))
+  ;; annotate one horizontal level of the RDAG
+  (define (annotate-level! parent-level-number level-number)
+    (define parent-level (rdag-level skeleton root parent-level-number))
+    (define level (rdag-level skeleton root level-number))
+    (match-define-values
+     (new-multis single-parent-conjuncts)
+     (partition (λ (conjunct) (> (length (get-neighbors (transpose skeleton) conjunct)) 1)) level))
+    (define multi-mapping (foldl annotate-new-multi! (make-immutable-hash) new-multis))
+    (if (null? new-multis)
+        (for ([spc single-parent-conjuncts])
+          (increment-rel-tg-unfolding! spc))
+        (for ([spc single-parent-conjuncts])
+          (apply-multi-mapping! spc multi-mapping))))
+  (define annotated-root (identified-abstract-conjunct-with-gen-range root (gen-range 0 0 #f)))
+  (rename-vertex! skeleton root annotated-root)
+  (map annotate-level! (range 1 rdag-depth) (range 2 (add1 rdag-depth))))
 (module+ test
   (require
     (prefix-in sl-graph-annotated: "analysis-trees/sameleaves-no-multi-branch-gen-tree.rkt"))
@@ -309,7 +365,7 @@
   (define (rdag-level-aux rdag root level depth-acc)
     (if (eqv? depth-acc level)
         (list root)
-        (apply append (map (λ (s) (rdag-level-aux rdag s level (add1 depth-acc))) (reached-neighbors rdag root)))))
+        (apply append (map (λ (s) (rdag-level-aux rdag s level (add1 depth-acc))) (get-neighbors rdag root)))))
   (remove-duplicates (rdag-level-aux rdag root level 1)))
 (module+ test
   (check-equal?

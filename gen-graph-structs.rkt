@@ -62,7 +62,7 @@
 (struct identified-abstract-conjunct (conjunct id-number) #:transparent)
 (provide (struct-out identified-abstract-conjunct))
 
-(struct gen-range (low high origin))
+(struct gen-range (first last origin) #:transparent)
 (provide (struct-out gen-range))
 
 (struct symsum (sym num))
