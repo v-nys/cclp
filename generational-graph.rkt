@@ -176,7 +176,6 @@
     (set-union (set-intersect (as a1) (as a2)) (set-intersect (gs a1) (gs a2))))
   (define subst (map (λ (v) (abstract-equality v (abstract-function (gensym "dummy") (list)))) (set->list shared)))
   (renames? (apply-substitution subst a1) (apply-substitution subst a2)))
-
 (module+ test
   (require "cclp-interpreter.rkt") ; note: interpreter will be deprecated at some point
   (check-true
@@ -205,11 +204,10 @@
   (define root-atom (identified-abstract-conjunct-conjunct root))
   (ormap (λ (a) (and (abstract-atom? root-atom) (abstract-atom? a) (renames-with-corresponding-args? root-atom a))) just-atoms))
 (module+ test
-  ;  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)))
-  ;  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'collect (list (g 2) (a 2))) 3)))
-  ;  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'eq (list (a 1) (a 2))) 4)))
-  ;  (check-false (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1)))
-  )
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'collect (list (g 2) (a 2))) 3)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'eq (list (a 1) (a 2))) 4)))
+  (check-false (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))))
 
 (define (candidate-target-identified-atoms skeleton root live-depth)
   (define (candidate-target-identified-atoms-aux skeleton root live-depth [depth-acc 0])
@@ -227,13 +225,20 @@
               candidates-among-descendants))))
   (remove-duplicates (candidate-target-identified-atoms-aux skeleton root live-depth 0)))
 (module+ test
-  ;  (check-equal?
-  ;   (candidate-target-identified-atoms
-  ;    sl-graph-skeleton
-  ;    (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1)
-  ;    3)
-  ;   (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)))
-  )
+  (check-equal?
+   (candidate-target-identified-atoms
+    sl-graph-skeleton
+    (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1)
+    3)
+   (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)))
+  (check-equal?
+   (candidate-target-identified-atoms
+    o-primes-graph-skeleton
+    (identified-abstract-conjunct (abstract-atom 'oprimes (list (g 1) (a 1))) 1)
+    5)
+   (list
+    (identified-abstract-conjunct (abstract-atom 'siftA (list (abstract-function 'cons (list (g 2) (a 4))) (a 3))) 7)
+    (identified-abstract-conjunct (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13))))
 (provide
  (proc-doc/names
   candidate-target-identified-atoms
