@@ -15,4 +15,4 @@
          (dynamic-require 'cclp/gg-colorer 'gg-colorer)]
         [else default]))
     handle-query)
-  (provide read-syntax))
+  (provide read-syntax get-info))
