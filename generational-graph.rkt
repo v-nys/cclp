@@ -209,6 +209,9 @@
   (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'eq (list (a 1) (a 2))) 4)))
   (check-false (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))))
 
+;; finds potential target atoms for recursion analysis.
+;; root is the root of the rooted DAG (i.e. the skeleton)
+;; live-depth indicates depth from which an atom may survive indefinitely
 (define (candidate-target-identified-atoms skeleton root live-depth)
   (define (candidate-target-identified-atoms-aux skeleton root live-depth [depth-acc 0])
     (if (>= depth-acc live-depth)
@@ -225,42 +228,35 @@
               candidates-among-descendants))))
   (remove-duplicates (candidate-target-identified-atoms-aux skeleton root live-depth 0)))
 (module+ test
+  (define sl-skeleton-root
+    (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))
   (check-equal?
    (candidate-target-identified-atoms
     sl-graph-skeleton
-    (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1)
+    sl-skeleton-root
     3)
    (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)))
+  (define o-primes-skeleton-root (identified-abstract-conjunct (abstract-atom 'oprimes (list (g 1) (a 1))) 1))
+  (define o-primes-candidate-targets
+    (list
+     (identified-abstract-conjunct (abstract-atom 'siftA (list (abstract-function 'cons (list (g 2) (a 4))) (a 3))) 7)
+     (identified-abstract-conjunct (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13)))
   (check-equal?
    (candidate-target-identified-atoms
     o-primes-graph-skeleton
-    (identified-abstract-conjunct (abstract-atom 'oprimes (list (g 1) (a 1))) 1)
+    o-primes-skeleton-root
     5)
-   (list
-    (identified-abstract-conjunct (abstract-atom 'siftA (list (abstract-function 'cons (list (g 2) (a 4))) (a 3))) 7)
-    (identified-abstract-conjunct (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13))))
-(provide
- (proc-doc/names
-  candidate-target-identified-atoms
-  (-> unweighted-graph? identified-atom? exact-positive-integer? (listof identified-atom?))
-  (skeleton root live-depth)
-  @{Finds potential target atoms for recursion analysis.
- The parameter @racket[skeleton] is a non-annotated recursion analysis,
- @racket[root] is the root of the rooted DAG,
- @racket[live-depth] indicates depth from which an atom may survive indefinitely.}))
+   o-primes-candidate-targets))
 
+;; tests whether 'root' in RDAG 'graph' has at least two children and whether both children have descendants at depth 'live-depth', when 'root' is at 'curr-depth'
+;; note spelling: live lines, not life lines
+;; that is, these lines are not "extinct"
 (define (multiple-direct-live-lines? graph root live-depth curr-depth)
   (let ([children-reaching-live-depth
          (filter
           (λ (c) (can-reach-depth? c graph live-depth (+ curr-depth 1)))
           (reached-neighbors graph root))])
     (>= (length children-reaching-live-depth) 2)))
-(provide
- (proc-doc/names
-  multiple-direct-live-lines?
-  (-> unweighted-graph? identified-atom? exact-nonnegative-integer? exact-nonnegative-integer? boolean?)
-  (graph root live-depth current-depth)
-  @{Tests whether @racket[root] in @racket[graph] has at least two children and whether both children have descendants at depth @racket[live-depth], when @racket[node] is at @racket[current-depth].}))
 
 (define (reached-neighbors g v)
   (filter (λ (n) (has-edge? g v n)) (get-neighbors g v)))
@@ -273,41 +269,38 @@
           (λ (c) can-reach-depth? c graph target-depth (+ curr-depth) 1)
           (reached-neighbors graph vertex))]))
 
-(define (annotate-general! skeleton root relevant-targets rdag-depth)
-  ;; annotate when the relevant target atom for a subgraph is known
-  (define (annotate-specific-aux! skeleton aux-root relevant-target-atom rdag-depth depth-acc)
-    (match-define (generation root-gen-number root-origin)
-      (identified-atom-with-generation-generation aux-root))
-    (define next-layer-gen-number
-      (if (and
-           (renames-with-corresponding-args?
-            relevant-target-atom
-            (identified-atom-atom (identified-atom-with-generation-id-atom aux-root)))
-           (multiple-direct-live-lines? skeleton aux-root rdag-depth depth-acc))
-          (add1 root-gen-number)
-          root-gen-number))
-    (define next-gen (generation next-layer-gen-number root-origin))
-    (for ([c (reached-neighbors skeleton aux-root)])
-      (let ([annotated-c (identified-atom-with-generation c next-gen)])
-        (rename-vertex! skeleton c annotated-c)
-        (annotate-specific-aux! skeleton annotated-c relevant-target-atom rdag-depth (add1 depth-acc)))))
-  ;; annotate when the relevant target atom for a subgraph is not yet known
-  (define (annotate-general-aux! skeleton aux-root relevant-targets rdag-depth depth-acc)
-    (if (member (identified-atom-with-generation-id-atom aux-root) relevant-targets)
-        (for ([c (reached-neighbors skeleton aux-root)])
-          (let* ([root-id-atom (identified-atom-with-generation-id-atom aux-root)]
-                 [origin (index-of relevant-targets root-id-atom)]
-                 [annotated-c (identified-atom-with-generation c (generation 1 origin))])
-            (rename-vertex! skeleton c annotated-c)
-            (annotate-specific-aux! skeleton annotated-c (identified-atom-atom root-id-atom) rdag-depth (add1 depth-acc))))
-        (for ([c (reached-neighbors skeleton aux-root)])
-          (let ([annotated-c (identified-atom-with-generation c (generation 0 #f))])
-            (rename-vertex! skeleton c annotated-c)
-            (annotate-general-aux! skeleton annotated-c relevant-targets rdag-depth (add1 depth-acc))))))
-  ;; start by giving top level generation 0
-  (define annotated-root (identified-atom-with-generation root (generation 0 #f)))
-  (rename-vertex! skeleton root annotated-root)
-  (annotate-general-aux! skeleton annotated-root relevant-targets rdag-depth 1))
+;; TODO: use new approach which will also work for multi
+(define (annotate-general! skeleton root relevant-targets rdag-depth) skeleton)
+(module+ test
+  (require
+    (prefix-in sl-graph-annotated: "analysis-trees/sameleaves-no-multi-branch-gen-tree.rkt"))
+  (define sl-graph-annotated (graph-copy sl-graph-skeleton))
+  (annotate-general! sl-graph-annotated sl-skeleton-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length sl-branch))
+  (check-equal?
+   sl-graph-annotated
+   sl-graph-annotated:val)
+  (require
+    (prefix-in sl-multi-branch-tree: "analysis-trees/sameleaves-multi-branch.rkt"))
+  (require
+    (prefix-in sl-multi-graph-skeleton: "analysis-trees/sameleaves-multi-branch-gen-tree-skeleton.rkt")
+    (prefix-in sl-multi-graph-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree.rkt"))
+  (define sl-multi-branch (active-branch-info sl-multi-branch-tree:val))
+  (define sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
+  (annotate-general! sl-multi-graph-annotated sl-skeleton-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length sl-multi-branch))
+  (check-equal?
+   sl-multi-graph-annotated
+   sl-multi-graph-annotated:val)
+  (require
+    (prefix-in o-primes-graph-annotated: "analysis-trees/optimus-primes-branch-gen-graph.rkt"))
+  (define o-primes-graph-annotated (graph-copy o-primes-graph-skeleton))
+  (annotate-general!
+   o-primes-graph-annotated
+   o-primes-skeleton-root
+   o-primes-candidate-targets
+   (length o-primes-branch))
+  (check-equal?
+   o-primes-graph-annotated
+   o-primes-graph-annotated:val))
 
 ;; extract a level from a rooted DAG
 ;; the lowest level that can be extracted is 1 (the root)
@@ -319,17 +312,15 @@
         (apply append (map (λ (s) (rdag-level-aux rdag s level (add1 depth-acc))) (reached-neighbors rdag root)))))
   (remove-duplicates (rdag-level-aux rdag root level 1)))
 (module+ test
-  ;  (define sl-root (identified-atom (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))
-  ;  (check-equal?
-  ;   (rdag-level sl-graph-skeleton sl-root 1)
-  ;   (list sl-root))
-  ;  (check-equal?
-  ;   (sort (rdag-level sl-graph-skeleton sl-root 2) < #:key identified-atom-uid)
-  ;   (list
-  ;    (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)
-  ;    (identified-atom (abstract-atom 'collect (list (g 2) (a 2))) 3)
-  ;    (identified-atom (abstract-atom 'eq (list (a 1) (a 2))) 4)))
-  )
+  (check-equal?
+   (rdag-level sl-graph-skeleton sl-skeleton-root 1)
+   (list sl-skeleton-root))
+  (check-equal?
+   (sort (rdag-level sl-graph-skeleton sl-skeleton-root 2) < #:key identified-abstract-conjunct-id-number)
+   (list
+    (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)
+    (identified-abstract-conjunct (abstract-atom 'collect (list (g 2) (a 2))) 3)
+    (identified-abstract-conjunct (abstract-atom 'eq (list (a 1) (a 2))) 4))))
 
 ;; replace sequences with the same origin with multi abstractions at a given level of the generational tree
 (define (gen-tree-level->generalized-conjunction lvl)
