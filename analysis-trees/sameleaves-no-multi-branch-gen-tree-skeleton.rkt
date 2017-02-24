@@ -30,6 +30,18 @@ NODES
 24 collect(g2,a2)
 25 eq(a1,a2)
 
+26 collect(g9,a9)
+27 collect(g10,a10)
+28 append(a9,a10,a7)
+29 collect(g8,a8)
+30 append(a7,a8,a5)
+31 collect(g6,a6)
+32 append(a5,a6,a3)
+33 collect(g4,a4)
+34 append(a3,a4,a1)
+35 collect(g2,a2)
+36 eq(a1,a2)
+
 EDGES
 1  -> 2, 3, 4.
 
@@ -50,3 +62,13 @@ EDGES
 14 -> 23.
 15 -> 24.
 16 -> 25.
+
+17 -> 26, 27, 28.
+18 -> 29.
+19 -> 30.
+20 -> 31.
+21 -> 32.
+22 -> 33.
+23 -> 34.
+24 -> 35.
+25 -> 36.
