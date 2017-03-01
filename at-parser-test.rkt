@@ -134,52 +134,55 @@
       (init)
       (consecutive)
       (final))))))
-;(check-equal?
-; (parse-to-datum (apply-tokenizer make-tokenizer "(.!GEN multi((abc),#t,{},{},{}))"))
-; '(at
-;   (generalization
-;    (selectionless-abstract-conjunction
-;     (multi-abstraction
-;      (parameterized-abstract-conjunction
-;       (parameterized-abstract-atom "abc"))
-;      #t
-;      (init)
-;      (consecutive)
-;      (final))))))
-;(check-equal?
-; (parse-to-datum
-;  (apply-tokenizer
-;   make-tokenizer
-;   "(.collect(g1,a1),collect(g2,a2),append(a1,a2,a3)
-;      (.!GEN collect(g1,a1),multi((collect(g<1,i,1>,a<1,i,1>),append(a<1,i,2>,a<1,i,1>,a<1,i,3>)),
-;             #f,
-;             {a<1,1,1>/a1},
-;             {a<1,i+1,2>/a<1,i,3>},
-;             {a<1,L,3>/a3})))"))
-; '(at
-;   (treelabel
-;    (selectionless-abstract-conjunction
-;     (abstract-atom "collect" (abstract-g-variable 1) (abstract-a-variable 1))
-;     (abstract-atom "collect" (abstract-g-variable 2) (abstract-a-variable 2))
-;     (abstract-atom "append" (abstract-a-variable 1) (abstract-a-variable 2) (abstract-a-variable 3))))
-;   (at
-;    (generalization
-;     (selectionless-abstract-conjunction
-;      (abstract-atom "collect" (abstract-g-variable 1) (abstract-a-variable 1))
-;      (multi-abstraction
-;       (parameterized-abstract-conjunction
-;        (parameterized-abstract-atom "collect"
-;                                     (parameterized-abstract-g-variable 1 "i" 1)
-;                                     (parameterized-abstract-a-variable 1 "i" 1))
-;        (parameterized-abstract-atom "append"
-;                                     (parameterized-abstract-a-variable 1 "i" 2)
-;                                     (parameterized-abstract-a-variable 1 "i" 1)
-;                                     (parameterized-abstract-a-variable 1 "i" 3)))
-;       #f
-;       (init (init-pair (parameterized-abstract-a-variable 1 1 1) (abstract-a-variable 1)))
-;       (consecutive (consecutive-pair (parameterized-abstract-a-variable 1 "i+1" 2) (parameterized-abstract-a-variable 1 "i" 3)))
-;       (final (final-pair (parameterized-abstract-a-variable 1 "L" 3) (abstract-a-variable 3)))))))))
-
+(check-equal?
+ (parse-to-datum (apply-tokenizer make-tokenizer "(.!GEN multi((abc),#t,{},{},{}) ((0 1)))"))
+ '(at
+   (generalization
+    (selectionless-abstract-conjunction
+     (multi-abstraction
+      (parameterized-abstract-conjunction
+       (parameterized-abstract-atom "abc"))
+      #t
+      (init)
+      (consecutive)
+      (final)))
+    (generalized-index-ranges
+     (generalized-index-range 0 1)))))
+(check-equal?
+ (parse-to-datum
+  (apply-tokenizer
+   make-tokenizer
+   "(.collect(g1,a1),collect(g2,a2),append(a1,a2,a3)
+      (.!GEN collect(g1,a1),multi((collect(g<1,i,1>,a<1,i,1>),append(a<1,i,2>,a<1,i,1>,a<1,i,3>)),
+             #f,
+             {a<1,1,1>/a1},
+             {a<1,i+1,2>/a<1,i,3>},
+             {a<1,L,3>/a3})
+             ((1 2))))"))
+ '(at
+   (treelabel
+    (selectionless-abstract-conjunction
+     (abstract-atom "collect" (abstract-g-variable 1) (abstract-a-variable 1))
+     (abstract-atom "collect" (abstract-g-variable 2) (abstract-a-variable 2))
+     (abstract-atom "append" (abstract-a-variable 1) (abstract-a-variable 2) (abstract-a-variable 3))))
+   (at
+    (generalization
+     (selectionless-abstract-conjunction
+      (abstract-atom "collect" (abstract-g-variable 1) (abstract-a-variable 1))
+      (multi-abstraction
+       (parameterized-abstract-conjunction
+        (parameterized-abstract-atom "collect"
+                                     (parameterized-abstract-g-variable 1 "i" 1)
+                                     (parameterized-abstract-a-variable 1 "i" 1))
+        (parameterized-abstract-atom "append"
+                                     (parameterized-abstract-a-variable 1 "i" 2)
+                                     (parameterized-abstract-a-variable 1 "i" 1)
+                                     (parameterized-abstract-a-variable 1 "i" 3)))
+       #f
+       (init (init-pair (parameterized-abstract-a-variable 1 1 1) (abstract-a-variable 1)))
+       (consecutive (consecutive-pair (parameterized-abstract-a-variable 1 "i+1" 2) (parameterized-abstract-a-variable 1 "i" 3)))
+       (final (final-pair (parameterized-abstract-a-variable 1 "L" 3) (abstract-a-variable 3)))))
+     (generalized-index-ranges (generalized-index-range 1 2))))))
 (check-equal?
  (parse-to-datum
   (apply-tokenizer
