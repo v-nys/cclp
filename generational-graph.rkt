@@ -289,7 +289,7 @@
        (gen-range-last rng)]
       [(identified-abstract-conjunct-with-gen-range _ rng)
        (generic-minmax gen< (gen-range-first rng) (gen-range-last rng))]))
-  (define (local-max c) ; minimum generation in the range of a conjunct
+  (define (local-max c)
     (match c
       [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
        (gen-range-last rng)]
@@ -321,9 +321,9 @@
     (define multi-mapping (foldl annotate-new-multi! (make-immutable-hash) new-multis))
     (if (null? new-multis)
         (for ([spc single-parent-conjuncts])
-          (increment-rel-tg-unfolding! spc))
+          (void)) ; (increment-rel-tg-unfolding! spc)
         (for ([spc single-parent-conjuncts])
-          (apply-multi-mapping! spc multi-mapping))))
+          (void)))) ; (apply-multi-mapping! spc multi-mapping)
   (define annotated-root (identified-abstract-conjunct-with-gen-range root (gen-range 0 0 #f)))
   (rename-vertex! skeleton root annotated-root)
   (map annotate-level! (range 1 rdag-depth) (range 2 (add1 rdag-depth))))
