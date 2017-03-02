@@ -56,7 +56,7 @@
    [origin (or/c #f exact-nonnegative-integer?)])
   @{Used to track the recursion depth of an atom with respect to a uniquely identified target atom.}))
 
-(struct identified-abstract-conjunct-with-gen-range (id-conjunct range))
+(struct identified-abstract-conjunct-with-gen-range (id-conjunct range) #:transparent)
 (provide (struct-out identified-abstract-conjunct-with-gen-range))
 
 (struct identified-abstract-conjunct (conjunct id-number) #:transparent)
@@ -65,7 +65,7 @@
 (struct gen-range (first last origin) #:transparent)
 (provide (struct-out gen-range))
 
-(struct symsum (sym num))
+(struct symsum (sym num) #:transparent)
 (provide (struct-out symsum))
 
 (struct identified-atom-with-generation (id-atom generation)
