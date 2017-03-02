@@ -332,6 +332,19 @@
      (identified-abstract-conjunct (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 1 'l1 1)))
    'l1))
 
+(define (increment-rel-tg-unfolding! id-conjunct ann-parent relevant-targets graph)
+  (match-define (identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct parent-conjunct parent-id) parent-gen) ann-parent)
+  (cond
+    [(member (identified-abstract-conjunct-with-gen-range-id-conjunct ann-parent) relevant-targets)
+     (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct (gen-range 1 1 parent-id)))]
+    [(let ([pred (if (abstract-atom? parent-conjunct) (findf (λ (rel-tg) (and (equal? (gen-range-origin parent-gen) (identified-abstract-conjunct-id-number rel-tg)) (renames-with-corresponding-args? parent-conjunct (identified-abstract-conjunct-conjunct rel-tg)))) relevant-targets) #f)]) pred)
+     ; HACK! should have gen tree nodes track whether they are unfoldings or not
+     (if (not (equal? (identified-abstract-conjunct-conjunct id-conjunct) parent-conjunct))
+         (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct (gen-range (add1 (gen-range-first parent-gen)) (add1 (gen-range-last parent-gen)) (gen-range-origin parent-gen))))
+         (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct parent-gen)))]
+    [else
+     (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct (identified-abstract-conjunct-with-gen-range-range ann-parent)))]))
+
 ;; annotates a level of the RDAG, other than the root level
 ;; TODO: parent-level-number is completely redundant? it is just the current level - 1...
 (define (annotate-level! graph annotated-root l-postfix relevant-targets parent-level-number level-number)
@@ -343,7 +356,10 @@
   (define multi-mapping (foldl (curry annotate-new-multi! graph l-postfix) (make-immutable-hash) new-multis))
   (if (null? new-multis)
       (for ([spc single-parent-conjuncts])
-        (void)) ; (increment-rel-tg-unfolding! spc) ; increment for relevant target unfoldings, set to parent generation otherwise
+        (let ([parent (first (get-neighbors (transpose graph) spc))])
+          ; FIXME cannot see if parent is actually unfolded or not
+          ; so there are too many generation increases at the moment
+          (increment-rel-tg-unfolding! spc parent relevant-targets graph)))
       (for ([spc single-parent-conjuncts])
         (void)))) ; (apply-multi-mapping! spc multi-mapping)
 (module+ test
@@ -361,6 +377,10 @@
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 3)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 3))
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)) 3 4)
+  (check-equal?
+   (rdag-level sl-multi-graph-annotated sl-annotated-root 4)
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 4))
   (require (prefix-in almost-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated.rkt"))
   (define almost-annotated (graph-copy almost-annotated:val))
   (annotate-level! almost-annotated sl-annotated-root 1 (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)) 5 6)
