@@ -1,4 +1,4 @@
-#lang cclp/ggs
+#lang cclp/gg
 NODES
 1   oprimes(g1,a1)
   

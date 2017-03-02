@@ -360,7 +360,13 @@
   (annotate-level! sl-multi-graph-annotated 1 2 3)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 2)
-   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 2)))
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 2))
+  (require (prefix-in almost-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated.rkt"))
+  (define almost-annotated (graph-copy almost-annotated:val))
+  (annotate-level! sl-multi-graph-annotated 1 5 6)
+  (check-equal?
+   (rdag-level almost-annotated sl-annotated-root 6)
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 6)))
 
 (define (annotate-new-multi! graph l-postfix new-multi mapping)
   (define multi-parents (get-neighbors (transpose graph) new-multi))
