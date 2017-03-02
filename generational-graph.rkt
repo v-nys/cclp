@@ -408,9 +408,13 @@
   (require (prefix-in almost-annotated-m: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated-with-multi.rkt"))
   (define almost-annotated-with-multi (graph-copy almost-annotated-m:val))
   (annotate-new-multi! almost-annotated 1 (list-ref (sort (rdag-level almost-annotated sl-annotated-root 6) < #:key identified-abstract-conjunct-id-number) 3) (make-immutable-hash))
-  (for ([lv (range 1 7)])
-    (display (rdag-level almost-annotated sl-annotated-root lv))
-    (display (rdag-level almost-annotated-with-multi sl-annotated-root lv)))
+  (for ([lv (range 1 6)])
+    (check-equal?
+     (rdag-level almost-annotated sl-annotated-root lv)
+     (rdag-level almost-annotated-with-multi sl-annotated-root lv)))
+  (check-equal?
+   (rdag-level almost-annotated sl-annotated-root 6)
+   (rdag-level almost-annotated-with-multi sl-annotated-root 6))
   (check-equal? almost-annotated almost-annotated-with-multi))
 
 ;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full generational graph
