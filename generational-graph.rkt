@@ -313,8 +313,8 @@
     (hash-set mapping (cons parent-maximum parent-origin) symbolic-maximum))
   ;; annotate one horizontal level of the RDAG
   (define (annotate-level! parent-level-number level-number)
-    (define parent-level (rdag-level skeleton root parent-level-number))
-    (define level (rdag-level skeleton root level-number))
+    (define parent-level (rdag-level skeleton annotated-root parent-level-number))
+    (define level (rdag-level skeleton annotated-root level-number))
     (match-define-values
      (new-multis single-parent-conjuncts)
      (partition (λ (conjunct) (> (length (get-neighbors (transpose skeleton) conjunct)) 1)) level))
