@@ -15,12 +15,16 @@
 (define-macro (nodes-section NODE-LINE ...) #'(begin NODE-LINE ...))
 (provide nodes-section)
 
-(define-macro (node-line NUMBER CONJUNCT GEN-RANGE)
-  (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
-    #'(define NODE-NUM
-        (identified-abstract-conjunct-with-gen-range
-         (identified-abstract-conjunct CONJUNCT NUMBER)
-         GEN-RANGE))))
+(define-macro-cases node-line
+  [(_ NUMBER CONJUNCT GEN-RANGE)
+   (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
+     #'(define NODE-NUM
+         (identified-abstract-conjunct-with-gen-range
+          (identified-abstract-conjunct CONJUNCT NUMBER)
+          GEN-RANGE)))]
+  [(_ NUMBER CONJUNCT)
+   (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
+     #'(define NODE-NUM (identified-abstract-conjunct CONJUNCT NUMBER)))])
 (provide node-line)
 
 (define-macro-cases generation-range
