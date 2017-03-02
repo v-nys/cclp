@@ -272,61 +272,120 @@
   (check-equal? (generic-minmax < 4 9 2 7 6) 2)
   (check-equal? (generic-minmax > 4 9 2 7 6) 9))
 
+;; used to organize descendants of a relevant target atom by generation
+;; the cases below should cover all scenarios, if transitivity is applied
+;; e.g. start from generation with number
+;; then, there is a multi which starts with a number and ends with a symbolic "L"
+;; then, there could be another conjunction or atom with a symbolic sum
+;; then, another multi whose lowest generation shares a symbol with that symbolic sums
+;; we cannot compare the symbolic "L's" directly, but we can apply transitivity
+(define (gen< g1 g2)
+  (match* (g1 g2)
+    [((? number?) (? number?)) (< g1 g2)]
+    [((? number?) (or (? symbol?) (? symsum?))) #t]
+    [((? symbol?) (symsum sym num)) #:when (equal? g1 sym) (> num 1)]
+    [((symsum sym1 num1) (symsum sym2 num2)) #:when (equal? sym1 sym2) (< num1 num2)]
+    [(_ _) (error "unexpected comparison of generations")]))
+(module+ test
+  (check-true (gen< 2 3))
+  (check-true (gen< 1000 'l))
+  (check-true (gen< (symsum 'l 0) (symsum 'l 10))))
+
+;; minimum generation in the range of a conjunct
+(define (local-min c)
+  (match c
+    [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
+     (gen-range-first rng)]
+    [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #f _ _ _) id) rng)
+     (gen-range-last rng)]
+    [(identified-abstract-conjunct-with-gen-range _ rng)
+     (generic-minmax gen< (gen-range-first rng) (gen-range-last rng))]))
+(module+ test
+  (check-equal?
+   (local-min
+    (identified-abstract-conjunct-with-gen-range
+     (identified-abstract-conjunct (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 'l1 1 1)))
+   1)
+  (check-equal?
+   (local-min
+    (identified-abstract-conjunct-with-gen-range
+     (identified-abstract-conjunct (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 1 'l1 1)))
+   1))
+
+(define (local-max c)
+  (match c
+    [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
+     (gen-range-last rng)]
+    [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #f _ _ _) id) rng)
+     (gen-range-first rng)]
+    [(identified-abstract-conjunct-with-gen-range _ rng)
+     (generic-minmax (compose not gen<) (gen-range-first rng) (gen-range-last rng))]))
+(module+ test
+  (check-equal?
+   (local-max
+    (identified-abstract-conjunct-with-gen-range
+     (identified-abstract-conjunct (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 'l1 1 1)))
+   'l1)
+  (check-equal?
+   (local-max
+    (identified-abstract-conjunct-with-gen-range
+     (identified-abstract-conjunct (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 1 'l1 1)))
+   'l1))
+
+;; annotates a level of the RDAG, other than the root level
+;; TODO: parent-level-number is completely redundant? it is just the current level - 1...
+(define (annotate-level! graph annotated-root l-postfix relevant-targets parent-level-number level-number)
+  (define parent-level (rdag-level graph annotated-root parent-level-number))
+  (define level (rdag-level graph annotated-root level-number))
+  (match-define-values
+   (new-multis single-parent-conjuncts)
+   (partition (λ (conjunct) (> (length (get-neighbors (transpose graph) conjunct)) 1)) level))
+  (define multi-mapping (foldl (curry annotate-new-multi! graph l-postfix) (make-immutable-hash) new-multis))
+  (if (null? new-multis)
+      (for ([spc single-parent-conjuncts])
+        (void)) ; (increment-rel-tg-unfolding! spc) ; increment for relevant target unfoldings, set to parent generation otherwise
+      (for ([spc single-parent-conjuncts])
+        (void)))) ; (apply-multi-mapping! spc multi-mapping)
+(module+ test
+  (require
+    (prefix-in sl-multi-graph-skeleton: "analysis-trees/sameleaves-multi-branch-gen-tree-skeleton.rkt")
+    (prefix-in sl-multi-graph-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree.rkt"))
+  (define sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
+  (define sl-annotated-root (identified-abstract-conjunct-with-gen-range sl-skeleton-root (gen-range 0 0 #f)))
+  (rename-vertex! sl-multi-graph-annotated sl-skeleton-root sl-annotated-root)
+  (annotate-level! sl-multi-graph-annotated 1 1 2)
+  (check-equal?
+   (rdag-level sl-multi-graph-annotated sl-annotated-root 1)
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 1))
+  (annotate-level! sl-multi-graph-annotated 1 2 3)
+  (check-equal?
+   (rdag-level sl-multi-graph-annotated sl-annotated-root 2)
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 2)))
+
+(define (annotate-new-multi! graph l-postfix new-multi mapping)
+  (define multi-parents (get-neighbors (transpose graph) new-multi))
+  (define bare-multi (identified-abstract-conjunct-conjunct new-multi))
+  (define parent-minimum (apply (curry generic-minmax gen<) (map local-min multi-parents)))
+  (define parent-maximum (apply (curry generic-minmax (compose not gen<)) (map local-max multi-parents)))
+  (define parent-origin (gen-range-origin (identified-abstract-conjunct-with-gen-range-range (first multi-parents))))
+  (define range
+    (if (multi-ascending? bare-multi)
+        (gen-range parent-minimum parent-maximum parent-origin)
+        (gen-range parent-maximum parent-origin parent-minimum)))
+  (define symbolic-maximum (string->symbol (format "l~a" l-postfix)))
+  (set! l-postfix (add1 l-postfix))
+  (hash-set mapping (cons parent-maximum parent-origin) symbolic-maximum))
+(module+ test)
+
+;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full generational graph
 (define (annotate-general! skeleton root relevant-targets rdag-depth)
   (define l-postfix 1)
-  (define (gen< g1 g2)
-    (match* (g1 g2)
-      [((? number?) (? number?)) (< g1 g2)]
-      [((? number?) (or (? symbol?) (? symsum?))) #t]
-      [((? symbol?) (symsum sym num)) #:when (equal? g1 sym) (> num 1)]
-      [((symsum sym1 num1) (symsum sym2 num2)) #:when (equal? sym1 sym2) (< num1 num2)]
-      [(_ _) (error "unexpected comparison of generations")]))
-  (define (local-min c) ; minimum generation in the range of a conjunct
-    (match c
-      [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
-       (gen-range-first rng)]
-      [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #f _ _ _) id) rng)
-       (gen-range-last rng)]
-      [(identified-abstract-conjunct-with-gen-range _ rng)
-       (generic-minmax gen< (gen-range-first rng) (gen-range-last rng))]))
-  (define (local-max c)
-    (match c
-      [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
-       (gen-range-last rng)]
-      [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #f _ _ _) id) rng)
-       (gen-range-first rng)]
-      [(identified-abstract-conjunct-with-gen-range _ rng)
-       (generic-minmax (compose not gen<) (gen-range-first rng) (gen-range-last rng))]))
-  ;; annotate a multi that was introduced at the current level
-  (define (annotate-new-multi! new-multi mapping)
-    (define multi-parents (get-neighbors (transpose skeleton) new-multi))
-    (define bare-multi (identified-abstract-conjunct-conjunct new-multi))
-    (define parent-minimum (apply (curry generic-minmax gen<) (map local-min multi-parents)))
-    (define parent-maximum (apply (curry generic-minmax (compose not gen<)) (map local-max multi-parents)))
-    (define parent-origin (gen-range-origin (identified-abstract-conjunct-with-gen-range-range (first multi-parents))))
-    (define range
-      (if (multi-ascending? bare-multi)
-          (gen-range parent-minimum parent-maximum parent-origin)
-          (gen-range parent-maximum parent-origin parent-minimum)))
-    (define symbolic-maximum (string->symbol (format "l~a" l-postfix)))
-    (set! l-postfix (add1 l-postfix))
-    (hash-set mapping (cons parent-maximum parent-origin) symbolic-maximum))
-  ;; annotate one horizontal level of the RDAG
-  (define (annotate-level! parent-level-number level-number)
-    (define parent-level (rdag-level skeleton annotated-root parent-level-number))
-    (define level (rdag-level skeleton annotated-root level-number))
-    (match-define-values
-     (new-multis single-parent-conjuncts)
-     (partition (λ (conjunct) (> (length (get-neighbors (transpose skeleton) conjunct)) 1)) level))
-    (define multi-mapping (foldl annotate-new-multi! (make-immutable-hash) new-multis))
-    (if (null? new-multis)
-        (for ([spc single-parent-conjuncts])
-          (void)) ; (increment-rel-tg-unfolding! spc)
-        (for ([spc single-parent-conjuncts])
-          (void)))) ; (apply-multi-mapping! spc multi-mapping)
   (define annotated-root (identified-abstract-conjunct-with-gen-range root (gen-range 0 0 #f)))
   (rename-vertex! skeleton root annotated-root)
-  (map annotate-level! (range 1 rdag-depth) (range 2 (add1 rdag-depth))))
+  (map
+   (curry annotate-level! skeleton annotated-root l-postfix relevant-targets)
+   (range 1 rdag-depth)
+   (range 2 (add1 rdag-depth))))
 (module+ test
   (require
     (prefix-in sl-graph-annotated: "analysis-trees/sameleaves-no-multi-branch-gen-tree.rkt"))
@@ -337,11 +396,8 @@
    sl-graph-annotated:val)
   (require
     (prefix-in sl-multi-branch-tree: "analysis-trees/sameleaves-multi-branch.rkt"))
-  (require
-    (prefix-in sl-multi-graph-skeleton: "analysis-trees/sameleaves-multi-branch-gen-tree-skeleton.rkt")
-    (prefix-in sl-multi-graph-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree.rkt"))
   (define sl-multi-branch (active-branch-info sl-multi-branch-tree:val))
-  (define sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
+  (set! sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
   (annotate-general! sl-multi-graph-annotated sl-skeleton-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length sl-multi-branch))
   (check-equal?
    sl-multi-graph-annotated
