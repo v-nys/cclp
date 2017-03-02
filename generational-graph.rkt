@@ -394,14 +394,24 @@
   (define parent-minimum (apply (curry generic-minmax gen<) (map local-min multi-parents)))
   (define parent-maximum (apply (curry generic-minmax (compose not gen<)) (map local-max multi-parents)))
   (define parent-origin (gen-range-origin (identified-abstract-conjunct-with-gen-range-range (first multi-parents))))
+  (define symbolic-maximum (string->symbol (format "l~a" l-postfix)))
   (define range
     (if (multi-ascending? bare-multi)
-        (gen-range parent-minimum parent-maximum parent-origin)
-        (gen-range parent-maximum parent-origin parent-minimum)))
-  (define symbolic-maximum (string->symbol (format "l~a" l-postfix)))
+        (gen-range parent-minimum symbolic-maximum parent-origin)
+        (gen-range symbolic-maximum parent-minimum parent-origin)))
   (set! l-postfix (add1 l-postfix))
+  (define updated-multi (identified-abstract-conjunct-with-gen-range new-multi range))
+  (rename-vertex! graph new-multi updated-multi)
   (hash-set mapping (cons parent-maximum parent-origin) symbolic-maximum))
-(module+ test)
+(module+ test
+  (set! almost-annotated (graph-copy almost-annotated:val))
+  (require (prefix-in almost-annotated-m: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated-with-multi.rkt"))
+  (define almost-annotated-with-multi (graph-copy almost-annotated-m:val))
+  (annotate-new-multi! almost-annotated 1 (list-ref (sort (rdag-level almost-annotated sl-annotated-root 6) < #:key identified-abstract-conjunct-id-number) 3) (make-immutable-hash))
+  (for ([lv (range 1 7)])
+    (display (rdag-level almost-annotated sl-annotated-root lv))
+    (display (rdag-level almost-annotated-with-multi sl-annotated-root lv)))
+  (check-equal? almost-annotated almost-annotated-with-multi))
 
 ;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full generational graph
 (define (annotate-general! skeleton root relevant-targets rdag-depth)
