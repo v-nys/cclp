@@ -28,116 +28,171 @@
   "abstract-multi-domain.rkt")
 (require (for-doc scribble/manual))
 
-(struct generation (number origin)
+(struct gen (number origin)
   #:methods
   gen:custom-write
   [(define write-proc
      (make-constructor-style-printer
-      (λ (obj) 'generation)
-      (λ (obj) (list (generation-number obj)
-                     (generation-origin obj)))))]
+      (λ (obj) 'gen)
+      (λ (obj) (list (gen-number obj)
+                     (gen-origin obj)))))]
   #:methods
   gen:equal+hash
   [(define (equal-proc g1 g2 equal?-recur)
-     (and (equal?-recur (generation-number g1)
-                        (generation-number g2))
-          (equal?-recur (generation-origin g1)
-                        (generation-origin g2))))
+     (and (equal?-recur (gen-number g1)
+                        (gen-number g2))
+          (equal?-recur (gen-origin g1)
+                        (gen-origin g2))))
    (define (hash-proc my-gen hash-recur)
-     (+ (hash-recur (generation-number my-gen))
-        (hash-recur (generation-origin my-gen))))
+     (+ (hash-recur (gen-number my-gen))
+        (hash-recur (gen-origin my-gen))))
    (define (hash2-proc my-gen hash-recur)
-     (+ (hash-recur (generation-number my-gen))
-        (hash-recur (generation-origin my-gen))))])
+     (+ (hash-recur (gen-number my-gen))
+        (hash-recur (gen-origin my-gen))))])
 (provide
  (struct*-doc
-  generation
-  ([number (or/c exact-nonnegative-integer? (cons/c symbol? exact-integer?))]
-   [origin (or/c #f exact-nonnegative-integer?)])
+  gen
+  ([number (or/c exact-nonnegative-integer? symbol? symsum?)]
+   [origin (or/c #f exact-positive-integer?)])
   @{Used to track the recursion depth of an atom with respect to a uniquely identified target atom.}))
 
-(struct identified-abstract-conjunct-with-gen-range (id-conjunct range) #:transparent)
-(provide (struct-out identified-abstract-conjunct-with-gen-range))
-
-(struct identified-abstract-conjunct (conjunct id-number) #:transparent)
-(provide (struct-out identified-abstract-conjunct))
-
-(struct gen-range (first last origin) #:transparent)
+(struct gen-range (first last origin ascending?)
+  #:methods
+  gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (λ (obj) 'gen-range)
+      (λ (obj) (list (gen-range-first obj)
+                     (gen-range-last obj)
+                     (gen-range-origin obj)
+                     (gen-range-ascending? obj)))))]
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc g1 g2 equal?-recur)
+     (and (equal?-recur (gen-range-first g1)
+                        (gen-range-first g2))
+          (equal?-recur (gen-range-last g1)
+                        (gen-range-last g2))
+          (equal?-recur (gen-range-origin g1)
+                        (gen-range-origin g2))
+          (equal?-recur (gen-range-ascending? g1)
+                        (gen-range-ascending? g2))))
+   (define (hash-proc gen hash-recur)
+     (+ (hash-recur (gen-range-first gen))
+        (hash-recur (gen-range-last gen))
+        (hash-recur (gen-range-origin gen))
+        (hash-recur (gen-range-ascending? gen))))
+   (define (hash2-proc gen hash-recur)
+     (+ (hash-recur (gen-range-first gen))
+        (hash-recur (gen-range-last gen))
+        (hash-recur (gen-range-origin gen))
+        (hash-recur (gen-range-ascending? gen))))])
 (provide
  (struct*-doc
   gen-range
   ([first (or/c exact-nonnegative-integer? symbol? symsum?)]
    [last (or/c exact-nonnegative-integer? symbol? symsum?)]
-   [origin (or/c #f exact-positive-integer?)])
-  @{Range of generations represented by an abstraction.
-    The value @racket[first] represents the generation of the first abstracted conjunct in a syntactic sense.
-    The value @racket[last] represents the generation of the last abstracted conjunct in a syntactic sense.
-    The value @racket[origin] is the identifier of the abstract atom which first gave rise to the recursion stack.
- For anything other than a multi abstraction, @racket[first] and @racket[last] should be identical.}))
+   [origin (or/c #f exact-positive-integer?)]
+   [ascending? boolean?])
+  @{Range of generations represented by a multi abstraction.
+     The value @racket[first] represents the generation of the first abstracted conjunct in a syntactic sense.
+     The value @racket[last] represents the generation of the last abstracted conjunct in a syntactic sense.
+     The value @racket[origin] is the identifier of the abstract atom which first gave rise to the recursion stack.
+     Whether the abstracted conjunctions have an ascending or descending sequence of conjunctions is indicated by @racket[ascending?].}))
 
-(struct symsum (sym num) #:transparent)
-(provide (struct-out symsum))
-
-(struct identified-atom-with-generation (id-atom generation)
+(struct gen-node (conjunct id range)
   #:methods
   gen:custom-write
   [(define write-proc
      (make-constructor-style-printer
-      (λ (obj) 'identified-atom-with-generation)
-      (λ (obj) (list (identified-atom-with-generation-id-atom obj)
-                     (identified-atom-with-generation-generation obj)))))]
+      (λ (obj) 'gen-node)
+      (λ (obj) (list (gen-node-conjunct obj)
+                     (gen-node-id obj)
+                     (gen-node-range obj)))))]
   #:methods
   gen:equal+hash
-  [(define (equal-proc a1 a2 equal?-recur)
-     (and (equal?-recur (identified-atom-with-generation-id-atom a1)
-                        (identified-atom-with-generation-id-atom a2))
-          (equal?-recur (identified-atom-with-generation-generation a1)
-                        (identified-atom-with-generation-generation a2))))
-   (define (hash-proc my-awg hash-recur)
-     (+ (hash-recur (identified-atom-with-generation-id-atom my-awg))
-        (hash-recur (identified-atom-with-generation-generation my-awg))))
-   (define (hash2-proc my-awg hash2-recur)
-     (+ (hash2-recur (identified-atom-with-generation-id-atom my-awg))
-        (hash2-recur (identified-atom-with-generation-generation my-awg))))])
+  [(define (equal-proc g1 g2 equal?-recur)
+     (and (equal?-recur (gen-node-conjunct g1)
+                        (gen-node-conjunct g2))
+          (equal?-recur (gen-node-id g1)
+                        (gen-node-id g2))
+          (equal?-recur (gen-node-range g1)
+                        (gen-node-range g2))))
+   (define (hash-proc gen hash-recur)
+     (+ (hash-recur (gen-node-conjunct gen))
+        (hash-recur (gen-node-id gen))
+        (hash-recur (gen-node-range gen))))
+   (define (hash2-proc gen hash-recur)
+     (+ (hash-recur (gen-node-conjunct gen))
+        (hash-recur (gen-node-id gen))
+        (hash-recur (gen-node-range gen))))])
 (provide
  (struct*-doc
-  identified-atom-with-generation
-  ([id-atom identified-atom?]
-   [generation generation?])
-  @{The label of an atom vertex in a generational graph.
-     The field @racket[atom] is a single identified atom which,
-     juxtaposed with other @racket[identified-atom]s at the same depth,
-     forms an abstract conjunction encountered during analysis.
-     The field @racket[generation] indicates how many recursive unfoldings of the target atom took place before @racket[atom] was introduced.}))
+  gen-node
+  ([conjunct abstract-conjunct?]
+   [id exact-positive-integer?]
+   [range (or/c #f gen? gen-range?)])
+  @{A node in a generational graph.
+     A node adds metadata to @racket[conjunct].
+     The first piece of metadata, @racket[id], is a unique identifier used to distinguish between occurrences of conjuncts.
+     The second, @racket[range], if it is present, is either a single generation (in the case of an abstract atom) or a range of generations (in the case of a multi abstraction).
+     A missing value for @racket[range] means that the abstract conjunct has not yet been annotated and is different from a generation with number @racket[0] and origin @racket[#f].}))
 
-(struct identified-atom (atom uid)
+(struct symsum (sym num)
   #:methods
   gen:custom-write
   [(define write-proc
      (make-constructor-style-printer
-      (λ (obj) 'identified-atom)
-      (λ (obj) (list (identified-atom-atom obj)
-                     (identified-atom-uid obj)))))]
+      (λ (obj) 'symsum)
+      (λ (obj) (list (symsum-sym obj)
+                     (symsum-num obj)))))]
   #:methods
   gen:equal+hash
-  [(define (equal-proc a1 a2 equal?-recur)
-     (and (equal?-recur (identified-atom-atom a1)
-                        (identified-atom-atom a2))
-          (equal?-recur (identified-atom-uid a1)
-                        (identified-atom-uid a2))))
-   (define (hash-proc my-ida hash-recur)
-     (+ (hash-recur (identified-atom-atom my-ida))
-        (hash-recur (identified-atom-uid my-ida))))
-   (define (hash2-proc my-ida hash2-recur)
-     (+ (hash2-recur (identified-atom-atom my-ida))
-        (hash2-recur (identified-atom-uid my-ida))))])
+  [(define (equal-proc s1 s2 equal?-recur)
+     (and (equal?-recur (symsum-sym s1)
+                        (symsum-sym s2))
+          (equal?-recur (symsum-num s1)
+                        (symsum-num s2))))
+   (define (hash-proc s hash-recur)
+     (+ (hash-recur (symsum-sym s))
+        (hash-recur (symsum-num s))))
+   (define (hash2-proc s hash-recur)
+     (+ (hash-recur (symsum-sym s))
+        (hash-recur (symsum-num s))))])
 (provide
  (struct*-doc
-  identified-atom
-  ([atom abstract-atom?]
-   [uid exact-nonnegative-integer?])
-  @{A uniquely identifiable instance of an abstract atom in a generational graph (or skeleton).
-     The field @racket[uid] is unique to each atom in a generational graph.}))
+  symsum
+  ([sym symbol?]
+   [num exact-nonnegative-integer?])
+  @{A sum of a symbol @racket[sym] and a number @racket[num].
+     As symbols are used to represent the maximum generation inside a multi abstraction,
+     sums of symbols and numbers can be used to indicate the generation of related conjuncts outside the abstraction.}))
 
-(struct index-range (start end-before) #:transparent)
-(provide (struct-out index-range))
+(struct index-range (start end-before)
+  #:methods
+  gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (λ (obj) 'index-range)
+      (λ (obj) (list (index-range-start obj)
+                     (index-range-end-before obj)))))]
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc i1 i2 equal?-recur)
+     (and (equal?-recur (index-range-start i1)
+                        (index-range-start i2))
+          (equal?-recur (index-range-end-before i1)
+                        (index-range-end-before i2))))
+   (define (hash-proc i hash-recur)
+     (+ (hash-recur (index-range-start i))
+        (hash-recur (index-range-end-before i))))
+   (define (hash2-proc i hash-recur)
+     (+ (hash-recur (index-range-start i))
+        (hash-recur (index-range-end-before i))))])
+(provide
+ (struct*-doc
+  index-range
+  ([start exact-nonnegative-integer?]
+   [end-before exact-nonnegative-integer?])
+  @{A range of list indices, from @racket[start] up to, but not including @racket[end-before].
+ The purpose of this structure is to indicate which elements in a conjunction are abstracted when a generalization operation is applied.}))
