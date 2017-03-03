@@ -212,41 +212,41 @@
 ;; finds potential target atoms for recursion analysis.
 ;; root is the root of the rooted DAG (i.e. the skeleton)
 ;; live-depth indicates depth from which an atom may survive indefinitely
-(define (candidate-target-identified-atoms skeleton root live-depth)
-  (define (candidate-target-identified-atoms-aux skeleton root live-depth [depth-acc 0])
+(define (candidate-targets skeleton root live-depth)
+  (define (candidate-targets-aux skeleton root live-depth [depth-acc 0])
     (if (>= depth-acc live-depth)
         (list)
         (let ([candidates-among-descendants
                (foldl
                 (λ (c candidate-acc)
-                  (append candidate-acc (candidate-target-identified-atoms-aux skeleton c live-depth (+ depth-acc 1))))
+                  (append candidate-acc (candidate-targets-aux skeleton c live-depth (+ depth-acc 1))))
                 (list)
                 (get-neighbors skeleton root))])
           (if (and (multiple-direct-live-lines? skeleton root live-depth depth-acc)
                    (descendant-renames-with-corresponding-args? skeleton root))
               (list root)
               candidates-among-descendants))))
-  (remove-duplicates (candidate-target-identified-atoms-aux skeleton root live-depth 0)))
-;(module+ test
-;  (define sl-skeleton-root
-;    (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))
-;  (check-equal?
-;   (candidate-target-identified-atoms
-;    sl-graph-skeleton
-;    sl-skeleton-root
-;    3)
-;   (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)))
-;  (define o-primes-skeleton-root (identified-abstract-conjunct (abstract-atom 'oprimes (list (g 1) (a 1))) 1))
-;  (define o-primes-candidate-targets
-;    (list
-;     (identified-abstract-conjunct (abstract-atom 'siftA (list (abstract-function 'cons (list (g 2) (a 4))) (a 3))) 7)
-;     (identified-abstract-conjunct (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13)))
-;  (check-equal?
-;   (candidate-target-identified-atoms
-;    o-primes-graph-skeleton
-;    o-primes-skeleton-root
-;    5)
-;   o-primes-candidate-targets))
+  (remove-duplicates (candidate-targets-aux skeleton root live-depth 0)))
+(module+ test
+  (define sl-skeleton-root
+    (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t))
+  (check-equal?
+   (candidate-targets
+    sl-graph-skeleton
+    sl-skeleton-root
+    3)
+   (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t)))
+  (define o-primes-skeleton-root (gen-node (abstract-atom 'oprimes (list (g 1) (a 1))) 1 #f #t))
+  (define o-primes-candidate-targets
+    (list
+     (gen-node (abstract-atom 'siftA (list (abstract-function 'cons (list (g 2) (a 4))) (a 3))) 7 #f #t)
+     (gen-node (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13 #f #t)))
+  (check-equal?
+   (candidate-targets
+    o-primes-graph-skeleton
+    o-primes-skeleton-root
+    5)
+   o-primes-candidate-targets))
 
 ;; tests whether 'root' in RDAG 'graph' has at least two children and whether both children have descendants at depth 'live-depth', when 'root' is at 'curr-depth'
 ;; note spelling: live lines, not life lines
