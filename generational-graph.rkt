@@ -196,18 +196,18 @@
     (interpret-abstract-atom "atom(γ5,γ6,α7,α8)"))))
 
 ;; checks whether any descendant of root in graph is a renaming of root and whether shared vars are in the same position
-(define (descendant-renames-with-corresponding-args? graph root) #f)
-;  (define tc (transitive-closure graph))
-;  (hash-set! tc (list root root) #f)
-;  (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) root))) (hash-keys tc))))
-;  (define just-atoms (map identified-abstract-conjunct-conjunct reached))
-;  (define root-atom (identified-abstract-conjunct-conjunct root))
-;  (ormap (λ (a) (and (abstract-atom? root-atom) (abstract-atom? a) (renames-with-corresponding-args? root-atom a))) just-atoms))
-;(module+ test
-;  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)))
-;  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'collect (list (g 2) (a 2))) 3)))
-;  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'eq (list (a 1) (a 2))) 4)))
-;  (check-false (descendant-renames-with-corresponding-args? sl-graph-skeleton (identified-abstract-conjunct (abstract-atom 'sameleaves (list (g 1) (g 2))) 1))))
+(define (descendant-renames-with-corresponding-args? graph root)
+  (define tc (transitive-closure graph))
+  (hash-set! tc (list root root) #f)
+  (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) root))) (hash-keys tc))))
+  (define just-atoms (map gen-node-conjunct reached))
+  (define root-atom (gen-node-conjunct root))
+  (ormap (λ (a) (and (abstract-atom? root-atom) (abstract-atom? a) (renames-with-corresponding-args? root-atom a))) just-atoms))
+(module+ test
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 #f #f)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'eq (list (a 1) (a 2))) 4 #f #f)))
+  (check-false (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t))))
 
 ;; finds potential target atoms for recursion analysis.
 ;; root is the root of the rooted DAG (i.e. the skeleton)
