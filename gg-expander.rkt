@@ -37,9 +37,8 @@
 (provide node-line)
 
 (define-macro-cases generation-range
-  [(_ RDEPTH #f) (syntax/loc caller-stx (gen-range RDEPTH RDEPTH #f))]
   [(_ RDEPTH NUM) (syntax/loc caller-stx (gen RDEPTH NUM))]
-  [(_ RDEPTH1 RDEPTH2 NUM) (syntax/loc caller-stx (gen-range RDEPTH1 RDEPTH2 NUM))])
+  [(_ RDEPTH1 RDEPTH2 ASC? NUM) (syntax/loc caller-stx (gen-range RDEPTH1 RDEPTH2 NUM ASC?))])
 (provide generation-range)
 
 (define-syntax (recursion-depth stx)

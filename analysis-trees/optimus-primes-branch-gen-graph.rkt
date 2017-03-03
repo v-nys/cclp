@@ -1,21 +1,21 @@
 #lang cclp/gg
 NODES
-1   oprimes(g1,a1) 0 #f
+1   *oprimes(g1,a1)* 0 #f
   
-2   integers(g2,a2) 0 #f
+2   *integers(g2,a2)* 0 #f
 3   siftA(a2,a3) 0 #f
 4   siftB(a3,a1) 0 #f
 5   length(a1,g1) 0 #f
 
 6   integers(g3,a4) 0 #f
-7   siftA([g2|a4],a3) 0 #f
+7   *siftA([g2|a4],a3)* 0 #f
 8   siftB(a3,a1) 0 #f
 9   length(a1,g1) 0 #f
 
 10  integers(g3,a4) 0 #f
 11  filterA(g2,a4,a5) 1 7
 12  siftA(a5,a6) 1 7
-13  siftB([g2|a6],a1) 0 #f
+13  *siftB([g2|a6],a1)* 0 #f
 14  length(a1,g1) 0 #f
 
 15  integers(g3,a4) 0 #f
@@ -23,7 +23,7 @@ NODES
 17  siftA(a5,a6) 1 7
 18  filterB(g2,a6,a7) 1 13
 19  siftB(a7,a8) 1 13
-20  length([g2|a8],g1) 0 #f
+20  *length([g2|a8],g1)* 0 #f
 
 21  integers(g3,a4) 0 #f
 22  filterA(g2,a4,a5) 1 7
@@ -33,7 +33,7 @@ NODES
 26  length(a8,g4) 0 #f
 
 27  integers(g5,a9) 0 #f
-28  filterA(g2,[g3|a9],a5) 1 7
+28  *filterA(g2,[g3|a9],a5)* 1 7
 29  siftA(a5,a6) 1 7
 30  filterB(g2,a6,a7) 1 13
 31  siftB(a7,a8) 1 13
@@ -41,7 +41,7 @@ NODES
 
 33  integers(g5,a9) 0 #f
 34  filterA(g2,a9,a10) 1 7
-35  siftA([g3|a10],a6) 1 7
+35  *siftA([g3|a10],a6)* 1 7
 36  filterB(g2,a6,a7) 1 13
 37  siftB(a7,a8) 1 13
 38  length(a8,g4) 0 #f
@@ -50,7 +50,7 @@ NODES
 40  filterA(g2,a9,a10) 1 7
 41  filterA(g3,a10,a11) 2 7
 42  siftA(a11,a12) 2 7
-43  filterB(g2,[g3|a12],a7) 1 13
+43  *filterB(g2,[g3|a12],a7)* 1 13
 44  siftB(a7,a8) 1 13
 45  length(a8,g4) 0 #f
 
@@ -59,7 +59,7 @@ NODES
 48  filterA(g3,a10,a11) 2 7
 49  siftA(a11,a12) 2 7
 50  filterB(g2,a12,a13) 1 13
-51  siftB([g3|a13],a8) 1 13
+51  *siftB([g3|a13],a8)* 1 13
 52  length(a8,g4) 0 #f
 
 53  integers(g5,a9) 0 #f
@@ -69,9 +69,9 @@ NODES
 57  filterB(g2,a12,a13) 1 13
 58  filterB(g3,a13,a14) 2 13
 59  siftB(a14,a15) 2 13
-60  length([g3|a15],g4) 0 #f
+60  *length([g3|a15],g4)* 0 #f
 
-61  integers(g5,a9) 0 #f
+61  *integers(g5,a9)* 0 #f
 62  filterA(g2,a9,a10) 1 7
 63  filterA(g3,a10,a11) 2 7
 64  siftA(a11,a12) 2 7
@@ -81,7 +81,7 @@ NODES
 68  length(a15,g6) 0 #f
 
 69  integers(g7,a16) 0 #f
-70  filterA(g2,[g5|a16],a10) 1 7
+70  *filterA(g2,[g5|a16],a10)* 1 7
 71  filterA(g3,a10,a11) 2 7
 72  siftA(a11,a12) 2 7
 73  filterB(g2,a12,a13) 1 13
@@ -91,7 +91,7 @@ NODES
 
 77  integers(g7,a16) 0 #f
 78  filterA(g2,a16,a17) 1 7
-79  filterA(g3,[g5|a17],a11) 2 7
+79  *filterA(g3,[g5|a17],a11)* 2 7
 80  siftA(a11,a12) 2 7
 81  filterB(g2,a12,a13) 1 13
 82  filterB(g3,a13,a14) 2 13
@@ -101,7 +101,7 @@ NODES
 85  integers(g7,a16) 0 #f
 86  filterA(g2,a16,a17) 1 7
 87  filterA(g3,a17,a18) 2 7
-88  siftA([g5|a18],a12) 2 7
+88  *siftA([g5|a18],a12)* 2 7
 89  filterB(g2,a12,a13) 1 13
 90  filterB(g3,a13,a14) 2 13
 91  siftB(a14,a15) 2 13
@@ -113,39 +113,39 @@ NODES
 96  filterA(g5,a18,a19) 3 7
 97  siftA(a19,a20) 3 7
 98  filterB(g2,[g5|a20],a13) 1 13
-99 filterB(g3,a13,a14) 2 13
+99  filterB(g3,a13,a14) 2 13
 100 siftB(a14,a15) 2 13
 101 length(a15,g6) 0 #f
 
 102 integers(g7,a16) 0 #f
-103 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1 7
+103 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1:#t 7
 104 filterA(g5,a18,a19) l1+1 7
 105 siftA(a19,a20) l1+1 7
-106 filterB(g2,[g5|a20],a13) 1 13
+106 *filterB(g2,[g5|a20],a13)* 1 13
 107 filterB(g3,a13,a14) 2 13
 108 siftB(a14,a15) 2 13
 109 length(a15,g6) 0 #f
 
 110 integers(g7,a16) 0 #f
-111 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1 7
+111 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1:#t 7
 112 filterA(g5,a18,a19) l1+1 7
 113 siftA(a19,a20) l1+1 7
 114 filterB(g2,a20,a21) 1 13
-115 filterB(g3,[g5|a21],a14) 2 13
+115 *filterB(g3,[g5|a21],a14)* 2 13
 116 siftB(a14,a15) 2 13
 117 length(a15,g6) 0 #f
 
 118 integers(g7,a16) 0 #f
-119 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1 7
+119 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1:#t 7
 120 filterA(g5,a18,a19) l1+1 7
 121 siftA(a19,a20) l1+1 7
 122 filterB(g2,a20,a21) 1 13
 123 filterB(g3,a21,a22) 2 13
-124 siftB([g5|a22],a15) 2 13
+124 *siftB([g5|a22],a15)* 2 13
 125 length(a15,g6) 0 #f
 
 126 integers(g7,a16) 0 #f
-127 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1 7
+127 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1:#t 7
 128 filterA(g5,a18,a19) l1+1 7
 129 siftA(a19,a20) l1+1 7
 130 filterB(g2,a20,a21) 1 13
@@ -155,10 +155,10 @@ NODES
 134 length([g5|a24],g6) 0 #f
 
 135 integers(g7,a16) 0 #f
-136 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1 7
+136 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18}) 1:l1:#t 7
 137 filterA(g5,a18,a19) l1+1 7
 138 siftA(a19,a20) l1+1 7
-139 multi((filterB(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a20,a<2,1,2>/a21},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g3,a<2,L,1>/a21,a<1,L,2>/a22}) 1:l2 13
+139 multi((filterB(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a20,a<2,1,2>/a21},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g3,a<2,L,1>/a21,a<1,L,2>/a22}) 1:l2:#t 13
 140 filterB(g5,a22,a23) l2+1 13
 141 siftB(a23,a24) l2+1 13
 142 length([g5|a24],g6) 0 #f

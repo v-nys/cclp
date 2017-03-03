@@ -13,7 +13,7 @@ abstract-a-variable : AVAR-A
 abstract-g-variable : AVAR-G
 abstract-list : /"[" [abstract-term abstract-term-tail ["|" (abstract-list | abstract-variable)]] /"]" # can't cut comma or separator (need to distinguish during expansion)
 @abstract-term-tail : ("," abstract-term)*
-generation-range : NUMBER BOOLEAN | recursion-depth NUMBER | recursion-depth /":" recursion-depth NUMBER
+generation-range : NUMBER BOOLEAN | recursion-depth NUMBER | recursion-depth /":" recursion-depth /":" BOOLEAN NUMBER
 recursion-depth : NUMBER | SYMBOL | SYMBOL /"+" NUMBER
 multi-abstraction : /"multi" /"(" parameterized-abstract-conjunction /"," BOOLEAN /"," init /"," consecutive /"," final  /")"
 parameterized-abstract-conjunction : /"(" parameterized-abstract-atom (/"," parameterized-abstract-atom)* /")"

@@ -1,18 +1,18 @@
 #lang cclp/gg
 NODES
-1  sameleaves(g1,g2) 0 #f
+1  *sameleaves(g1,g2)* 0 #f
 
-2  collect(g1,a1) 0 #f
+2  *collect(g1,a1)* 0 #f
 3  collect(g2,a2) 0 #f
 4  eq(a1,a2) 0 #f
 
-5  collect(g3,a3) 1 2
+5  *collect(g3,a3)* 1 2
 6  collect(g4,a4) 1 2
 7  append(a3,a4,a1) 1 2
 8  collect(g2,a2) 0 #f
 9  eq(a1,a2) 0 #f
 
-10 collect(g5,a5) 2 2
+10 *collect(g5,a5)* 2 2
 11 collect(g6,a6) 2 2
 12 append(a5,a6,a3) 2 2
 13 collect(g4,a4) 1 2
@@ -33,7 +33,7 @@ NODES
 26 collect(g7,a7)
 27 collect(g8,a8)
 28 append(a7,a8,a5)
-29 multi((collect(g<1,i,1>,a<1,i,1>),append(a<1,i,2>,a<1,i,1>,a<1,i,3>)),#f,{g<1,1,1>/g6,a<1,1,1>/a6,a<1,1,2>/a5,a<1,1,3>/a3},{a<1,i+1,2>/a<1,i,3>},{g<1,L,1>/g4,a<1,L,1>/a4,a<1,L,2>/a3,a<1,L,3>/a1}) l1:1 2
+29 multi((collect(g<1,i,1>,a<1,i,1>),append(a<1,i,2>,a<1,i,1>,a<1,i,3>)),#f,{g<1,1,1>/g6,a<1,1,1>/a6,a<1,1,2>/a5,a<1,1,3>/a3},{a<1,i+1,2>/a<1,i,3>},{g<1,L,1>/g4,a<1,L,1>/a4,a<1,L,2>/a3,a<1,L,3>/a1}) l1:1:#f 2
 30 collect(g2,a2)
 31 eq(a1,a2)
 

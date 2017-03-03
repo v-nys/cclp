@@ -100,33 +100,33 @@
               (list uid-acc 0 0 (list))
               tl-con1)])
          (generational-graph-skeleton (cdr branch) next-uid graph add-edges)))]
-        [(list-rest
-          (or (tree-label tl-con1 (none) _ _ _ _)
-              (generalization tl-con1 (none) _ _ _))
-          (generalization _ _ _ _ abstracted-ranges)
-          l-rest)
-         (match-let
-             ([(list next-uid _ _ add-edges)
-               (foldl
-                (match-lambda**
-                 [(conjunct (list uid idx range-start introduced-edges))
-                  (begin
-                    (add-vertex! graph (gen-node conjunct uid #f #f))
-                    (for ([edge edges])
-                      (when (contains (cdr edge) idx)
-                        (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f))))
-                    (let ([vertex-edges
-                           (cons
-                            (gen-node conjunct uid #f #f)
-                            (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
-                          [new-range-start
-                           (if (ormap (λ (r) (contains (struct-copy index-range r [end-before (sub1 (index-range-end-before r))]) idx)) abstracted-ranges)
-                               range-start ; next conjunct will also be abstracted
-                               (add1 range-start))])
-                      (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
-                (list uid-acc 0 0 (list))
-                tl-con1)])
-           (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]))
+    [(list-rest
+      (or (tree-label tl-con1 (none) _ _ _ _)
+          (generalization tl-con1 (none) _ _ _))
+      (generalization _ _ _ _ abstracted-ranges)
+      l-rest)
+     (match-let
+         ([(list next-uid _ _ add-edges)
+           (foldl
+            (match-lambda**
+             [(conjunct (list uid idx range-start introduced-edges))
+              (begin
+                (add-vertex! graph (gen-node conjunct uid #f #f))
+                (for ([edge edges])
+                  (when (contains (cdr edge) idx)
+                    (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f))))
+                (let ([vertex-edges
+                       (cons
+                        (gen-node conjunct uid #f #f)
+                        (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
+                      [new-range-start
+                       (if (ormap (λ (r) (contains (struct-copy index-range r [end-before (sub1 (index-range-end-before r))]) idx)) abstracted-ranges)
+                           range-start ; next conjunct will also be abstracted
+                           (add1 range-start))])
+                  (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
+            (list uid-acc 0 0 (list))
+            tl-con1)])
+       (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]))
 (module+ test
   (require
     rackunit
@@ -297,131 +297,124 @@
 (define (comparable-max? range gen origin) #f)
 
 ;; minimum generation in the range of a conjunct
-(define (local-min c) 0)
-;  (match c
-;    [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
-;     (gen-range-first rng)]
-;    [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #f _ _ _) id) rng)
-;     (gen-range-last rng)]
-;    [(identified-abstract-conjunct-with-gen-range _ rng)
-;     (generic-minmax gen< (gen-range-first rng) (gen-range-last rng))]))
-;(module+ test
-;  (check-equal?
-;   (local-min
-;    (identified-abstract-conjunct-with-gen-range
-;     (identified-abstract-conjunct (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 'l1 1 1)))
-;   1)
-;  (check-equal?
-;   (local-min
-;    (identified-abstract-conjunct-with-gen-range
-;     (identified-abstract-conjunct (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 1 'l1 1)))
-;   1))
+(define (local-min c)
+  (match c
+    [(gen-node _ _ (gen num _) _) num]
+    [(gen-node _ _ (gen-range fst lst _ #t) _) fst]
+    [(gen-node _ _ (gen-range fst lst _ #f) _) lst]))
+(module+ test
+  (check-equal?
+   (local-min (gen-node (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 'l1 1 1 #f) #f))
+   1)
+  (check-equal?
+   (local-min (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f))
+   1))
 
-(define (local-max c) 0)
-;  (match c
-;    [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #t _ _ _) id) rng)
-;     (gen-range-last rng)]
-;    [(identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct (multi con #f _ _ _) id) rng)
-;     (gen-range-first rng)]
-;    [(identified-abstract-conjunct-with-gen-range _ rng)
-;     (generic-minmax (compose not gen<) (gen-range-first rng) (gen-range-last rng))]))
-;(module+ test
-;  (check-equal?
-;   (local-max
-;    (identified-abstract-conjunct-with-gen-range
-;     (identified-abstract-conjunct (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 'l1 1 1)))
-;   'l1)
-;  (check-equal?
-;   (local-max
-;    (identified-abstract-conjunct-with-gen-range
-;     (identified-abstract-conjunct (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2) (gen-range 1 'l1 1)))
-;   'l1))
+(define (local-max c)
+  (match c
+    [(gen-node _ _ (gen num _) _) num]
+    [(gen-node _ _ (gen-range fst lst _ #t) _) lst]
+    [(gen-node _ _ (gen-range fst lst _ #f) _) fst]))
+(module+ test
+  (check-equal?
+   (local-max (gen-node (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 'l1 1 1 #f) #f))
+   'l1)
+  (check-equal?
+   (local-max (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f))
+   'l1))
 
-(define (increment-rel-tg-unfolding! id-conjunct ann-parent relevant-targets graph) (void))
-;  (match-define (identified-abstract-conjunct-with-gen-range (identified-abstract-conjunct parent-conjunct parent-id) parent-gen) ann-parent)
-;  (cond
-;    [(member (identified-abstract-conjunct-with-gen-range-id-conjunct ann-parent) relevant-targets)
-;     (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct (gen-range 1 1 parent-id)))]
-;    [(let ([pred (if (abstract-atom? parent-conjunct) (findf (λ (rel-tg) (and (equal? (gen-range-origin parent-gen) (identified-abstract-conjunct-id-number rel-tg)) (renames-with-corresponding-args? parent-conjunct (identified-abstract-conjunct-conjunct rel-tg)))) relevant-targets) #f)]) pred)
-;     ; HACK! should have gen tree nodes track whether they are unfoldings or not
-;     (if (not (equal? (identified-abstract-conjunct-conjunct id-conjunct) parent-conjunct))
-;         (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct (gen-range (add1 (gen-range-first parent-gen)) (add1 (gen-range-last parent-gen)) (gen-range-origin parent-gen))))
-;         (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct parent-gen)))]
-;    [else
-;     (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct (identified-abstract-conjunct-with-gen-range-range ann-parent)))]))
+(define (increment-rel-tg-unfolding! id-conjunct ann-parent relevant-targets graph)
+  (match-define (gen-node parent-conjunct parent-id parent-gen parent-unfolded?) ann-parent)
+  (cond
+    [(member ann-parent relevant-targets)
+     (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen 1 parent-id)]))]
+    [(and
+      (abstract-atom? parent-conjunct)
+      (findf (λ (rel-tg) (and (equal? (gen-origin parent-gen) (gen-node-id rel-tg)) (renames-with-corresponding-args? parent-conjunct (gen-node-conjunct rel-tg)))) relevant-targets))
+     (if parent-unfolded? ; if parent renames a relevant target atom, it cannot be a multi!
+         (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen (add1 (gen-number parent-gen)) (gen-origin parent-gen))]))
+         (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen])))]
+    [else
+     (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen]))]))
+; TODO this needs separate tests!
 
 (define (apply-multi-mapping! spc parent multi-mapping graph) (void))
 (module+ test)
 
 ;; annotates a level of the RDAG, other than the root level
 ;; TODO: parent-level-number is completely redundant? it is just the current level - 1...
-(define (annotate-level! graph annotated-root l-postfix relevant-targets parent-level-number level-number) (void))
-;  (define parent-level (rdag-level graph annotated-root parent-level-number))
-;  (define level (rdag-level graph annotated-root level-number))
-;  (match-define-values
-;   (new-multis single-parent-conjuncts)
-;   (partition (λ (conjunct) (> (length (get-neighbors (transpose graph) conjunct)) 1)) level))
-;  (define multi-mapping (foldl (curry annotate-new-multi! graph l-postfix) (make-immutable-hash) new-multis))
-;  (for ([spc single-parent-conjuncts])
-;    (let ([parent (first (get-neighbors (transpose graph) spc))])
-;      (if (null? new-multis)
-;          (increment-rel-tg-unfolding! spc parent relevant-targets graph)
-;          (apply-multi-mapping! spc parent multi-mapping graph)))))
-;(module+ test
-;  (require
-;    (prefix-in sl-multi-graph-skeleton: "analysis-trees/sameleaves-multi-branch-gen-tree-skeleton.rkt")
-;    (prefix-in sl-multi-graph-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree.rkt"))
-;  (define sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
-;  (define sl-annotated-root (identified-abstract-conjunct-with-gen-range sl-skeleton-root (gen-range 0 0 #f)))
-;  (rename-vertex! sl-multi-graph-annotated sl-skeleton-root sl-annotated-root)
-;  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)) 1 2)
-;  (check-equal?
-;   (rdag-level sl-multi-graph-annotated sl-annotated-root 2)
-;   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 2))
-;  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)) 2 3)
-;  (check-equal?
-;   (rdag-level sl-multi-graph-annotated sl-annotated-root 3)
-;   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 3))
-;  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)) 3 4)
-;  (check-equal?
-;   (rdag-level sl-multi-graph-annotated sl-annotated-root 4)
-;   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 4))
-;  (require (prefix-in almost-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated.rkt"))
-;  (define almost-annotated (graph-copy almost-annotated:val))
-;  (annotate-level! almost-annotated sl-annotated-root 1 (list (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)) 5 6)
-;  (check-equal?
-;   (rdag-level almost-annotated sl-annotated-root 6)
-;   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 6)))
+(define (annotate-level! graph annotated-root l-postfix relevant-targets parent-level-number level-number)
+  (define parent-level (rdag-level graph annotated-root parent-level-number))
+  (define level (rdag-level graph annotated-root level-number))
+  (match-define-values
+   (new-multis single-parent-conjuncts)
+   (partition (λ (conjunct) (> (length (get-neighbors (transpose graph) conjunct)) 1)) level))
+  (define multi-mapping (foldl (curry annotate-new-multi! graph l-postfix) (make-immutable-hash) new-multis))
+  (for ([spc single-parent-conjuncts])
+    (let ([parent (first (get-neighbors (transpose graph) spc))])
+      (if (null? new-multis)
+          (increment-rel-tg-unfolding! spc parent relevant-targets graph)
+          (apply-multi-mapping! spc parent multi-mapping graph)))))
+(module+ test
+  (require (prefix-in almost-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated.rkt"))
+  (define almost-annotated (graph-copy almost-annotated:val))
+  (define sl-annotated-root (struct-copy gen-node sl-skeleton-root [range (gen 0 #f)]))
+  (require
+    (prefix-in sl-multi-graph-skeleton: "analysis-trees/sameleaves-multi-branch-gen-tree-skeleton.rkt")
+    (prefix-in sl-multi-graph-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree.rkt"))
+  (define sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
+  (rename-vertex! sl-multi-graph-annotated sl-skeleton-root sl-annotated-root)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 1 2)
+  (check-equal?
+   (rdag-level sl-multi-graph-annotated sl-annotated-root 2)
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 2))
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 2 3)
+  (check-equal?
+   (rdag-level sl-multi-graph-annotated sl-annotated-root 3)
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 3))
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 3 4)
+  (check-equal?
+   (rdag-level sl-multi-graph-annotated sl-annotated-root 4)
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 4))
+  (annotate-level! almost-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 5 6)
+  (check-equal?
+   (rdag-level almost-annotated sl-annotated-root 6)
+   (rdag-level sl-multi-graph-annotated:val sl-annotated-root 6)))
 
-(define (annotate-new-multi! graph l-postfix new-multi mapping) (void))
-;  (define multi-parents (get-neighbors (transpose graph) new-multi))
-;  (define bare-multi (identified-abstract-conjunct-conjunct new-multi))
-;  (define parent-minimum (apply (curry generic-minmax gen<) (map local-min multi-parents)))
-;  (define parent-maximum (apply (curry generic-minmax (compose not gen<)) (map local-max multi-parents)))
-;  (define parent-origin (gen-range-origin (identified-abstract-conjunct-with-gen-range-range (first multi-parents))))
-;  (define symbolic-maximum (string->symbol (format "l~a" l-postfix)))
-;  (define range
-;    (if (multi-ascending? bare-multi)
-;        (gen-range parent-minimum symbolic-maximum parent-origin)
-;        (gen-range symbolic-maximum parent-minimum parent-origin)))
-;  (set! l-postfix (add1 l-postfix))
-;  (define updated-multi (identified-abstract-conjunct-with-gen-range new-multi range))
-;  (rename-vertex! graph new-multi updated-multi)
-;  (hash-set mapping (cons parent-maximum parent-origin) symbolic-maximum))
+(define (annotate-new-multi! graph l-postfix new-multi mapping)
+  (define parents (get-neighbors (transpose graph) new-multi))
+  (define bare-multi (gen-node-conjunct new-multi))
+  (define parent-minimum (apply (curry generic-minmax gen<) (map local-min parents)))
+  (define parent-maximum (apply (curry generic-minmax (compose not gen<)) (map local-max parents)))
+  (define parent-origin (let ([parent-gen (gen-node-range (first parents))]) (if (gen? parent-gen) (gen-origin parent-gen) (gen-range-origin parent-gen)))) ; first, but could pick any one
+  (define symbolic-maximum (string->symbol (format "l~a" l-postfix)))
+  (define multi-parent (findf (λ (p) (multi? (gen-node-conjunct p))) parents))
+  (define ascending?
+    (if multi-parent
+        ((compose1 gen-range-ascending? gen-node-range) multi-parent)
+        (< (gen-number (gen-node-range (first parents))) (gen-number (gen-node-range (last parents))))))
+  (define range
+    (if ascending?
+        (gen-range parent-minimum symbolic-maximum parent-origin ascending?)
+        (gen-range symbolic-maximum parent-minimum parent-origin ascending?)))
+  (set! l-postfix (add1 l-postfix))
+  (define updated-multi (struct-copy gen-node new-multi [range range]))
+  (rename-vertex! graph new-multi updated-multi)
+  (hash-set mapping (cons parent-maximum parent-origin) symbolic-maximum))
 ; TODO add a test for o-primes!
-;(module+ test
-;  (set! almost-annotated (graph-copy almost-annotated:val))
-;  (require (prefix-in almost-annotated-m: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated-with-multi.rkt"))
-;  (define almost-annotated-with-multi (graph-copy almost-annotated-m:val))
-;  (annotate-new-multi! almost-annotated 1 (list-ref (sort (rdag-level almost-annotated sl-annotated-root 6) < #:key identified-abstract-conjunct-id-number) 3) (make-immutable-hash))
-;  (for ([lv (range 1 6)])
-;    (check-equal?
-;     (rdag-level almost-annotated sl-annotated-root lv)
-;     (rdag-level almost-annotated-with-multi sl-annotated-root lv)))
-;  (check-equal?
-;   (rdag-level almost-annotated sl-annotated-root 6)
-;   (rdag-level almost-annotated-with-multi sl-annotated-root 6))
-;  (check-equal? almost-annotated almost-annotated-with-multi))
+(module+ test
+  (set! almost-annotated (graph-copy almost-annotated:val))
+  (require (prefix-in almost-annotated-m: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated-with-multi.rkt"))
+  (define almost-annotated-with-multi (graph-copy almost-annotated-m:val))
+  (annotate-new-multi! almost-annotated 1 (list-ref (sort (rdag-level almost-annotated sl-annotated-root 6) < #:key gen-node-id) 3) (make-immutable-hash))
+  (for ([lv (range 1 6)])
+    (check-equal?
+     (rdag-level almost-annotated sl-annotated-root lv)
+     (rdag-level almost-annotated-with-multi sl-annotated-root lv)))
+  (check-equal?
+   (rdag-level almost-annotated sl-annotated-root 6)
+   (rdag-level almost-annotated-with-multi sl-annotated-root 6))
+  (check-equal? almost-annotated almost-annotated-with-multi))
 
 ;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full generational graph
 (define (annotate-general! skeleton root relevant-targets rdag-depth) (void))

@@ -1,18 +1,18 @@
 #lang cclp/gg
 NODES
-1  sameleaves(g1,g2)
+1  *sameleaves(g1,g2)*
 
-2  collect(g1,a1)
+2  *collect(g1,a1)*
 3  collect(g2,a2)
 4  eq(a1,a2)
 
-5  collect(g3,a3)
+5  *collect(g3,a3)*
 6  collect(g4,a4)
 7  append(a3,a4,a1)
 8  collect(g2,a2)
 9  eq(a1,a2)
 
-10 collect(g5,a5)
+10 *collect(g5,a5)*
 11 collect(g6,a6)
 12 append(a5,a6,a3)
 13 collect(g4,a4)
