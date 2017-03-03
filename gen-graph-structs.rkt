@@ -100,7 +100,7 @@
      The value @racket[origin] is the identifier of the abstract atom which first gave rise to the recursion stack.
      Whether the abstracted conjunctions have an ascending or descending sequence of conjunctions is indicated by @racket[ascending?].}))
 
-(struct gen-node (conjunct id range)
+(struct gen-node (conjunct id range unfolded?)
   #:methods
   gen:custom-write
   [(define write-proc
@@ -108,7 +108,8 @@
       (λ (obj) 'gen-node)
       (λ (obj) (list (gen-node-conjunct obj)
                      (gen-node-id obj)
-                     (gen-node-range obj)))))]
+                     (gen-node-range obj)
+                     (gen-node-unfolded? obj)))))]
   #:methods
   gen:equal+hash
   [(define (equal-proc g1 g2 equal?-recur)
@@ -117,26 +118,32 @@
           (equal?-recur (gen-node-id g1)
                         (gen-node-id g2))
           (equal?-recur (gen-node-range g1)
-                        (gen-node-range g2))))
+                        (gen-node-range g2))
+          (equal?-recur (gen-node-unfolded? g1)
+                        (gen-node-unfolded? g2))))
    (define (hash-proc gen hash-recur)
      (+ (hash-recur (gen-node-conjunct gen))
         (hash-recur (gen-node-id gen))
-        (hash-recur (gen-node-range gen))))
+        (hash-recur (gen-node-range gen))
+        (hash-recur (gen-node-unfolded? gen))))
    (define (hash2-proc gen hash-recur)
      (+ (hash-recur (gen-node-conjunct gen))
         (hash-recur (gen-node-id gen))
-        (hash-recur (gen-node-range gen))))])
+        (hash-recur (gen-node-range gen))
+        (hash-recur (gen-node-unfolded? gen))))])
 (provide
  (struct*-doc
   gen-node
   ([conjunct abstract-conjunct?]
    [id exact-positive-integer?]
-   [range (or/c #f gen? gen-range?)])
+   [range (or/c #f gen? gen-range?)]
+   [unfolded? boolean?])
   @{A node in a generational graph.
      A node adds metadata to @racket[conjunct].
      The first piece of metadata, @racket[id], is a unique identifier used to distinguish between occurrences of conjuncts.
      The second, @racket[range], if it is present, is either a single generation (in the case of an abstract atom) or a range of generations (in the case of a multi abstraction).
-     A missing value for @racket[range] means that the abstract conjunct has not yet been annotated and is different from a generation with number @racket[0] and origin @racket[#f].}))
+     A missing value for @racket[range] means that the abstract conjunct has not yet been annotated and is different from a generation with number @racket[0] and origin @racket[#f].
+     If and only if the @racket[gen-node] represents an unfolded conjunct, @racket[unfolded?] is @racket[#t].}))
 
 (struct symsum (sym num)
   #:methods
