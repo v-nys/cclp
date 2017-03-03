@@ -63,7 +63,17 @@
 (provide (struct-out identified-abstract-conjunct))
 
 (struct gen-range (first last origin) #:transparent)
-(provide (struct-out gen-range))
+(provide
+ (struct*-doc
+  gen-range
+  ([first (or/c exact-nonnegative-integer? symbol? symsum?)]
+   [last (or/c exact-nonnegative-integer? symbol? symsum?)]
+   [origin (or/c #f exact-positive-integer?)])
+  @{Range of generations represented by an abstraction.
+    The value @racket[first] represents the generation of the first abstracted conjunct in a syntactic sense.
+    The value @racket[last] represents the generation of the last abstracted conjunct in a syntactic sense.
+    The value @racket[origin] is the identifier of the abstract atom which first gave rise to the recursion stack.
+ For anything other than a multi abstraction, @racket[first] and @racket[last] should be identical.}))
 
 (struct symsum (sym num) #:transparent)
 (provide (struct-out symsum))

@@ -1,6 +1,6 @@
 #lang br/quicklang
-(require (for-syntax syntax/strip-context))
-(require graph)
+(require (for-syntax syntax/strip-context syntax/parse))
+(require graph sugar)
 (require "gen-graph-structs.rkt")
 
 (define-macro (gg-module-begin (gg (nodes-section NODE-LINE ...) (edges-section EDGE-LINE ...)))
@@ -28,10 +28,17 @@
 (provide node-line)
 
 (define-macro-cases generation-range
-  [(_ 0 #f) #'(gen-range 0 0 #f)]
+  [(_ RDEPTH #f) #'(gen-range RDEPTH RDEPTH #f)]
   [(_ RDEPTH NUM) #'(gen-range RDEPTH RDEPTH NUM)]
   [(_ RDEPTH1 RDEPTH2 NUM) #'(gen-range RDEPTH1 RDEPTH2 NUM)])
 (provide generation-range)
+
+(define-syntax (recursion-depth stx)
+  (syntax-parse stx
+    [(_ num:number) (syntax/loc stx num)]
+    [(_ sym:str) (syntax/loc stx (->symbol sym))]
+    [(_ sym:str num:number) (syntax/loc stx (symsum (->symbol sym) num))]))
+(provide recursion-depth)
 
 (define-macro (symbol-sum SYM NUM) #'(symsum SYM NUM))
 (provide symbol-sum)
