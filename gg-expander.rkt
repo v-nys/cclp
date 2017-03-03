@@ -12,25 +12,25 @@
        (provide REPLACED)))))
 (provide (rename-out [gg-module-begin #%module-begin]) #%top-interaction)
 
-(define-macro (nodes-section NODE-LINE ...) #'(begin NODE-LINE ...))
+(define-macro (nodes-section NODE-LINE ...) (syntax/loc caller-stx (begin NODE-LINE ...)))
 (provide nodes-section)
 
 (define-macro-cases node-line
   [(_ NUMBER CONJUNCT GEN-RANGE)
    (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
-     #'(define NODE-NUM
-         (identified-abstract-conjunct-with-gen-range
-          (identified-abstract-conjunct CONJUNCT NUMBER)
-          GEN-RANGE)))]
+     (syntax/loc caller-stx
+       (define NODE-NUM
+         (gen-node CONJUNCT NUMBER GEN-RANGE #f))))]
   [(_ NUMBER CONJUNCT)
    (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
-     #'(define NODE-NUM (identified-abstract-conjunct CONJUNCT NUMBER)))])
+     (syntax/loc caller-stx
+       (define NODE-NUM (gen-node CONJUNCT NUMBER #f #f))))])
 (provide node-line)
 
 (define-macro-cases generation-range
-  [(_ RDEPTH #f) #'(gen-range RDEPTH RDEPTH #f)]
-  [(_ RDEPTH NUM) #'(gen-range RDEPTH RDEPTH NUM)]
-  [(_ RDEPTH1 RDEPTH2 NUM) #'(gen-range RDEPTH1 RDEPTH2 NUM)])
+  [(_ RDEPTH #f) (syntax/loc caller-stx (gen-range RDEPTH RDEPTH #f))]
+  [(_ RDEPTH NUM) (syntax/loc caller-stx (gen RDEPTH NUM))]
+  [(_ RDEPTH1 RDEPTH2 NUM) (syntax/loc caller-stx (gen-range RDEPTH1 RDEPTH2 NUM))])
 (provide generation-range)
 
 (define-syntax (recursion-depth stx)
@@ -40,22 +40,26 @@
     [(_ sym:str num:number) (syntax/loc stx (symsum (->symbol sym) num))]))
 (provide recursion-depth)
 
-(define-macro (symbol-sum SYM NUM) #'(symsum SYM NUM))
+(define-macro (symbol-sum SYM NUM) (syntax/loc caller-stx (symsum SYM NUM)))
 (provide symbol-sum)
 
 (define-macro (edges-section EDGE-LINE ...)
-  #'(unweighted-graph/directed (append EDGE-LINE ...)))
+  (syntax/loc caller-stx
+    (unweighted-graph/directed (append EDGE-LINE ...))))
 (provide edges-section)
 
 (define-macro-cases edge-line
-  [(_ START DEST) (with-pattern ([START-ID (prefix-id "node-" #'START)]
-                                 [DEST-ID (prefix-id "node-" #'DEST)])
-                    #'(list (list START-ID DEST-ID)))]
+  [(_ START DEST)
+   (with-pattern ([START-ID (prefix-id "node-" #'START)]
+                  [DEST-ID (prefix-id "node-" #'DEST)])
+     (syntax/loc caller-stx
+       (list (list START-ID DEST-ID))))]
   [(_ START DEST0 DEST ...)
    (with-pattern ([START-ID (prefix-id "node-" #'START)]
                   [DEST0-ID (prefix-id "node-" #'DEST0)])
-     #'(cons (list START-ID DEST0-ID)
-             (edge-line START DEST ...)))])
+     (syntax/loc caller-stx
+       (cons (list START-ID DEST0-ID)
+             (edge-line START DEST ...))))])
 (provide edge-line)
 
 (require (only-in "at-expander.rkt" abstract-atom abstract-function abstract-g-variable abstract-a-variable abstract-list))
