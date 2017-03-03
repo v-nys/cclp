@@ -16,12 +16,21 @@
 (provide nodes-section)
 
 (define-macro-cases node-line
-  [(_ NUMBER CONJUNCT GEN-RANGE)
+  [(_ NUMBER (selected-conjunct CONJUNCT) GEN-RANGE)
+   (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
+     (syntax/loc caller-stx
+       (define NODE-NUM
+         (gen-node CONJUNCT NUMBER GEN-RANGE #t))))]
+  [(_ NUMBER (unselected-conjunct CONJUNCT) GEN-RANGE)
    (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
      (syntax/loc caller-stx
        (define NODE-NUM
          (gen-node CONJUNCT NUMBER GEN-RANGE #f))))]
-  [(_ NUMBER CONJUNCT)
+  [(_ NUMBER (selected-conjunct CONJUNCT))
+   (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
+     (syntax/loc caller-stx
+       (define NODE-NUM (gen-node CONJUNCT NUMBER #f #t))))]
+  [(_ NUMBER (unselected-conjunct CONJUNCT))
    (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
      (syntax/loc caller-stx
        (define NODE-NUM (gen-node CONJUNCT NUMBER #f #f))))])

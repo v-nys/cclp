@@ -1,8 +1,10 @@
 #lang brag
 gg : nodes-section edges-section
 nodes-section : /"NODES" node-line*
-node-line : NUMBER abstract-atom [generation-range]
-          | NUMBER multi-abstraction [generation-range]
+node-line : NUMBER selected-conjunct [generation-range]
+          | NUMBER unselected-conjunct [generation-range]
+selected-conjunct : /"*" (abstract-atom | multi-abstraction) /"*"
+unselected-conjunct : abstract-atom | multi-abstraction
 abstract-atom : SYMBOL [/"(" abstract-term (/"," abstract-term)* /")"]
 @abstract-term : abstract-function | abstract-variable | abstract-list
 abstract-function : SYMBOL [/"(" abstract-term (/"," abstract-term)* /")"]
