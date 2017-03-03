@@ -291,6 +291,11 @@
   (check-true (gen< 1000 'l))
   (check-true (gen< (symsum 'l 0) (symsum 'l 10))))
 
+;; check whether the maximum of a gen-range can be (directly) compared to a given generation
+;; this is necessary to apply the mapping to symbolic maximum generations in multi
+; TODO replace gen + origin with gen struct
+(define (comparable-max? range gen origin) #f)
+
 ;; minimum generation in the range of a conjunct
 (define (local-min c)
   (match c
@@ -345,6 +350,9 @@
     [else
      (rename-vertex! graph id-conjunct (identified-abstract-conjunct-with-gen-range id-conjunct (identified-abstract-conjunct-with-gen-range-range ann-parent)))]))
 
+(define (apply-multi-mapping! spc parent multi-mapping graph) (void))
+(module+ test)
+
 ;; annotates a level of the RDAG, other than the root level
 ;; TODO: parent-level-number is completely redundant? it is just the current level - 1...
 (define (annotate-level! graph annotated-root l-postfix relevant-targets parent-level-number level-number)
@@ -354,14 +362,11 @@
    (new-multis single-parent-conjuncts)
    (partition (λ (conjunct) (> (length (get-neighbors (transpose graph) conjunct)) 1)) level))
   (define multi-mapping (foldl (curry annotate-new-multi! graph l-postfix) (make-immutable-hash) new-multis))
-  (if (null? new-multis)
-      (for ([spc single-parent-conjuncts])
-        (let ([parent (first (get-neighbors (transpose graph) spc))])
-          ; FIXME cannot see if parent is actually unfolded or not
-          ; so there are too many generation increases at the moment
-          (increment-rel-tg-unfolding! spc parent relevant-targets graph)))
-      (for ([spc single-parent-conjuncts])
-        (void)))) ; (apply-multi-mapping! spc multi-mapping)
+  (for ([spc single-parent-conjuncts])
+    (let ([parent (first (get-neighbors (transpose graph) spc))])
+      (if (null? new-multis)
+          (increment-rel-tg-unfolding! spc parent relevant-targets graph)
+          (apply-multi-mapping! spc parent multi-mapping graph)))))
 (module+ test
   (require
     (prefix-in sl-multi-graph-skeleton: "analysis-trees/sameleaves-multi-branch-gen-tree-skeleton.rkt")
