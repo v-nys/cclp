@@ -62,7 +62,7 @@
         (match-lambda**
          [(conjunct (cons uid idx))
           (begin
-            (add-vertex! graph (gen-node conjunct uid #f #f))
+            (add-vertex! graph (gen-node conjunct uid #f #f)) ; end of branch never has selection
             (for ([edge edges])
               (when (contains (cdr edge) idx)
                 (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f))))
@@ -70,64 +70,63 @@
         (cons uid-acc 0)
         (label-conjunction label))
        graph)]
-;    [(list-rest
-;      (or (tree-label tl-con1 (some selected1) _ _ _ _)
-;          (generalization tl-con1 (some selected1) _ _ _))
-;      (tree-label _ _ _ tl-rule2 _ _)
-;      l-rest)
-;     (let* ([first-unselected (take tl-con1 selected1)]
-;            [selected-atom (list-ref tl-con1 selected1)]
-;            [last-unselected (drop tl-con1 (+ 1 selected1))])
-;       (match-let
-;           ;; all these identified values correspond to parameters of the function
-;           ([(list next-uid _ _ add-edges)
-;             (foldl
-;              (match-lambda**
-;               [(conjunct (list uid idx range-start introduced-edges))
-;                (begin
-;                  (add-vertex! graph (identified-abstract-conjunct conjunct uid))
-;                  (for ([edge edges])
-;                    (when (contains (cdr edge) idx)
-;                      (add-directed-edge! graph (car edge) (identified-abstract-conjunct conjunct uid))))
-;                  (let ([vertex-edges
-;                         (cons ; pair of the current conjunct and the range of "spawned" conjuncts
-;                          (identified-abstract-conjunct conjunct uid)
-;                          (if (not (equal? idx selected1))
-;                              (index-range range-start (add1 range-start)) ; unselected conjuncts refer to the conjunct "below" hem
-;                              (index-range range-start (+ range-start (knowledge-output-length tl-rule2)))))]
-;                        [new-range-start (if (not (equal? idx selected1)) (add1 range-start) (+ range-start (knowledge-output-length tl-rule2)))])
-;                    (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
-;              (list uid-acc 0 0 (list))
-;              tl-con1)])
-;         (generational-graph-skeleton (cdr branch) next-uid graph add-edges)))]
-    ;    [(list-rest
-    ;      (or (tree-label tl-con1 (none) _ _ _ _)
-    ;          (generalization tl-con1 (none) _ _ _))
-    ;      (generalization _ _ _ _ abstracted-ranges)
-    ;      l-rest)
-    ;     (match-let
-    ;         ([(list next-uid _ _ add-edges)
-    ;           (foldl
-    ;            (match-lambda**
-    ;             [(conjunct (list uid idx range-start introduced-edges))
-    ;              (begin
-    ;                (add-vertex! graph (identified-abstract-conjunct conjunct uid))
-    ;                (for ([edge edges])
-    ;                  (when (contains (cdr edge) idx)
-    ;                    (add-directed-edge! graph (car edge) (identified-abstract-conjunct conjunct uid))))
-    ;                (let ([vertex-edges
-    ;                       (cons
-    ;                        (identified-abstract-conjunct conjunct uid)
-    ;                        (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
-    ;                      [new-range-start
-    ;                       (if (ormap (λ (r) (contains (struct-copy index-range r [end-before (sub1 (index-range-end-before r))]) idx)) abstracted-ranges)
-    ;                           range-start ; next conjunct will also be abstracted
-    ;                           (add1 range-start))])
-    ;                  (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
-    ;            (list uid-acc 0 0 (list))
-    ;            tl-con1)])
-    ;       (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]
-    ))
+    [(list-rest
+      (or (tree-label tl-con1 (some selected1) _ _ _ _)
+          (generalization tl-con1 (some selected1) _ _ _))
+      (tree-label _ _ _ tl-rule2 _ _)
+      l-rest)
+     (let* ([first-unselected (take tl-con1 selected1)]
+            [selected-atom (list-ref tl-con1 selected1)]
+            [last-unselected (drop tl-con1 (+ 1 selected1))])
+       (match-let
+           ;; all these identified values correspond to parameters of the function
+           ([(list next-uid _ _ add-edges)
+             (foldl
+              (match-lambda**
+               [(conjunct (list uid idx range-start introduced-edges))
+                (begin
+                  (add-vertex! graph (gen-node conjunct uid #f (equal? idx selected1)))
+                  (for ([edge edges])
+                    (when (contains (cdr edge) idx)
+                      (add-directed-edge! graph (car edge) (gen-node conjunct uid #f (equal? idx selected1)))))
+                  (let ([vertex-edges
+                         (cons ; pair of the current conjunct and the range of "spawned" conjuncts
+                          (gen-node conjunct uid #f (equal? idx selected1))
+                          (if (not (equal? idx selected1))
+                              (index-range range-start (add1 range-start)) ; unselected conjuncts refer to the conjunct "below" hem
+                              (index-range range-start (+ range-start (knowledge-output-length tl-rule2)))))]
+                        [new-range-start (if (not (equal? idx selected1)) (add1 range-start) (+ range-start (knowledge-output-length tl-rule2)))])
+                    (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
+              (list uid-acc 0 0 (list))
+              tl-con1)])
+         (generational-graph-skeleton (cdr branch) next-uid graph add-edges)))]
+        [(list-rest
+          (or (tree-label tl-con1 (none) _ _ _ _)
+              (generalization tl-con1 (none) _ _ _))
+          (generalization _ _ _ _ abstracted-ranges)
+          l-rest)
+         (match-let
+             ([(list next-uid _ _ add-edges)
+               (foldl
+                (match-lambda**
+                 [(conjunct (list uid idx range-start introduced-edges))
+                  (begin
+                    (add-vertex! graph (gen-node conjunct uid #f #f))
+                    (for ([edge edges])
+                      (when (contains (cdr edge) idx)
+                        (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f))))
+                    (let ([vertex-edges
+                           (cons
+                            (gen-node conjunct uid #f #f)
+                            (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
+                          [new-range-start
+                           (if (ormap (λ (r) (contains (struct-copy index-range r [end-before (sub1 (index-range-end-before r))]) idx)) abstracted-ranges)
+                               range-start ; next conjunct will also be abstracted
+                               (add1 range-start))])
+                      (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
+                (list uid-acc 0 0 (list))
+                tl-con1)])
+           (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]))
 (module+ test
   (require
     rackunit

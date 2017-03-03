@@ -1,21 +1,21 @@
 #lang cclp/gg
 NODES
-1   oprimes(g1,a1)
+1   *oprimes(g1,a1)*
   
-2   integers(g2,a2)
+2   *integers(g2,a2)*
 3   siftA(a2,a3)
 4   siftB(a3,a1)
 5   length(a1,g1)
 
 6   integers(g3,a4)
-7   siftA([g2|a4],a3)
+7   *siftA([g2|a4],a3)*
 8   siftB(a3,a1)
 9   length(a1,g1)
 
 10  integers(g3,a4)
 11  filterA(g2,a4,a5)
 12  siftA(a5,a6)
-13  siftB([g2|a6],a1)
+13  *siftB([g2|a6],a1)*
 14  length(a1,g1)
 
 15  integers(g3,a4)
@@ -23,9 +23,9 @@ NODES
 17  siftA(a5,a6)
 18  filterB(g2,a6,a7)
 19  siftB(a7,a8)
-20  length([g2|a8],g1)
+20  *length([g2|a8],g1)*
 
-21  integers(g3,a4)
+21  *integers(g3,a4)*
 22  filterA(g2,a4,a5)
 23  siftA(a5,a6)
 24  filterB(g2,a6,a7)
@@ -33,7 +33,7 @@ NODES
 26  length(a8,g4)
 
 27  integers(g5,a9)
-28  filterA(g2,[g3|a9],a5)
+28  *filterA(g2,[g3|a9],a5)*
 29  siftA(a5,a6)
 30  filterB(g2,a6,a7)
 31  siftB(a7,a8)
@@ -41,7 +41,7 @@ NODES
 
 33  integers(g5,a9)
 34  filterA(g2,a9,a10)
-35  siftA([g3|a10],a6)
+35  *siftA([g3|a10],a6)*
 36  filterB(g2,a6,a7)
 37  siftB(a7,a8)
 38  length(a8,g4)
@@ -50,7 +50,7 @@ NODES
 40  filterA(g2,a9,a10)
 41  filterA(g3,a10,a11)
 42  siftA(a11,a12)
-43  filterB(g2,[g3|a12],a7)
+43  *filterB(g2,[g3|a12],a7)*
 44  siftB(a7,a8)
 45  length(a8,g4)
 
@@ -59,7 +59,7 @@ NODES
 48  filterA(g3,a10,a11)
 49  siftA(a11,a12)
 50  filterB(g2,a12,a13)
-51  siftB([g3|a13],a8)
+51  *siftB([g3|a13],a8)*
 52  length(a8,g4)
 
 53  integers(g5,a9)
@@ -69,9 +69,9 @@ NODES
 57  filterB(g2,a12,a13)
 58  filterB(g3,a13,a14)
 59  siftB(a14,a15)
-60  length([g3|a15],g4)
+60  *length([g3|a15],g4)*
 
-61  integers(g5,a9)
+61  *integers(g5,a9)*
 62  filterA(g2,a9,a10)
 63  filterA(g3,a10,a11)
 64  siftA(a11,a12)
@@ -81,7 +81,7 @@ NODES
 68  length(a15,g6)
 
 69  integers(g7,a16)
-70  filterA(g2,[g5|a16],a10)
+70  *filterA(g2,[g5|a16],a10)*
 71  filterA(g3,a10,a11)
 72  siftA(a11,a12)
 73  filterB(g2,a12,a13)
@@ -91,7 +91,7 @@ NODES
 
 77  integers(g7,a16)
 78  filterA(g2,a16,a17)
-79  filterA(g3,[g5|a17],a11)
+79  *filterA(g3,[g5|a17],a11)*
 80  siftA(a11,a12)
 81  filterB(g2,a12,a13)
 82  filterB(g3,a13,a14)
@@ -101,7 +101,7 @@ NODES
 85  integers(g7,a16)
 86  filterA(g2,a16,a17)
 87  filterA(g3,a17,a18)
-88  siftA([g5|a18],a12)
+88  *siftA([g5|a18],a12)*
 89  filterB(g2,a12,a13)
 90  filterB(g3,a13,a14)
 91  siftB(a14,a15)
@@ -113,7 +113,7 @@ NODES
 96  filterA(g5,a18,a19)
 97  siftA(a19,a20)
 98  filterB(g2,[g5|a20],a13)
-99 filterB(g3,a13,a14)
+99  filterB(g3,a13,a14)
 100 siftB(a14,a15)
 101 length(a15,g6)
 
@@ -121,7 +121,7 @@ NODES
 103 multi((filterA(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a16,a<1,1,2>/a17},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a17,a<1,L,2>/a18})
 104 filterA(g5,a18,a19)
 105 siftA(a19,a20)
-106 filterB(g2,[g5|a20],a13)
+106 *filterB(g2,[g5|a20],a13)*
 107 filterB(g3,a13,a14)
 108 siftB(a14,a15)
 109 length(a15,g6)
@@ -131,7 +131,7 @@ NODES
 112 filterA(g5,a18,a19)
 113 siftA(a19,a20)
 114 filterB(g2,a20,a21)
-115 filterB(g3,[g5|a21],a14)
+115 *filterB(g3,[g5|a21],a14)*
 116 siftB(a14,a15)
 117 length(a15,g6)
 
@@ -141,7 +141,7 @@ NODES
 121 siftA(a19,a20)
 122 filterB(g2,a20,a21)
 123 filterB(g3,a21,a22)
-124 siftB([g5|a22],a15)
+124 *siftB([g5|a22],a15)*
 125 length(a15,g6)
 
 126 integers(g7,a16)
