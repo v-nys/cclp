@@ -372,16 +372,23 @@
       [(and gap (equal? gap 0)) (struct-copy gen parent-gen [number symbolic-gen])]
       [(and gap (> gap 0)) (struct-copy gen parent-gen [number (symsum symbolic-gen gap)])]
       [else #f]))
+  (define parent-gens (gen-node-range parent))
   (define (apply-single! original-gen symbolic-gen)
     (cond
-      [(gen? (gen-node-range parent))
-       (let ([translation  (translate-gen (gen-node-range parent) original-gen symbolic-gen)])
-         (when translation (rename-vertex! graph spc (struct-copy gen-node spc [range translation]))))]))
+      [(gen? parent-gens)
+       (let ([translation  (translate-gen parent-gens original-gen symbolic-gen)])
+         (when translation (rename-vertex! graph spc (struct-copy gen-node spc [range translation]))))]
+      [(gen-range? parent-gens)
+       (let ([translation1 (translate-gen (gen (gen-range-first parent-gens) (gen-range-origin parent-gens)) original-gen symbolic-gen)]
+             [translation2 (translate-gen (gen (gen-range-last parent-gens) (gen-range-origin parent-gens)) original-gen symbolic-gen)])
+         ;; there can be at most one translation
+         (when translation1 (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen-range parent-gens [first (gen-number translation1)])])))
+         (when translation2 (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen-range parent-gens [last (gen-number translation2)])]))))]))
   (for ([key (hash-keys multi-mapping)])
     (apply-single! key (hash-ref multi-mapping key)))
   ;; if the graph still has spc at this point, no mapping took place
   (when (has-vertex? graph spc)
-    (rename-vertex! graph spc (struct-copy gen-node spc [range (gen-node-range parent)]))))
+    (rename-vertex! graph spc (struct-copy gen-node spc [range parent-gens]))))
 (module+ test)
 
 ;; annotates a level of the RDAG, other than the root level
