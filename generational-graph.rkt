@@ -366,17 +366,17 @@
 ; TODO this needs separate tests!
 
 (define (apply-multi-mapping! spc parent multi-mapping graph)
-  ; TODO: implementation is clunky, could do this more elegantly with pattern matching?
+  (define (translate-gen parent-gen original-gen symbolic-gen)
+    (define gap (gen-gap parent-gen original-gen))
+    (cond
+      [(and gap (equal? gap 0)) (struct-copy gen parent-gen [number symbolic-gen])]
+      [(and gap (> gap 0)) (struct-copy gen parent-gen [number (symsum symbolic-gen gap)])]
+      [else #f]))
   (define (apply-single! original-gen symbolic-gen)
     (cond
-      [(and (gen? (gen-node-range parent))
-            (gen-gap (gen-node-range parent) original-gen)
-            (equal? (gen-gap (gen-node-range parent) original-gen) 0))
-       (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen (gen-node-range parent) [number symbolic-gen])]))]
-      [(and (gen? (gen-node-range parent))
-            (gen-gap (gen-node-range parent) original-gen)
-            (> (gen-gap (gen-node-range parent) original-gen) 0))
-       (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen (gen-node-range parent) [number (symsum symbolic-gen (gen-gap (gen-node-range parent) original-gen))])]))]))
+      [(gen? (gen-node-range parent))
+       (let ([translation  (translate-gen (gen-node-range parent) original-gen symbolic-gen)])
+         (when translation (rename-vertex! graph spc (struct-copy gen-node spc [range translation]))))]))
   (for ([key (hash-keys multi-mapping)])
     (apply-single! key (hash-ref multi-mapping key)))
   ;; if the graph still has spc at this point, no mapping took place
