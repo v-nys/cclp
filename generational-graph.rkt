@@ -306,7 +306,7 @@
    (equal? (gen-origin gen1) (gen-origin gen2))
    (let ([gen1n (gen-number gen1)]
          [gen2n (gen-number gen2)])
-     ((cond
+     (cond
         [(equal? gen1 gen2) 0]
         [(and (number? gen1n) (number? gen2n))
          (- gen1n gen2n)]
@@ -316,7 +316,7 @@
          (symsum-num gen1n)]
         [(and (symsum? gen1n) (symsum? gen2n) (equal? (symsum-sym gen1n) (symsum-sym gen2n)))
          (- (symsum-num gen1n) (symsum-num gen2n))]
-        [else #f])))))
+        [else #f]))))
 (module+ test
   (check-false (gen-gap (gen 'l1 1) (gen 0 #f)))
   (check-false (gen-gap (gen 'l1 1) (gen 'l2 1)))
@@ -366,7 +366,22 @@
 ; TODO this needs separate tests!
 
 (define (apply-multi-mapping! spc parent multi-mapping graph)
-  (void))
+  ; TODO: implementation is clunky, could do this more elegantly with pattern matching?
+  (define (apply-single! original-gen symbolic-gen)
+    (cond
+      [(and (gen? (gen-node-range parent))
+            (gen-gap (gen-node-range parent) original-gen)
+            (equal? (gen-gap (gen-node-range parent) original-gen) 0))
+       (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen (gen-node-range parent) [number symbolic-gen])]))]
+      [(and (gen? (gen-node-range parent))
+            (gen-gap (gen-node-range parent) original-gen)
+            (> (gen-gap (gen-node-range parent) original-gen) 0))
+       (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen (gen-node-range parent) [number (symsum symbolic-gen (gen-gap (gen-node-range parent) original-gen))])]))]))
+  (for ([key (hash-keys multi-mapping)])
+    (apply-single! key (hash-ref multi-mapping key)))
+  ;; if the graph still has spc at this point, no mapping took place
+  (when (has-vertex? graph spc)
+    (rename-vertex! graph spc (struct-copy gen-node spc [range (gen-node-range parent)]))))
 (module+ test)
 
 ;; annotates a level of the RDAG, other than the root level
