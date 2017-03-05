@@ -279,22 +279,49 @@
 ;; then, there could be another conjunction or atom with a symbolic sum
 ;; then, another multi whose lowest generation shares a symbol with that symbolic sums
 ;; we cannot compare the symbolic "L's" directly, but we can apply transitivity
-(define (gen< g1 g2)
+(define (gen-number< g1 g2)
   (match* (g1 g2)
     [((? number?) (? number?)) (< g1 g2)]
     [((? number?) (or (? symbol?) (? symsum?))) #t]
-    [((? symbol?) (symsum sym num)) #:when (equal? g1 sym) (> num 1)]
+    [((or (? symbol?) (? symsum?)) (? number?)) #f]
+    [((? symbol?) (? symbol?)) #:when (equal? g1 g2) #f]
+    [((? symbol?) (symsum sym num)) #:when (equal? g1 sym) (>= num 1)]
+    [((symsum sym num) (? symbol?)) #:when (equal? sym g2) (< num 0)]
     [((symsum sym1 num1) (symsum sym2 num2)) #:when (equal? sym1 sym2) (< num1 num2)]
     [(_ _) (error "unexpected comparison of generations")]))
 (module+ test
-  (check-true (gen< 2 3))
-  (check-true (gen< 1000 'l))
-  (check-true (gen< (symsum 'l 0) (symsum 'l 10))))
+  (check-true (gen-number< 2 3))
+  (check-false (gen-number< 3 2))
+  (check-true (gen-number< 1000 'l))
+  (check-false (gen-number< 'l 1000))
+  (check-true (gen-number< (symsum 'l 0) (symsum 'l 10)))
+  (check-false (gen-number< (symsum 'l 10) (symsum 'l 0))))
 
-;; check whether the maximum of a gen-range can be (directly) compared to a given generation
-;; this is necessary to apply the mapping to symbolic maximum generations in multi
-; TODO replace gen + origin with gen struct
-(define (comparable-max? range gen origin) #f)
+;; check whether we can quantify the generational gap between two generations
+;; if so, return the size of the gap
+(define (gen-gap gen1 gen2)
+  (and
+   (gen-origin gen1)
+   (gen-origin gen2)
+   (equal? (gen-origin gen1) (gen-origin gen2))
+   (let ([gen1n (gen-number gen1)]
+         [gen2n (gen-number gen2)])
+     ((cond
+        [(equal? gen1 gen2) 0]
+        [(and (number? gen1n) (number? gen2n))
+         (- gen1n gen2n)]
+        [(and (symbol? gen1n) (symsum? gen2n) (equal? gen1n (symsum-sym gen2n)))
+         (symsum-num gen2n)]
+        [(and (symbol? gen2n) (symsum? gen1n) (equal? gen2n (symsum-sym gen1n)))
+         (symsum-num gen1n)]
+        [(and (symsum? gen1n) (symsum? gen2n) (equal? (symsum-sym gen1n) (symsum-sym gen2n)))
+         (- (symsum-num gen1n) (symsum-num gen2n))]
+        [else #f])))))
+(module+ test
+  (check-false (gen-gap (gen 'l1 1) (gen 0 #f)))
+  (check-false (gen-gap (gen 'l1 1) (gen 'l2 1)))
+  (check-false (gen-gap (gen '3 1) (gen 2 2)))
+  (check-equal? (gen-gap (gen (symsum 'l1 3) 1) (gen 'l1 1)) 3))
 
 ;; minimum generation in the range of a conjunct
 (define (local-min c)
@@ -338,7 +365,8 @@
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen]))]))
 ; TODO this needs separate tests!
 
-(define (apply-multi-mapping! spc parent multi-mapping graph) (void))
+(define (apply-multi-mapping! spc parent multi-mapping graph)
+  (void))
 (module+ test)
 
 ;; annotates a level of the RDAG, other than the root level
@@ -384,8 +412,8 @@
 (define (annotate-new-multi! graph l-postfix new-multi mapping)
   (define parents (get-neighbors (transpose graph) new-multi))
   (define bare-multi (gen-node-conjunct new-multi))
-  (define parent-minimum (apply (curry generic-minmax gen<) (map local-min parents)))
-  (define parent-maximum (apply (curry generic-minmax (compose not gen<)) (map local-max parents)))
+  (define parent-minimum (apply (curry generic-minmax gen-number<) (map local-min parents)))
+  (define parent-maximum (apply (curry generic-minmax (compose not gen-number<)) (map local-max parents)))
   (define parent-origin (let ([parent-gen (gen-node-range (first parents))]) (if (gen? parent-gen) (gen-origin parent-gen) (gen-range-origin parent-gen)))) ; first, but could pick any one
   (define symbolic-maximum (string->symbol (format "l~a" l-postfix)))
   (define multi-parent (findf (λ (p) (multi? (gen-node-conjunct p))) parents))
@@ -400,7 +428,7 @@
   (set! l-postfix (add1 l-postfix))
   (define updated-multi (struct-copy gen-node new-multi [range range]))
   (rename-vertex! graph new-multi updated-multi)
-  (hash-set mapping (cons parent-maximum parent-origin) symbolic-maximum))
+  (hash-set mapping (gen parent-maximum parent-origin) symbolic-maximum))
 ; TODO add a test for o-primes!
 (module+ test
   (set! almost-annotated (graph-copy almost-annotated:val))
