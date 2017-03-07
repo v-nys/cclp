@@ -451,7 +451,7 @@
   (define updated-multi (struct-copy gen-node new-multi [range range]))
   (rename-vertex! graph new-multi updated-multi)
   (hash-set mapping (gen parent-maximum parent-origin) symbolic-maximum))
-; TODO add a test for o-primes!
+; TODO add tests for o-primes
 (module+ test
   (set! almost-annotated (graph-copy almost-annotated:val))
   (require (prefix-in almost-annotated-m: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated-with-multi.rkt"))
@@ -467,41 +467,54 @@
   (check-equal? almost-annotated almost-annotated-with-multi))
 
 ;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full generational graph
-(define (annotate-general! skeleton root relevant-targets rdag-depth) (void))
-;  (define l-postfix 1)
-;  (define annotated-root (identified-abstract-conjunct-with-gen-range root (gen-range 0 0 #f)))
-;  (rename-vertex! skeleton root annotated-root)
-;  (map
-;   (curry annotate-level! skeleton annotated-root l-postfix relevant-targets)
-;   (range 1 rdag-depth)
-;   (range 2 (add1 rdag-depth))))
-;(module+ test
-;  (require
-;    (prefix-in sl-graph-annotated: "analysis-trees/sameleaves-no-multi-branch-gen-tree.rkt"))
-;  (define sl-graph-annotated (graph-copy sl-graph-skeleton))
-;  (annotate-general! sl-graph-annotated sl-skeleton-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length sl-branch))
-;  (check-equal?
-;   sl-graph-annotated
-;   sl-graph-annotated:val)
-;  (require
-;    (prefix-in sl-multi-branch-tree: "analysis-trees/sameleaves-multi-branch.rkt"))
-;  (define sl-multi-branch (active-branch sl-multi-branch-tree:val))
-;  (set! sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
-;  (annotate-general! sl-multi-graph-annotated sl-skeleton-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length sl-multi-branch))
-;  (check-equal?
-;   sl-multi-graph-annotated
-;   sl-multi-graph-annotated:val)
-;  (require
-;    (prefix-in o-primes-graph-annotated: "analysis-trees/optimus-primes-branch-gen-graph.rkt"))
-;  (define o-primes-graph-annotated (graph-copy o-primes-graph-skeleton))
-;  (annotate-general!
-;   o-primes-graph-annotated
-;   o-primes-skeleton-root
-;   o-primes-candidate-targets
-;   (length o-primes-branch))
-;  (check-equal?
-;   o-primes-graph-annotated
-;   o-primes-graph-annotated:val))
+; TODO: add some really tough cases
+(define (annotate-general! skeleton root relevant-targets rdag-depth)
+  (define l-postfix 1)
+  (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
+  (rename-vertex! skeleton root annotated-root)
+  (map
+   (curry annotate-level! skeleton annotated-root l-postfix relevant-targets)
+   (range 1 rdag-depth)
+   (range 2 (add1 rdag-depth))))
+(module+ test
+  (require
+    (prefix-in sl-graph-annotated: "analysis-trees/sameleaves-no-multi-branch-gen-tree.rkt"))
+  (define sl-graph-annotated (graph-copy sl-graph-skeleton))
+  (annotate-general! sl-graph-annotated sl-skeleton-root (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) (length sl-branch))
+  (check-equal?
+   sl-graph-annotated
+   sl-graph-annotated:val)
+  (require
+    (prefix-in sl-multi-branch-tree: "analysis-trees/sameleaves-multi-branch.rkt"))
+  (define sl-multi-branch (active-branch sl-multi-branch-tree:val))
+  (set! sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
+  (annotate-general! sl-multi-graph-annotated sl-skeleton-root (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) (length sl-multi-branch))
+  (check-equal?
+   sl-multi-graph-annotated
+   sl-multi-graph-annotated:val)
+  (require
+    (prefix-in o-primes-graph-annotated: "analysis-trees/optimus-primes-branch-gen-graph.rkt"))
+  (define o-primes-graph-annotated (graph-copy o-primes-graph-skeleton))
+  (annotate-general!
+   o-primes-graph-annotated
+   o-primes-skeleton-root
+   o-primes-candidate-targets
+   (length o-primes-branch))
+  (check-equal?
+   o-primes-graph-annotated
+   o-primes-graph-annotated:val)
+  (require (prefix-in fake-primes-skeleton: "analysis-trees/fake-primes-gen-graph-skeleton.rkt"))
+  (require (prefix-in fake-primes-annotated: "analysis-trees/fake-primes-gen-graph.rkt"))
+  (define fake-primes-annotated (graph-copy fake-primes-skeleton:val))
+  (define fake-primes-root (gen-node (abstract-atom 'fakeprimes (list (g 3) (a 2))) 1 #f #t))
+  (annotate-general! fake-primes-annotated fake-primes-root (abstract-atom 'sift (list (abstract-function 'cons (list (g 2) (a 1))) (a 2))) 19)
+  (check-equal?
+   fake-primes-annotated
+   fake-primes-annotated:val)
+  (require (prefix-in sameleaves-extended-skeleton: "analysis-trees/sameleaves-multi-branch-gen-tree-extended-1-skeleton.rkt"))
+  (require (prefix-in sameleaves-extended: "analysis-trees/sameleaves-multi-branch-gen-tree-extended-1.rkt"))
+  (define sameleaves-extended-annotated (graph-copy sameleaves-extended-skeleton:val))
+  (annotate-general! sameleaves-extended-annotated sl-skeleton-root (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 16))
 
 ;; extract a level from a rooted DAG
 ;; the lowest level that can be extracted is 1 (the root)
