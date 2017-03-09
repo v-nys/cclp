@@ -3,7 +3,7 @@
 % this is meant to test the annotation step in some more complex scenarios
 % writing out enough levels of the normal primes program would take a lot more work
 NODES
-1  fakeprimes(g3,a2) 0 #f
+1  *fakeprimes(g3,a2)* 0 #f
 
 2  integers(g1,a1) 0 #f
 3  *sift([g2|a1],a2)* 0 #f

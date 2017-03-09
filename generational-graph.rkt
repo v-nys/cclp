@@ -507,7 +507,7 @@
   (require (prefix-in fake-primes-annotated: "analysis-trees/fake-primes-gen-graph.rkt"))
   (define fake-primes-annotated (graph-copy fake-primes-skeleton:val))
   (define fake-primes-root (gen-node (abstract-atom 'fakeprimes (list (g 3) (a 2))) 1 #f #t))
-  (annotate-general! fake-primes-annotated fake-primes-root (abstract-atom 'sift (list (abstract-function 'cons (list (g 2) (a 1))) (a 2))) 19)
+  (annotate-general! fake-primes-annotated fake-primes-root (list (gen-node (abstract-atom 'sift (list (abstract-function 'cons (list (g 2) (a 1))) (a 2))) 3 (gen 0 #f) #t)) 19)
   (check-equal?
    fake-primes-annotated
    fake-primes-annotated:val)
