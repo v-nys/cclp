@@ -26,6 +26,7 @@
   scribble/srcdoc
   graph
   racket-list-utils/utils
+  racket/logging
   racket-tree-utils/src/tree
   "abstract-analysis.rkt"
   "abstract-domain-ordering.rkt"
@@ -307,16 +308,16 @@
    (let ([gen1n (gen-number gen1)]
          [gen2n (gen-number gen2)])
      (cond
-        [(equal? gen1 gen2) 0]
-        [(and (number? gen1n) (number? gen2n))
-         (- gen1n gen2n)]
-        [(and (symbol? gen1n) (symsum? gen2n) (equal? gen1n (symsum-sym gen2n)))
-         (symsum-num gen2n)]
-        [(and (symbol? gen2n) (symsum? gen1n) (equal? gen2n (symsum-sym gen1n)))
-         (symsum-num gen1n)]
-        [(and (symsum? gen1n) (symsum? gen2n) (equal? (symsum-sym gen1n) (symsum-sym gen2n)))
-         (- (symsum-num gen1n) (symsum-num gen2n))]
-        [else #f]))))
+       [(equal? gen1 gen2) 0]
+       [(and (number? gen1n) (number? gen2n))
+        (- gen1n gen2n)]
+       [(and (symbol? gen1n) (symsum? gen2n) (equal? gen1n (symsum-sym gen2n)))
+        (symsum-num gen2n)]
+       [(and (symbol? gen2n) (symsum? gen1n) (equal? gen2n (symsum-sym gen1n)))
+        (symsum-num gen1n)]
+       [(and (symsum? gen1n) (symsum? gen2n) (equal? (symsum-sym gen1n) (symsum-sym gen2n)))
+        (- (symsum-num gen1n) (symsum-num gen2n))]
+       [else #f]))))
 (module+ test
   (check-false (gen-gap (gen 'l1 1) (gen 0 #f)))
   (check-false (gen-gap (gen 'l1 1) (gen 'l2 1)))
@@ -351,7 +352,14 @@
    'l1))
 
 (define (increment-rel-tg-unfolding! id-conjunct ann-parent relevant-targets graph)
+  (define (gen-add1 gen-num)
+    (match gen-num
+      [(? number?) (add1 gen-num)]
+      [(? symbol?) (symsum gen-num 1)]
+      [(symsum sym num) (symsum sym (add1 num))]))
   (match-define (gen-node parent-conjunct parent-id parent-gen parent-unfolded?) ann-parent)
+  (displayln (format "parent conjunct is: ~a" parent-conjunct))
+  (displayln (format "parent gen is: ~a" parent-gen))
   (cond
     [(member ann-parent relevant-targets)
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen 1 parent-id)]))]
@@ -359,10 +367,11 @@
       (abstract-atom? parent-conjunct)
       (findf (λ (rel-tg) (and (equal? (gen-origin parent-gen) (gen-node-id rel-tg)) (renames-with-corresponding-args? parent-conjunct (gen-node-conjunct rel-tg)))) relevant-targets))
      (if parent-unfolded? ; if parent renames a relevant target atom, it cannot be a multi!
-         (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen (add1 (gen-number parent-gen)) (gen-origin parent-gen))]))
+         (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen (gen-add1 (gen-number parent-gen)) (gen-origin parent-gen))]))
          (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen])))]
-    [else
-     (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen]))]))
+    [(abstract-atom? parent-conjunct)
+     (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen]))]
+    [else (void)]))
 ; TODO this needs separate tests!
 
 (define (apply-multi-mapping! spc parent multi-mapping graph)
