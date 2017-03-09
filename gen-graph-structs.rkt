@@ -170,10 +170,11 @@
  (struct*-doc
   symsum
   ([sym symbol?]
-   [num exact-nonnegative-integer?])
-  @{A sum of a symbol @racket[sym] and a number @racket[num].
-     As symbols are used to represent the maximum generation inside a multi abstraction,
-     sums of symbols and numbers can be used to indicate the generation of related conjuncts outside the abstraction.}))
+   [num exact-integer?])
+  @{A sum of a symbol @racket[sym] and a whole number @racket[num].
+     As symbols are used to represent certain conjunctions inside a multi abstraction,
+     sums of symbols and numbers can be used to indicate the generation of related conjuncts outside the abstraction,
+     or of unfolded multi abstractions.}))
 
 (struct index-range (start end-before)
   #:methods
