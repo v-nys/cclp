@@ -386,9 +386,9 @@
     [(and (abstract-atom? (gen-node-conjunct id-conjunct)))
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen (gen-range-first parent-gen) (gen-range-origin parent-gen))]))]
     [(and (multi? (gen-node-conjunct id-conjunct)) (multi-ascending? parent-conjunct))
-     (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen-range (gen-add1 (gen-range-first parent-gen)) (gen-range-last parent-gen))]))]
+     (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (struct-copy gen-range parent-gen [first (gen-add1 (gen-range-first parent-gen))])]))]
     [else
-     (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen-range (gen-sub1 (gen-range-first parent-gen)) (gen-range-last parent-gen))]))]))
+     (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (struct-copy gen-range parent-gen [first (gen-sub1 (gen-range-first parent-gen))])]))]))
 ; TODO this needs separate tests!
 
 (define (apply-multi-mapping! spc parent multi-mapping graph)
@@ -473,7 +473,7 @@
   (define ascending?
     (if multi-parent
         ((compose1 gen-range-ascending? gen-node-range) multi-parent)
-        (< (gen-number (gen-node-range (first parents))) (gen-number (gen-node-range (last parents))))))
+        (gen-number< (gen-number (gen-node-range (first parents))) (gen-number (gen-node-range (last parents))))))
   (define range
     (if ascending?
         (gen-range parent-minimum (if (not multi-parent) symbolic-l parent-maximum) parent-origin ascending?)
@@ -481,7 +481,7 @@
   (set! l-postfix (add1 l-postfix))
   (define updated-multi (struct-copy gen-node new-multi [range range]))
   (rename-vertex! graph new-multi updated-multi)
-  (when (not multi-parent) (hash-set mapping (gen parent-maximum parent-origin) symbolic-l)))
+  (if (not multi-parent) (hash-set mapping (gen parent-maximum parent-origin) symbolic-l) mapping))
 ; TODO add tests for o-primes
 (module+ test
   (set! almost-annotated (graph-copy almost-annotated:val))
