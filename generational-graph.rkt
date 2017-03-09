@@ -197,10 +197,11 @@
     (interpret-abstract-atom "atom(γ5,γ6,α7,α8)"))))
 
 ;; checks whether any descendant of root in graph is a renaming of root and whether shared vars are in the same position
-(define (descendant-renames-with-corresponding-args? graph root)
+;; target is assumed to be either equal to root, or descendant of root which renames it with corresponding args
+(define (descendant-renames-with-corresponding-args? graph root [target root])
   (define tc (transitive-closure graph))
   (hash-set! tc (list root root) #f)
-  (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) root))) (hash-keys tc))))
+  (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) target))) (hash-keys tc))))
   (define just-atoms (map gen-node-conjunct reached))
   (define root-atom (gen-node-conjunct root))
   (ormap (λ (a) (and (abstract-atom? root-atom) (abstract-atom? a) (renames-with-corresponding-args? root-atom a))) just-atoms))
@@ -367,15 +368,14 @@
       [(symsum sym 1) sym]
       [(symsum sym num) (symsum sym (sub1 num))]))
   (match-define (gen-node parent-conjunct parent-id parent-gen parent-unfolded?) ann-parent)
-  (displayln (format "parent conjunct is: ~a" parent-conjunct))
-  (displayln (format "parent gen is: ~a" parent-gen))
+  
   (cond
     [(member ann-parent relevant-targets)
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen 1 parent-id)]))]
     [(and
       (abstract-atom? parent-conjunct)
-      (findf (λ (rel-tg) (and (equal? (gen-origin parent-gen) (gen-node-id rel-tg)) (renames-with-corresponding-args? parent-conjunct (gen-node-conjunct rel-tg)))) relevant-targets)
-      (descendant-renames-with-corresponding-args? graph ann-parent)
+      (let ([tg (findf (λ (rel-tg) (and (equal? (gen-origin parent-gen) (gen-node-id rel-tg)) (renames-with-corresponding-args? parent-conjunct (gen-node-conjunct rel-tg)))) relevant-targets)])
+        (and tg (descendant-renames-with-corresponding-args? graph tg ann-parent)))
       (multiple-direct-live-lines? graph ann-parent live-depth curr-depth))
      (if parent-unfolded?
          (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen (gen-add1 (gen-number parent-gen)) (gen-origin parent-gen))]))
@@ -503,10 +503,9 @@
   (define l-postfix 1)
   (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
   (rename-vertex! skeleton root annotated-root)
-  (map
-   (curry annotate-level! skeleton annotated-root l-postfix relevant-targets rdag-depth)
-   (range 1 rdag-depth)
-   (range 2 (add1 rdag-depth))))
+  (for ([parent-level (range 1 rdag-depth)]
+        [current-level (range 2 (add1 rdag-depth))])
+    (annotate-level! skeleton annotated-root l-postfix relevant-targets rdag-depth parent-level current-level)))
 (module+ test
   (require
     (prefix-in sl-graph-annotated: "analysis-trees/sameleaves-no-multi-branch-gen-tree.rkt"))
@@ -538,7 +537,12 @@
   (require (prefix-in fake-primes-annotated: "analysis-trees/fake-primes-gen-graph.rkt"))
   (define fake-primes-annotated (graph-copy fake-primes-skeleton:val))
   (define fake-primes-root (gen-node (abstract-atom 'fakeprimes (list (g 3) (a 2))) 1 #f #t))
+  (define fake-primes-annotated-root (gen-node (abstract-atom 'fakeprimes (list (g 3) (a 2))) 1 (gen 0 #f) #t))
   (annotate-general! fake-primes-annotated fake-primes-root (list (gen-node (abstract-atom 'sift (list (abstract-function 'cons (list (g 2) (a 1))) (a 2))) 3 (gen 0 #f) #t)) 19)
+  (for ([lv (range 1 19)])
+    (check-equal?
+     (sort (rdag-level fake-primes-annotated fake-primes-annotated-root lv) < #:key gen-node-id)
+     (sort (rdag-level fake-primes-annotated:val fake-primes-annotated-root lv)  < #:key gen-node-id)))
   (check-equal?
    fake-primes-annotated
    fake-primes-annotated:val)

@@ -10,113 +10,113 @@ NODES
 4  len(a2,g3) 0 #f
 
 5  integers(g1,a1) 0 #f
-6  filter(g2,a1,a2) 1 2
-7  *sift([g3|a2],a3)* 1 2
-8  len(a3,g4) 0 #f
+6  filter(g2,a1,a3) 1 3
+7  *sift([g3|a3],a4)* 1 3
+8  len(a4,g4) 0 #f
 
 9  integers(g1,a1) 0 #f
-10  filter(g2,a1,a2) 1 2
-11 filter(g3,a2,a3) 2 2
-12 *sift([g4|a3],a4)* 2 2
-13 len(a4,g5) 0 #f
+10 filter(g2,a1,a3) 1 3
+11 filter(g3,a3,a5) 2 3
+12 *sift([g4|a5],a6)* 2 3
+13 len(a6,g5) 0 #f
 
 14 integers(g1,a1) 0 #f
-15 filter(g2,a1,a2)1 2
-16 filter(g3,a2,a3) 2 2
-17 filter(g4,a3,a4) 3 2
-18 sift([g5|a4],a5) 3 2
-19 len(a5,g6) 0 #f
+15 filter(g2,a1,a3) 1 3
+16 filter(g3,a3,a5) 2 3
+17 filter(g4,a5,a7) 3 3
+18 sift([g5|a7],a8) 3 3
+19 len(a8,g6) 0 #f
 
 20 integers(g1,a1) 0 #f
-21 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a1,a<1,1,2>/a2},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a2,a<1,L,2>/a3}) 1:l1:#t 2
-22 filter(g4,a3,a4) l1+1 2
-23 *sift([g5|a4],a5)* l1+1 2
-24 len(a5,g6) 0 #f
+21 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a1,a<1,1,2>/a3},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a3,a<1,L,2>/a5}) 1:l1:#t 3
+22 filter(g4,a5,a7) l1+1 3
+23 *sift([g5|a7],a8)* l1+1 3
+24 len(a8,g6) 0 #f
 
 25 integers(g1,a1) 0 #f
-26 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a1,a<1,1,2>/a2},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a2,a<1,L,2>/a3}) 1:l1:#t 2
-27 filter(g4,a3,a4) l1+1 2
-28 filter(g5,a4,a5) l1+2 2
-29 sift(a5,a6) l1+2 2
-30 len([g5|a6],g6) 0 #f
+26 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a1,a<1,1,2>/a3},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g3,a<1,L,1>/a3,a<1,L,2>/a5}) 1:l1:#t 3
+27 filter(g4,a5,a7) l1+1 3
+28 filter(g5,a7,a9) l1+2 3
+29 sift(a9,a10) l1+2 3
+30 len([g5|a10],g6) 0 #f
 
 31 integers(g1,a1) 0 #f
-32 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a1,a<1,1,2>/a2},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4}) 1:l1+1:#t 2
-33 filter(g5,a4,a5) l1+2 2
-34 sift(a5,a6) l1+2 2
-35 *len([g5|a6],g6)* 0 #f
+32 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a1,a<1,1,2>/a3},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7}) 1:l1+1:#t 3
+33 filter(g5,a7,a9) l1+2 3
+34 sift(a9,a10) l1+2 3
+35 *len([g5|a10],g6)* 0 #f
 
 36 *integers(g1,a1)* 0 #f
-37 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a1,a<1,1,2>/a2},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4}) 1:l1+1:#t 2
-38 filter(g5,a4,a5) l1+2 2
-39 sift(a5,a6) l1+2 2
-40 len(a6,g7) 0 #f
+37 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/a1,a<1,1,2>/a3},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7}) 1:l1+1:#t 2
+38 filter(g5,a7,a9) l1+2 2
+39 sift(a9,a10) l1+2 2
+40 len(a10,g7) 0 #f
 
-41 integers(g8,a8) 0 #f
-42 *multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/[g1|a8],a<1,1,2>/a2},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4})* 1:l1+1:#t 2
-43 filter(g5,a4,a5) l1+2 2
-44 sift(a5,a6) l1+2 2
-45 len(a6,g7) 0 #f
+41 integers(g1000,a1000) 0 #f
+42 *multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{g<1,1,1>/g2,a<1,1,1>/[g1|a1000],a<1,1,2>/a3},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7})* 1:l1+1:#t 3
+43 filter(g5,a7,a9) l1+2 3
+44 sift(a9,a10) l1+2 3
+45 len(a10,g7) 0 #f
 
-46 integers(g8,a8) 0 #f
-47 *filter(g2,[g1|a8],a2)* 1 2
-48 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/a2},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4}) 2:l1+1:#t 2
-49 filter(g5,a4,a5) l1+2 2
-50 sift(a5,a6) l1+2 2
-51 len(a6,g7) 0 #f
+46 integers(g1000,a1000) 0 #f
+47 *filter(g2,[g1|a1000],a3)* 1 3
+48 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/a3},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7}) 2:l1+1:#t 3
+49 filter(g5,a7,a9) l1+2 3
+50 sift(a9,a10) l1+2 3
+51 len(a10,g7) 0 #f
 
-52 integers(g8,a8) 0 #f
-53 filter(g2,a8,a9) 1 2
-54 *multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a9]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4})* 2:l1+1:#t 2
-55 filter(g5,a4,a5) l1+2 2
-56 sift(a5,a6) l1+2 2
-57 len(a6,g7) 0 #f
+52 integers(g1000,a1000) 0 #f
+53 filter(g2,a1000,a1001) 1 3
+54 *multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a1001]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7})* 2:l1+1:#t 3
+55 filter(g5,a7,a9) l1+2 3
+56 sift(a9,a10) l1+2 3
+57 len(a10,g7) 0 #f
 
-58 integers(g8,a8) 0 #f
-59 filter(g2,a8,a9) 1 2
-60 *filter(g10,[g1|a9],a10)* 2 2
-61 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/a10},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4}) 3:l1+1:#t 2
-62 filter(g5,a4,a5) l1+2 2
-63 sift(a5,a6) l1+2 2
-64 len(a6,g7) 0 #f
+58 integers(g1000,a1000) 0 #f
+59 filter(g2,a1000,a1001) 1 3
+60 *filter(g10,[g1|a1001],a1002)* 2 3
+61 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/a1002},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7}) 3:l1+1:#t 3
+62 filter(g5,a7,a9) l1+2 3
+63 sift(a9,a10) l1+2 3
+64 len(a10,g7) 0 #f
 
-65 integers(g8,a8) 0 #f
-66 filter(g2,a8,a9) 1 2
-67 filter(g10,a9,a11) 2 2
-68 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a11]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4}) 3:l1+1:#t 2
-69 filter(g5,a4,a5) l1+2 2
-70 sift(a5,a6) l1+2 2
-71 len(a6,g7) 0 #f
+65 integers(g1000,a1000) 0 #f
+66 filter(g2,a1000,a1001) 1 3
+67 filter(g10,a1001,a1003) 2 3
+68 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a1003]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7}) 3:l1+1:#t 3
+69 filter(g5,a7,a9) l1+2 3
+70 sift(a9,a10) l1+2 3
+71 len(a10,g7) 0 #f
 
-72 integers(g8,a8) 0 #f
-73 multi((filter(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a8,a<2,1,2>/a9},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g10,a<2,L,1>/a9,a<2,L,2>/a11}) 1:l2:#t 2
-74 *multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a11]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4})* l2+1:l1+1:#t 2
-75 filter(g5,a4,a5) l1+2 2
-76 sift(a5,a6) l1+2 2
-77 len(a6,g7) 0 #f
+72 integers(g1000,a1000) 0 #f
+73 multi((filter(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a1000,a<2,1,2>/a1001},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g10,a<2,L,1>/a1001,a<2,L,2>/a1003}) 1:l2:#t 3
+74 *multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a1003]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7})* l2+1:l1+1:#t 3
+75 filter(g5,a7,a9) l1+2 3
+76 sift(a9,a10) l1+2 3
+77 len(a10,g7) 0 #f
 
-78 integers(g8,a8) 0 #f
-79 multi((filter(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a8,a<2,1,2>/a9},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g10,a<2,L,1>/a9,a<2,L,2>/a11}) 1:l2:#t 2
-80 *filter(g12,[g1|a11],a12)* l2+1 2
-81 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/a12},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4}) l2+2:l1+1:#t 2
-82 filter(g5,a4,a5) l1+2 2
-83 sift(a5,a6) l1+2 2
-84 len(a6,g7) 0 #f
+78 integers(g1000,a1000) 0 #f
+79 multi((filter(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a1000,a<2,1,2>/a1001},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g10,a<2,L,1>/a1001,a<2,L,2>/a1003}) 1:l2:#t 3
+80 *filter(g12,[g1|a1003],a12)* l2+1 3
+81 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/a12},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7}) l2+2:l1+1:#t 3
+82 filter(g5,a7,a9) l1+2 3
+83 sift(a9,a10) l1+2 3
+84 len(a10,g7) 0 #f
 
-85 integers(g8,a8) 0 #f
-86 multi((filter(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a8,a<2,1,2>/a9},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g10,a<2,L,1>/a9,a<2,L,2>/a11}) 1:l2:#t 2
-87 filter(g12,a11,a13) l2+1 2
-88 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a13]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4}) l2+2:l1+1:#t 2
-89 filter(g5,a4,a5) l1+2 2
-90 sift(a5,a6) l1+2 2
-91 len(a6,g7) 0 #f
+85 integers(g1000,a1000) 0 #f
+86 multi((filter(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a1000,a<2,1,2>/a1001},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g10,a<2,L,1>/a1001,a<2,L,2>/a1003}) 1:l2:#t 3
+87 filter(g12,a1003,a13) l2+1 3
+88 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a13]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7}) l2+2:l1+1:#t 3
+89 filter(g5,a7,a9) l1+2 3
+90 sift(a9,a10) l1+2 3
+91 len(a10,g7) 0 #f
 
-92 integers(g8,a8) 0 #f
-93 multi((filter(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a8,a<2,1,2>/a9},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g12,a<2,L,1>/a11,a<2,L,2>/a13}) 1:l2+1:#t 2
-94 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a13]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a3,a<1,L,2>/a4}) l2+2:l1+1:#t 2
-95 filter(g5,a4,a5) l1+2 2
-96 sift(a5,a6) l1+2 2
-97 len(a6,g7) 0 #f
+92 integers(g1000,a1000) 0 #f
+93 multi((filter(g<2,i,1>,a<2,i,1>,a<2,i,2>)),#t,{g<2,1,1>/g2,a<2,1,1>/a1000,a<2,1,2>/a1001},{a<2,i+1,1>/a<2,i,2>},{g<2,L,1>/g12,a<2,L,1>/a1003,a<2,L,2>/a13}) 1:l2+1:#t 3
+94 multi((filter(g<1,i,1>,a<1,i,1>,a<1,i,2>)),#t,{a<1,1,1>/[g1|a13]},{a<1,i+1,1>/a<1,i,2>},{g<1,L,1>/g4,a<1,L,1>/a5,a<1,L,2>/a7}) l2+2:l1+1:#t 3
+95 filter(g5,a7,a9) l1+2 3
+96 sift(a9,a10) l1+2 3
+97 len(a10,g7) 0 #f
 
 EDGES
 1 -> 2, 3, 4.
