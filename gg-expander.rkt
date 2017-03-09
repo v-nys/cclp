@@ -45,7 +45,8 @@
   (syntax-parse stx
     [(_ num:number) (syntax/loc stx num)]
     [(_ sym:str) (syntax/loc stx (->symbol sym))]
-    [(_ sym:str num:number) (syntax/loc stx (symsum (->symbol sym) num))]))
+    [(_ sym:str "+" num:number) (syntax/loc stx (symsum (->symbol sym) num))]
+    [(_ sym:str "-" num:number) (syntax/loc stx (symsum (->symbol sym) (- num)))]))
 (provide recursion-depth)
 
 (define-macro (symbol-sum SYM NUM) (syntax/loc caller-stx (symsum SYM NUM)))

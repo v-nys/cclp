@@ -443,19 +443,19 @@
     (prefix-in sl-multi-graph-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree.rkt"))
   (define sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
   (rename-vertex! sl-multi-graph-annotated sl-skeleton-root sl-annotated-root)
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 1 2)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 1 2)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 2)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 2))
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 2 3)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 2 3)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 3)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 3))
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 3 4)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 3 4)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 4)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 4))
-  (annotate-level! almost-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 5 6)
+  (annotate-level! almost-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 5 6)
   (check-equal?
    (rdag-level almost-annotated sl-annotated-root 6)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 6)))

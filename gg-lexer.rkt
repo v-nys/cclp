@@ -27,7 +27,7 @@
           (:seq "a" "<" (:+ digits) "," (:* whitespace) (:or "1" "i" "i+1" "L") "," (:* whitespace) (:+ digits) ">"))
      "multi")
     (token 'SYMBOL lexeme)]
-   [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "->" "+" ":" "*" "multi" "NODES" "EDGES") (token lexeme lexeme)]
+   [(:or "(" ")" "[" "]" "|" "{" "}" "," "/" "." "->" "+" "-" ":" "*" "multi" "NODES" "EDGES") (token lexeme lexeme)]
    ["#t" (token 'BOOLEAN #t)]
    ["#f" (token 'BOOLEAN #f)]
    [(:seq "g" (:+ digits)) (token 'AVAR-G (string->number (substring lexeme 1)))]
