@@ -463,7 +463,8 @@
 ;; FIXME: should only symbolize when all parents are atoms
 ;; otherwise, an offset is best
 (define (annotate-new-multi! graph l-postfix new-multi mapping)
-  (define parents (get-neighbors (transpose graph) new-multi))
+  ;; parents must be ordered to check whether generations are ascending
+  (define parents (sort (get-neighbors (transpose graph) new-multi) < #:key gen-node-id))
   (define bare-multi (gen-node-conjunct new-multi))
   (define parent-minimum (apply (curry generic-minmax gen-number<) (map local-min parents)))
   (define parent-maximum (apply (curry generic-minmax (compose not gen-number<)) (map local-max parents)))
@@ -498,7 +499,6 @@
   (check-equal? almost-annotated almost-annotated-with-multi))
 
 ;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full generational graph
-; TODO: add some really tough cases
 (define (annotate-general! skeleton root relevant-targets rdag-depth)
   (define l-postfix 1)
   (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
