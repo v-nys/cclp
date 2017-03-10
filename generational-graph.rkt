@@ -522,24 +522,25 @@
   (require
     (prefix-in o-primes-graph-annotated: "analysis-trees/optimus-primes-branch-gen-graph.rkt"))
   (define o-primes-graph-annotated (graph-copy o-primes-graph-skeleton))
-  ;  (annotate-general!
-  ;   o-primes-graph-annotated
-  ;   o-primes-skeleton-root
-  ;   o-primes-candidate-targets
-  ;   (length o-primes-branch))
-  ;  (check-equal?
-  ;   o-primes-graph-annotated
-  ;   o-primes-graph-annotated:val)
+  (annotate-general!
+   o-primes-graph-annotated
+   o-primes-skeleton-root
+   o-primes-candidate-targets
+   (length o-primes-branch))
+  (define o-primes-annotated-root (struct-copy gen-node o-primes-skeleton-root [range (gen 0 #f)]))
+  (for ([lv (range 1 22)])
+    (check-equal?
+     (sort (rdag-level o-primes-graph-annotated o-primes-annotated-root lv) < #:key gen-node-id)
+     (sort (rdag-level o-primes-graph-annotated:val o-primes-annotated-root lv)  < #:key gen-node-id)))
+  (check-equal?
+   o-primes-graph-annotated
+   o-primes-graph-annotated:val)
   (require (prefix-in fake-primes-skeleton: "analysis-trees/fake-primes-gen-graph-skeleton.rkt"))
   (require (prefix-in fake-primes-annotated: "analysis-trees/fake-primes-gen-graph.rkt"))
   (define fake-primes-annotated (graph-copy fake-primes-skeleton:val))
   (define fake-primes-root (gen-node (abstract-atom 'fakeprimes (list (g 3) (a 2))) 1 #f #t))
   (define fake-primes-annotated-root (gen-node (abstract-atom 'fakeprimes (list (g 3) (a 2))) 1 (gen 0 #f) #t))
   (annotate-general! fake-primes-annotated fake-primes-root (list (gen-node (abstract-atom 'sift (list (abstract-function 'cons (list (g 2) (a 1))) (a 2))) 3 (gen 0 #f) #t)) 19)
-  (for ([lv (range 1 19)])
-    (check-equal?
-     (sort (rdag-level fake-primes-annotated fake-primes-annotated-root lv) < #:key gen-node-id)
-     (sort (rdag-level fake-primes-annotated:val fake-primes-annotated-root lv)  < #:key gen-node-id)))
   (check-equal?
    fake-primes-annotated
    fake-primes-annotated:val)
@@ -557,16 +558,16 @@
         (list root)
         (apply append (map (λ (s) (rdag-level-aux rdag s level (add1 depth-acc))) (get-neighbors rdag root)))))
   (remove-duplicates (rdag-level-aux rdag root level 1)))
-;(module+ test
-;  (check-equal?
-;   (rdag-level sl-graph-skeleton sl-skeleton-root 1)
-;   (list sl-skeleton-root))
-;  (check-equal?
-;   (sort (rdag-level sl-graph-skeleton sl-skeleton-root 2) < #:key identified-abstract-conjunct-id-number)
-;   (list
-;    (identified-abstract-conjunct (abstract-atom 'collect (list (g 1) (a 1))) 2)
-;    (identified-abstract-conjunct (abstract-atom 'collect (list (g 2) (a 2))) 3)
-;    (identified-abstract-conjunct (abstract-atom 'eq (list (a 1) (a 2))) 4))))
+(module+ test
+  (check-equal?
+   (rdag-level sl-graph-skeleton sl-skeleton-root 1)
+   (list sl-skeleton-root))
+  (check-equal?
+   (sort (rdag-level sl-graph-skeleton sl-skeleton-root 2) < #:key gen-node-id)
+   (list
+    (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t)
+    (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 #f #f)
+    (gen-node (abstract-atom 'eq (list (a 1) (a 2))) 4 #f #f))))
 
 ;; replace sequences with the same origin with multi abstractions at a given level of the generational tree
 ;(define (gen-tree-level->generalized-conjunction lvl)
