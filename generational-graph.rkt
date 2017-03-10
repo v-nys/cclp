@@ -141,6 +141,7 @@
   (define o-primes-branch (active-branch o-primes-branch-tree:val))
   (define o-primes-graph-skeleton o-primes-branch-skeleton:val)
   (check-equal? (generational-graph-skeleton o-primes-branch) o-primes-graph-skeleton))
+(provide generational-graph-skeleton) ; just for test
 
 (define (active-branch t)
   (match t
@@ -249,6 +250,7 @@
     o-primes-skeleton-root
     5)
    o-primes-candidate-targets))
+(provide candidate-targets) ; just for test
 
 ;; tests whether 'root' in RDAG 'graph' has at least two children and whether both children have descendants at depth 'live-depth', when 'root' is at 'curr-depth'
 ;; note spelling: live lines, not life lines
@@ -480,7 +482,6 @@
   (define updated-multi (struct-copy gen-node new-multi [range range]))
   (rename-vertex! graph new-multi updated-multi)
   (if (not multi-parent) (begin (set-box! postfix-box (add1 (unbox postfix-box))) (hash-set mapping (gen parent-maximum parent-origin) symbolic-l)) mapping))
-; TODO add tests for o-primes
 (module+ test
   (set! almost-annotated (graph-copy almost-annotated:val))
   (require (prefix-in almost-annotated-m: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated-with-multi.rkt"))
@@ -548,6 +549,7 @@
   (require (prefix-in sameleaves-extended: "analysis-trees/sameleaves-multi-branch-gen-tree-extended-1.rkt"))
   (define sameleaves-extended-annotated (graph-copy sameleaves-extended-skeleton:val))
   (annotate-general! sameleaves-extended-annotated sl-skeleton-root (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 16))
+(provide annotate-general!) ; just for test
 
 ;; extract a level from a rooted DAG
 ;; the lowest level that can be extracted is 1 (the root)
@@ -568,6 +570,7 @@
     (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t)
     (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 #f #f)
     (gen-node (abstract-atom 'eq (list (a 1) (a 2))) 4 #f #f))))
+(provide rdag-level) ; for testing
 
 ;; replace sequences with the same origin with multi abstractions at a given level of the generational tree
 ;(define (gen-tree-level->generalized-conjunction lvl)

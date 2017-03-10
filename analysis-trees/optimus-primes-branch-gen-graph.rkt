@@ -25,7 +25,7 @@ NODES
 19  siftB(a7,a8) 1 13
 20  *length([g2|a8],g1)* 0 #f
 
-21  integers(g3,a4) 0 #f
+21  *integers(g3,a4)* 0 #f
 22  filterA(g2,a4,a5) 1 7
 23  siftA(a5,a6) 1 7
 24  filterB(g2,a6,a7) 1 13
