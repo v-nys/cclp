@@ -422,13 +422,13 @@
 
 ;; annotates a level of the RDAG, other than the root level
 ;; TODO: parent-level-number is completely redundant? it is just the current level - 1...
-(define (annotate-level! graph annotated-root l-postfix relevant-targets live-depth parent-level-number level-number)
+(define (annotate-level! graph annotated-root postfix-box relevant-targets live-depth parent-level-number level-number)
   (define parent-level (rdag-level graph annotated-root parent-level-number))
   (define level (rdag-level graph annotated-root level-number))
   (match-define-values
    (new-multis single-parent-conjuncts)
    (partition (λ (conjunct) (> (length (get-neighbors (transpose graph) conjunct)) 1)) level))
-  (define multi-mapping (foldl (curry annotate-new-multi! graph l-postfix) (make-immutable-hash) new-multis))
+  (define multi-mapping (foldl (curry annotate-new-multi! graph postfix-box) (make-immutable-hash) new-multis))
   (for ([spc single-parent-conjuncts])
     (let ([parent (first (get-neighbors (transpose graph) spc))])
       (if (null? new-multis)
@@ -443,33 +443,31 @@
     (prefix-in sl-multi-graph-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree.rkt"))
   (define sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
   (rename-vertex! sl-multi-graph-annotated sl-skeleton-root sl-annotated-root)
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 1 2)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 1 2)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 2)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 2))
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 2 3)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 2 3)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 3)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 3))
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 3 4)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 3 4)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 4)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 4))
-  (annotate-level! almost-annotated sl-annotated-root 1 (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 5 6)
+  (annotate-level! almost-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 5 6)
   (check-equal?
    (rdag-level almost-annotated sl-annotated-root 6)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 6)))
 
-;; FIXME: should only symbolize when all parents are atoms
-;; otherwise, an offset is best
-(define (annotate-new-multi! graph l-postfix new-multi mapping)
+(define (annotate-new-multi! graph postfix-box new-multi mapping)
   ;; parents must be ordered to check whether generations are ascending
   (define parents (sort (get-neighbors (transpose graph) new-multi) < #:key gen-node-id))
   (define bare-multi (gen-node-conjunct new-multi))
   (define parent-minimum (apply (curry generic-minmax gen-number<) (map local-min parents)))
   (define parent-maximum (apply (curry generic-minmax (compose not gen-number<)) (map local-max parents)))
   (define parent-origin (let ([parent-gen (gen-node-range (first parents))]) (if (gen? parent-gen) (gen-origin parent-gen) (gen-range-origin parent-gen)))) ; first, but could pick any one
-  (define symbolic-l (string->symbol (format "l~a" l-postfix)))
+  (define symbolic-l (string->symbol (format "l~a" (unbox postfix-box))))
   (define multi-parent (findf (λ (p) (multi? (gen-node-conjunct p))) parents))
   (define ascending?
     (if multi-parent
@@ -479,16 +477,15 @@
     (if ascending?
         (gen-range parent-minimum (if (not multi-parent) symbolic-l parent-maximum) parent-origin ascending?)
         (gen-range (if (not multi-parent) symbolic-l parent-maximum) parent-minimum parent-origin ascending?)))
-  (set! l-postfix (add1 l-postfix))
   (define updated-multi (struct-copy gen-node new-multi [range range]))
   (rename-vertex! graph new-multi updated-multi)
-  (if (not multi-parent) (hash-set mapping (gen parent-maximum parent-origin) symbolic-l) mapping))
+  (if (not multi-parent) (begin (set-box! postfix-box (add1 (unbox postfix-box))) (hash-set mapping (gen parent-maximum parent-origin) symbolic-l)) mapping))
 ; TODO add tests for o-primes
 (module+ test
   (set! almost-annotated (graph-copy almost-annotated:val))
   (require (prefix-in almost-annotated-m: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated-with-multi.rkt"))
   (define almost-annotated-with-multi (graph-copy almost-annotated-m:val))
-  (define _ (annotate-new-multi! almost-annotated 1 (list-ref (sort (rdag-level almost-annotated sl-annotated-root 6) < #:key gen-node-id) 3) (make-immutable-hash)))
+  (define _ (annotate-new-multi! almost-annotated (box 1) (list-ref (sort (rdag-level almost-annotated sl-annotated-root 6) < #:key gen-node-id) 3) (make-immutable-hash)))
   (for ([lv (range 1 6)])
     (check-equal?
      (rdag-level almost-annotated sl-annotated-root lv)
@@ -500,12 +497,12 @@
 
 ;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full generational graph
 (define (annotate-general! skeleton root relevant-targets rdag-depth)
-  (define l-postfix 1)
+  (define postfix-box (box 1))
   (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
   (rename-vertex! skeleton root annotated-root)
   (for ([parent-level (range 1 rdag-depth)]
         [current-level (range 2 (add1 rdag-depth))])
-    (annotate-level! skeleton annotated-root l-postfix relevant-targets rdag-depth parent-level current-level)))
+    (annotate-level! skeleton annotated-root postfix-box relevant-targets rdag-depth parent-level current-level)))
 (module+ test
   (require
     (prefix-in sl-graph-annotated: "analysis-trees/sameleaves-no-multi-branch-gen-tree.rkt"))
