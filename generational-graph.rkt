@@ -21,6 +21,8 @@
 ; SOFTWARE.
 
 #lang at-exp racket
+; TODO unfoldings of multi should not be foldable immediately after multi
+; replace some gen-node constructors, but not all!
 
 (require
   scribble/srcdoc
@@ -55,7 +57,7 @@
 ;; uid-acc is the unique identifier used for an abstract conjunct in the generational graph
 ;; graph is the (mutable) generational graph
 ;; edges is a list of edges from conjuncts at the previous level to a range of indices at the current level
-(define (generational-graph-skeleton branch [uid-acc 1] [graph (unweighted-graph/directed (list))] [edges (list)])
+(define (generational-graph-skeleton branch [uid-acc 1] [graph (unweighted-graph/directed (list))] [edges (list)] [foldable? #t])
   (match branch
     [(list label) ; same for tree label and generalization
      (begin
@@ -63,47 +65,47 @@
         (match-lambda**
          [(conjunct (cons uid idx))
           (begin
-            (add-vertex! graph (gen-node conjunct uid #f #f)) ; end of branch never has selection
+            (add-vertex! graph (gen-node conjunct uid #f #f foldable?)) ; end of branch never has selection
             (for ([edge edges])
               (when (contains (cdr edge) idx)
-                (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f))))
+                (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f foldable?))))
             (cons (add1 uid) (add1 idx)))])
         (cons uid-acc 0)
         (label-conjunction label))
        graph)]
+    ; if there are unfoldings and there is a selection
     [(list-rest
       (or (tree-label tl-con1 (some selected1) _ _ _ _)
+          ;; TODO children of multi should not be foldable
           (generalization tl-con1 (some selected1) _ _ _))
       (tree-label _ _ _ tl-rule2 _ _)
       l-rest)
-     (let* ([first-unselected (take tl-con1 selected1)]
-            [selected-atom (list-ref tl-con1 selected1)]
-            [last-unselected (drop tl-con1 (+ 1 selected1))])
-       (match-let
-           ;; all these identified values correspond to parameters of the function
-           ([(list next-uid _ _ add-edges)
-             (foldl
-              (match-lambda**
-               [(conjunct (list uid idx range-start introduced-edges))
-                (begin
-                  (add-vertex! graph (gen-node conjunct uid #f (equal? idx selected1)))
-                  (for ([edge edges])
-                    (when (contains (cdr edge) idx)
-                      (add-directed-edge! graph (car edge) (gen-node conjunct uid #f (equal? idx selected1)))))
-                  (let ([vertex-edges
-                         (cons ; pair of the current conjunct and the range of "spawned" conjuncts
-                          (gen-node conjunct uid #f (equal? idx selected1))
-                          (if (not (equal? idx selected1))
-                              (index-range range-start (add1 range-start)) ; unselected conjuncts refer to the conjunct "below" hem
-                              (index-range range-start (+ range-start (knowledge-output-length tl-rule2)))))]
-                        [new-range-start (if (not (equal? idx selected1)) (add1 range-start) (+ range-start (knowledge-output-length tl-rule2)))])
-                    (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
-              (list uid-acc 0 0 (list))
-              tl-con1)])
-         (generational-graph-skeleton (cdr branch) next-uid graph add-edges)))]
+     (match-let
+         ;; all these identified values correspond to parameters of the function
+         ([(list next-uid _ _ add-edges)
+           (foldl
+            (match-lambda**
+             [(conjunct (list uid idx range-start introduced-edges))
+              (begin
+                (add-vertex! graph (gen-node conjunct uid #f (equal? idx selected1) foldable?))
+                (for ([edge edges])
+                  (when (contains (cdr edge) idx)
+                    (add-directed-edge! graph (car edge) (gen-node conjunct uid #f (equal? idx selected1) foldable?))))
+                (let ([vertex-edges
+                       (cons ; pair of the current conjunct and the range of "spawned" conjuncts
+                        (gen-node conjunct uid #f (equal? idx selected1) foldable?)
+                        (if (not (equal? idx selected1))
+                            (index-range range-start (add1 range-start)) ; unselected conjuncts refer to the conjunct "below" hem
+                            (index-range range-start (+ range-start (knowledge-output-length tl-rule2)))))]
+                      [new-range-start (if (not (equal? idx selected1)) (add1 range-start) (+ range-start (knowledge-output-length tl-rule2)))])
+                  (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
+            (list uid-acc 0 0 (list))
+            tl-con1)])
+       (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]
+    ; if there are unfoldings but no selection
     [(list-rest
-      (or (tree-label tl-con1 (none) _ _ _ _)
-          (generalization tl-con1 (none) _ _ _))
+      ;; generalization followed by generalization is possible on paper, but implementation never does this
+      (tree-label tl-con1 (none) _ _ _ _)
       (generalization _ _ _ _ abstracted-ranges)
       l-rest)
      (match-let
@@ -112,13 +114,13 @@
             (match-lambda**
              [(conjunct (list uid idx range-start introduced-edges))
               (begin
-                (add-vertex! graph (gen-node conjunct uid #f #f))
+                (add-vertex! graph (gen-node conjunct uid #f #f foldable?))
                 (for ([edge edges])
                   (when (contains (cdr edge) idx)
-                    (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f))))
+                    (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f foldable?))))
                 (let ([vertex-edges
                        (cons
-                        (gen-node conjunct uid #f #f)
+                        (gen-node conjunct uid #f #f foldable?)
                         (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
                       [new-range-start
                        (if (ormap (λ (r) (contains (struct-copy index-range r [end-before (sub1 (index-range-end-before r))]) idx)) abstracted-ranges)
@@ -207,10 +209,10 @@
   (define root-atom (gen-node-conjunct root))
   (ormap (λ (a) (and (abstract-atom? root-atom) (abstract-atom? a) (renames-with-corresponding-args? root-atom a))) just-atoms))
 (module+ test
-  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t)))
-  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 #f #f)))
-  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'eq (list (a 1) (a 2))) 4 #f #f)))
-  (check-false (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t))))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t #t)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 #f #f #t)))
+  (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'eq (list (a 1) (a 2))) 4 #f #f #t)))
+  (check-false (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t #t))))
 
 ;; finds potential target atoms for recursion analysis.
 ;; root is the root of the rooted DAG (i.e. the skeleton)
@@ -232,18 +234,18 @@
   (remove-duplicates (candidate-targets-aux skeleton root live-depth 0)))
 (module+ test
   (define sl-skeleton-root
-    (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t))
+    (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t #t))
   (check-equal?
    (candidate-targets
     sl-graph-skeleton
     sl-skeleton-root
     3)
-   (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t)))
-  (define o-primes-skeleton-root (gen-node (abstract-atom 'oprimes (list (g 1) (a 1))) 1 #f #t))
+   (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t #t)))
+  (define o-primes-skeleton-root (gen-node (abstract-atom 'oprimes (list (g 1) (a 1))) 1 #f #t #t))
   (define o-primes-candidate-targets
     (list
-     (gen-node (abstract-atom 'siftA (list (abstract-function 'cons (list (g 2) (a 4))) (a 3))) 7 #f #t)
-     (gen-node (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13 #f #t)))
+     (gen-node (abstract-atom 'siftA (list (abstract-function 'cons (list (g 2) (a 4))) (a 3))) 7 #f #t #t)
+     (gen-node (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13 #f #t #t)))
   (check-equal?
    (candidate-targets
     o-primes-graph-skeleton
@@ -331,29 +333,29 @@
 ;; minimum generation in the range of a conjunct
 (define (local-min c)
   (match c
-    [(gen-node _ _ (gen num _) _) num]
-    [(gen-node _ _ (gen-range fst lst _ #t) _) fst]
-    [(gen-node _ _ (gen-range fst lst _ #f) _) lst]
+    [(gen-node _ _ (gen num _) _ _) num]
+    [(gen-node _ _ (gen-range fst lst _ #t) _ _) fst]
+    [(gen-node _ _ (gen-range fst lst _ #f) _ _) lst]
     [else (error (format "conjunct unaccounted for: ~a" c))]))
 (module+ test
   (check-equal?
-   (local-min (gen-node (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 'l1 1 1 #f) #f))
+   (local-min (gen-node (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 'l1 1 1 #f) #t #t))
    1)
   (check-equal?
-   (local-min (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f))
+   (local-min (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f #t))
    1))
 
 (define (local-max c)
   (match c
-    [(gen-node _ _ (gen num _) _) num]
-    [(gen-node _ _ (gen-range fst lst _ #t) _) lst]
-    [(gen-node _ _ (gen-range fst lst _ #f) _) fst]))
+    [(gen-node _ _ (gen num _) _ _) num]
+    [(gen-node _ _ (gen-range fst lst _ #t) _ _) lst]
+    [(gen-node _ _ (gen-range fst lst _ #f) _ _) fst]))
 (module+ test
   (check-equal?
-   (local-max (gen-node (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 'l1 1 1 #f) #f))
+   (local-max (gen-node (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 'l1 1 1 #f) #f #t))
    'l1)
   (check-equal?
-   (local-max (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f))
+   (local-max (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f #t))
    'l1))
 
 (define (annotate-unfolding! id-conjunct ann-parent relevant-targets graph live-depth curr-depth)
@@ -369,8 +371,7 @@
       [(? symbol?) (symsum gen-num -1)]
       [(symsum sym 1) sym]
       [(symsum sym num) (symsum sym (sub1 num))]))
-  (match-define (gen-node parent-conjunct parent-id parent-gen parent-unfolded?) ann-parent)
-  
+  (match-define (gen-node parent-conjunct parent-id parent-gen parent-unfolded? _) ann-parent)
   (cond
     [(member ann-parent relevant-targets)
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen 1 parent-id)]))]
@@ -445,19 +446,19 @@
     (prefix-in sl-multi-graph-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree.rkt"))
   (define sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
   (rename-vertex! sl-multi-graph-annotated sl-skeleton-root sl-annotated-root)
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 1 2)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t #t)) 6 1 2)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 2)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 2))
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 2 3)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t #t)) 6 2 3)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 3)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 3))
-  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 3 4)
+  (annotate-level! sl-multi-graph-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t #t)) 6 3 4)
   (check-equal?
    (rdag-level sl-multi-graph-annotated sl-annotated-root 4)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 4))
-  (annotate-level! almost-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) 6 5 6)
+  (annotate-level! almost-annotated sl-annotated-root (box 1) (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t #t)) 6 5 6)
   (check-equal?
    (rdag-level almost-annotated sl-annotated-root 6)
    (rdag-level sl-multi-graph-annotated:val sl-annotated-root 6)))
@@ -508,7 +509,7 @@
   (require
     (prefix-in sl-graph-annotated: "analysis-trees/sameleaves-no-multi-branch-gen-tree.rkt"))
   (define sl-graph-annotated (graph-copy sl-graph-skeleton))
-  (annotate-general! sl-graph-annotated sl-skeleton-root (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) (length sl-branch))
+  (annotate-general! sl-graph-annotated sl-skeleton-root (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t #t)) (length sl-branch))
   (check-equal?
    sl-graph-annotated
    sl-graph-annotated:val)
@@ -516,7 +517,7 @@
     (prefix-in sl-multi-branch-tree: "analysis-trees/sameleaves-multi-branch.rkt"))
   (define sl-multi-branch (active-branch sl-multi-branch-tree:val))
   (set! sl-multi-graph-annotated (graph-copy sl-multi-graph-skeleton:val))
-  (annotate-general! sl-multi-graph-annotated sl-skeleton-root (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t)) (length sl-multi-branch))
+  (annotate-general! sl-multi-graph-annotated sl-skeleton-root (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 0 #f) #t #t)) (length sl-multi-branch))
   (check-equal?
    sl-multi-graph-annotated
    sl-multi-graph-annotated:val)
@@ -596,19 +597,3 @@
   ;     (identified-atom-with-generation (identified-atom (abstract-atom 'length (list (a 9) (a 10))) 12) (generation 0 #f))))
   ;   (list))
   ) ; TODO: introduce two multi abstractions
-
-(define (generalize t) (cons t #f))
-(module+ test
-  ;  (require (prefix-in primes5: "analysis-trees/primes-five.rkt"))
-  ;  (require (prefix-in generalizedsl-branch-tree: "analysis-trees/generalized-sameleaves-branch.rkt"))
-  ;  (check-equal? (generalize primes5:val) (cons primes5:val #f))
-  ;  (check-equal? (generalize sl-branch-tree:val) (cons generalizedsl-branch-tree:val #t))
-  )
-(provide
- (proc-doc/names
-  generalize
-  (-> node? (cons/c node? boolean?))
-  (top)
-  @{Attempts to generalize the candidate node in @racket[t].
- If generalization is successful, the first element of the returned pair is @racket[t], extended with a @racket[node?] whose label is a @racket[generalization?] and the second element is @racket[#t].
- Otherwise, the first element is @racket[t] and the second element is @racket[#f].}))
