@@ -1,7 +1,9 @@
 #lang at-exp racket
 (require
+  racket/struct
   scribble/srcdoc
   "abstract-multi-domain.rkt"
+  (only-in "abstract-domain-ordering.rkt" renames?)
   "gen-graph-structs.rkt")
 (require (for-doc scribble/manual))
 
@@ -11,19 +13,77 @@
     [(? gen-range?) (gen-range-origin gen-thing)]
     [(? gen?) (gen-origin gen-thing)]))
 
+(struct grouping (completed potential current-gen)
+  #:methods
+  gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (λ (obj) 'grouping)
+      (λ (obj) (list (grouping-completed obj)
+                     (grouping-potential obj)
+                     (grouping-current-gen obj)))))])
+
+;; a is any abstraction which could contain multiple subscripts
+(define (remove-multi-subscripts a)
+  (match a
+    [(abstract-atom* sym args)
+     (abstract-atom sym (map remove-multi-subscripts args))]
+    [(abstract-function* sym args)
+     (abstract-function sym (map remove-multi-subscripts args))]
+    [(g* m-id 'i local-idx)
+     (g local-idx)]
+    [(a* m-id 'i local-idx)
+     (a local-idx)]))
+
+;; checks whether the current generation in a grouping renames the last generation
+;; (from a syntactic perspective) in the potential abstraction
+(define (current-is-renaming? g #:full [full? #t])
+  (match g
+    [(grouping _ #f _) #f]
+    [(grouping _ lst cur)
+     (renames?
+      (let ([last-elem (last lst)])
+        (match last-elem
+          [(gen-node (? abstract-atom?) _ (gen num id) _ _)
+           (map gen-node-conjunct (filter (λ (gn) (equal? (gen-node-range gn) (gen num id))) lst))]
+          [(gen-node (multi c asc? i c f) _ (? gen-range?) _ _)
+           (remove-multi-subscripts c)]))
+      (map gen-node-conjunct cur))]))
+(module+ test
+  (check-equal? #t #f))
+
+;; if folding ends and there is still an abstraction and/or current generation...
+;; TODO complete!
+;; if current generation renames generations in temporary abstraction, move it there - if not, just leave it
+;; if temporary abstraction spans multiple generations, merge into a multi
+;; finally, append everything
+(define (finalize g)
+  (grouping-completed g))
+
 ; Q: can I combine define and match?
-(define (group-conjuncts node grouping)
-  (match-let ([(list completed potential-abstraction current-gen) grouping])
-    (match* (completed potential-abstraction current-gen node)
+; TODO go over all cases, complete!
+(define (group-conjuncts node acc)
+  (match-let ([(grouping completed potential current-gen) acc])
+    (match* (completed potential current-gen node)
+      ;; BLOCK: temporary abstraction #f and empty current gen
       [(_ #f (list) (gen-node conjunct _ (gen 0 #f) #f _))
-       (list (append completed (list conjunct)) #f (list))]
-      [(_ _ _ _) grouping])))
+       (struct-copy grouping acc [completed (append completed (list conjunct))])]
+      [(_ #f (list) (gen-node conjunct _ (gen n id) #f #f))
+       (struct-copy grouping acc [completed (append completed (list conjunct))])]
+      [(_ #f (list) (gen-node conjunct _ (gen n id) #f #t))
+       (struct-copy grouping acc [current-gen (list node)])]
+      [(_ #f (list) (gen-node conjunct _ (gen-range _ _ _ _) #f #f))
+       (struct-copy grouping acc [completed (append completed (list conjunct))])]
+      [(_ #f (list) (gen-node conjunct _ (gen-range _ _ _ _) #f #t))
+       (struct-copy grouping acc [potential (list node)])]
+      ; TODO remaining blocks and assertions
+      [(_ _ _ _) acc])))
 
 (define (generalize-level lvl)
-  (first
+  (finalize
    (foldl
     group-conjuncts
-    (list (list) #f (list))
+    (grouping (list) #f (list))
     (sort lvl < #:key gen-node-id))))
 (module+ test
   (require rackunit)
@@ -31,14 +91,14 @@
    (generalize-level
     (list
      (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 3 1) #f #t)
-     (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 (gen 3 1) #f  #t)
-     (gen-node (abstract-atom 'append (list (a 1) (a 2) (a 3))) 4 (gen 3 1) #f  #t)
-     (gen-node (abstract-atom 'collect (list (g 4) (a 4))) 5 (gen 2 1) #f  #t)
-     (gen-node (abstract-atom 'append (list (a 3) (a 4) (a 5))) 6 (gen 2 1) #f  #t)
-     (gen-node (abstract-atom 'collect (list (g 6) (a 6))) 7 (gen 1 1) #f  #t)
-     (gen-node (abstract-atom 'append (list (a 5) (a 6) (a 7))) 8 (gen 1 1) #f  #t)
-     (gen-node (abstract-atom 'collect (list (g 8) (a 8))) 9 (gen 0 #f) #f  #t)
-     (gen-node (abstract-atom 'eq (list (a 7) (a 8))) 10 (gen 0 #f) #f  #t)))
+     (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 (gen 3 1) #f #t)
+     (gen-node (abstract-atom 'append (list (a 1) (a 2) (a 3))) 4 (gen 3 1) #f #t)
+     (gen-node (abstract-atom 'collect (list (g 4) (a 4))) 5 (gen 2 1) #f #t)
+     (gen-node (abstract-atom 'append (list (a 3) (a 4) (a 5))) 6 (gen 2 1) #f #t)
+     (gen-node (abstract-atom 'collect (list (g 6) (a 6))) 7 (gen 1 1) #f #t)
+     (gen-node (abstract-atom 'append (list (a 5) (a 6) (a 7))) 8 (gen 1 1) #f #t)
+     (gen-node (abstract-atom 'collect (list (g 8) (a 8))) 9 (gen 0 #f) #f #t)
+     (gen-node (abstract-atom 'eq (list (a 7) (a 8))) 10 (gen 0 #f) #f #t)))
    (list
     (abstract-atom 'collect (list (g 1) (a 1)))
     (abstract-atom 'collect (list (g 2) (a 2)))
