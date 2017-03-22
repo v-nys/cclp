@@ -5,19 +5,24 @@
   "gen-graph-structs.rkt")
 (require (for-doc scribble/manual))
 
+;; gets the origin from either a generation or a generation range
 (define (gen-thing-origin gen-thing)
   (match gen-thing
     [(? gen-range?) (gen-range-origin gen-thing)]
     [(? gen?) (gen-origin gen-thing)]))
 
+; Q: can I combine define and match?
+(define (group-conjuncts node grouping)
+  (match-let ([(list completed potential-abstraction current-gen) grouping])
+    (match* (completed potential-abstraction current-gen node)
+      [(_ #f (list) (gen-node conjunct _ (gen 0 #f) #f _))
+       (list (append completed (list conjunct)) #f (list))]
+      [(_ _ _ _) grouping])))
+
 (define (generalize-level lvl)
-  (define (aux el acc)
-    ; Q: is there a pattern matching function definition?
-    (match-let ([(list completed potential-abstraction current-gen) acc])
-      acc))
   (first
    (foldl
-    aux
+    group-conjuncts
     (list (list) #f (list))
     (sort lvl < #:key gen-node-id))))
 (module+ test
@@ -140,21 +145,21 @@
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
     (multi
-      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-      #t
-      (init
-       (list
-        (cons (g* 1 1 1) (g 2))
-        (cons (a* 1 1 1) (a 1))
-        (cons (a* 1 1 2) (a 2))))
-      (consecutive
-       (list
-        (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final
-       (list
-        (cons (g* 1 'L 1) (g 4))
-        (cons (a* 1 'L 1) (a 3))
-        (cons (a* 1 'L 2) (a 4)))))
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init
+      (list
+       (cons (g* 1 1 1) (g 2))
+       (cons (a* 1 1 1) (a 1))
+       (cons (a* 1 1 2) (a 2))))
+     (consecutive
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final
+      (list
+       (cons (g* 1 'L 1) (g 4))
+       (cons (a* 1 'L 1) (a 3))
+       (cons (a* 1 'L 2) (a 4)))))
     (abstract-atom 'filter (list (g 6) (a 5) (a 6)))
     (abstract-atom 'sift (list (a 6) (a 7)))
     (abstract-atom 'len (list (a 7) (g 7)))))
