@@ -37,20 +37,44 @@
 
 ;; checks whether the current generation in a grouping renames the last generation
 ;; (from a syntactic perspective) in the potential abstraction
+;; if #f is supplied as a keyword argument, a partial match with the last generation is also acceptable
 (define (current-is-renaming? g #:full [full? #t])
   (match g
     [(grouping _ #f _) #f]
     [(grouping _ lst cur)
-     (renames?
-      (let ([last-elem (last lst)])
-        (match last-elem
-          [(gen-node (? abstract-atom?) _ (gen num id) _ _)
-           (map gen-node-conjunct (filter (λ (gn) (equal? (gen-node-range gn) (gen num id))) lst))]
-          [(gen-node (multi c asc? i c f) _ (? gen-range?) _ _)
-           (remove-multi-subscripts c)]))
-      (map gen-node-conjunct cur))]))
+     (let* ([cur-conjunct (map gen-node-conjunct cur)]
+            [last-gen
+             (match (last lst)
+               [(gen-node (? abstract-atom?) _ (gen num id) _ _)
+                (map gen-node-conjunct (filter (λ (gn) (equal? (gen-node-range gn) (gen num id))) lst))]
+               [(gen-node (multi c asc? i c f) _ (? gen-range?) _ _)
+                (remove-multi-subscripts c)])])
+       (if full?
+           (renames? cur-conjunct last-gen)
+           (and
+            (<= (length cur-conjunct) (length last-gen))
+            (renames? cur-conjunct (take (length cur-conjunct) last-gen)))))]))
 (module+ test
-  (check-equal? #t #f))
+  (check-true
+   (current-is-renaming?
+    (grouping
+     (list)
+     (list (gen-node (abstract-atom 'filter (list (g 1) (a 1) (a 2))) 2 (gen 1 1) #f #t))
+     (list (gen-node (abstract-atom 'filter (list (g 2) (a 3) (a 4))) 3 (gen 2 1) #f #t)))))
+  (check-true
+   (current-is-renaming?
+    (grouping
+     (list)
+     (list
+      (gen-node (abstract-atom 'filter (list (g 1) (a 1) (a 2))) 2 (gen 1 1) #f #t)
+      (gen-node (abstract-atom 'filter (list (g 2) (a 3) (a 4))) 3 (gen 2 1) #f #t))
+     (list (gen-node (abstract-atom 'filter (list (g 3) (a 5) (a 6))) 4 (gen 3 1) #f #t)))))
+  (check-false
+   (current-is-renaming?
+    (grouping
+     (list)
+     (list (gen-node (abstract-atom 'filter (list (g 1) (a 1) (a 2))) 2 (gen 1 1) #f #t))
+     (list (gen-node (abstract-atom 'filter (list (g 2) (abstract-function 'cons (list (g 3) (a 3))) (a 4))) 3 (gen 2 1) #f #t))))))
 
 ;; if folding ends and there is still an abstraction and/or current generation...
 ;; TODO complete!
