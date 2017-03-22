@@ -23,9 +23,10 @@
                      (grouping-potential obj)
                      (grouping-current-gen obj)))))])
 
-;; a is any abstraction which could contain multiple subscripts
-(define (remove-multi-subscripts a)
-  (match a
+(define (remove-multi-subscripts abs)
+  (match abs
+    [(? list?)
+     (map remove-multi-subscripts abs)]
     [(abstract-atom* sym args)
      (abstract-atom sym (map remove-multi-subscripts args))]
     [(abstract-function* sym args)
@@ -47,13 +48,13 @@
              (match (last lst)
                [(gen-node (? abstract-atom?) _ (gen num id) _ _)
                 (map gen-node-conjunct (filter (λ (gn) (equal? (gen-node-range gn) (gen num id))) lst))]
-               [(gen-node (multi c asc? i c f) _ (? gen-range?) _ _)
-                (remove-multi-subscripts c)])])
+               [(gen-node (multi conj asc? i consec f) _ (? gen-range?) _ _)
+                (remove-multi-subscripts conj)])])
        (if full?
            (renames? cur-conjunct last-gen)
            (and
             (<= (length cur-conjunct) (length last-gen))
-            (renames? cur-conjunct (take (length cur-conjunct) last-gen)))))]))
+            (renames? cur-conjunct (take last-gen (length cur-conjunct))))))]))
 (module+ test
   (check-true
    (current-is-renaming?
