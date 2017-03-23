@@ -52,6 +52,18 @@
             (λ (index) (abstract-equality (g index) (g (+ g-offset index))))
             g-indices))])
     (apply-substitution subst renamee)))
+(provide
+ (proc-doc/names
+  offset-vars
+  (->
+   (or/c abstract-domain-elem? abstract-knowledge?)
+   exact-integer?
+   exact-integer?
+   (or/c abstract-domain-elem? abstract-knowledge?))
+  (renamee a-offset g-offset)
+  @{Offset the "any" variables in an abstraction by @racket[a-offset]
+ and offset the "ground" variables by @racket[g-offset].}))
+
 (define (rename-apart renamee non-renamee)
   (let* ([g-max-non-renamee (maximum-var-index non-renamee g?)]
          [a-max-non-renamee (maximum-var-index non-renamee a?)]

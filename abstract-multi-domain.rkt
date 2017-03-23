@@ -146,6 +146,15 @@
   (val)
   @{Test whether @racket[val] is a template for an abstract variable.}))
 
+(define (abstract-variable*-multi-id v)
+  (match v [(or (a* mid _ _) (g* mid _ _)) mid]))
+(provide
+ (proc-doc/names
+  abstract-variable*-multi-id
+  (-> abstract-variable*? exact-positive-integer?)
+  (v)
+  @{Extract the subscript referring to the multi abstraction from @racket[v].}))
+
 (define (avar-index v)
   (match v
     [(a i) i]

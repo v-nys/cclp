@@ -82,15 +82,16 @@
          (none))]
     [(list-rest (abstract-equality t (a i)) tail) (abstract-unify (cons (abstract-equality (a i) t) tail) additional-g-offset)]
     [(list-rest (abstract-equality (abstract-function sym args) (g i)) tail) (abstract-unify (cons (abstract-equality (g i) (abstract-function sym args)) tail) additional-g-offset)]
-    [(list-rest (abstract-equality (g i) t) tail) #:when (abstract-term? t)
-                                                  (let* ([max-g (maximum-var-index-in-substitution g? (cons (abstract-equality (g i) t) tail))]
-                                                         [g-offset (+ additional-g-offset (if (some? max-g) (some-v max-g) 1))]
-                                                         [nested-any-indices (assemble-var-indices a? t)]
-                                                         [equalities (map (λ (idx) (abstract-equality (a idx) (g (+ idx g-offset)))) nested-any-indices)]
-                                                         [substituted-substitution (substitute-in-substitution t (g i) tail)])
-                                                    (if (empty? nested-any-indices)
-                                                        (let ([rest (abstract-unify substituted-substitution additional-g-offset)]) (if (none? rest) rest (some (cons (abstract-equality (g i) t) (some-v rest)))))
-                                                        (abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)) additional-g-offset)))]
+    [(list-rest (abstract-equality (g i) t) tail)
+     #:when (abstract-term? t)
+     (let* ([max-g (maximum-var-index-in-substitution g? (cons (abstract-equality (g i) t) tail))]
+            [g-offset (+ additional-g-offset (if (some? max-g) (some-v max-g) 1))]
+            [nested-any-indices (assemble-var-indices a? t)]
+            [equalities (map (λ (idx) (abstract-equality (a idx) (g (+ idx g-offset)))) nested-any-indices)]
+            [substituted-substitution (substitute-in-substitution t (g i) tail)])
+       (if (empty? nested-any-indices)
+           (let ([rest (abstract-unify substituted-substitution additional-g-offset)]) (if (none? rest) rest (some (cons (abstract-equality (g i) t) (some-v rest)))))
+           (abstract-unify (append equalities (cons (abstract-equality (g i) t) substituted-substitution)) additional-g-offset)))]
     [else (none)]))
 (provide (contract-out [abstract-unify (-> (listof abstract-equality?) exact-nonnegative-integer? (maybe (listof abstract-equality?)))]))
 
