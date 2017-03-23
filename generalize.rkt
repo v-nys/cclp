@@ -89,6 +89,24 @@
                    var2)])
                unification))])
        (cons (list (struct-copy multi existing-multi [init new-init])) fresh-id))]
+    [(list
+      (list (gen-node (and (? multi?) existing-multi) _ _ _ _))
+      (and (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest) single-gen))
+     (let* ([existing-instance (map gen-node-conjunct single-gen)]
+            [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
+            [offset (apply max (assemble-var-indices (λ (_) #t) subscriptless-instance))]
+            [unifiable-instance (offset-vars subscriptless-instance offset offset)]
+            [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
+            [new-final
+             (final
+              (map
+               (match-lambda
+                 [(abstract-equality var1 var2)
+                  (cons
+                   (prefix-subscripts (multi-id existing-multi) 'L (offset-vars var1 (- offset) (- offset)))
+                   var2)])
+               unification))])
+       (cons (list (struct-copy multi existing-multi [final new-final])) fresh-id))]
     [_ (cons (map gen-node-conjunct potential) fresh-id)]))
 (module+ test
   (check-equal?
