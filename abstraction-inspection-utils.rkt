@@ -27,9 +27,9 @@
 
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
-(module+ test (require rackunit
-                       "cclp-interpreter.rkt"
-                       ))
+(module+ test
+  (require rackunit
+           "cclp-interpreter.rkt"))
 
 (define (assemble-var-indices right-variable-type? abstract-data)
   (define (assemble-aux right-variable-type? abstract-data)
@@ -171,3 +171,42 @@
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 7)) #t)
   (check-equal?
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f))
+
+;; used so generalization of level keeps multi ID's separate
+(define (extract-subscripted-variables v)
+  (define (aux v)
+    (match v
+      [(multi conjunction _ _ _ _)
+       (apply append (map extract-subscripted-variables conjunction))]
+      [(or (abstract-atom* _ args) (abstract-function* _ args))
+       (apply append (map extract-subscripted-variables args))]
+      [(or (? g*?) (? a*?)) (list v)]))
+  (remove-duplicates (aux v)))
+(module+ test
+  (check-equal?
+   (extract-subscripted-variables
+    (multi (list
+            (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
+            (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+           #t
+           (init (list))
+           (consecutive (list))
+           (final (list))))
+   (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2) (a* 1 'i 3))))
+(provide
+ (proc-doc/names
+  extract-subscripted-variables
+  (-> (or/c multi? abstract-atom*? abstract-function*? a*? g*?) (listof (or/c a*? g*?)))
+  (v)
+  @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
+ in order of occurrence, without duplicates.}))
+
+(define (extract-variables v)
+  (define (aux v)
+    (match v
+      [(? list?) (apply append (map extract-variables v))]
+      [(or (abstract-atom _ args) (abstract-function _ args))
+       (apply append (map extract-variables args))]
+      [(or (? g?) (? a?)) (list v)]))
+  (remove-duplicates (aux v)))
+(provide extract-variables)

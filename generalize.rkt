@@ -4,12 +4,13 @@
   scribble/srcdoc
   "abstract-multi-domain.rkt"
   (only-in "abstract-domain-ordering.rkt" renames?)
-  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices)
+  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables)
   (only-in "abstract-renaming.rkt" offset-vars)
   (only-in "abstract-unify.rkt" abstract-unify)
   (only-in "abstract-substitution.rkt" abstract-equality)
   (only-in "data-utils.rkt" some-v)
-  "gen-graph-structs.rkt")
+  "gen-graph-structs.rkt"
+  (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts))
 (require (for-doc scribble/manual))
 
 ;; gets the origin from either a generation or a generation range
@@ -29,19 +30,6 @@
                      (grouping-potential obj)
                      (grouping-current-gen obj)
                      (grouping-next-multi-id obj)))))])
-
-(define (remove-multi-subscripts abs)
-  (match abs
-    [(? list?)
-     (map remove-multi-subscripts abs)]
-    [(abstract-atom* sym args)
-     (abstract-atom sym (map remove-multi-subscripts args))]
-    [(abstract-function* sym args)
-     (abstract-function sym (map remove-multi-subscripts args))]
-    [(g* _ 'i local-idx)
-     (g local-idx)]
-    [(a* _ 'i local-idx)
-     (a local-idx)]))
 
 (define (prefix-subscripts multi-id idx var)
   (match var
@@ -352,28 +340,6 @@
        (struct-copy grouping acc [potential (list node)])]
       ; TODO remaining blocks and assertions
       [(_ _ _ _) acc])))
-
-;; used so generalization of level keeps multi ID's separate
-(define (extract-subscripted-variables v)
-  (define (aux v)
-    (match v
-      [(multi conjunction _ _ _ _)
-       (apply append (map extract-subscripted-variables conjunction))]
-      [(or (abstract-atom* _ args) (abstract-function* _ args))
-       (apply append (map extract-subscripted-variables args))]
-      [(or (? g*?) (? a*?)) (list v)]))
-  (remove-duplicates (aux v)))
-(module+ test
-  (check-equal?
-   (extract-subscripted-variables
-    (multi (list
-            (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
-            (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
-           #t
-           (init (list))
-           (consecutive (list))
-           (final (list))))
-   (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2) (a* 1 'i 3))))
 
 (define (generalize-level lvl)
   (define multis (filter multi? (map gen-node-conjunct lvl)))

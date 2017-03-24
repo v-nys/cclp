@@ -1,11 +1,35 @@
 #lang at-exp racket
 (require
   scribble/srcdoc
-  "abstract-multi-domain.rkt")
+  "abstract-multi-domain.rkt"
+  (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
+  "abstract-substitution.rkt"
+  (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables))
 (require (for-doc scribble/manual))
 
+(define (unfold-multi-one m a-off g-off)
+  (define subscript-mapping
+    (foldl
+     (λ (el acc) (match el [(a* id i j) (hash-set acc el (a (+ a-off j)))] [(g* id i j) (hash-set acc el (g (+ g-off j)))]))
+     (make-immutable-hash)
+     (extract-subscripted-variables m)))
+  (define single-subscript-conjunction (remove-multi-subscripts (multi-conjunction m) subscript-mapping))
+  (define single-subscript-init
+    (map
+     (match-lambda
+       [(cons (a* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
+       [(cons (g* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
+     (init-constraints (multi-init m))))
+  (define single-subscript-final
+    (map
+     (match-lambda
+       [(cons (a* id 'L j) val) (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
+       [(cons (g* id 'L j) val) (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
+     (final-constraints (multi-final m))))
+  (apply-substitution-to-conjunction (append single-subscript-init single-subscript-final) single-subscript-conjunction))
+
 (define (unfold-multi m a-off g-off)
-  (list))
+  (list (unfold-multi-one m a-off g-off)))
 (module+ test
   (require rackunit)
   (check-equal?
