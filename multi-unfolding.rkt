@@ -28,8 +28,33 @@
      (final-constraints (multi-final m))))
   (apply-substitution-to-conjunction (append single-subscript-init single-subscript-final) single-subscript-conjunction))
 
+(define (unfold-multi-many m a-off g-off)
+  ; identical to what came before from here...
+  (define subscript-mapping
+    (foldl
+     (λ (el acc) (match el [(a* id i j) (hash-set acc el (a (+ a-off j)))] [(g* id i j) (hash-set acc el (g (+ g-off j)))]))
+     (make-immutable-hash)
+     (extract-subscripted-variables m)))
+  (define single-subscript-conjunction (remove-multi-subscripts (multi-conjunction m) subscript-mapping))
+  (define single-subscript-init
+    (map
+     (match-lambda
+       [(cons (a* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
+       [(cons (g* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
+     (init-constraints (multi-init m))))
+  ; similarity ends here
+  (define initial-conjunction (apply-substitution-to-conjunction single-subscript-init single-subscript-conjunction))
+  (define (consecutive-shift pair)
+    (match pair
+      [(cons (a* id 'i+1 j) (a* id 'i k)) (cons (a* id 1 j) (apply-substitution single-subscript-init (hash-ref subscript-mapping (a* id 'i k))))]
+      [(cons (g* id 'i+1 j) (g* id 'i k)) (cons (g* id 1 j) (apply-substitution single-subscript-init (hash-ref subscript-mapping (g* id 'i k))))]))
+  (append initial-conjunction
+          (list (struct-copy multi m [init (init (map consecutive-shift (consecutive-constraints (multi-consecutive m))))]))))
+
 (define (unfold-multi m a-off g-off)
-  (list (unfold-multi-one m a-off g-off)))
+  (list
+   (unfold-multi-one m a-off g-off)
+   (unfold-multi-many m a-off g-off)))
 (module+ test
   (require rackunit)
   (check-equal?
