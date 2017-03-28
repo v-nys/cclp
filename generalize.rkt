@@ -7,11 +7,10 @@
   (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables)
   (only-in "abstract-renaming.rkt" offset-vars)
   (only-in "abstract-unify.rkt" abstract-unify)
-  (only-in "abstract-substitution.rkt" abstract-equality)
+  (only-in "abstract-substitution.rkt" abstract-equality apply-substitution)
   (only-in "data-utils.rkt" some-v)
   "gen-graph-structs.rkt"
-  (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
-  (only-in "multi-unfolding.rkt" unfold-multi-one))
+  (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts))
 (require (for-doc scribble/manual))
 
 ;; gets the origin from either a generation or a generation range
@@ -99,10 +98,23 @@
                  unification))])
          (cons (list (struct-copy multi existing-multi [final new-final])) fresh-id))]
       [(list
-        (and (list (gen-node (and (? multi?) existing-multi-1) _ _ _ _)) group-1)
-        (list (gen-node (and (? multi?) existing-multi-2) _ _ _ _)))
-       (let ([unf (unfold-multi-one existing-multi-2 10000 10000)]) ; TODO get values for offsets
-         (aux (list group-1 (map (λ (at) (gen-node at 1 (gen 0 #f) #f #t)) unf))))])) ; dummy values
+        (list (gen-node (and (? multi?) existing-multi-1) _ _ _ _))
+        (list (gen-node (multi placeholder-2 _ _ _ final-2) _ _ _ _)))
+       (let* ([placeholder-1 (multi-conjunction existing-multi-1)]
+              [subscriptless-instance-1 (remove-multi-subscripts placeholder-1)]
+              [subscriptless-instance-2 (remove-multi-subscripts placeholder-2)]
+              [offset (apply max (append (assemble-var-indices (λ (_) #t) subscriptless-instance-1) (assemble-var-indices (λ (_) #t) subscriptless-instance-2)))]
+              [offset-instance-2 (offset-vars subscriptless-instance-2 offset offset)]
+              [subst (some-v (abstract-unify (list (abstract-equality offset-instance-2 subscriptless-instance-1)) 0))]
+              [new-final
+               (final
+                (map
+                 (match-lambda
+                   [(cons lhs rhs)
+                    (cons (prefix-subscripts (multi-id existing-multi-1) 'L (apply-substitution subst (offset-vars (remove-multi-subscripts lhs) offset offset)))
+                          rhs)])
+                 (final-constraints final-2)))])
+         (cons (list (struct-copy multi existing-multi-1 [final new-final])) fresh-id))]))
   (aux partitioning))
 (module+ test
   (check-equal?
@@ -180,7 +192,6 @@
       (final
        (list))))
     2))
-  ;; TODO two multis become one
   (check-equal?
    (group-sequential-generations
     (list

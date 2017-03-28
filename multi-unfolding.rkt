@@ -7,6 +7,8 @@
   (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables))
 (require (for-doc scribble/manual))
 
+; TODO: make sure substitution is returned, as well
+
 (define (unfold-multi-one m a-off g-off)
   (define subscript-mapping
     (foldl
@@ -36,7 +38,6 @@
 (provide unfold-multi-one)
 
 (define (unfold-multi-many m a-off g-off)
-  ; identical to what came before from here...
   (define subscript-mapping
     (foldl
      (λ (el acc) (match el [(a* id i j) (hash-set acc el (a (+ a-off j)))] [(g* id i j) (hash-set acc el (g (+ g-off j)))]))
@@ -49,7 +50,6 @@
        [(cons (a* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
        [(cons (g* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
      (init-constraints (multi-init m))))
-  ; similarity ends here
   (define initial-conjunction (apply-substitution-to-conjunction single-subscript-init single-subscript-conjunction))
   (define (consecutive-shift pair)
     (match pair
@@ -103,7 +103,8 @@
       #t
       (init (list (cons (a* 1 1 1) (a 12))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final (list (cons (a* 1 'L 2) (a 2)))))))))
+      (final (list (cons (a* 1 'L 2) (a 2))))))))
+  (check-true #f)) ; TODO: substitution in case init and final are merged
 (provide
  (proc-doc/names
   unfold-multi
