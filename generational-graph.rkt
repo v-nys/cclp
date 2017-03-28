@@ -302,6 +302,13 @@
   (check-false (gen-number< 'l 1000))
   (check-true (gen-number< (symsum 'l 0) (symsum 'l 10)))
   (check-false (gen-number< (symsum 'l 10) (symsum 'l 0))))
+(provide
+ (proc-doc/names
+  gen-number<
+  (-> (or/c number? symbol? symsum?) (or/c number? symbol? symsum?) boolean?)
+  (g1 g2)
+  @{Checks whether @racket[g1] is a strictly lower generation number than @racket[g2].
+ If the two generations are not directly comparable, an error is raised.}))
 
 ;; check whether we can quantify the generational gap between two generations
 ;; if so, return the size of the gap

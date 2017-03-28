@@ -4,12 +4,13 @@
   scribble/srcdoc
   "abstract-multi-domain.rkt"
   (only-in "abstract-domain-ordering.rkt" renames?)
-  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables)
+  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables extract-variables)
   (only-in "abstract-renaming.rkt" offset-vars)
   (only-in "abstract-unify.rkt" abstract-unify)
   (only-in "abstract-substitution.rkt" abstract-equality apply-substitution)
   (only-in "data-utils.rkt" some-v)
   "gen-graph-structs.rkt"
+  (only-in "generational-graph.rkt" gen-number<)
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts))
 (require (for-doc scribble/manual))
 
@@ -32,7 +33,13 @@
                      (grouping-next-multi-id obj)))))])
 
 (define (prefix-subscripts multi-id idx var)
+  (define curried (curry prefix-subscripts multi-id idx))
   (match var
+    [(? list?) (map curried var)]
+    [(abstract-atom sym args)
+     (abstract-atom* sym (map curried args))]
+    [(abstract-function sym args)
+     (abstract-function* sym (map curried args))]
     [(a i) (a* multi-id idx i)]
     [(g i) (g* multi-id idx i)]))
 
@@ -57,9 +64,17 @@
        (cons (map gen-node-conjunct potential) fresh-id)]
       ;; TODO
       [(list
-        (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest)
-        (list-rest (gen-node (? abstract-atom?) _ _ _ _) second-rest))
-       (cons (map gen-node-conjunct potential) fresh-id)]
+        (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-1 _) _ _) first-rest) lvl-1)
+        (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-2 _) _ _) second-rest) lvl-2))
+       (cons
+        (list
+         (multi
+          (prefix-subscripts fresh-id 'i (map gen-node-conjunct lvl-1))
+          (gen-number< genn-1 genn-2)
+          (init (map (λ (v) (cons (prefix-subscripts fresh-id 1 v) v)) (extract-variables (map gen-node-conjunct lvl-1))))
+          (consecutive (list))
+          (final (list))))
+        (add1 fresh-id))]
       [(list
         (and (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest) single-gen)
         (list (gen-node (and (? multi?) existing-multi) _ _ _ _)))
