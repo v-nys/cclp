@@ -10,10 +10,14 @@
 (define (unfold-multi-one m a-off g-off)
   (define subscript-mapping
     (foldl
-     (λ (el acc) (match el [(a* id i j) (hash-set acc el (a (+ a-off j)))] [(g* id i j) (hash-set acc el (g (+ g-off j)))]))
+     (λ (el acc)
+       (match el
+         [(a* id 'i j) (hash-set acc el (a (+ a-off j)))]
+         [(g* id 'i j) (hash-set acc el (g (+ g-off j)))]))
      (make-immutable-hash)
      (extract-subscripted-variables m)))
-  (define single-subscript-conjunction (remove-multi-subscripts (multi-conjunction m) subscript-mapping))
+  (define single-subscript-conjunction
+    (remove-multi-subscripts (multi-conjunction m) subscript-mapping))
   (define single-subscript-init
     (map
      (match-lambda
@@ -26,7 +30,10 @@
        [(cons (a* id 'L j) val) (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
        [(cons (g* id 'L j) val) (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
      (final-constraints (multi-final m))))
-  (apply-substitution-to-conjunction (append single-subscript-init single-subscript-final) single-subscript-conjunction))
+  (apply-substitution-to-conjunction
+   (append single-subscript-init single-subscript-final)
+   single-subscript-conjunction))
+(provide unfold-multi-one)
 
 (define (unfold-multi-many m a-off g-off)
   ; identical to what came before from here...

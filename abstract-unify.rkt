@@ -46,6 +46,7 @@
 ; TODO: some equalities are irrelevant for resolution
 ; e.g. a.../a... is provably redundant because this gives us a result in solved form
 ; removing these will lead to fewer index renamings and more readable output
+; additional-g-offset is for newly introduced g's (e.g. when t(a) = g)
 (define (abstract-unify subst additional-g-offset)
   (match subst
     [(list) (some (list))]

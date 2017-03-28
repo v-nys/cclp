@@ -10,7 +10,8 @@
   (only-in "abstract-substitution.rkt" abstract-equality)
   (only-in "data-utils.rkt" some-v)
   "gen-graph-structs.rkt"
-  (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts))
+  (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
+  (only-in "multi-unfolding.rkt" unfold-multi-one))
 (require (for-doc scribble/manual))
 
 ;; gets the origin from either a generation or a generation range
@@ -48,54 +49,61 @@
 ;; two multis become a single multi
 ;; note that this should never fail
 ;; if a conjunct is in the growing abstraction, it belongs there and it respects the pattern
-;; also returns the next valid fresh id (which may be the input id if it was not needed)
+;; also returns the next valid fresh id for a multi (which may be the input id if it was not needed)
 (define (group-sequential-generations potential fresh-id)
   (define partitioning (group-by gen-node-range potential))
-  (match partitioning
-    [(list _)
-     (cons (map gen-node-conjunct potential) fresh-id)]
-    ;; TODO
-    [(list
-      (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest)
-      (list-rest (gen-node (? abstract-atom?) _ _ _ _) second-rest))
-     (cons (map gen-node-conjunct potential) fresh-id)]
-    [(list
-      (and (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest) single-gen)
-      (list (gen-node (and (? multi?) existing-multi) _ _ _ _)))
-     (let* ([existing-instance (map gen-node-conjunct single-gen)]
-            [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
-            [offset (apply max (assemble-var-indices (λ (_) #t) subscriptless-instance))]
-            [unifiable-instance (offset-vars subscriptless-instance offset offset)]
-            [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
-            [new-init
-             (init
-              (map
-               (match-lambda
-                 [(abstract-equality var1 var2)
-                  (cons
-                   (prefix-subscripts (multi-id existing-multi) 1 (offset-vars var1 (- offset) (- offset)))
-                   var2)])
-               unification))])
-       (cons (list (struct-copy multi existing-multi [init new-init])) fresh-id))]
-    [(list
-      (list (gen-node (and (? multi?) existing-multi) _ _ _ _))
-      (and (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest) single-gen))
-     (let* ([existing-instance (map gen-node-conjunct single-gen)]
-            [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
-            [offset (apply max (assemble-var-indices (λ (_) #t) subscriptless-instance))]
-            [unifiable-instance (offset-vars subscriptless-instance offset offset)]
-            [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
-            [new-final
-             (final
-              (map
-               (match-lambda
-                 [(abstract-equality var1 var2)
-                  (cons
-                   (prefix-subscripts (multi-id existing-multi) 'L (offset-vars var1 (- offset) (- offset)))
-                   var2)])
-               unification))])
-       (cons (list (struct-copy multi existing-multi [final new-final])) fresh-id))]
-    [_ (cons (map gen-node-conjunct potential) fresh-id)]))
+  (define (aux partitioning)
+    (match partitioning
+      [(list _)
+       (cons (map gen-node-conjunct potential) fresh-id)]
+      ;; TODO
+      [(list
+        (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest)
+        (list-rest (gen-node (? abstract-atom?) _ _ _ _) second-rest))
+       (cons (map gen-node-conjunct potential) fresh-id)]
+      [(list
+        (and (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest) single-gen)
+        (list (gen-node (and (? multi?) existing-multi) _ _ _ _)))
+       (let* ([existing-instance (map gen-node-conjunct single-gen)]
+              [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
+              [offset (apply max (assemble-var-indices (λ (_) #t) subscriptless-instance))]
+              [unifiable-instance (offset-vars subscriptless-instance offset offset)]
+              [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
+              [new-init
+               (init
+                (map
+                 (match-lambda
+                   [(abstract-equality var1 var2)
+                    (cons
+                     (prefix-subscripts (multi-id existing-multi) 1 (offset-vars var1 (- offset) (- offset)))
+                     var2)])
+                 unification))])
+         (cons (list (struct-copy multi existing-multi [init new-init])) fresh-id))]
+      [(list
+        (list (gen-node (and (? multi?) existing-multi) _ _ _ _))
+        (and (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest) single-gen))
+       (let* ([existing-instance (map gen-node-conjunct single-gen)]
+              [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
+              [offset (apply max (assemble-var-indices (λ (_) #t) subscriptless-instance))]
+              [unifiable-instance (offset-vars subscriptless-instance offset offset)]
+              [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
+              ; only this is different wrt previous case
+              [new-final
+               (final
+                (map
+                 (match-lambda
+                   [(abstract-equality var1 var2)
+                    (cons
+                     (prefix-subscripts (multi-id existing-multi) 'L (offset-vars var1 (- offset) (- offset)))
+                     var2)])
+                 unification))])
+         (cons (list (struct-copy multi existing-multi [final new-final])) fresh-id))]
+      [(list
+        (and (list (gen-node (and (? multi?) existing-multi-1) _ _ _ _)) group-1)
+        (list (gen-node (and (? multi?) existing-multi-2) _ _ _ _)))
+       (let ([unf (unfold-multi-one existing-multi-2 10000 10000)]) ; TODO get values for offsets
+         (aux (list group-1 (map (λ (at) (gen-node at 1 (gen 0 #f) #f #t)) unf))))])) ; dummy values
+  (aux partitioning))
 (module+ test
   (check-equal?
    (group-sequential-generations
@@ -111,6 +119,7 @@
     (list (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l 1 #t) #f #t)) 1)
    (cons
     (list (multi (list) #t (init (list)) (consecutive (list)) (final (list)))) 1))
+  ;; TODO: two atoms become a multi
   (check-equal?
    (group-sequential-generations
     (list
@@ -171,6 +180,7 @@
       (final
        (list))))
     2))
+  ;; TODO two multis become one
   (check-equal?
    (group-sequential-generations
     (list
