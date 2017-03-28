@@ -67,13 +67,20 @@
         (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-1 _) _ _) first-rest) lvl-1)
         (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-2 _) _ _) second-rest) lvl-2))
        (cons
-        (list
-         (multi
-          (prefix-subscripts fresh-id 'i (map gen-node-conjunct lvl-1))
-          (gen-number< genn-1 genn-2)
-          (init (map (λ (v) (cons (prefix-subscripts fresh-id 1 v) v)) (extract-variables (map gen-node-conjunct lvl-1))))
-          (consecutive (list))
-          (final (list))))
+        (let* ([gen-1 (map gen-node-conjunct lvl-1)]
+               [gen-2 (map gen-node-conjunct lvl-2)]
+               [offset (apply max (assemble-var-indices (λ (_) #t) (append gen-1 gen-2)))]
+               [offset-gen-2 (offset-vars gen-2 offset offset)]
+               [subst (some-v (abstract-unify (map abstract-equality gen-1 offset-gen-2) 0))]
+               [shared (filter (match-lambda [(abstract-equality v1 v2) (and (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-1)) (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-2)))]) subst)]
+               [new-consecutive (map (match-lambda [(abstract-equality (a idx1) (a idx2)) (cons (a* fresh-id 'i+1 idx1) (a* fresh-id 'i (- idx2 offset)))] [(abstract-equality (g idx1) (g idx2)) (cons (g* fresh-id 'i+1 idx1) (g* fresh-id 'i (- idx2 offset)))]) shared)])
+          (list
+           (multi
+            (prefix-subscripts fresh-id 'i (map gen-node-conjunct lvl-1))
+            (gen-number< genn-1 genn-2)
+            (init (map (λ (v) (cons (prefix-subscripts fresh-id 1 v) v)) (extract-variables (map gen-node-conjunct lvl-1))))
+            (consecutive new-consecutive)
+            (final (list)))))
         (add1 fresh-id))]
       [(list
         (and (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest) single-gen)
@@ -146,12 +153,11 @@
     (list (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l 1 #t) #f #t)) 1)
    (cons
     (list (multi (list) #t (init (list)) (consecutive (list)) (final (list)))) 1))
-  ;; TODO: two atoms become a multi
   (check-equal?
    (group-sequential-generations
     (list
      (gen-node (abstract-atom 'filter (list (g 1) (a 1) (a 2))) 2 (gen 1 1) #f #t)
-     (gen-node (abstract-atom 'filter (list (g 3) (a 3) (a 4))) 3 (gen 2 1) #f #t))
+     (gen-node (abstract-atom 'filter (list (g 2) (a 2) (a 3))) 3 (gen 2 1) #f #t))
     1)
    (cons
     (list
@@ -166,9 +172,9 @@
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
       (final
        (list
-        (cons (g* 1 'L 1) (g 3))
-        (cons (a* 1 'L 1) (a 3))
-        (cons (a* 1 'L 2) (a 4))))))
+        (cons (g* 1 'L 1) (g 2))
+        (cons (a* 1 'L 1) (a 2))
+        (cons (a* 1 'L 2) (a 3))))))
     2))
   (check-equal?
    (group-sequential-generations
