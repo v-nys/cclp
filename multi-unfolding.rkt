@@ -4,7 +4,7 @@
   "abstract-multi-domain.rkt"
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   "abstract-substitution.rkt"
-  (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables))
+  (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables assemble-var-indices))
 (require (for-doc scribble/manual))
 
 (define (single-subscript-end-equalities constraints subscript-mapping)
@@ -33,16 +33,19 @@
     (single-subscript-end-equalities (init-constraints (multi-init m)) subscript-mapping))
   (values subscript-mapping single-subscript-conjunction single-subscript-init))
 
-;; TODO make num actually do something
+;; TODO return proper substitution
 (define (unfold-multi-bounded num m a-off g-off)
-  (define-values
-    (subscript-mapping single-subscript-conjunction single-subscript-init)
-    (unfold-multi-* m a-off g-off))
-  (define single-subscript-final
-    (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping))
-  (apply-substitution-to-conjunction
-   (append single-subscript-init single-subscript-final)
-   single-subscript-conjunction))
+  (if (eqv? num 1)
+      (let*-values
+          ([(subscript-mapping single-subscript-conjunction single-subscript-init) (unfold-multi-* m a-off g-off)]
+           [(single-subscript-final) (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping)])
+        (apply-substitution-to-conjunction
+         (append single-subscript-init single-subscript-final)
+         single-subscript-conjunction))
+      (let* ([many-unf (unfold-multi-many m a-off g-off)]
+             [new-off (apply max (assemble-var-indices (λ (_) #t) many-unf))]
+             [rec-unf (unfold-multi-bounded (- num 1) (last many-unf) new-off new-off)])
+        (append (drop-right many-unf 1) rec-unf))))
 (provide unfold-multi-bounded)
 
 (define (unfold-multi-many m a-off g-off)
@@ -106,6 +109,20 @@
       (init (list (cons (a* 1 1 1) (a 12))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
       (final (list (cons (a* 1 'L 2) (a 2))))))))
+  (check-equal?
+   (unfold-multi-bounded
+    2
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init (list (cons (a* 1 1 1) (a 1))))
+     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final (list (cons (a* 1 'L 2) (a 2)))))
+    100
+    100)
+   (list
+    (abstract-atom 'filter (list (g 1) (a 101) (a 102)))
+    (abstract-atom 'filter (list (g 103) (a 102) (a 2)))))
   (check-true #f)) ; TODO: substitution in case init and final are merged
 (provide
  (proc-doc/names
