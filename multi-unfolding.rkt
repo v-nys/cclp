@@ -7,9 +7,18 @@
   (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables))
 (require (for-doc scribble/manual))
 
-; TODO: make sure substitution is returned, as well
+(define (single-subscript-end-equalities constraints subscript-mapping)
+  (map (match-lambda
+         [(cons (a* id _ j) val)
+          (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
+         [(cons (g* id _ j) val)
+          (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
+       constraints))
 
-(define (unfold-multi-one m a-off g-off)
+;; subscript mapping maps each multi-subscript variable with symbolic index "i" to a fresh regular variable
+;; single-subscript-conjunction is what happens when this mapping is applied
+;; single-subscript-init is a translation of init constraints on multi-subscript variables to single-subscript variables
+(define (unfold-multi-* m a-off g-off)
   (define subscript-mapping
     (foldl
      (λ (el acc)
@@ -21,46 +30,39 @@
   (define single-subscript-conjunction
     (remove-multi-subscripts (multi-conjunction m) subscript-mapping))
   (define single-subscript-init
-    (map
-     (match-lambda
-       [(cons (a* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
-       [(cons (g* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
-     (init-constraints (multi-init m))))
+    (single-subscript-end-equalities (init-constraints (multi-init m)) subscript-mapping))
+  (values subscript-mapping single-subscript-conjunction single-subscript-init))
+
+;; TODO make num actually do something
+(define (unfold-multi-bounded num m a-off g-off)
+  (define-values
+    (subscript-mapping single-subscript-conjunction single-subscript-init)
+    (unfold-multi-* m a-off g-off))
   (define single-subscript-final
-    (map
-     (match-lambda
-       [(cons (a* id 'L j) val) (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
-       [(cons (g* id 'L j) val) (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
-     (final-constraints (multi-final m))))
+    (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping))
   (apply-substitution-to-conjunction
    (append single-subscript-init single-subscript-final)
    single-subscript-conjunction))
-(provide unfold-multi-one)
+(provide unfold-multi-bounded)
 
 (define (unfold-multi-many m a-off g-off)
-  (define subscript-mapping
-    (foldl
-     (λ (el acc) (match el [(a* id i j) (hash-set acc el (a (+ a-off j)))] [(g* id i j) (hash-set acc el (g (+ g-off j)))]))
-     (make-immutable-hash)
-     (extract-subscripted-variables m)))
-  (define single-subscript-conjunction (remove-multi-subscripts (multi-conjunction m) subscript-mapping))
-  (define single-subscript-init
-    (map
-     (match-lambda
-       [(cons (a* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
-       [(cons (g* id 1 j) val) (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
-     (init-constraints (multi-init m))))
+  (define-values
+    (subscript-mapping single-subscript-conjunction single-subscript-init)
+    (unfold-multi-* m a-off g-off))
   (define initial-conjunction (apply-substitution-to-conjunction single-subscript-init single-subscript-conjunction))
   (define (consecutive-shift pair)
     (match pair
-      [(cons (a* id 'i+1 j) (a* id 'i k)) (cons (a* id 1 j) (apply-substitution single-subscript-init (hash-ref subscript-mapping (a* id 'i k))))]
-      [(cons (g* id 'i+1 j) (g* id 'i k)) (cons (g* id 1 j) (apply-substitution single-subscript-init (hash-ref subscript-mapping (g* id 'i k))))]))
+      [(cons (a* id 'i+1 j) (a* id 'i k))
+       (cons (a* id 1 j) (apply-substitution single-subscript-init (hash-ref subscript-mapping (a* id 'i k))))]
+      [(cons (g* id 'i+1 j) (g* id 'i k))
+       (cons (g* id 1 j) (apply-substitution single-subscript-init (hash-ref subscript-mapping (g* id 'i k))))]))
   (append initial-conjunction
           (list (struct-copy multi m [init (init (map consecutive-shift (consecutive-constraints (multi-consecutive m))))]))))
+(provide unfold-multi-many)
 
 (define (unfold-multi m a-off g-off)
   (list
-   (unfold-multi-one m a-off g-off)
+   (unfold-multi-bounded 1 m a-off g-off)
    (unfold-multi-many m a-off g-off)))
 (module+ test
   (require rackunit)
