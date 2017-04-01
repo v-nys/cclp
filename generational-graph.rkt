@@ -365,19 +365,33 @@
    (local-max (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f #t))
    'l1))
 
+(define (gen-add1 gen-num)
+  (match gen-num
+    [(? exact-integer?) (add1 gen-num)]
+    [(? symbol?) (symsum gen-num 1)]
+    [(symsum sym -1) sym]
+    [(symsum sym num) (symsum sym (add1 num))]))
+(provide
+ (proc-doc/names
+  gen-add1
+  (-> (or/c exact-integer? symbol? symsum?) (or/c exact-integer? symbol? symsum?))
+  (gen-num)
+  @{Computes the generation number after @racket[gen-num].}))
+
+(define (gen-sub1 gen-num)
+  (match gen-num
+    [(? exact-integer?) (sub1 gen-num)]
+    [(? symbol?) (symsum gen-num -1)]
+    [(symsum sym 1) sym]
+    [(symsum sym num) (symsum sym (sub1 num))]))
+(provide
+ (proc-doc/names
+  gen-sub1
+  (-> (or/c exact-integer? symbol? symsum?) (or/c exact-integer? symbol? symsum?))
+  (gen-num)
+  @{Computes the generation number before @racket[gen-num].}))
+
 (define (annotate-unfolding! id-conjunct ann-parent relevant-targets graph live-depth curr-depth)
-  (define (gen-add1 gen-num)
-    (match gen-num
-      [(? number?) (add1 gen-num)]
-      [(? symbol?) (symsum gen-num 1)]
-      [(symsum sym -1) sym]
-      [(symsum sym num) (symsum sym (add1 num))]))
-  (define (gen-sub1 gen-num)
-    (match gen-num
-      [(? number?) (sub1 gen-num)]
-      [(? symbol?) (symsum gen-num -1)]
-      [(symsum sym 1) sym]
-      [(symsum sym num) (symsum sym (sub1 num))]))
   (match-define (gen-node parent-conjunct parent-id parent-gen parent-unfolded? _) ann-parent)
   (cond
     [(member ann-parent relevant-targets)

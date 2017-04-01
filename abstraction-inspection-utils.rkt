@@ -33,40 +33,43 @@
 
 (define (assemble-var-indices right-variable-type? abstract-data)
   (define (assemble-aux right-variable-type? abstract-data)
-    (cond [(abstract-variable? abstract-data)
-           (if (right-variable-type? abstract-data)
-               (list (avar-index abstract-data)) (list))]
-          [(abstract-atom? abstract-data)
-           (append* (map
-                     (λ (arg) (assemble-var-indices right-variable-type? arg))
-                     (abstract-atom-args abstract-data)))]
-          [(abstract-function? abstract-data)
-           (append*
-            (map
-             (λ (arg) (assemble-var-indices right-variable-type? arg))
-             (abstract-function-args abstract-data)))]
-          [(list? abstract-data)
-           (append*
-            (map (λ (arg) (assemble-var-indices right-variable-type? arg)) abstract-data))]
-          [(abstract-rule? abstract-data)
-           (append
-            (assemble-var-indices right-variable-type? (abstract-rule-head abstract-data))
-            (assemble-var-indices right-variable-type? (abstract-rule-body abstract-data)))]
-          [(full-evaluation? abstract-data)
-           (append
-            (assemble-var-indices
-             right-variable-type?
-             (full-evaluation-input-pattern abstract-data))
-            (assemble-var-indices
-             right-variable-type?
-             (full-evaluation-output-pattern abstract-data)))]))
+    (match abstract-data
+      [(? abstract-variable?)
+       (if (right-variable-type? abstract-data)
+           (list (avar-index abstract-data)) (list))]
+      [(? abstract-atom?)
+       (append* (map
+                 (λ (arg) (assemble-var-indices right-variable-type? arg))
+                 (abstract-atom-args abstract-data)))]
+      [(? abstract-function?)
+       (append*
+        (map
+         (λ (arg) (assemble-var-indices right-variable-type? arg))
+         (abstract-function-args abstract-data)))]
+      [(? list?)
+       (append*
+        (map (λ (arg) (assemble-var-indices right-variable-type? arg)) abstract-data))]
+      [(? abstract-rule?)
+       (append
+        (assemble-var-indices right-variable-type? (abstract-rule-head abstract-data))
+        (assemble-var-indices right-variable-type? (abstract-rule-body abstract-data)))]
+      [(? full-evaluation?)
+       (append
+        (assemble-var-indices
+         right-variable-type?
+         (full-evaluation-input-pattern abstract-data))
+        (assemble-var-indices
+         right-variable-type?
+         (full-evaluation-output-pattern abstract-data)))]
+      [(multi _ _ init _ final)
+       (assemble-var-indices right-variable-type? (append (map cdr (init-constraints init)) (map cdr (final-constraints final))))]))
   (remove-duplicates (assemble-aux right-variable-type? abstract-data)))
 (provide
  (proc-doc/names
   assemble-var-indices
   (->
    (-> any/c boolean?)
-   (or/c abstract-domain-elem? abstract-rule? full-evaluation? (listof (or/c abstract-domain-elem? abstract-rule? full-evaluation?)))
+   (or/c abstract-domain-elem*? abstract-rule? full-evaluation?)
    (listof exact-positive-integer?))
   (pred abstract-data)
   @{Assembles the indices of the variables for which @racket[pred] passes,

@@ -10,7 +10,7 @@
   (only-in "abstract-substitution.rkt" abstract-equality apply-substitution)
   (only-in "data-utils.rkt" some-v)
   "gen-graph-structs.rkt"
-  (only-in "generational-graph.rkt" gen-number<)
+  (only-in "generational-graph.rkt" gen-number< gen-add1 gen-sub1)
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts))
 (require (for-doc scribble/manual))
 
@@ -62,7 +62,6 @@
     (match partitioning
       [(list _)
        (cons (map gen-node-conjunct potential) fresh-id)]
-      ;; TODO
       [(list
         (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-1 _) _ _) first-rest) lvl-1)
         (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-2 _) _ _) second-rest) lvl-2))
@@ -73,14 +72,15 @@
                [offset-gen-2 (offset-vars gen-2 offset offset)]
                [subst (some-v (abstract-unify (map abstract-equality gen-1 offset-gen-2) 0))]
                [shared (filter (match-lambda [(abstract-equality v1 v2) (and (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-1)) (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-2)))]) subst)]
-               [new-consecutive (map (match-lambda [(abstract-equality (a idx1) (a idx2)) (cons (a* fresh-id 'i+1 idx1) (a* fresh-id 'i (- idx2 offset)))] [(abstract-equality (g idx1) (g idx2)) (cons (g* fresh-id 'i+1 idx1) (g* fresh-id 'i (- idx2 offset)))]) shared)])
+               [new-consecutive (map (match-lambda [(abstract-equality (a idx1) (a idx2)) (cons (a* fresh-id 'i+1 idx1) (a* fresh-id 'i (- idx2 offset)))] [(abstract-equality (g idx1) (g idx2)) (cons (g* fresh-id 'i+1 idx1) (g* fresh-id 'i (- idx2 offset)))]) shared)]
+               [new-final (map (match-lambda [(abstract-equality (a idx1) (a idx2)) (cons (a* fresh-id 'L idx1) (a (- idx2 offset)))] [(abstract-equality (g idx1) (g idx2)) (cons (g* fresh-id 'L idx1) (g (- idx2 offset)))]) subst)])
           (list
            (multi
             (prefix-subscripts fresh-id 'i (map gen-node-conjunct lvl-1))
             (gen-number< genn-1 genn-2)
             (init (map (λ (v) (cons (prefix-subscripts fresh-id 1 v) v)) (extract-variables (map gen-node-conjunct lvl-1))))
             (consecutive new-consecutive)
-            (final (list)))))
+            (final new-final))))
         (add1 fresh-id))]
       [(list
         (and (list-rest (gen-node (? abstract-atom?) _ _ _ _) first-rest) single-gen)
@@ -364,23 +364,49 @@
 (define (finalize g)
   (grouping-completed g))
 
-; Q: can I combine define and match?
-; TODO go over all cases, complete!
+; completed: name says it all
+; potential: conjunctions of at most two consecutive generations (or generation ranges, or a mixture) which can become a multi
+; current-gen: sequential conjuncts with the same (non-dummy) generation which could be joined by the conjunct in node if it has the right value
+; node: the list element currently subjected to the foldl function
 (define (group-conjuncts node acc)
   (match-let ([(grouping completed potential current-gen next-multi-id) acc])
     (match* (completed potential current-gen node)
       ;; BLOCK: temporary abstraction #f and empty current gen
-      [(_ #f (list) (gen-node conjunct _ (gen 0 #f) #f _))
+      [(_ #f (list)
+          (gen-node conjunct _ (gen 0 #f) #f _))
        (struct-copy grouping acc [completed (append completed (list conjunct))])]
-      [(_ #f (list) (gen-node conjunct _ (gen n id) #f #f))
+      [(_ #f (list)
+          (gen-node conjunct _ (gen n id) #f #f))
        (struct-copy grouping acc [completed (append completed (list conjunct))])]
-      [(_ #f (list) (gen-node conjunct _ (gen n id) #f #t))
+      [(_ #f (list)
+          (gen-node conjunct _ (gen n id) #f #t))
        (struct-copy grouping acc [current-gen (list node)])]
-      [(_ #f (list) (gen-node conjunct _ (gen-range _ _ _ _) #f #f))
+      [(_ #f (list)
+          (gen-node conjunct _ (gen-range _ _ _ _) #f #f))
        (struct-copy grouping acc [completed (append completed (list conjunct))])]
-      [(_ #f (list) (gen-node conjunct _ (gen-range _ _ _ _) #f #t))
+      [(_ #f (list)
+          (gen-node conjunct _ (gen-range _ _ _ _) #f #t))
        (struct-copy grouping acc [potential (list node)])]
-      ; TODO remaining blocks and assertions
+      ;; BLOCK: temporary abstraction #f, non-empty current gen
+      [(_ #f (list-rest _ _) (gen-node conjunct _ (gen 0 #f) #f _))
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen) (list conjunct))] [current-gen '()])]
+      [(_ #f (list-rest (gen-node _ _ (gen n o) #f _) _) (gen-node conjunct _ (gen n o) #f _))
+       (struct-copy grouping acc [current-gen (append current-gen (list node))])]
+      [(_ #f (list-rest (gen-node _ _ (gen n o-1) #f _) _) (gen-node conjunct _ (gen m o-2) #f _)) #:when (not (eqv? o-1 o-2))
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen))] [current-gen (list node)])]
+      [(_ #f (list-rest (gen-node _ _ (gen n-1 o) #f _) _) (gen-node conjunct _ (gen n-2 o) #f _))
+       #:when (or (eqv? (gen-add1 n-1) n-2) (eqv? (gen-sub1 n-1) n-2))
+       (struct-copy grouping acc
+                    [potential current-gen]
+                    [current-gen (list node)])]
+      [(_ #f (list-rest (gen-node _ _ (gen n-1 o) #f _) _) (gen-node conjunct _ (gen n-2 o) #f _))
+       (error "non-consecutive generations with the same origin, should not happen")]
+      [(_ #f (list-rest (gen-node _ _ (gen n o-1) #f _) _) (gen-node conjunct _ (gen-range m l o-2 asc) #f _))
+       #:when (not (eqv? o-1 o-2))
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen))] [potential (list node)] [current-gen (list)])]
+      [(_ #f (list-rest (gen-node _ _ (gen n o-1) #f _) _) (gen-node conjunct _ (gen-range n m o-1 asc) #f _))
+       (error "non-abstracted conjunction and abstracted conjunction have the same generation, should not happen")]
+      ; TODO: from #f / (list aat ...) / n+-1 : m id onwards
       [(_ _ _ _) acc])))
 
 (define (generalize-level lvl)

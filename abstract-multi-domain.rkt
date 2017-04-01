@@ -414,3 +414,14 @@
   (-> any/c boolean?)
   (val)
   @{Test whether @racket[val] is an element of the abstract domain.}))
+
+(define (abstract-domain-elem*? elem)
+  (or (abstract-domain-elem? elem)
+      (multi? elem)
+      ((listof abstract-conjunct?) elem)))
+(provide
+ (proc-doc/names
+  abstract-domain-elem*?
+  (-> any/c boolean?)
+  (val)
+  @{Test whether @racket[val] is an element of the abstract multi domain.}))

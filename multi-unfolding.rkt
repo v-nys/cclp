@@ -121,7 +121,7 @@
     100
     100)
    (list
-    (abstract-atom 'filter (list (g 1) (a 101) (a 102)))
+    (abstract-atom 'filter (list (g 101) (a 1) (a 102)))
     (abstract-atom 'filter (list (g 103) (a 102) (a 2)))))
   (check-true #f)) ; TODO: substitution in case init and final are merged
 (provide
