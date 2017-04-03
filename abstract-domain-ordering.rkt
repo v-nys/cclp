@@ -18,6 +18,14 @@
 
 ;; TODO: double check any potential renaming issues
 (define (>=-extension domain-elem1 domain-elem2)
+  (define (represent n c acc)
+    (match acc
+      [(cons conj-now off-now)
+       (match c
+         [(? abstract-atom?) (cons (cons c conj-now) off-now)]
+         [(? multi?)
+          (let* ([unf (unfold-multi-bounded n c off-now off-now)] [new-off (apply max (assemble-var-indices (λ (_) #t) unf))])
+            (cons (append unf conj-now) new-off))])]))
   (match* (domain-elem1 domain-elem2)
     [((? abstract-domain-elem?) (? abstract-domain-elem?))
      (let* ([renamed-domain-elem2
@@ -41,9 +49,8 @@
     [((? list?) (? list?))
      #:when (and (ormap multi? domain-elem1) (ormap multi? domain-elem2))
      (let* ([off (apply max (assemble-var-indices (λ (_) #t) domain-elem2))]
-            ; TODO: pattern match, deduplicate
-            [repr-1 (car (foldr (λ (c acc) (match c [(? abstract-atom?) (cons (cons c (car acc)) (cdr acc))] [(? multi?) (let* ([unf (unfold-multi-bounded 1 c off off)] [new-off (apply max (assemble-var-indices (λ (_) #t) unf))]) (cons (append unf (car acc)) new-off))])) (cons '() off) domain-elem2))]
-            [repr-2 (car (foldr (λ (c acc) (match c [(? abstract-atom?) (cons (cons c (car acc)) (cdr acc))] [(? multi?) (let* ([unf (unfold-multi-bounded 2 c off off)] [new-off (apply max (assemble-var-indices (λ (_) #t) unf))]) (cons (append unf (car acc)) new-off))])) (cons '() off) domain-elem2))])
+            [repr-1 (car (foldr (curry represent 1) (cons '() off) domain-elem2))]
+            [repr-2 (car (foldr (curry represent 2) (cons '() off) domain-elem2))])
        (and (>=-extension domain-elem1 repr-1)
             (>=-extension domain-elem1 repr-2)))]
     [((? list?) (? list?))
