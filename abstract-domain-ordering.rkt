@@ -18,13 +18,6 @@
 
 ;; TODO: double check any potential renaming issues
 (define (>=-extension domain-elem1 domain-elem2)
-  (define (represent c n off)
-    (match c
-      [(? abstract-atom?) (cons c off)]
-      [(? multi?)
-       (let* ([unf (unfold-multi-bounded n c off off)]
-              [new-off (apply max (assemble-var-indices (λ (_) #t) unf))])
-         (cons unf new-off))]))
   (match* (domain-elem1 domain-elem2)
     [((? abstract-domain-elem?) (? abstract-domain-elem?))
      (let* ([renamed-domain-elem2
@@ -48,8 +41,9 @@
     [((? list?) (? list?))
      #:when (and (ormap multi? domain-elem1) (ormap multi? domain-elem2))
      (let* ([off (apply max (assemble-var-indices (λ (_) #t) domain-elem2))]
-            [repr-1 (car (map-accumulater (λ (c off) (represent c 1 off)) off domain-elem2))]
-            [repr-2 (car (map-accumulater (λ (c off) (represent c 2 off)) off domain-elem2))])
+            ; TODO: pattern match, deduplicate
+            [repr-1 (car (foldr (λ (c acc) (match c [(? abstract-atom?) (cons (cons c (car acc)) (cdr acc))] [(? multi?) (let* ([unf (unfold-multi-bounded 1 c off off)] [new-off (apply max (assemble-var-indices (λ (_) #t) unf))]) (cons (append unf (car acc)) new-off))])) (cons '() off) domain-elem2))]
+            [repr-2 (car (foldr (λ (c acc) (match c [(? abstract-atom?) (cons (cons c (car acc)) (cdr acc))] [(? multi?) (let* ([unf (unfold-multi-bounded 2 c off off)] [new-off (apply max (assemble-var-indices (λ (_) #t) unf))]) (cons (append unf (car acc)) new-off))])) (cons '() off) domain-elem2))])
        (and (>=-extension domain-elem1 repr-1)
             (>=-extension domain-elem1 repr-2)))]
     [((? list?) (? list?))
@@ -183,13 +177,6 @@
        (cons (g* 1 'L 1) (g 2))
        (cons (a* 1 'L 1) (a 2))
        (cons (a* 1 'L 2) (a 3)))))))
-  ; needs more tests for the abstract multi domain
-  ; specifically:
-  ; multi vs list (without multis)
-  ; list with multi vs list without multi
-  ; two lists with multis
-  ; note that multi vs list containing multis is not implemented
-  ; this is like an atom not being considered more general than a single-atom conjunction
   (check-true
    (>=-extension
     (multi
@@ -243,7 +230,130 @@
        (cons (a* 1 'L 2) (a 3)))))
     (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
           (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
-          (abstract-atom 'filter (list (g 3) (a 3) (a 4)))))))
+          (abstract-atom 'filter (list (g 3) (a 3) (a 4))))))
+  (check-true
+   (>=-extension
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (init
+       (list
+        (cons (g* 1 1 1) (g 1))
+        (cons (a* 1 1 1) (a 1))
+        (cons (a* 1 1 2) (a 2))))
+      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+      (final
+       (list
+        (cons (g* 1 'L 1) (g 2))
+        (cons (a* 1 'L 1) (a 2))
+        (cons (a* 1 'L 2) (a 3)))))
+     (abstract-atom 'sift (list (a 3) (a 4))))
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
+     (abstract-atom 'sift (list (a 3) (a 4))))))
+  (check-true
+   (>=-extension
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (init
+       (list
+        (cons (g* 1 1 1) (g 1))
+        (cons (a* 1 1 1) (a 1))
+        (cons (a* 1 1 2) (a 2))))
+      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+      (final
+       (list
+        (cons (g* 1 'L 1) (g 2))
+        (cons (a* 1 'L 1) (a 2))
+        (cons (a* 1 'L 2) (a 3)))))
+     (abstract-atom 'sift (list (a 3) (a 4))))
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
+     (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
+     (abstract-atom 'sift (list (a 3) (a 4))))))
+  (check-true
+   (>=-extension
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (init
+       (list
+        (cons (g* 1 1 1) (g 1))
+        (cons (a* 1 1 1) (a 1))
+        (cons (a* 1 1 2) (a 2))))
+      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+      (final
+       (list
+        (cons (g* 1 'L 1) (g 2))
+        (cons (a* 1 'L 1) (a 2))
+        (cons (a* 1 'L 2) (a 3)))))
+     (abstract-atom 'sift (list (a 3) (a 4))))
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
+     (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
+     (abstract-atom 'filter (list (g 3) (a 3) (a 4)))
+     (abstract-atom 'sift (list (a 4) (a 5))))))
+  (check-true
+   (>=-extension
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (multi
+      (list (abstract-atom* 'filterA (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (init
+       (list
+        (cons (g* 1 1 1) (g 1))
+        (cons (a* 1 1 1) (a 1))
+        (cons (a* 1 1 2) (a 2))))
+      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+      (final
+       (list
+        (cons (g* 1 'L 1) (g 2))
+        (cons (a* 1 'L 1) (a 2))
+        (cons (a* 1 'L 2) (a 3)))))
+     (multi
+      (list (abstract-atom* 'filterB (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2))))
+      #t
+      (init
+       (list
+        (cons (g* 2 1 1) (g 4))
+        (cons (a* 2 1 1) (a 3))
+        (cons (a* 2 1 2) (a 4))))
+      (consecutive (list (cons (a* 2 'i+1 1) (a* 2 'i 2))))
+      (final
+       (list
+        (cons (g* 2 'L 1) (g 5))
+        (cons (a* 2 'L 1) (a 5))
+        (cons (a* 2 'L 2) (a 6))))))
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (abstract-atom 'filterA (list (g 1) (a 1) (a 2)))
+     (abstract-atom 'filterA (list (g 2) (a 2) (a 3)))
+     (abstract-atom 'filterA (list (g 3) (a 3) (a 4)))
+     (multi
+      (list (abstract-atom* 'filterB (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (init
+       (list
+        (cons (g* 1 1 1) (g 4))
+        (cons (a* 1 1 1) (a 4))
+        (cons (a* 1 1 2) (a 5))))
+      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+      (final
+       (list
+        (cons (g* 1 'L 1) (g 6))
+        (cons (a* 1 'L 1) (a 6))
+        (cons (a* 1 'L 2) (a 7)))))))))
 (provide
  (proc-doc/names
   >=-extension
@@ -255,9 +365,6 @@
 (define (renames? domain-elem1 domain-elem2)
   (and (>=-extension domain-elem1 domain-elem2)
        (>=-extension domain-elem2 domain-elem1)))
-; TODO needs tests for multi equivalence (and equivalence of lists containing multi)
-(module+ test
-  (check-true #f))
 (provide
  (proc-doc/names
   renames?
