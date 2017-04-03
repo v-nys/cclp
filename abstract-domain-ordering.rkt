@@ -32,12 +32,11 @@
             [unifier
              (abstract-unify
               (list (abstract-equality domain-elem1 renamed-domain-elem2)) 0)])
-       (begin
-         (and
-          (some? unifier)
-          (equal?
-           (apply-substitution (some-v unifier) domain-elem1)
-           renamed-domain-elem2))))]
+       (and
+        (some? unifier)
+        (equal?
+         (apply-substitution (some-v unifier) domain-elem1)
+         renamed-domain-elem2)))]
     [((? multi?) (? (listof abstract-atom?)))
      (if (<= (length (multi-conjunction domain-elem1)) (length domain-elem2))
          (let* ([offset (apply max (assemble-var-indices (λ (_) #t) domain-elem1))]
@@ -61,7 +60,7 @@
                 [multis (filter multi? domain-elem1)]
                 [one-unfs (map (λ (m) (unfold-multi-bounded 1 m off off)) multis)]
                 [many-unfs (map (λ (m) (unfold-multi-many m off off)) multis)]
-                [replacer (λ (m u) (append (takef domain-elem1 (compose not (curry equal? m))) (cons u (drop (dropf domain-elem1 (compose not (curry equal? m))) 1))))]
+                [replacer (λ (m u) (append (takef domain-elem1 (compose not (curry equal? m))) (append u (drop (dropf domain-elem1 (compose not (curry equal? m))) 1))))]
                 [resulting-conjunctions (append (map replacer multis one-unfs) (map replacer multis many-unfs))])
            (ormap (λ (c) (>=-extension c domain-elem2)) resulting-conjunctions)))]
     [((? multi?) (? multi?))

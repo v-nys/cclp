@@ -71,7 +71,7 @@
          (none))]
     ; note: unification of conjunctions isn't explicitly mentioned in the paper, but this is it
     [(list-rest (abstract-equality lst1 lst2) tail)
-     #:when (and (list? lst1) (list? lst2))
+     #:when (and (list? lst1) (list? lst2) (equal? (length lst1) (length lst2)))
      (abstract-unify
       (for/list
           ([atom1 lst1] [atom2 lst2])
