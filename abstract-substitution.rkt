@@ -51,8 +51,11 @@
     [else input-elem]))
 
 ;(: substitute-in-conjunct (-> AbstractTerm AbstractVariable abstract-atom abstract-atom))
-(define (substitute-in-conjunct substituter substitutee input-atom)
-  (match input-atom [(abstract-atom sym args) (abstract-atom sym (map (λ (a) (substitute-in-term substituter substitutee a)) args))]))
+(define (substitute-in-conjunct substituter substitutee input-conjunct)
+  (match input-conjunct
+    [(abstract-atom sym args) (abstract-atom sym (map (λ (a) (substitute-in-term substituter substitutee a)) args))]
+    [(multi c1 a i c2 f)
+     (multi c1 a (init (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) (init-constraints i))) c2 (final (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) (final-constraints f))))]))
 
 ;(: substitute-in-conjunction (-> AbstractTerm AbstractVariable AbstractConjunction AbstractConjunction))
 (define (substitute-in-conjunction substituter substitutee conjunction) (map (λ (a) (substitute-in-conjunct substituter substitutee a)) conjunction))
@@ -109,7 +112,7 @@
 
 (define (apply-substitution subst substitution-object)
   (cond [(abstract-term? substitution-object) (apply-substitution-to-term subst substitution-object)]
-        [(abstract-atom? substitution-object) (apply-substitution-to-conjunct subst substitution-object)]
+        [(abstract-conjunct? substitution-object) (apply-substitution-to-conjunct subst substitution-object)]
         [(list? substitution-object) (apply-substitution-to-conjunction subst substitution-object)]
         [(abstract-rule? substitution-object) (apply-substitution-to-abstract-rule subst substitution-object)]
         [(full-evaluation? substitution-object) (apply-substitution-to-full-evaluation subst substitution-object)]))
@@ -118,9 +121,11 @@
   apply-substitution
   (-> abstract-substitution?
       (or/c abstract-domain-elem?
-            abstract-knowledge?)
+            abstract-knowledge?
+            (listof abstract-conjunct?))
       (or/c abstract-domain-elem?
-            abstract-knowledge?))
+            abstract-knowledge?
+            (listof abstract-conjunct?)))
   (subst substitution-object)
   ("One documentation-time expression" "Another documentation-time expression")))
 

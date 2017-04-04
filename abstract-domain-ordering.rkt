@@ -16,16 +16,11 @@
   (require rackunit)
   (require "cclp-interpreter.rkt"))
 
-;; TODO: double check any potential renaming issues
 (define (>=-extension domain-elem1 domain-elem2)
-  (define (represent n c acc)
-    (match acc
-      [(cons conj-now off-now)
-       (match c
-         [(? abstract-atom?) (cons (cons c conj-now) off-now)]
-         [(? multi?)
-          (let* ([unf (unfold-multi-bounded n c off-now off-now)] [new-off (apply max (assemble-var-indices (λ (_) #t) unf))])
-            (cons (append unf conj-now) new-off))])]))
+  (define (replacer de m u*)
+    (define s (cdr u*))
+    (define u (car u*))
+    (apply-substitution s (append (takef de (compose not (curry equal? m))) (append u (drop (dropf de (compose not (curry equal? m))) 1)))))
   (match* (domain-elem1 domain-elem2)
     [((? abstract-domain-elem?) (? abstract-domain-elem?))
      (let* ([renamed-domain-elem2
@@ -41,7 +36,8 @@
     [((? multi?) (? (listof abstract-atom?)))
      (if (<= (length (multi-conjunction domain-elem1)) (length domain-elem2))
          (let* ([offset (apply max (assemble-var-indices (λ (_) #t) domain-elem1))]
-                [unf-one (unfold-multi-bounded 1 domain-elem1 offset offset)]
+                ; don't need substitution here
+                [unf-one (car (unfold-multi-bounded 1 domain-elem1 offset offset))]
                 [unf-many (unfold-multi-many domain-elem1 offset offset)])
            (or (>=-extension unf-one domain-elem2)
                (>=-extension unf-many domain-elem2)))
@@ -49,8 +45,11 @@
     [((? list?) (? list?))
      #:when (and (ormap multi? domain-elem1) (ormap multi? domain-elem2))
      (let* ([off (apply max (assemble-var-indices (λ (_) #t) domain-elem2))]
-            [repr-1 (car (foldr (curry represent 1) (cons '() off) domain-elem2))]
-            [repr-2 (car (foldr (curry represent 2) (cons '() off) domain-elem2))])
+            [first-multi (findf multi? domain-elem2)]
+            [one-unf (unfold-multi-bounded 1 first-multi off off)]
+            [two-unf (unfold-multi-bounded 2 first-multi off off)]
+            [repr-1 (replacer domain-elem2 first-multi one-unf)]
+            [repr-2 (replacer domain-elem2 first-multi two-unf)])
        (and (>=-extension domain-elem1 repr-1)
             (>=-extension domain-elem1 repr-2)))]
     [((? list?) (? list?))
@@ -60,14 +59,14 @@
          (let* ([off (apply max (assemble-var-indices (λ (_) #t) domain-elem1))]
                 [multis (filter multi? domain-elem1)]
                 [one-unfs (map (λ (m) (unfold-multi-bounded 1 m off off)) multis)]
-                [many-unfs (map (λ (m) (unfold-multi-many m off off)) multis)]
-                [replacer (λ (m u) (append (takef domain-elem1 (compose not (curry equal? m))) (append u (drop (dropf domain-elem1 (compose not (curry equal? m))) 1))))]
-                [resulting-conjunctions (append (map replacer multis one-unfs) (map replacer multis many-unfs))])
+                [many-unfs (map (λ (m) (cons (unfold-multi-many m off off) (list))) multis)]
+                [resulting-conjunctions (append (map (curry replacer domain-elem1) multis one-unfs) (map (curry replacer domain-elem1) multis many-unfs))])
            (ormap (λ (c) (>=-extension c domain-elem2)) resulting-conjunctions)))]
     [((? multi?) (? multi?))
      (let* ([offset (apply max (assemble-var-indices (λ (_) #t) (list domain-elem1 domain-elem2)))]
-            [unf-1 (unfold-multi-bounded 2 domain-elem1 offset offset)]
-            [unf-2 (unfold-multi-bounded 2 domain-elem2 offset offset)])
+            ; don't need substitution here
+            [unf-1 (car (unfold-multi-bounded 2 domain-elem1 offset offset))]
+            [unf-2 (car (unfold-multi-bounded 2 domain-elem2 offset offset))])
        (>=-extension unf-1 unf-2))]))
 (module+ test
   (check-true (>=-extension (interpret-abstract-term "α1") (interpret-abstract-term "γ1")))
@@ -198,8 +197,8 @@
      (final
       (list
        (cons (g* 1 'L 1) (g 2))
-       (cons (a* 1 'L 1) (a 2))
-       (cons (a* 1 'L 2) (a 3)))))
+       (cons (a* 1 'L 1) (a 3))
+       (cons (a* 1 'L 2) (a 4)))))
     (list (abstract-atom 'filter (list (g 1) (a 1) (a 2))))))
   (check-true
    (>=-extension
@@ -215,8 +214,8 @@
      (final
       (list
        (cons (g* 1 'L 1) (g 2))
-       (cons (a* 1 'L 1) (a 2))
-       (cons (a* 1 'L 2) (a 3)))))
+       (cons (a* 1 'L 1) (a 3))
+       (cons (a* 1 'L 2) (a 4)))))
     (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
           (abstract-atom 'filter (list (g 2) (a 2) (a 3))))))
   (check-true
@@ -233,8 +232,8 @@
      (final
       (list
        (cons (g* 1 'L 1) (g 2))
-       (cons (a* 1 'L 1) (a 2))
-       (cons (a* 1 'L 2) (a 3)))))
+       (cons (a* 1 'L 1) (a 3))
+       (cons (a* 1 'L 2) (a 4)))))
     (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
           (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
           (abstract-atom 'filter (list (g 3) (a 3) (a 4))))))
@@ -254,13 +253,13 @@
       (final
        (list
         (cons (g* 1 'L 1) (g 2))
-        (cons (a* 1 'L 1) (a 2))
-        (cons (a* 1 'L 2) (a 3)))))
-     (abstract-atom 'sift (list (a 3) (a 4))))
+        (cons (a* 1 'L 1) (a 3))
+        (cons (a* 1 'L 2) (a 4)))))
+     (abstract-atom 'sift (list (a 4) (a 5))))
     (list
      (abstract-atom 'integers (list (g 10) (a 1)))
      (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
-     (abstract-atom 'sift (list (a 3) (a 4))))))
+     (abstract-atom 'sift (list (a 2) (a 3))))))
   (check-true
    (>=-extension
     (list
@@ -277,9 +276,9 @@
       (final
        (list
         (cons (g* 1 'L 1) (g 2))
-        (cons (a* 1 'L 1) (a 2))
-        (cons (a* 1 'L 2) (a 3)))))
-     (abstract-atom 'sift (list (a 3) (a 4))))
+        (cons (a* 1 'L 1) (a 3))
+        (cons (a* 1 'L 2) (a 4)))))
+     (abstract-atom 'sift (list (a 4) (a 5))))
     (list
      (abstract-atom 'integers (list (g 10) (a 1)))
      (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
@@ -301,9 +300,9 @@
       (final
        (list
         (cons (g* 1 'L 1) (g 2))
-        (cons (a* 1 'L 1) (a 2))
-        (cons (a* 1 'L 2) (a 3)))))
-     (abstract-atom 'sift (list (a 3) (a 4))))
+        (cons (a* 1 'L 1) (a 3))
+        (cons (a* 1 'L 2) (a 4)))))
+     (abstract-atom 'sift (list (a 4) (a 5))))
     (list
      (abstract-atom 'integers (list (g 10) (a 1)))
      (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
@@ -326,22 +325,22 @@
       (final
        (list
         (cons (g* 1 'L 1) (g 2))
-        (cons (a* 1 'L 1) (a 2))
-        (cons (a* 1 'L 2) (a 3)))))
+        (cons (a* 1 'L 1) (a 3))
+        (cons (a* 1 'L 2) (a 4)))))
      (multi
       (list (abstract-atom* 'filterB (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2))))
       #t
       (init
        (list
         (cons (g* 2 1 1) (g 4))
-        (cons (a* 2 1 1) (a 3))
-        (cons (a* 2 1 2) (a 4))))
+        (cons (a* 2 1 1) (a 4))
+        (cons (a* 2 1 2) (a 5))))
       (consecutive (list (cons (a* 2 'i+1 1) (a* 2 'i 2))))
       (final
        (list
         (cons (g* 2 'L 1) (g 5))
-        (cons (a* 2 'L 1) (a 5))
-        (cons (a* 2 'L 2) (a 6))))))
+        (cons (a* 2 'L 1) (a 6))
+        (cons (a* 2 'L 2) (a 7))))))
     (list
      (abstract-atom 'integers (list (g 10) (a 1)))
      (abstract-atom 'filterA (list (g 1) (a 1) (a 2)))
