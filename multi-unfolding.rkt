@@ -43,13 +43,12 @@
           ([(subscript-mapping single-subscript-conjunction single-subscript-init) (unfold-multi-* m a-off g-off)]
            [(single-subscript-final) (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping)]
            [(combined-substitution) (some-v (abstract-unify (append single-subscript-init single-subscript-final) 0))])
-        (apply-substitution-to-conjunction
-         combined-substitution
-         single-subscript-conjunction))
-      (let* ([many-unf (unfold-multi-many m a-off g-off)]
-             [new-off (apply max (assemble-var-indices (λ (_) #t) many-unf))]
-             [rec-unf (unfold-multi-bounded (- num 1) (last many-unf) new-off new-off)])
-        (append (drop-right many-unf 1) rec-unf))))
+        (cons (apply-substitution-to-conjunction combined-substitution single-subscript-conjunction) combined-substitution))
+      (match-let*
+          ([many-unf (unfold-multi-many m a-off g-off)]
+           [new-off (apply max (assemble-var-indices (λ (_) #t) many-unf))]
+           [(cons rec-unf rec-subst) (unfold-multi-bounded (- num 1) (last many-unf) new-off new-off)])
+        (cons (append (drop-right many-unf 1) rec-unf) rec-subst))))
 (provide
  (proc-doc/names
   unfold-multi-bounded
@@ -82,46 +81,65 @@
    (unfold-multi-many m a-off g-off)))
 (module+ test
   (require rackunit)
+  ;  (check-equal?
+  ;   (unfold-multi
+  ;    (multi
+  ;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+  ;     #t
+  ;     (init (list (cons (a* 1 1 1) (a 1))))
+  ;     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+  ;     (final (list (cons (a* 1 'L 2) (a 2)))))
+  ;    10
+  ;    15)
+  ;   (list
+  ;    (list (abstract-atom 'filter (list (g 16) (a 1) (a 2))))
+  ;    (list
+  ;     (abstract-atom 'filter (list (g 16) (a 1) (a 12)))
+  ;     (multi
+  ;      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+  ;      #t
+  ;      (init (list (cons (a* 1 1 1) (a 12))))
+  ;      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+  ;      (final (list (cons (a* 1 'L 2) (a 2))))))))
+  ;  (check-equal?
+  ;   (unfold-multi
+  ;    (multi
+  ;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+  ;     #t
+  ;     (init (list (cons (a* 1 1 1) (abstract-function 'cons (list (g 1) (a 1))))))
+  ;     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+  ;     (final (list (cons (a* 1 'L 2) (a 2)))))
+  ;    10
+  ;    15)
+  ;   (list
+  ;    (list (abstract-atom 'filter (list (g 16) (abstract-function 'cons (list (g 1) (a 1))) (a 2))))
+  ;    (list
+  ;     (abstract-atom 'filter (list (g 16) (abstract-function 'cons (list (g 1) (a 1))) (a 12)))
+  ;     (multi
+  ;      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+  ;      #t
+  ;      (init (list (cons (a* 1 1 1) (a 12))))
+  ;      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+  ;      (final (list (cons (a* 1 'L 2) (a 2))))))))
   (check-equal?
-   (unfold-multi
+   (unfold-multi-bounded
+    1
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init (list (cons (a* 1 1 1) (a 1))))
+     (init (list (cons (g* 1 1 1) (g 1)) (cons (a* 1 1 1) (a 1)) (cons (a* 1 1 2) (a 2))))
      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final (list (cons (a* 1 'L 2) (a 2)))))
-    10
-    15)
-   (list
-    (list (abstract-atom 'filter (list (g 16) (a 1) (a 2))))
+     (final (list (cons (a* 1 'L 2) (a 3)))))
+    100
+    100)
+   (cons
     (list
-     (abstract-atom 'filter (list (g 16) (a 1) (a 12)))
-     (multi
-      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-      #t
-      (init (list (cons (a* 1 1 1) (a 12))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final (list (cons (a* 1 'L 2) (a 2))))))))
-  (check-equal?
-   (unfold-multi
-    (multi
-     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-     #t
-     (init (list (cons (a* 1 1 1) (abstract-function 'cons (list (g 1) (a 1))))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final (list (cons (a* 1 'L 2) (a 2)))))
-    10
-    15)
-   (list
-    (list (abstract-atom 'filter (list (g 16) (abstract-function 'cons (list (g 1) (a 1))) (a 2))))
+     (abstract-atom 'filter (list (g 1) (a 1) (a 3))))
     (list
-     (abstract-atom 'filter (list (g 16) (abstract-function 'cons (list (g 1) (a 1))) (a 12)))
-     (multi
-      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-      #t
-      (init (list (cons (a* 1 1 1) (a 12))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final (list (cons (a* 1 'L 2) (a 2))))))))
+     (abstract-equality (g 101) (g 1))
+     (abstract-equality (a 101) (a 1))
+     (abstract-equality (a 102) (a 2))
+     (abstract-equality (a 2) (a 3))))) ; only this one actually matters
   (check-equal?
    (unfold-multi-bounded
     2
@@ -133,9 +151,13 @@
      (final (list (cons (a* 1 'L 2) (a 2)))))
     100
     100)
-   (list
-    (abstract-atom 'filter (list (g 101) (a 1) (a 102)))
-    (abstract-atom 'filter (list (g 103) (a 102) (a 2))))))
+   (cons
+    (list
+     (abstract-atom 'filter (list (g 101) (a 1) (a 102)))
+     (abstract-atom 'filter (list (g 103) (a 102) (a 2))))
+    (list
+     (abstract-equality (a 103) (a 102))
+     (abstract-equality (a 104) (a 2))))))
 (provide
  (proc-doc/names
   unfold-multi
