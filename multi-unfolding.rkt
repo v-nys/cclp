@@ -8,16 +8,18 @@
 (require (for-doc scribble/manual))
 
 (define (single-subscript-end-equalities constraints subscript-mapping)
-  (map (match-lambda
-         [(cons (a* id _ j) val)
-          (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
-         [(cons (g* id _ j) val)
-          (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
-       constraints))
+  (map
+   (match-lambda
+     [(cons (a* id _ j) val)
+      (abstract-equality (hash-ref subscript-mapping (a* id 'i j)) val)]
+     [(cons (g* id _ j) val)
+      (abstract-equality (hash-ref subscript-mapping (g* id 'i j)) val)])
+   constraints))
 
 ;; subscript mapping maps each multi-subscript variable with symbolic index "i" to a fresh regular variable
 ;; single-subscript-conjunction is what happens when this mapping is applied
 ;; single-subscript-init is a translation of init constraints on multi-subscript variables to single-subscript variables
+;: this part is common to the unfolding of a bounded number of conjunctions the unfolding of a new multi
 (define (unfold-multi-* m a-off g-off)
   (define subscript-mapping
     (foldl
@@ -33,7 +35,6 @@
     (single-subscript-end-equalities (init-constraints (multi-init m)) subscript-mapping))
   (values subscript-mapping single-subscript-conjunction single-subscript-init))
 
-;; TODO return proper substitution
 (define (unfold-multi-bounded num m a-off g-off)
   (if (eqv? num 1)
       (let*-values
@@ -46,7 +47,16 @@
              [new-off (apply max (assemble-var-indices (λ (_) #t) many-unf))]
              [rec-unf (unfold-multi-bounded (- num 1) (last many-unf) new-off new-off)])
         (append (drop-right many-unf 1) rec-unf))))
-(provide unfold-multi-bounded)
+(provide
+ (proc-doc/names
+  unfold-multi-bounded
+  (-> exact-positive-integer? multi? exact-nonnegative-integer? exact-nonnegative-integer? (cons/c (listof abstract-atom?) (listof abstract-equality?)))
+  (num m a-off g-off)
+  @{Unfolds a multi abstraction @racket[m] so that its unfolding does not contain a multi abstraction.
+ The unfolding consists of @racket[num] repetitions of the represented conjunction.
+ The values @racket[a-off] and @racket[g-off] are offsets for freshly introduced single-subscript variables.
+ Normally, these are expected to be the greatest single-subscript variables in the conjunction in which the unfolding is applied.
+ The result consists of the resulting unfolding, and of a substitution (which is necessary if initial and final constraints pertain to the same variable).}))
 
 (define (unfold-multi-many m a-off g-off)
   (define-values
@@ -122,8 +132,7 @@
     100)
    (list
     (abstract-atom 'filter (list (g 101) (a 1) (a 102)))
-    (abstract-atom 'filter (list (g 103) (a 102) (a 2)))))
-  (check-true #f)) ; TODO: substitution in case init and final are merged
+    (abstract-atom 'filter (list (g 103) (a 102) (a 2))))))
 (provide
  (proc-doc/names
   unfold-multi
