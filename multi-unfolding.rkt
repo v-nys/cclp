@@ -78,49 +78,51 @@
 (define (unfold-multi m a-off g-off)
   (list
    (unfold-multi-bounded 1 m a-off g-off)
-   (unfold-multi-many m a-off g-off)))
+   (cons (unfold-multi-many m a-off g-off) (list)))) ; clash is not possible here
 (module+ test
   (require rackunit)
-  ;  (check-equal?
-  ;   (unfold-multi
-  ;    (multi
-  ;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-  ;     #t
-  ;     (init (list (cons (a* 1 1 1) (a 1))))
-  ;     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-  ;     (final (list (cons (a* 1 'L 2) (a 2)))))
-  ;    10
-  ;    15)
-  ;   (list
-  ;    (list (abstract-atom 'filter (list (g 16) (a 1) (a 2))))
-  ;    (list
-  ;     (abstract-atom 'filter (list (g 16) (a 1) (a 12)))
-  ;     (multi
-  ;      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-  ;      #t
-  ;      (init (list (cons (a* 1 1 1) (a 12))))
-  ;      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-  ;      (final (list (cons (a* 1 'L 2) (a 2))))))))
-  ;  (check-equal?
-  ;   (unfold-multi
-  ;    (multi
-  ;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-  ;     #t
-  ;     (init (list (cons (a* 1 1 1) (abstract-function 'cons (list (g 1) (a 1))))))
-  ;     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-  ;     (final (list (cons (a* 1 'L 2) (a 2)))))
-  ;    10
-  ;    15)
-  ;   (list
-  ;    (list (abstract-atom 'filter (list (g 16) (abstract-function 'cons (list (g 1) (a 1))) (a 2))))
-  ;    (list
-  ;     (abstract-atom 'filter (list (g 16) (abstract-function 'cons (list (g 1) (a 1))) (a 12)))
-  ;     (multi
-  ;      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-  ;      #t
-  ;      (init (list (cons (a* 1 1 1) (a 12))))
-  ;      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-  ;      (final (list (cons (a* 1 'L 2) (a 2))))))))
+  (check-equal?
+   (unfold-multi
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init (list (cons (a* 1 1 1) (a 1))))
+     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final (list (cons (a* 1 'L 2) (a 2)))))
+    10
+    15)
+   (list
+    (cons (list (abstract-atom 'filter (list (g 16) (a 1) (a 2)))) (list (abstract-equality (a 11) (a 1)) (abstract-equality (a 12) (a 2))))
+    (cons
+     (list
+      (abstract-atom 'filter (list (g 16) (a 1) (a 12)))
+      (multi
+       (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+       #t
+       (init (list (cons (a* 1 1 1) (a 12))))
+       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+       (final (list (cons (a* 1 'L 2) (a 2))))))
+     (list))))
+  (check-equal?
+   (unfold-multi
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init (list (cons (a* 1 1 1) (abstract-function 'cons (list (g 1) (a 1))))))
+     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final (list (cons (a* 1 'L 2) (a 2)))))
+    10
+    15)
+   (list
+    (cons (list (abstract-atom 'filter (list (g 16) (abstract-function 'cons (list (g 1) (a 1))) (a 2)))) (list (abstract-equality (a 11) (abstract-function 'cons (list (g 1) (a 1)))) (abstract-equality (a 12) (a 2))))
+    (cons (list
+           (abstract-atom 'filter (list (g 16) (abstract-function 'cons (list (g 1) (a 1))) (a 12)))
+           (multi
+            (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+            #t
+            (init (list (cons (a* 1 1 1) (a 12))))
+            (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+            (final (list (cons (a* 1 'L 2) (a 2)))))) (list))))
   (check-equal?
    (unfold-multi-bounded
     1
@@ -161,9 +163,10 @@
 (provide
  (proc-doc/names
   unfold-multi
-  (-> multi? exact-positive-integer? exact-positive-integer? (listof (listof abstract-conjunct?)))
+  (-> multi? exact-positive-integer? exact-positive-integer? (listof (cons/c (listof abstract-conjunct?) (listof abstract-equality?))))
   (m a-off g-off)
   @{Returns the "case: one" and "case: many" unfoldings of a @racket[multi] struct.
  The value @racket[a-off] specifies a safe offset value for "any"-type variables which
  are not constrained by the bindings in the multi abstraction and the @racket[g-off]
- serves the same purpose for "ground"-type variables.}))
+ serves the same purpose for "ground"-type variables.
+ The resulting substitutions are as in @racket[unfold-multi-bounded].}))
