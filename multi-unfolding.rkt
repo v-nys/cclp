@@ -4,7 +4,9 @@
   "abstract-multi-domain.rkt"
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   "abstract-substitution.rkt"
-  (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables assemble-var-indices))
+  (only-in "abstract-unify.rkt" abstract-unify)
+  (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables assemble-var-indices)
+  (only-in "data-utils.rkt" some-v))
 (require (for-doc scribble/manual))
 
 (define (single-subscript-end-equalities constraints subscript-mapping)
@@ -39,9 +41,10 @@
   (if (eqv? num 1)
       (let*-values
           ([(subscript-mapping single-subscript-conjunction single-subscript-init) (unfold-multi-* m a-off g-off)]
-           [(single-subscript-final) (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping)])
+           [(single-subscript-final) (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping)]
+           [(combined-substitution) (some-v (abstract-unify (append single-subscript-init single-subscript-final) 0))])
         (apply-substitution-to-conjunction
-         (append single-subscript-init single-subscript-final)
+         combined-substitution
          single-subscript-conjunction))
       (let* ([many-unf (unfold-multi-many m a-off g-off)]
              [new-off (apply max (assemble-var-indices (λ (_) #t) many-unf))]
