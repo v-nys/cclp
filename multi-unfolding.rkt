@@ -33,14 +33,13 @@
      (extract-subscripted-variables m)))
   (define single-subscript-conjunction
     (remove-multi-subscripts (multi-conjunction m) subscript-mapping))
-  (define single-subscript-init
-    (single-subscript-end-equalities (init-constraints (multi-init m)) subscript-mapping))
-  (values subscript-mapping single-subscript-conjunction single-subscript-init))
+  (values subscript-mapping single-subscript-conjunction))
 
 (define (unfold-multi-bounded num m a-off g-off)
   (if (eqv? num 1)
       (let*-values
-          ([(subscript-mapping single-subscript-conjunction single-subscript-init) (unfold-multi-* m a-off g-off)]
+          ([(subscript-mapping single-subscript-conjunction) (unfold-multi-* m a-off g-off)]
+           [(single-subscript-init) (single-subscript-end-equalities (init-constraints (multi-init m)) subscript-mapping)]
            [(single-subscript-final) (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping)]
            [(combined-substitution) (some-v (abstract-unify (append single-subscript-init single-subscript-final) 0))])
         (cons (apply-substitution-to-conjunction combined-substitution single-subscript-conjunction) combined-substitution))
@@ -62,8 +61,9 @@
 
 (define (unfold-multi-many m a-off g-off)
   (define-values
-    (subscript-mapping single-subscript-conjunction single-subscript-init)
+    (subscript-mapping single-subscript-conjunction)
     (unfold-multi-* m a-off g-off))
+  (define single-subscript-init (single-subscript-end-equalities (init-constraints (multi-init m)) subscript-mapping))
   (define initial-conjunction (apply-substitution-to-conjunction single-subscript-init single-subscript-conjunction))
   (define (consecutive-shift pair)
     (match pair
@@ -74,6 +74,42 @@
   (append initial-conjunction
           (list (struct-copy multi m [init (init (map consecutive-shift (consecutive-constraints (multi-consecutive m))))]))))
 (provide unfold-multi-many)
+
+(define (unfold-multi-many-right m a-off g-off)
+  (define-values
+    (subscript-mapping single-subscript-conjunction)
+    (unfold-multi-* m a-off g-off))
+  (define single-subscript-final (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping))
+  (define final-conjunction (apply-substitution-to-conjunction single-subscript-final single-subscript-conjunction))
+  (define (consecutive-shift pair)
+    (match pair
+      [(cons (a* id 'i+1 j) (a* id 'i k))
+       (cons (a* id 'L k) (apply-substitution single-subscript-final (hash-ref subscript-mapping (a* id 'i j))))]
+      [(cons (g* id 'i+1 j) (g* id 'i k))
+       (cons (g* id 'L k) (apply-substitution single-subscript-final (hash-ref subscript-mapping (g* id 'i j))))]))
+  (append
+   (list (struct-copy multi m [final (final (map consecutive-shift (consecutive-constraints (multi-consecutive m))))]))
+   final-conjunction))
+(module+ test
+  (check-equal?
+   (unfold-multi-many-right
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init (list (cons (a* 1 1 1) (a 1))))
+     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final (list (cons (a* 1 'L 2) (a 2)))))
+    100
+    100)
+   (list
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init (list (cons (a* 1 1 1) (a 1))))
+     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final (list (cons (a* 1 'L 2) (a 101)))))
+    (abstract-atom 'filter (list (g 101) (a 101) (a 2))))))
+(provide unfold-multi-many-right)
 
 (define (unfold-multi m a-off g-off)
   (list
