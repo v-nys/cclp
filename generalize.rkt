@@ -95,7 +95,7 @@
         (list (gen-node (and (? multi?) existing-multi) _ (gen-range m o id asc?) _ _)))
        (let* ([existing-instance (map gen-node-conjunct single-gen)]
               [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
-              [offset (apply max (assemble-var-indices (λ (_) #t) subscriptless-instance))]
+              [offset (apply max (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct single-gen))))]
               [unifiable-instance (offset-vars subscriptless-instance offset offset)]
               [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
               [new-init
@@ -113,7 +113,7 @@
         (and (list-rest (gen-node (? abstract-atom?) _ (gen n id) _ _) first-rest) single-gen))
        (let* ([existing-instance (map gen-node-conjunct single-gen)]
               [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
-              [offset (apply max (assemble-var-indices (λ (_) #t) subscriptless-instance))]
+              [offset (apply max (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct single-gen))))]
               [unifiable-instance (offset-vars subscriptless-instance offset offset)]
               [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
               ; only this is different wrt previous case
