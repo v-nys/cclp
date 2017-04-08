@@ -511,17 +511,17 @@
        (struct-copy grouping acc [completed (append completed potential current-gen)] [potential (list node)] [current-gen (list)])]
       ;; BLOCK: temporary abstraction consisting of a multi, current gen empty
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct-2 _ (gen 0 #f) #f #t))
-       (struct-copy grouping acc [completed (append completed (list conjunct-1) (list conjunct-2))] [potential #f])]
+       (struct-copy grouping acc [completed (append completed potential (list node))] [potential #f])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct-2 _ (gen _ _) #f #f))
-       (struct-copy grouping acc [completed (append completed (list conjunct-1) (list conjunct-2))] [potential #f])]
+       (struct-copy grouping acc [completed (append completed potential (list node))] [potential #f])]
       [((list (gen-node _ _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct _ (gen o id) #f #t))
        #:when (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
        (struct-copy grouping acc [current-gen (append current-gen (list node))])]
       [((list (gen-node conjunct-1 _ (gen-range n m id-1 asc?) _ _)) (list) (gen-node conjunct-2 _ (gen _ id-2) #f #t))
        #:when (not (eqv? id-1 id-2))
-       (struct-copy grouping acc [completed (append completed (list conjunct-1))] [potential #f] [current-gen (list node)])]
+       (struct-copy grouping acc [completed (append completed potential)] [potential #f] [current-gen (list node)])]
       [((list (gen-node conjunct-1 _ (gen-range n m id-1 asc?) _ _)) (list) (gen-node conjunct-2 _ (gen-range _ _ _ _) #f #f))
-       (struct-copy grouping acc [completed (append completed (list conjunct-1) (list conjunct-2))] [potential #f])]
+       (struct-copy grouping acc [completed (append completed potential (list node))] [potential #f])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct-2 _ (gen-range o p id asc?) #f #t))
        #:when (and
                (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
@@ -529,10 +529,10 @@
        (struct-copy grouping acc [potential (car (group-sequential-generations (append potential (list node))))])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct-2 _ (gen-range o p id asc?) #f #t))
        #:when (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential))] [potential (list node)])]
+       (struct-copy grouping acc [completed (append completed potential)] [potential (list node)])]
       [((list (gen-node conjunct-1 _ (gen-range n m id-1 asc?) _ _)) (list) (gen-node conjunct-2 _ (gen-range _ _ id-2 _) #f #t))
        #:when (not (eqv? id-1 id-2))
-       (struct-copy grouping acc [completed (append completed (list conjunct-1))] [potential (list node)])]
+       (struct-copy grouping acc [completed (append completed potential)] [potential (list node)])]
       ;; BLOCK: temporary abstraction consisting of a multi, current gen not empty
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list-rest (gen-node _ _ (gen o id) #f _) _) (gen-node conjunct-2 _ (gen 0 #f) #f #t))
        #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
