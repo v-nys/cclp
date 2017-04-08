@@ -15,6 +15,8 @@
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-right))
 (require (for-doc scribble/manual))
 
+(define dummy-id 1000)
+
 (define gen-range-descending? (compose not gen-range-ascending?))
 
 ;; gets the origin from either a generation or a generation range
@@ -85,7 +87,7 @@
              (init (map (λ (v) (cons (prefix-subscripts fresh-id 1 v) v)) (extract-variables (map gen-node-conjunct lvl-1))))
              (consecutive new-consecutive)
              (final new-final))
-            1000 ; dummy
+            dummy-id
             (gen-range genn-1 genn-2 id (gen-number< genn-1 genn-2))
             #f
             #t)))
@@ -107,7 +109,7 @@
                      (prefix-subscripts (multi-id existing-multi) 1 (offset-vars var1 (- offset) (- offset)))
                      var2)])
                  unification))])
-         (cons (list (gen-node (struct-copy multi existing-multi [init new-init]) 1000 (gen-range n o id asc?) #f #t)) fresh-id))]     
+         (cons (list (gen-node (struct-copy multi existing-multi [init new-init]) dummy-id (gen-range n o id asc?) #f #t)) fresh-id))]     
       [(list
         (list (gen-node (and (? multi?) existing-multi) _ (gen-range m o id asc?) _ _))
         (and (list-rest (gen-node (? abstract-atom?) _ (gen n id) _ _) first-rest) single-gen))
@@ -126,7 +128,7 @@
                      (prefix-subscripts (multi-id existing-multi) 'L (offset-vars var1 (- offset) (- offset)))
                      var2)])
                  unification))])
-         (cons (list (gen-node (struct-copy multi existing-multi [final new-final]) 1000 (gen-range m n id asc?) #f #t)) fresh-id))]
+         (cons (list (gen-node (struct-copy multi existing-multi [final new-final]) dummy-id (gen-range m n id asc?) #f #t)) fresh-id))]
 
       
       [(list
@@ -146,7 +148,7 @@
                     (cons (prefix-subscripts (multi-id existing-multi-1) 'L (apply-substitution subst (offset-vars (remove-multi-subscripts lhs) offset offset)))
                           rhs)])
                  (final-constraints final-2)))])
-         (cons (list (gen-node (struct-copy multi existing-multi-1 [final new-final]) 1000 (gen-range n p id asc?) #f #t)) fresh-id))]))
+         (cons (list (gen-node (struct-copy multi existing-multi-1 [final new-final]) dummy-id (gen-range n p id asc?) #f #t)) fresh-id))]))
   (aux partitioning))
 ;(module+ test
 ;  (check-equal?
