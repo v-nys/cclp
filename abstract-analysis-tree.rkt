@@ -138,28 +138,30 @@
              [equivalent-predecessor
               (findf
                (λ (p-and-i) (renames? (car p-and-i) conjunction))
-               predecessors)])
-        (if equivalent-predecessor
-            (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
-                   [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
-                   [updated-top (replace-first-subtree top candidate updated-candidate)])
-              (cons updated-candidate updated-top))
-            ; TODO additional case here: the current conjunction can be generalized
-            ; at this point, candidate is known
-            ; but generalization needs the whole branch anyway
-            ; ideally, candidate-and-predecessors would actually collect candidate, active branch and predecessors, so this is not the most efficient approach
-            ; anyway, generalization extracts the active branch, computes the generational tree (do I need to find relevant target atoms first?), does horizontal traversal of level at the appropriate depth, groups atoms with non-zero generation into a multi abstraction
-            (begin
-              (for ([conjunct conjunction]) (add-vertex! prior conjunct))
-              (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
-              (unless (strict-partial-order? prior) (error "Selection rule is no longer a strict partial order!"))
-              (aif (selected-index conjunction prior full-evaluations)
-                   (let* ([resolvents (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))]
-                          [child-nodes (map resolvent->node resolvents)]
-                          [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
-                          [updated-top (replace-first-subtree top candidate updated-candidate)])
-                     (cons updated-candidate updated-top))
-                   (cons 'underspecified-order candidate)))))
+               predecessors)]
+             [gen (error "not implemented yet")])
+        (cond [equivalent-predecessor
+               (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
+                      [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
+                      [updated-top (replace-first-subtree top candidate updated-candidate)])
+                 (cons updated-candidate updated-top))]
+              [(< (length gen) (length conjunction))
+               (let* ([gen-node (node (generalization gen (none) #f '() (error "need to get abstracted ranges from generalize...")) '())]
+                      [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
+                      [updated-top (replace-first-subtree top candidate updated-candidate)])
+                 (cons updated-candidate updated-top))]
+              [else
+               (begin
+                 (for ([conjunct conjunction]) (add-vertex! prior conjunct))
+                 (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
+                 (unless (strict-partial-order? prior) (error "Selection rule is no longer a strict partial order!"))
+                 (aif (selected-index conjunction prior full-evaluations)
+                      (let* ([resolvents (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))]
+                             [child-nodes (map resolvent->node resolvents)]
+                             [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
+                             [updated-top (replace-first-subtree top candidate updated-candidate)])
+                        (cons updated-candidate updated-top))
+                      (cons 'underspecified-order candidate)))]))
       'no-candidate))
 (provide
  (proc-doc/names

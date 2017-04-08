@@ -21,9 +21,6 @@
 ; SOFTWARE.
 
 #lang at-exp racket
-; TODO unfoldings of multi should not be foldable immediately after multi
-; replace some gen-node constructors, but not all!
-
 (require
   scribble/srcdoc
   graph
