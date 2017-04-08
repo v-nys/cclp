@@ -498,7 +498,7 @@
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen-range o p id-1 asc?) #f #t))
        #:when (and (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
                    (renames? (append (map gen-node-conjunct current-gen) (list conjunct)) (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct))]) (unfold-multi-many conjunct offset offset))))
-       (let* ([grp (group-sequential-generations (append (map gen-node-conjunct current-gen) (list conjunct)) next-multi-id)])
+       (let* ([grp (group-sequential-generations (append current-gen (list node)) next-multi-id)])
          (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential))] [potential (car grp)] [current-gen (list)] [next-multi-id (cdr grp)]))]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen-range o p id-1 asc?) #f #t))
        #:when (and (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
