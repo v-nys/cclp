@@ -391,24 +391,24 @@
       ;; BLOCK: temporary abstraction #f and empty current gen
       [(#f (list)
            (gen-node conjunct _ (gen 0 #f) #f _))
-       (struct-copy grouping acc [completed (append completed (list conjunct))])]
+       (struct-copy grouping acc [completed (append completed (list node))])]
       [(#f (list)
            (gen-node conjunct _ (gen n id) #f #f))
-       (struct-copy grouping acc [completed (append completed (list conjunct))])]
+       (struct-copy grouping acc [completed (append completed (list node))])]
       [(#f (list)
            (gen-node conjunct _ (gen n id) #f #t))
        (struct-copy grouping acc [current-gen (list node)])]
       [(#f (list)
            (gen-node conjunct _ (gen-range _ _ _ _) #f #f))
-       (struct-copy grouping acc [completed (append completed (list conjunct))])]
+       (struct-copy grouping acc [completed (append completed (list node))])]
       [(#f (list)
            (gen-node conjunct _ (gen-range _ _ _ _) #f #t))
        (struct-copy grouping acc [potential (list node)])]
       ;; BLOCK: temporary abstraction #f, non-empty current gen
       [(#f (list-rest _ _) (gen-node conjunct _ (gen 0 #f) #f _))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen) (list conjunct))] [current-gen '()])]
+       (struct-copy grouping acc [completed (append completed current-gen (list node))] [current-gen '()])]
       [(#f (list-rest _ _) (gen-node conjunct _ (gen _ _) #f #f))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen) (list conjunct))] [current-gen '()])]
+       (struct-copy grouping acc [completed (append completed current-gen (list node))] [current-gen '()])]
       [(#f (list-rest (gen-node _ _ (gen n o) #f _) _) (gen-node conjunct _ (gen n o) #f #t))
        (struct-copy grouping acc [current-gen (append current-gen (list node))])]
       [(#f (list-rest (gen-node _ _ (gen n-1 o) #f _) _) (gen-node conjunct _ (gen n-2 o) #f #t))
@@ -417,9 +417,9 @@
                     [potential current-gen]
                     [current-gen (list node)])]
       [(#f (list-rest (gen-node _ _ (gen n o-1) #f _) _) (gen-node conjunct _ (gen m o-2) #f _)) #:when (not (eqv? o-1 o-2))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen))] [current-gen (list node)])]
+       (struct-copy grouping acc [completed (append completed current-gen)] [current-gen (list node)])]
       [(#f (list-rest (gen-node _ _ (gen n o) #f _) _) (gen-node conjunct _ (gen-range m p o asc) #f #f))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen) (list conjunct))] [current-gen (list)])]
+       (struct-copy grouping acc [completed (append completed current-gen (list node))] [current-gen (list)])]
       [(#f (list-rest (gen-node _ _ (gen n o) #f _) _) (gen-node conjunct _ (gen-range m p o asc) #f #t))
        #:when (and
                (or (and asc (equal? (gen-add1 n) m)) (and (not asc) (equal? (gen-sub1 n) m)))
@@ -430,7 +430,7 @@
        (struct-copy grouping acc [potential (car (group-sequential-generations (append current-gen (list node))))] [current-gen (list)])]
       [(#f (list-rest (gen-node _ _ (gen n o-1) #f _) _) (gen-node conjunct _ (gen-range m p o-2 asc) #f #t))
        #:when (or (and asc (equal? (gen-add1 n) m) (eqv? o-1 o-2)) (and (not asc) (equal? (gen-sub1 n) m) (eqv? o-1 o-2)) (not (eqv? o-1 o-2)))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen))] [potential (list node)] [current-gen (list)])]
+       (struct-copy grouping acc [completed (append completed current-gen)] [potential (list node)] [current-gen (list)])]
       ;; BLOCK: temporary abstraction consisting of a list of atoms, empty current gen
       [((list-rest (gen-node _ _ (gen _ _) _ _) _) (list) (gen-node conjunct _ (gen 0 #f) #f _))
        (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (list conjunct))] [potential #f] [current-gen (list)])]
