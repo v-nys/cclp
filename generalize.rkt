@@ -372,7 +372,11 @@
 ;; if temporary abstraction spans multiple generations, merge into a multi
 ;; finally, append everything
 (define (finalize g)
-  (grouping-completed g))
+  (match g
+    [(grouping co #f cu _)
+     (append co (map gen-node-conjunct cu))]
+    [(grouping co po cu _)
+     (append co (map gen-node-conjunct (append po cu)))]))
 
 ;; TODO: group-conjuncts is an absolute monstrosity, find a way to eliminate boilerplate and improve readability
 ; completed: name says it all
@@ -427,9 +431,9 @@
        (struct-copy grouping acc [completed (append completed (map gen-node-conjunct current-gen))] [potential (list node)] [current-gen (list)])]
       ;; BLOCK: temporary abstraction consisting of a list of atoms, empty current gen
       [((list-rest (gen-node _ _ (gen _ _) _ _) _) (list) (gen-node conjunct _ (gen 0 #f) #f _))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential))] [potential #f] [current-gen (list)])]
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (list conjunct))] [potential #f] [current-gen (list)])]
       [((list-rest (gen-node _ _ (gen _ _) _ _) _) (list) (gen-node conjunct _ (gen _ _) #f #f))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential))] [potential #f] [current-gen (list)])]
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (list conjunct))] [potential #f] [current-gen (list)])]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list) (gen-node conjunct _ (gen m id) #f #t))
        (struct-copy grouping acc [current-gen (list node)])]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list) (gen-node conjunct _ (gen m id-2) #f #t))
@@ -455,13 +459,13 @@
          (struct-copy grouping acc [completed (append completed (map gen-node-conjunct (car grp)) (list conjunct))] [potential #f] [current-gen (list)] [next-multi-id (cdr grp)]))]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen 0 #f) #f #t))
        #:when (and (or (equal? (gen-add1 n) m) (equal? (gen-sub1 n) m)))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (map gen-node-conjunct current-gen) (list node))] [potential #f] [current-gen (list)])]
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (map gen-node-conjunct current-gen) (list conjunct))] [potential #f] [current-gen (list)])]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen _ _) #f #f))
        #:when (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen))
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id)])
-         (struct-copy grouping acc [completed (append completed (map gen-node-conjunct (car grp)) (list node))] [potential #f] [current-gen (list)] [next-multi-id (cdr grp)]))]
+         (struct-copy grouping acc [completed (append completed (map gen-node-conjunct (car grp)) (list conjunct))] [potential #f] [current-gen (list)] [next-multi-id (cdr grp)]))]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen _ _) #f #f))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (map gen-node-conjunct current-gen) (list node))] [potential #f] [current-gen (list)])]
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (map gen-node-conjunct current-gen) (list conjunct))] [potential #f] [current-gen (list)])]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen m id) #f #t))
        (struct-copy grouping acc [current-gen (append current-gen (list node))])]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen o id-2) #f #t))
@@ -515,7 +519,7 @@
        #:when (not (eqv? id-1 id-2))
        (struct-copy grouping acc [completed (append completed potential)] [potential #f] [current-gen (list node)])]
       [((list (gen-node _ _ (gen-range n m id-1 asc?) _ _)) (list) (gen-node conjunct _ (gen-range _ _ _ _) #f #f))
-       (struct-copy grouping acc [completed (append completed potential (list node))] [potential #f])]
+       (struct-copy grouping acc [completed (append completed potential (list conjunct))] [potential #f])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct-2 _ (gen-range o p id asc?) #f #t))
        #:when (and
                (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
@@ -536,7 +540,7 @@
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id)])
          (struct-copy grouping acc [completed (append completed (car grp) (list conjunct-2))] [current-gen (list)] [potential #f]))]
       [((list (gen-node _ _ (gen-range n m id asc?) _ _)) (list-rest (gen-node _ _ (gen o id) #f _) _) (gen-node conjunct _ (gen 0 #f) #f #t))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (map gen-node-conjunct current-gen))] [current-gen (list)] [potential #f])]
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (map gen-node-conjunct current-gen) (list conjunct))] [current-gen (list)] [potential #f])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list-rest (gen-node _ _ (gen o id) #f _) _) (gen-node conjunct-2 _ (gen _ _) #f #f))
        #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
                 (renames?
@@ -576,9 +580,9 @@
                  (unfold-multi-many-right conjunct-1 offset offset)
                  (append (map gen-node-conjunct potential) (map gen-node-conjunct current-gen))))
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id)])
-         (struct-copy grouping acc [completed (append completed (car grp) (list node))] [potential #f] [current-gen (list)]))]
+         (struct-copy grouping acc [completed (append completed (car grp) (list conjunct-2))] [potential #f] [current-gen (list)]))]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list-rest (gen-node _ _ (gen o id) #f _) _) (gen-node conjunct-2 _ (gen-range _ _ _ _) #f #f))
-       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (map gen-node-conjunct current-gen) (list node))] [potential #f] [current-gen (list)])]
+       (struct-copy grouping acc [completed (append completed (map gen-node-conjunct potential) (map gen-node-conjunct current-gen) (list conjunct-2))] [potential #f] [current-gen (list)])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _))
         (list-rest (gen-node _ _ (gen o id) #f _) _)
         (gen-node conjunct-2 _ (gen-range p q id asc?) #f #t))
@@ -717,11 +721,11 @@
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
     (multi
-     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     (list (abstract-atom* 'filter (list (g* 1 'i 2) (a* 1 'i 1) (a* 1 'i 2))))
      #t
      (init
       (list
-       (cons (g* 1 1 1) (g 2))
+       (cons (g* 1 1 2) (g 2))
        (cons (a* 1 1 1) (a 1))
        (cons (a* 1 1 2) (a 2))))
      (consecutive
@@ -729,26 +733,26 @@
        (cons (a* 1 'i+1 1) (a* 1 'i 2))))
      (final
       (list
-       (cons (g* 1 'L 1) (g 3))
+       (cons (g* 1 'L 2) (g 3))
        (cons (a* 1 'L 1) (a 2))
        (cons (a* 1 'L 2) (a 3)))))
     (abstract-atom 'filter (list (g 4) (abstract-function 'cons (list (g 5) (a 3) (a 4))) (a 5)))
     (multi
-     (list (abstract-atom* 'filter (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2))))
+     (list (abstract-atom* 'filter (list (g* 2 'i 6) (a* 2 'i 5) (a* 2 'i 6))))
      #t
      (init
       (list
-       (cons (g* 2 1 1) (g 6))
-       (cons (a* 2 1 1) (a 5))
-       (cons (a* 2 1 2) (a 6))))
+       (cons (g* 2 1 6) (g 6))
+       (cons (a* 2 1 5) (a 5))
+       (cons (a* 2 1 6) (a 6))))
      (consecutive
       (list
-       (cons (a* 2 'i+1 1) (a* 2 'i 2))))
+       (cons (a* 2 'i+1 5) (a* 2 'i 6))))
      (final
       (list
-       (cons (g* 2 'L 1) (g 7))
-       (cons (a* 2 'L 1) (a 6))
-       (cons (a* 2 'L 2) (a 7)))))
+       (cons (g* 2 'L 6) (g 7))
+       (cons (a* 2 'L 5) (a 6))
+       (cons (a* 2 'L 6) (a 7)))))
     (abstract-atom 'filter (list (g 8) (a 7) (a 8)))
     (abstract-atom 'sift (list (a 8) (a 9)))
     (abstract-atom 'len (list (a 9) (g 9)))))
@@ -771,17 +775,17 @@
        (final
         (list
          (cons (g* 1 'L 1) (g 3))
-         (cons (a* 1 'L 1) (a 2))
-         (cons (a* 1 'L 2) (a 3)))))
+         (cons (a* 1 'L 1) (a 3))
+         (cons (a* 1 'L 2) (a 4)))))
       3
-      (gen-range 1 2 1 #t)
+      (gen-range 1 3 1 #t)
       #f
       #t)
-     (gen-node (abstract-atom 'filter (list (g 4) (a 3) (a 4))) 4 (gen 3 1) #f #t)
-     (gen-node (abstract-atom 'filter (list (abstract-function 'cons (list (g 5) (a 4) (a 5))))) 5 (gen 4 1) #f #t)
-     (gen-node (abstract-atom 'filter (list (g 6) (a 5) (a 6))) 6 (gen 5 1) #f #t)
-     (gen-node (abstract-atom 'sift (list (a 6) (a 7))) 7 (gen 5 1) #f #t)
-     (gen-node (abstract-atom 'len (list (a 7) (g 7))) 8 (gen 0 #f) #f #t)))
+     (gen-node (abstract-atom 'filter (list (g 4) (a 4) (a 5))) 4 (gen 4 1) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 10) (abstract-function 'cons (list (g 5) (a 5))) (a 6))) 5 (gen 5 1) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 6) (a 6) (a 7))) 6 (gen 6 1) #f #t)
+     (gen-node (abstract-atom 'sift (list (a 7) (a 8))) 7 (gen 6 1) #f #t)
+     (gen-node (abstract-atom 'len (list (a 8) (g 7))) 8 (gen 0 #f) #f #t)))
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
     (multi
@@ -798,11 +802,12 @@
      (final
       (list
        (cons (g* 1 'L 1) (g 4))
-       (cons (a* 1 'L 1) (a 3))
-       (cons (a* 1 'L 2) (a 4)))))
-    (abstract-atom 'filter (list (g 6) (a 5) (a 6)))
-    (abstract-atom 'sift (list (a 6) (a 7)))
-    (abstract-atom 'len (list (a 7) (g 7)))))
+       (cons (a* 1 'L 1) (a 4))
+       (cons (a* 1 'L 2) (a 5)))))
+    (abstract-atom 'filter (list (g 10) (abstract-function 'cons (list (g 5) (a 5))) (a 6)))
+    (abstract-atom 'filter (list (g 6) (a 6) (a 7)))
+    (abstract-atom 'sift (list (a 7) (a 8)))
+    (abstract-atom 'len (list (a 8) (g 7)))))
   (check-equal?
    (generalize-level
     (list
