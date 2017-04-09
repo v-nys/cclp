@@ -51,6 +51,41 @@
   (define vars (extract-subscripted-variables m))
   (abstract-variable*-multi-id (first vars)))
 
+(define (generalized-ranges pre post)
+  (define post-ids (map gen-node-id post))
+  (define (aux id acc)
+    (match-let ([(cons idx rngs) acc])
+      (if (member id post-ids)
+          (cons (add1 idx) rngs)
+          (match rngs
+            [(list-rest (index-range hs he) t)
+             #:when (eqv? idx he)
+             (cons (add1 idx) (cons (index-range hs (add1 he)) t))]
+            [_ (cons (add1 idx) (cons (index-range idx (add1 idx)) rngs))]))))
+  (reverse (cdr (foldl aux (cons 0 '()) (map gen-node-id pre)))))
+(module+ test
+  (check-equal?
+   (generalized-ranges
+    (list
+     (gen-node (abstract-atom 'integers '()) 2 (gen 0 #f) #f #t)
+     (gen-node (abstract-atom 'filter '()) 3 (gen 1 1) #f #t)
+     (gen-node (abstract-atom 'filter '()) 4 (gen 2 1) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 4) (abstract-function 'cons (list (g 5) (a 3) (a 4))) (a 5))) 5 (gen 3 1) #f #t)
+     (gen-node (abstract-atom 'filter '()) 6 (gen 4 1) #f #t)
+     (gen-node (abstract-atom 'filter '()) 7 (gen 5 1) #f #t)
+     (gen-node (abstract-atom 'filter '()) 8 (gen 6 1) #f #t)
+     (gen-node (abstract-atom 'sift '()) 9 (gen 6 1) #f #t)
+     (gen-node (abstract-atom 'len '()) 10 (gen 0 #f) #f #t))
+    (list
+     (gen-node (abstract-atom 'integers '()) 2 (gen 0 #f) #f #t)
+     (gen-node (multi '() #t (init '()) (consecutive '()) (final '())) 11 (gen-range 1 2 1 #t) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 4) (abstract-function 'cons (list (g 5) (a 3) (a 4))) (a 5))) 5 (gen 3 1) #f #t)
+     (gen-node (multi '() #t (init '()) (consecutive '()) (final '())) 12 (gen-range 4 5 1 #t) #f #t)
+     (gen-node (abstract-atom 'filter '()) 8 (gen 6 1) #f #t)
+     (gen-node (abstract-atom 'sift '()) 9 (gen 6 1) #f #t)
+     (gen-node (abstract-atom 'len '()) 10 (gen 0 #f) #f #t)))
+   (list (index-range 1 3) (index-range 4 6))))
+
 ;; this turns the "growing abstraction" into a single multi abstraction
 ;; that is, a single generation stays a single generation
 ;; a single multi stays a single multi
