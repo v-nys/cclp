@@ -147,7 +147,7 @@
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
                       [updated-top (replace-first-subtree top candidate updated-candidate)])
                  (cons updated-candidate updated-top))]
-              [(< (length gen-conjunction) (length conjunction))
+              [(not (null? gen-rngs))
                (let* ([gen-node (node (generalization gen-conjunction (none) #f '() gen-rngs) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
                       [updated-top (replace-first-subtree top candidate updated-candidate)])

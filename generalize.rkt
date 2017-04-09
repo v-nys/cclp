@@ -936,11 +936,10 @@
   (define root (gen-node (car (tree-label-conjunction (car br))) 1 #f #t #t))
   (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
   (define depth (length br))
-  (annotate-general! gr root (candidate-targets gr root depth) depth)
+  (define targets (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth))) ; is this really the best place for this? might want to smooth over generation elsewhere...
+  (annotate-general! gr root targets depth)
   (define lvl (sort (rdag-level gr annotated-root depth) < #:key gen-node-id))
   (define gen-lvl (generalize-level lvl))
-  (println lvl)
-  (println gen-lvl)
   (cons (map gen-node-conjunct gen-lvl) (generalized-ranges lvl gen-lvl)))
 (provide
  (proc-doc/names
