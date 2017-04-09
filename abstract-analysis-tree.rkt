@@ -108,7 +108,7 @@
 (provide
  (proc-doc/names
   candidate-and-predecessors
-  (-> node? list? (cons/c (or/c #f node?) (listof (cons/c (listof abstract-atom?) exact-positive-integer?))))
+  (-> node? list? (cons/c (or/c #f node?) (listof (cons/c (listof abstract-conjunct?) exact-positive-integer?))))
   (tree accumulator)
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
@@ -135,11 +135,11 @@
   (if candidate
       (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
                    [conjunction (label-conjunction (node-label candidate))]
-             [equivalent-predecessor
-              (findf
-               (λ (p-and-i) (renames? (car p-and-i) conjunction))
-               predecessors)]
-             [(cons gen-conjunction gen-rngs) (error "not implemented yet")])
+                   [equivalent-predecessor
+                    (findf
+                     (λ (p-and-i) (renames? (car p-and-i) conjunction))
+                     predecessors)]
+                   [(cons gen-conjunction gen-rngs) (generalize (active-branch top))])
         (cond [equivalent-predecessor
                (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]

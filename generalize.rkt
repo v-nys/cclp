@@ -929,3 +929,14 @@
   (-> (listof gen-node?) (listof abstract-conjunct?))
   (lvl)
   @{Attempts to generalize the conjunction represented by @racket[lvl].}))
+
+(define (generalize br)
+  (cons '() '()))
+(provide
+ (proc-doc/names
+  generalize
+  (-> (listof (or/c tree-label? generalization?)) (cons/c (listof abstract-conjunct?) (listof index-range?)))
+  (candidate-branch)
+  @{Applies generalization to the bottom level of @racket[candidate-branch].
+ Returns a pair consisting of the generalized conjunction and the generalized index ranges.
+ If generalization has no effect, the generalized conjunction is identical to the initial conjunction and the list of ranges is empty.}))
