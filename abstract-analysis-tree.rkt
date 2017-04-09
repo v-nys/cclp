@@ -133,20 +133,20 @@
      (list)))
   (match-define (cons candidate predecessors) (candidate-and-predecessors top (list)))
   (if candidate
-      (let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
-             [conjunction (label-conjunction (node-label candidate))]
+      (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
+                   [conjunction (label-conjunction (node-label candidate))]
              [equivalent-predecessor
               (findf
                (λ (p-and-i) (renames? (car p-and-i) conjunction))
                predecessors)]
-             [gen (error "not implemented yet")])
+             [(cons gen-conjunction gen-rngs) (error "not implemented yet")])
         (cond [equivalent-predecessor
                (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
                       [updated-top (replace-first-subtree top candidate updated-candidate)])
                  (cons updated-candidate updated-top))]
-              [(< (length gen) (length conjunction))
-               (let* ([gen-node (node (generalization gen (none) #f '() (error "need to get abstracted ranges from generalize...")) '())]
+              [(< (length gen-conjunction) (length conjunction))
+               (let* ([gen-node (node (generalization gen-conjunction (none) #f '() gen-rngs) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
                       [updated-top (replace-first-subtree top candidate updated-candidate)])
                  (cons updated-candidate updated-top))]
