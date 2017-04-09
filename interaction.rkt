@@ -58,7 +58,8 @@
         ['no-candidate
          (begin
            (displayln "There are no more candidates. Analysis is complete.")
-           (interactive-analysis tree clauses full-evaluations filename concrete-constants prior))]
+           (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
+           )]
         [(cons 'underspecified-order candidate)
          (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
          (let* ([options (remove-duplicates (map normalize-abstract-atom (label-conjunction (node-label candidate))))]
@@ -76,8 +77,8 @@
            (newline)
            (tree-display updated-candidate print-tree-label)
            (newline)
-           (interactive-analysis
-            updated-top clauses full-evaluations filename concrete-constants prior))])))
+           (interactive-analysis updated-top clauses full-evaluations filename concrete-constants prior)
+           )])))
   (interactive-dispatch
    "What do you want to do?"
    ("proceed"
@@ -85,6 +86,8 @@
    ("rewind"
     (error "not implemented yet"))
    ("show top level"
+    (error "not implemented yet"))
+   ("fast-forward"
     (error "not implemented yet"))))
 
 ;    (match (candidate-and-predecessors tree '())
