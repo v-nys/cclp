@@ -10,13 +10,15 @@
   "abstract-analysis.rkt"
   (only-in "abstract-domain-ordering.rkt" renames? >=-extension)
   "abstract-knowledge.rkt"
-  (only-in "abstract-multi-domain.rkt" abstract-atom?)
+  (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-conjunct?)
   "abstract-resolve.rkt"
   (only-in "concrete-domain.rkt" function?)
   (prefix-in ck: "concrete-knowledge.rkt")
   (only-in "control-flow.rkt" aif it)
   "data-utils.rkt"
   (only-in "execution.rkt" selected-index)
+  (only-in "generalize.rkt" generalize)
+  (only-in "generational-graph.rkt" active-branch)
   "preprior-graph.rkt")
 (require (for-doc scribble/manual))
 
@@ -139,7 +141,7 @@
                     (findf
                      (λ (p-and-i) (renames? (car p-and-i) conjunction))
                      predecessors)]
-                   [(cons gen-conjunction gen-rngs) (generalize (active-branch top))])
+                   [(cons gen-conjunction gen-rngs) (if (null? (node-children top)) (cons conjunction (list)) (generalize (active-branch top)))])
         (cond [equivalent-predecessor
                (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]

@@ -2,6 +2,7 @@
 (require
   racket/struct
   scribble/srcdoc
+  (only-in "abstract-analysis.rkt" tree-label? tree-label-conjunction generalization?)
   "abstract-multi-domain.rkt"
   (only-in "abstract-domain-ordering.rkt" renames?)
   (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables extract-variables)
@@ -10,7 +11,7 @@
   (only-in "abstract-substitution.rkt" abstract-equality apply-substitution)
   (only-in "data-utils.rkt" some-v)
   "gen-graph-structs.rkt"
-  (only-in "generational-graph.rkt" gen-number< gen-add1 gen-sub1)
+  (only-in "generational-graph.rkt" gen-number< gen-add1 gen-sub1 generational-graph-skeleton annotate-general! candidate-targets rdag-level)
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-right))
 (require (for-doc scribble/manual))
@@ -926,12 +927,20 @@
 (provide
  (proc-doc/names
   generalize-level
-  (-> (listof gen-node?) (listof abstract-conjunct?))
+  (-> (listof gen-node?) (listof gen-node?))
   (lvl)
   @{Attempts to generalize the conjunction represented by @racket[lvl].}))
 
 (define (generalize br)
-  (cons '() '()))
+  ; TODO can move most of this to generational-graph
+  (define gr (generational-graph-skeleton br))
+  (define root (gen-node (car (tree-label-conjunction (car br))) 1 #f #t #t))
+  (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
+  (define depth (length br))
+  (annotate-general! gr root (candidate-targets gr root depth) depth)
+  (define lvl (rdag-level gr annotated-root depth))
+  (define gen-lvl (generalize-level lvl))
+  (cons (map gen-node-conjunct gen-lvl) (generalized-ranges lvl gen-lvl)))
 (provide
  (proc-doc/names
   generalize
