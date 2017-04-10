@@ -43,6 +43,8 @@
 (require "abstract-renaming.rkt")
 (require graph)
 
+(require (only-in br/cond while))
+
 (require racket/logging)
 (require (for-doc scribble/manual))
 
@@ -51,44 +53,88 @@
 (struct cclp (clauses full-ai-rules concrete-constants query))
 (provide (struct-out cclp))
 
+;(define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
+;  (define (proceed #:new-edges [new-edges (list)])
+;    (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior #:new-edges new-edges)])
+;      (match outcome
+;        ['no-candidate
+;         (begin
+;           (displayln "There are no more candidates. Analysis is complete.")
+;           (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
+;           )]
+;        [(cons 'underspecified-order candidate)
+;         (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
+;         (let* ([options (remove-duplicates (map normalize-abstract-atom (label-conjunction (node-label candidate))))]
+;                [user-selection (prompt-for-selection options)]
+;                [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])
+;           (with-handlers
+;               ([exn:fail?
+;                 (lambda (_)
+;                   (begin (display "Selection breaks the strict partial ordering requirement. Selection rule will not be updated.")
+;                          (for ([precedence new-precedences]) (remove-directed-edge! prior (car precedence) (cdr precedence)))
+;                          (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)))])
+;             (begin (proceed #:new-edges new-precedences))))]
+;        [(cons updated-candidate updated-top)
+;         (begin
+;           (newline)
+;           (tree-display updated-candidate print-tree-label)
+;           (newline)
+;           (interactive-analysis updated-top clauses full-evaluations filename concrete-constants prior)
+;           )])))
+;  (interactive-dispatch
+;   "What do you want to do?"
+;   ("proceed"
+;    (proceed))
+;   ("rewind"
+;    (error "not implemented yet"))
+;   ("show top level"
+;    (error "not implemented yet"))
+;   ("fast-forward"
+;    (error "not implemented yet"))))
+
 (define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
-  (define (proceed #:new-edges [new-edges (list)])
-    (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior #:new-edges new-edges)])
+  (define edge-history (make-hash))
+  (define step-acc 1) ; increment after every successful proceed step
+  (define (proceed)
+    (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
       (match outcome
-        ['no-candidate
-         (begin
-           (displayln "There are no more candidates. Analysis is complete.")
-           (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
-           )]
         [(cons 'underspecified-order candidate)
          (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
          (let* ([options (remove-duplicates (map normalize-abstract-atom (label-conjunction (node-label candidate))))]
                 [user-selection (prompt-for-selection options)]
                 [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])
-           (with-handlers
-               ([exn:fail?
-                 (lambda (_)
-                   (begin (display "Selection breaks the strict partial ordering requirement. Selection rule will not be updated.")
-                          (for ([precedence new-precedences]) (remove-directed-edge! prior (car precedence) (cdr precedence)))
-                          (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)))])
-             (begin (proceed #:new-edges new-precedences))))]
-        [(cons updated-candidate updated-top)
-         (begin
-           (newline)
-           (tree-display updated-candidate print-tree-label)
-           (newline)
-           (interactive-analysis updated-top clauses full-evaluations filename concrete-constants prior)
-           )])))
-  (interactive-dispatch
-   "What do you want to do?"
-   ("proceed"
-    (proceed))
-   ("rewind"
-    (error "not implemented yet"))
-   ("show top level"
-    (error "not implemented yet"))
-   ("fast-forward"
-    (error "not implemented yet"))))
+           (begin
+             (for ([precedence new-precedences]) (add-directed-edge! prior (car precedence) (cdr precedence)))
+             (hash-set! edge-history step-acc new-precedences)
+             (set! step-acc (add1 step-acc)) ; assuming step will be successful
+             (with-handlers
+                 ([exn:fail?
+                   (λ (_)
+                     (begin (display "Selection breaks the strict partial ordering requirement. Selection rule will not be updated.")
+                            (for ([precedence new-precedences]) (remove-directed-edge! prior (car precedence) (cdr precedence)))
+                            (set! step-acc (sub1 step-acc))
+                            (cons #f tree)))])
+               (match-let ([(cons cand top) (advance-analysis tree clauses full-evaluations concrete-constants prior #:new-edges new-precedences)])
+                 (begin (newline) (tree-display cand print-tree-label) (newline) (cons #f top))))))]
+        [(cons cand top) (begin (set! step-acc (add1 step-acc)) (newline) (tree-display cand print-tree-label) (newline) (cons #t top))]
+        ['no-candidate (cons #f tree)])))
+  (while
+   #t
+   (set!
+    tree
+    (interactive-dispatch
+     "What do you want to do?"
+     ["proceed"
+      (cdr (proceed))]
+     ["fast-forward"
+      (match-let ([(cons continue? new-tree) (proceed)])
+        (while continue?
+               (begin (set! tree new-tree)
+                      (match (proceed)
+                        [(cons c? nt?)
+                         (begin (set! continue? c?)
+                                (set! new-tree nt?))])))
+        new-tree)]))))
 
 ;    (match (candidate-and-predecessors tree '())
 ;      [(cons #f _)
