@@ -507,9 +507,6 @@
        (struct-copy grouping acc [potential (car (group-sequential-generations (append potential node) next-multi-id dummy-id))] [dummy-id (add1 dummy-id)])]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list) (gen-node conjunct _ (gen-range m o id asc?) #f #t))
        (struct-copy grouping acc [completed (append completed potential)] [potential (list node)])]
-
-
-
       ;; BLOCK: temporary abstraction consisting of a list of atoms of *one* generation, nonempty current gen
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen 0 #f) #f #t))
        #:when (and (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)
@@ -557,18 +554,20 @@
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen-range o p id-1 asc?) #f #t))
        #:when (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)
        (struct-copy grouping acc [completed (append completed potential current-gen)] [potential (list node)] [current-gen (list)])]
-      
-      
       ;; BLOCK: temporary abstraction consisting of a list of atoms of *two* generations, nonempty current gen
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen 0 #f) #f #t))
-       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)) (or (equal? (gen-add1 n) m) (equal? (gen-sub1 n) m)) (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))
+       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
+                   (or (equal? (gen-add2 n) m) (equal? (gen-sub2 n) m))
+                   (renames? (map gen-node-conjunct potential) (append (map gen-node-conjunct (filter (λ (gn) (not (equal? n (gen-number (gen-node-range gn))))) potential)) (map gen-node-conjunct current-gen))))
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id dummy-id)])
          (struct-copy grouping acc [completed (append completed (car grp) (list node))] [potential #f] [current-gen (list)] [next-multi-id (cdr grp)] [dummy-id (add1 dummy-id)]))]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen 0 #f) #f #t))
-       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)) (or (equal? (gen-add1 n) m) (equal? (gen-sub1 n) m)))
+       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
+                   (or (equal? (gen-add2 n) m) (equal? (gen-sub2 n) m)))
        (struct-copy grouping acc [completed (append completed potential current-gen (list node))] [potential #f] [current-gen (list)])]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen _ _) #f #f))
-       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)) (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))
+       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
+                   (renames? (map gen-node-conjunct potential) (append (map gen-node-conjunct (filter (λ (gn) (not (equal? n (gen-number (gen-node-range gn))))) potential)) (map gen-node-conjunct current-gen))))
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id dummy-id)])
          (struct-copy grouping acc [completed (append completed (car grp) (list node))] [potential #f] [current-gen (list)] [next-multi-id (cdr grp)] [dummy-id (add1 dummy-id)]))]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen _ _) #f #f))
@@ -576,22 +575,32 @@
        (struct-copy grouping acc [completed (append completed potential current-gen (list node))] [potential #f] [current-gen (list)])]
       [((list-rest (gen-node _ _ (gen n id) _ _) _) (list-rest (gen-node _ _ (gen m id) #f _) _) (gen-node conjunct _ (gen m id) #f #t))
        (struct-copy grouping acc [current-gen (append current-gen (list node))])]
+
+
+      
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen o id-2) #f #t))
-       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)) (not (eqv? id-1 id-2)) (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))
+       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
+                   (not (eqv? id-1 id-2))
+                   (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id dummy-id)])
          (struct-copy grouping acc [completed (append completed (car grp))] [potential #f] [current-gen (list node)] [next-multi-id (cdr grp)] [dummy-id (add1 dummy-id)]))]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen o id-2) #f #t))
-       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)) (not (eqv? id-1 id-2)))
+       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
+                   (not (eqv? id-1 id-2)))
        (struct-copy grouping acc [completed (append completed potential current-gen)] [potential #f] [current-gen (list node)])]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen o id-1) #f #t))
-       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)) (or (equal? (gen-add1 m) o) (equal? (gen-sub1 m) o)) (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))
+       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
+                   (or (equal? (gen-add1 m) o) (equal? (gen-sub1 m) o))
+                   (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id dummy-id)])
          (struct-copy grouping acc [potential (car grp)] [current-gen (list node)] [next-multi-id (cdr grp)] [dummy-id (add1 dummy-id)]))]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen o id-1) #f #t))
-       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)) (or (equal? (gen-add1 m) o) (equal? (gen-sub1 m) o)))
+       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
+                   (or (equal? (gen-add1 m) o) (equal? (gen-sub1 m) o)))
        (struct-copy grouping acc [completed (append completed potential)] [potential current-gen] [current-gen (list node)])]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen-range o p id-2 asc?) #f #f))
-       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential)) (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))
+       #:when (and (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
+                   (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id dummy-id)])
          (struct-copy grouping acc [completed (append completed (car grp) (list node))] [potential #f] [current-gen (list)] [next-multi-id (cdr grp)] [dummy-id (add1 dummy-id)]))]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen-range o p id-2 asc?) #f #f))
@@ -620,6 +629,8 @@
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen-range o p id-1 asc?) #f #t))
        #:when (not (andmap (λ (gn) (equal? n (gen-number (gen-node-range gn)))) potential))
        (struct-copy grouping acc [completed (append completed potential current-gen)] [potential (list node)] [current-gen (list)])]
+
+
 
 
 
