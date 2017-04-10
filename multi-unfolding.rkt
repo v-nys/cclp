@@ -75,6 +75,15 @@
           (list (struct-copy multi m [init (init (map consecutive-shift (consecutive-constraints (multi-consecutive m))))]))))
 (provide unfold-multi-many)
 
+(define (unfold-multi-many-bounded num m a-off g-off)
+  (if (equal? num 1)
+      (unfold-multi-many m a-off g-off)
+      (let* ([unf-one (unfold-multi-many m a-off g-off)]
+             [unf-m (last unf-one)]
+             [off-2 (apply max (assemble-var-indices (λ (_) #t) unf-one))])
+        (append (drop-right unf-one 1) (unfold-multi-many-bounded (sub1 num) unf-m off-2 off-2)))))
+(provide unfold-multi-many-bounded)
+
 (define (unfold-multi-many-right m a-off g-off)
   (define-values
     (subscript-mapping single-subscript-conjunction)
