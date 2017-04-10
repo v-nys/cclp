@@ -92,9 +92,7 @@
 ;   ("fast-forward"
 ;    (error "not implemented yet"))))
 
-(define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
-  (define edge-history (make-hash))
-  (define step-acc 1) ; increment after every successful proceed step
+(define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior #:step [step-acc 1] #:history [edge-history (make-hash)])
   (define (proceed)
     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
       (match outcome
@@ -142,6 +140,7 @@
           (write serialized-tree out)
           (write (serialize edge-history) out)
           (write (serialize step-acc) out)
+          (write (serialize prior) out)
           (close-output-port out)
           tree))]))))
 
@@ -255,14 +254,6 @@
 ;    [(equal? choice end) (void)]
 ;))
 
-
-
-; TODO check if file exists
-(define (load-analysis clauses full-evaluations filename concrete-constants)
-  (let* ([loaded-tree (deserialize (read (open-input-file filename)))]
-         [largest-index (largest-node-index loaded-tree)])
-    (interactive-analysis loaded-tree clauses full-evaluations filename concrete-constants)))
-
 (define (begin-analysis program-data filename)
   (match program-data
     [(cclp clauses full-evaluations concrete-constants initial-query)
@@ -289,6 +280,16 @@
   (filename program-data)
   @{Top-level function used to run a compiling control logic program.}))
 
+(define (load-analysis clauses full-evaluations filename concrete-constants)
+  (let* ([in (open-input-file filename)]
+         [loaded-tree (deserialize (read in))]
+         [edge-history (deserialize (read in))]
+         [step-acc (deserialize (read in))]
+         ;[prior (deserialize (read in))]
+         )
+    (close-input-port in)
+    (interactive-analysis loaded-tree clauses full-evaluations filename concrete-constants (mk-preprior-graph) #:step step-acc #:history edge-history)))
+
 (define (cclp-run filename program-data)
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
@@ -304,7 +305,8 @@
     (begin (begin-analysis program-data-aux serialized-filename)
            (cclp-run filename program-data)))
    ("load existing analysis"
-    (error "TODO: restore this functionality"))
+    (begin (load-analysis (cclp-clauses program-data) full-evaluations serialized-filename (cclp-concrete-constants program-data))
+           (cclp-run filename program-data)))
    ("quit" (void))))
 
 ;                                                                          
