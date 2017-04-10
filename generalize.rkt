@@ -90,7 +90,7 @@
 ;; this turns the "growing abstraction" into a single multi abstraction
 ;; that is, a single generation stays a single generation
 ;; a single multi stays a single multi
-;; two consecutive generations become a single multi
+;; three consecutive generations become a single multi (two would introduce undesired aliasing when the multi is unfolded to a single conjunction)
 ;; a generation and a multi (in either order) become a single multi
 ;; two multis become a single multi
 ;; note that this should never fail
@@ -100,20 +100,22 @@
   (define partitioning (group-by gen-node-range potential))
   (define (aux partitioning)
     (match partitioning
-      [(list _)
-       (cons potential fresh-id)]
       [(list
         (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-1 id) _ _) first-rest) lvl-1)
-        (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-2 id) _ _) second-rest) lvl-2))
+        (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-2 id) _ _) second-rest) lvl-2)
+        (and (list-rest (gen-node (? abstract-atom?) _ (gen genn-3 id) _ _) third-rest) lvl-3))
        (cons
         (let* ([gen-1 (map gen-node-conjunct lvl-1)]
                [gen-2 (map gen-node-conjunct lvl-2)]
-               [offset (apply max (assemble-var-indices (λ (_) #t) (append gen-1 gen-2)))]
+               [gen-3 (map gen-node-conjunct lvl-3)]
+               [offset (apply max (assemble-var-indices (λ (_) #t) (append gen-1 gen-2 gen-3)))]
                [offset-gen-2 (offset-vars gen-2 offset offset)]
-               [subst (some-v (abstract-unify (map abstract-equality gen-1 offset-gen-2) 0))]
-               [shared (filter (match-lambda [(abstract-equality v1 v2) (and (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-1)) (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-2)))]) subst)]
+               [offset-gen-3 (offset-vars gen-3 offset offset)]
+               [subst-1 (some-v (abstract-unify (map abstract-equality gen-1 offset-gen-2) 0))]
+               [subst-2 (some-v (abstract-unify (map abstract-equality gen-1 offset-gen-3) 0))]
+               [shared (filter (match-lambda [(abstract-equality v1 v2) (and (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-1)) (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-2)))]) subst-1)]
                [new-consecutive (map (match-lambda [(abstract-equality (a idx1) (a idx2)) (cons (a* fresh-id 'i+1 idx1) (a* fresh-id 'i (- idx2 offset)))] [(abstract-equality (g idx1) (g idx2)) (cons (g* fresh-id 'i+1 idx1) (g* fresh-id 'i (- idx2 offset)))]) shared)]
-               [new-final (map (match-lambda [(abstract-equality (a idx1) (a idx2)) (cons (a* fresh-id 'L idx1) (a (- idx2 offset)))] [(abstract-equality (g idx1) (g idx2)) (cons (g* fresh-id 'L idx1) (g (- idx2 offset)))]) subst)])
+               [new-final (map (match-lambda [(abstract-equality (a idx1) (a idx2)) (cons (a* fresh-id 'L idx1) (a (- idx2 offset)))] [(abstract-equality (g idx1) (g idx2)) (cons (g* fresh-id 'L idx1) (g (- idx2 offset)))]) subst-2)])
           (list
            (gen-node
             (multi
@@ -123,7 +125,7 @@
              (consecutive new-consecutive)
              (final new-final))
             dummy-id
-            (gen-range genn-1 genn-2 id (gen-number< genn-1 genn-2))
+            (gen-range genn-1 genn-3 id (gen-number< genn-1 genn-2))
             #f
             #t)))
         (add1 fresh-id))]
@@ -183,7 +185,9 @@
                     (cons (prefix-subscripts (multi-id existing-multi-1) 'L (apply-substitution subst (offset-vars (remove-multi-subscripts lhs) offset offset)))
                           rhs)])
                  (final-constraints final-2)))])
-         (cons (list (gen-node (struct-copy multi existing-multi-1 [final new-final]) dummy-id (gen-range n p id asc?) #f #t)) fresh-id))]))
+         (cons (list (gen-node (struct-copy multi existing-multi-1 [final new-final]) dummy-id (gen-range n p id asc?) #f #t)) fresh-id))]
+      [(or (list _) (list _ _))
+       (cons potential fresh-id)]))
   (aux partitioning))
 ;(module+ test
 ;  (check-equal?
