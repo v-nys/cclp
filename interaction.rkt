@@ -100,7 +100,7 @@
       (match outcome
         [(cons 'underspecified-order candidate)
          (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
-         (let* ([multis (filter multi? (node-label candidate))]
+         (let* ([multis (filter multi? (label-conjunction (node-label candidate)))]
                 [multi-conjuncts (apply append (map (λ (m) (car (unfold-multi-bounded 1 m 0 0))) multis))]
                 [options (remove-duplicates (map normalize-abstract-atom (append multi-conjuncts (filter abstract-atom? (label-conjunction (node-label candidate))))))]
                 [user-selection (prompt-for-selection options)]

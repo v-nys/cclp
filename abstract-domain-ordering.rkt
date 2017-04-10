@@ -70,7 +70,8 @@
             ; don't need substitution here
             [unf-1 (car (unfold-multi-bounded 2 domain-elem1 offset offset))]
             [unf-2 (car (unfold-multi-bounded 2 domain-elem2 offset offset))])
-       (>=-extension unf-1 unf-2))]))
+       (>=-extension unf-1 unf-2))]
+    [((? abstract-domain-elem?) (? multi?)) #f]))
 (module+ test
   (check-true (>=-extension (interpret-abstract-term "α1") (interpret-abstract-term "γ1")))
   (check-true (>=-extension (interpret-abstract-term "α1") (interpret-abstract-term "α2")))
@@ -366,7 +367,7 @@
 (provide
  (proc-doc/names
   >=-extension
-  (-> abstract-domain-elem? abstract-domain-elem? boolean?)
+  (-> (or/c abstract-domain-elem? multi?) (or/c abstract-domain-elem? multi?) boolean?)
   (domain-elem1 domain-elem2)
   @{Checks whether @racket[domain-elem1] is at least as general as @racket[domain-elem2].
  Note that this does not currently support the abstract multi domain, only the abstract domain.}))
