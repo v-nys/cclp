@@ -23,6 +23,7 @@
 #lang at-exp racket
 
 (require
+  racket/serialize
   racket/struct
   scribble/srcdoc
   "abstract-multi-domain.rkt")
@@ -183,7 +184,7 @@
      sums of symbols and numbers can be used to indicate the generation of related conjuncts outside the abstraction,
      or of unfolded multi abstractions.}))
 
-(struct index-range (start end-before)
+(serializable-struct index-range (start end-before)
   #:methods
   gen:custom-write
   [(define write-proc

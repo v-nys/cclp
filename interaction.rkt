@@ -93,6 +93,7 @@
 ;    (error "not implemented yet"))))
 
 (define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior #:step [step-acc 1] #:history [edge-history (make-hash)])
+  (define analyzing? #t)
   (define (proceed)
     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
       (match outcome
@@ -117,7 +118,7 @@
         [(cons cand top) (begin (set! step-acc (add1 step-acc)) (newline) (tree-display cand print-tree-label) (newline) (cons #t top))]
         ['no-candidate (cons #f tree)])))
   (while
-   #t
+   analyzing?
    (set!
     tree
     (interactive-dispatch
@@ -142,7 +143,21 @@
           (write (serialize step-acc) out)
           (write (serialize prior) out)
           (close-output-port out)
-          tree))]))))
+          tree))]
+     ["show top level tree"
+      (begin
+        (newline)
+        (tree-display tree print-tree-label)
+        (newline))
+      tree]
+     ["show debugging variables"
+      (begin
+        (displayln "precedence pairs:")
+        (for ([precedence (in-edges prior)]) (displayln precedence))
+        (displayln "step:")
+        (displayln step-acc))]
+     ["end analysis"
+      (set! analyzing? #f)]))))
 
 
 ;    (match (candidate-and-predecessors tree '())
@@ -287,7 +302,7 @@
          [step-acc (deserialize (read in))]
          [prior (deserialize (read in))])
     (close-input-port in)
-    (interactive-analysis loaded-tree clauses full-evaluations filename concrete-constants (mk-preprior-graph) #:step step-acc #:history edge-history)))
+    (interactive-analysis loaded-tree clauses full-evaluations filename concrete-constants prior #:step step-acc #:history edge-history)))
 
 (define (cclp-run filename program-data)
   (define serialized-filename
