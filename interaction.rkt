@@ -285,8 +285,7 @@
          [loaded-tree (deserialize (read in))]
          [edge-history (deserialize (read in))]
          [step-acc (deserialize (read in))]
-         ;[prior (deserialize (read in))]
-         )
+         [prior (deserialize (read in))])
     (close-input-port in)
     (interactive-analysis loaded-tree clauses full-evaluations filename concrete-constants (mk-preprior-graph) #:step step-acc #:history edge-history)))
 
