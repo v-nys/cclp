@@ -62,8 +62,9 @@
     [(node 'fail '()) (cons #f acc)]
     [(node (cycle _) '()) (cons #f acc)]
     [(node (widening '() _ _ _ _) '()) (cons #f acc)] ; odd, but not impossible...
-    [(node (tree-label c (none) s r #f pp) '())
-     (cons (node (tree-label c (none) s r #f pp) '()) acc)]
+    [(or (node (tree-label c (none) _ _ #f _) '())
+         (node (generalization c (none) #f _ _) '()))
+     (cons t acc)]
     [(node (widening c (none) msg i pp) '())
      (cons (node (widening c (none) msg i pp) '()) acc)]
     ; children but no selection = widened tree-label (or widened widening)
