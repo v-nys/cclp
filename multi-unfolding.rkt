@@ -111,6 +111,14 @@
     (abstract-atom 'filter (list (g 101) (a 101) (a 2))))))
 (provide unfold-multi-many-right)
 
+(define (unfold-multi* idx conjunction)
+  (define m (list-ref conjunction idx))
+  (define a-off (assemble-var-indices a? conjunction))
+  (define g-off (assemble-var-indices g? conjunction))
+  (define pairs (unfold-multi m a-off g-off))
+  (map (match-lambda [(cons unf sub) (apply-substitution sub (append (take conjunction idx) unf (drop conjunction (add1 idx))))]) pairs)) ; replace the multi, apply substitution to the whole thing
+(provide unfold-multi*)
+
 (define (unfold-multi m a-off g-off)
   (list
    (unfold-multi-bounded 1 m a-off g-off)

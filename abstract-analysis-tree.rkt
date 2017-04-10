@@ -20,7 +20,7 @@
   (only-in "generalize.rkt" generalize)
   (only-in "generational-graph.rkt" active-branch)
   "preprior-graph.rkt"
-  (only-in "multi-unfolding.rkt" unfold-multi-bounded))
+  (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*))
 (require (for-doc scribble/manual))
 
 (module+ test
@@ -165,7 +165,11 @@
                  (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
                  (unless (strict-partial-order? prior) (error "Selection rule is no longer a strict partial order!"))
                  (aif (selected-index conjunction prior full-evaluations)
-                      (let* ([resolvents (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))]
+                      (let* ([selected-conjunct (list-ref conjunction it)]
+                             [resolvents
+                              (if (abstract-atom? selected-conjunct)
+                                  (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))
+                                  (unfold-multi* it conjunction))]
                              [child-nodes (map resolvent->node resolvents)]
                              [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
                              [updated-top (replace-first-subtree top candidate updated-candidate)])
