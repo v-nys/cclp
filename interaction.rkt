@@ -134,7 +134,17 @@
                         [(cons c? nt?)
                          (begin (set! continue? c?)
                                 (set! new-tree nt?))])))
-        new-tree)]))))
+        new-tree)]
+     ["save analysis"
+      (let* ([out (open-output-file filename #:exists 'truncate/replace)]
+             [serialized-tree (serialize tree)])
+        (begin
+          (write serialized-tree out)
+          (write (serialize edge-history) out)
+          (write (serialize step-acc) out)
+          (close-output-port out)
+          tree))]))))
+
 
 ;    (match (candidate-and-predecessors tree '())
 ;      [(cons #f _)
@@ -342,7 +352,8 @@
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
-    [(tree-label con sel sub r i edges)
+    [(or (tree-label con sel _ _ i _)
+         (generalization con sel i _ _))
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out))]
