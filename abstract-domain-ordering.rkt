@@ -62,6 +62,9 @@
                 [many-unfs (map (λ (m) (cons (unfold-multi-many m off off) (list))) multis)]
                 [resulting-conjunctions (append (map (curry replacer domain-elem1) multis one-unfs) (map (curry replacer domain-elem1) multis many-unfs))])
            (ormap (λ (c) (>=-extension c domain-elem2)) resulting-conjunctions)))]
+    [((? list?) (? list?))
+     #:when (and (not (ormap multi? domain-elem1)) (ormap multi? domain-elem2))
+     #f]
     [((? multi?) (? multi?))
      (let* ([offset (apply max (assemble-var-indices (λ (_) #t) (list domain-elem1 domain-elem2)))]
             ; don't need substitution here

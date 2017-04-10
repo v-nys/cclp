@@ -8,7 +8,7 @@
   racket-tree-utils/src/tree)
 (require
   "abstract-analysis.rkt"
-  (only-in "abstract-domain-ordering.rkt" renames? >=-extension)
+  (only-in "abstract-domain-ordering.rkt" renames?)
   "abstract-knowledge.rkt"
   (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-conjunct?)
   "abstract-resolve.rkt"
