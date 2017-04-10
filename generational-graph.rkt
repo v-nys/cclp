@@ -54,7 +54,7 @@
 ;; uid-acc is the unique identifier used for an abstract conjunct in the generational graph
 ;; graph is the (mutable) generational graph
 ;; edges is a list of edges from conjuncts at the previous level to a range of indices at the current level
-(define (generational-graph-skeleton branch [uid-acc 1] [graph (unweighted-graph/directed (list))] [edges (list)] [foldable? #t])
+(define (generational-graph-skeleton branch [uid-acc 1] [graph (unweighted-graph/directed (list))] [edges (list)])
   (match branch
     [(list label) ; same for tree label and generalization
      (begin
@@ -62,10 +62,11 @@
         (match-lambda**
          [(conjunct (cons uid idx))
           (begin
-            (add-vertex! graph (gen-node conjunct uid #f #f foldable?)) ; end of branch never has selection
-            (for ([edge edges])
-              (when (contains (cdr edge) idx)
-                (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f foldable?))))
+            (let ([foldable? (andmap (match-lambda [(cons (gen-node (? multi?) _ _ #t _) _) #f] [_ #t]) edges)])
+              (add-vertex! graph (gen-node conjunct uid #f #f foldable?)) ; end of branch never has selection
+              (for ([edge edges])
+                (when (contains (cdr edge) idx)
+                  (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f foldable?)))))
             (cons (add1 uid) (add1 idx)))])
         (cons uid-acc 0)
         (label-conjunction label))
@@ -73,7 +74,6 @@
     ; if there are unfoldings and there is a selection
     [(list-rest
       (or (tree-label tl-con1 (some selected1) _ _ _ _)
-          ;; TODO children of multi should not be foldable
           (generalization tl-con1 (some selected1) _ _ _))
       (tree-label _ _ _ tl-rule2 _ _)
       l-rest)
@@ -83,7 +83,7 @@
            (foldl
             (match-lambda**
              [(conjunct (list uid idx range-start introduced-edges))
-              (begin
+              (let ([foldable? (andmap (match-lambda [(cons (gen-node (? multi?) _ _ #t _) _) #f] [_ #t]) edges)])
                 (add-vertex! graph (gen-node conjunct uid #f (equal? idx selected1) foldable?))
                 (for ([edge edges])
                   (when (contains (cdr edge) idx)
@@ -110,20 +110,20 @@
            (foldl
             (match-lambda**
              [(conjunct (list uid idx range-start introduced-edges))
-              (begin
-                (add-vertex! graph (gen-node conjunct uid #f #f foldable?))
-                (for ([edge edges])
-                  (when (contains (cdr edge) idx)
-                    (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f foldable?))))
-                (let ([vertex-edges
-                       (cons
-                        (gen-node conjunct uid #f #f foldable?)
-                        (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
-                      [new-range-start
-                       (if (ormap (λ (r) (contains (struct-copy index-range r [end-before (sub1 (index-range-end-before r))]) idx)) abstracted-ranges)
-                           range-start ; next conjunct will also be abstracted
-                           (add1 range-start))])
-                  (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
+              (let ([foldable? (andmap (match-lambda [(cons (gen-node (? multi?) _ _ #t _) _) #f] [_ #t]) edges)])
+                ((add-vertex! graph (gen-node conjunct uid #f #f foldable?))
+                 (for ([edge edges])
+                   (when (contains (cdr edge) idx)
+                     (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f foldable?))))
+                 (let ([vertex-edges
+                        (cons
+                         (gen-node conjunct uid #f #f foldable?)
+                         (index-range range-start (add1 range-start)))] ; each conjunct has exactly one outgoing edge!
+                       [new-range-start
+                        (if (ormap (λ (r) (contains (struct-copy index-range r [end-before (sub1 (index-range-end-before r))]) idx)) abstracted-ranges)
+                            range-start ; next conjunct will also be abstracted
+                            (add1 range-start))])
+                   (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges)))))])
             (list uid-acc 0 0 (list))
             tl-con1)])
        (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]))
