@@ -10,7 +10,7 @@
   "abstract-analysis.rkt"
   (only-in "abstract-domain-ordering.rkt" renames?)
   "abstract-knowledge.rkt"
-  (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-conjunct?)
+  (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-conjunct? multi?)
   "abstract-resolve.rkt"
   (only-in "concrete-domain.rkt" function?)
   (prefix-in ck: "concrete-knowledge.rkt")
@@ -19,7 +19,8 @@
   (only-in "execution.rkt" selected-index)
   (only-in "generalize.rkt" generalize)
   (only-in "generational-graph.rkt" active-branch)
-  "preprior-graph.rkt")
+  "preprior-graph.rkt"
+  (only-in "multi-unfolding.rkt" unfold-multi-bounded))
 (require (for-doc scribble/manual))
 
 (module+ test
@@ -155,7 +156,12 @@
                  (cons updated-candidate updated-top))]
               [else
                (begin
-                 (for ([conjunct conjunction]) (add-vertex! prior conjunct))
+                 (for ([conjunct conjunction])
+                   (cond [(abstract-atom? conjunct) (add-vertex! prior conjunct)]
+                         [(multi? conjunct)
+                          (let ([one-unf (car (unfold-multi-bounded 1 conjunct 0 0))])
+                            (for ([multi-conjunct one-unf])
+                              (add-vertex! prior multi-conjunct)))]))
                  (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
                  (unless (strict-partial-order? prior) (error "Selection rule is no longer a strict partial order!"))
                  (aif (selected-index conjunction prior full-evaluations)

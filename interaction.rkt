@@ -26,7 +26,7 @@
 (require "data-utils.rkt")
 (require (only-in "concrete-knowledge.rkt" rule?))
 (require "fullai-domain.rkt")
-(require (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-function?))
+(require (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-function? multi?))
 (require racket-tree-utils/src/tree (only-in racket-tree-utils/src/printer tree-display))
 (require (only-in racket-list-utils/utils findf-index))
 (require "abstract-resolve.rkt")
@@ -42,6 +42,7 @@
 (require "preprior-graph.rkt")
 (require "abstract-renaming.rkt")
 (require graph)
+(require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
 
 (require (only-in br/cond while))
 
@@ -99,7 +100,9 @@
       (match outcome
         [(cons 'underspecified-order candidate)
          (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
-         (let* ([options (remove-duplicates (map normalize-abstract-atom (label-conjunction (node-label candidate))))]
+         (let* ([multis (filter multi? (node-label candidate))]
+                [multi-conjuncts (apply append (map (λ (m) (car (unfold-multi-bounded 1 m 0 0))) multis))]
+                [options (remove-duplicates (map normalize-abstract-atom (append multi-conjuncts (filter abstract-atom? (label-conjunction (node-label candidate))))))]
                 [user-selection (prompt-for-selection options)]
                 [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])
            (begin
