@@ -107,14 +107,14 @@
                 [user-selection (prompt-for-selection options)]
                 [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])
            (begin
-             (for ([precedence new-precedences]) (add-directed-edge! prior (car precedence) (cdr precedence)))
+             (for ([precedence new-precedences])
+               (add-directed-edge! prior (car precedence) (cdr precedence)))
              (hash-set! edge-history step-acc new-precedences)
              (set! step-acc (add1 step-acc)) ; assuming step will be successful
              (with-handlers
                  ([exn:fail?
-                   (λ (_)
-                     (begin (display "Selection breaks the strict partial ordering requirement. Selection rule will not be updated.")
-                            (for ([precedence new-precedences]) (remove-directed-edge! prior (car precedence) (cdr precedence)))
+                   (λ (e)
+                     (begin (display (format "Error: ~a" e))
                             (set! step-acc (sub1 step-acc))
                             (cons #f tree)))])
                (match-let ([(cons cand top) (advance-analysis tree clauses full-evaluations concrete-constants prior #:new-edges new-precedences)])

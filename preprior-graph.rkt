@@ -49,15 +49,24 @@
    (define/generic component-add-vertex! add-vertex!)
    (define (add-vertex! g v)
      (define normalized-v (normalize-abstract-atom v))
-     (component-add-vertex!
-      (preprior-graph-prior g)
-      normalized-v)
-     (for ([xv (in-component-vertices (preprior-graph-prior g))]
-           #:when (and (>=-extension normalized-v xv) (not (renames? xv normalized-v))))
-       (component-add-directed-edge! (preprior-graph-prior g) xv normalized-v))
-     (for ([xv (in-component-vertices (preprior-graph-prior g))]
-           #:when (and (>=-extension xv normalized-v) (not (renames? xv normalized-v))))
-       (component-add-directed-edge! (preprior-graph-prior g) normalized-v xv)))
+     (define existing-vs (component-get-vertices (preprior-graph-prior g)))
+     (when (not (member normalized-v existing-vs))
+       (component-add-vertex!
+        (preprior-graph-prior g)
+        normalized-v)
+       (define reaching
+         (filter
+          (λ (xv) (and (>=-extension normalized-v xv) (not (renames? xv normalized-v))))
+          existing-vs))
+       (define reached
+         (filter
+          (λ (xv) (and (>=-extension xv normalized-v) (not (renames? xv normalized-v))))
+          existing-vs))
+       (for ([r reaching]) (component-add-directed-edge! (preprior-graph-prior g) r normalized-v))
+       (for ([r reached]) (component-add-directed-edge! (preprior-graph-prior g) normalized-v r))
+       (when (not (strict-partial-order? g))
+         (component-remove-vertex! (preprior-graph-prior g) v)
+         (error (format "Adding vertex ~a would break partial ordering" normalized-v)))))
    (define/generic component-remove-vertex! remove-vertex!)
    (define (remove-vertex! g v)
      (component-remove-vertex!
@@ -76,12 +85,21 @@
       (normalize-abstract-atom u)
       (normalize-abstract-atom v)))
    (define/generic component-add-directed-edge! add-directed-edge!)
+   (define/generic component-remove-directed-edge! remove-directed-edge!)
    (define (add-directed-edge! g u v [weight 'default-value])
+     (define n-u (normalize-abstract-atom u))
+     (define n-v (normalize-abstract-atom v))
      (component-add-directed-edge!
       (preprior-graph-prior g)
-      (normalize-abstract-atom u)
-      (normalize-abstract-atom v)
-      weight))
+      n-u
+      n-v
+      weight)
+     (when (not (strict-partial-order? g))
+       (component-remove-directed-edge!
+        (preprior-graph-prior g)
+        n-u
+        n-v)
+       (error (format "Adding edge from ~a to ~a would break partial ordering" n-u n-v))))
    (define/generic component-remove-edge! remove-edge!)
    (define (remove-edge! g u v)
      (component-remove-edge!

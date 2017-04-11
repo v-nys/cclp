@@ -20,7 +20,8 @@
   (only-in "generalize.rkt" generalize)
   (only-in "generational-graph.rkt" active-branch)
   "preprior-graph.rkt"
-  (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*))
+  (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*)
+  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))
 (require (for-doc scribble/manual))
 
 (module+ test
@@ -152,8 +153,11 @@
   (if candidate
       (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
                    [conjunction (label-conjunction (node-label candidate))]
-                   [equivalent-predecessor #f]
-                   [(cons gen-conjunction gen-rngs) (cons conjunction (list))])
+                   [equivalent-predecessor
+                    (findf
+                     (λ (p-and-i) (renames? (car p-and-i) conjunction))
+                     predecessors)]
+                   [(cons gen-conjunction gen-rngs) (if (null? (node-children top)) (cons conjunction (list)) (generalize (active-branch top)))])
         (cond [equivalent-predecessor
                (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
@@ -169,11 +173,10 @@
                  (for ([conjunct conjunction])
                    (cond [(abstract-atom? conjunct) (add-vertex! prior conjunct)]
                          [(multi? conjunct)
-                          (let ([one-unf (car (unfold-multi-bounded 1 conjunct 0 0))])
+                          (let ([one-unf (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct))]) (car (unfold-multi-bounded 1 conjunct offset offset)))])
                             (for ([multi-conjunct one-unf])
                               (add-vertex! prior multi-conjunct)))]))
                  (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
-                 (unless (strict-partial-order? prior) (error "Selection rule is no longer a strict partial order!"))
                  (aif (selected-index conjunction prior full-evaluations)
                       (let* ([selected-conjunct (list-ref conjunction it)]
                              [resolvents
