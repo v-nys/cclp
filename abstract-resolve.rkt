@@ -94,7 +94,7 @@
 (provide
  (proc-doc/names
   abstract-resolve
-  (-> (listof abstract-atom?)
+  (-> (listof abstract-conjunct?)
       exact-nonnegative-integer?
       (listof rule?)
       (listof full-evaluation?)

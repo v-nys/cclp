@@ -67,8 +67,8 @@
               (add-directed-edge! graph (car edge) (gen-node conjunct uid #f #f foldable?))))
           (cons (add1 uid) (add1 idx)))])
       (cons uid-acc 0)
-      (label-conjunction label)
-      graph)]
+      (label-conjunction label))
+      graph]
     ; if there are unfoldings and there is a selection
     [(list-rest
       (or (tree-label tl-con1 (some selected1) _ _ _ _)
