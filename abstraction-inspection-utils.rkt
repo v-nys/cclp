@@ -61,8 +61,8 @@
         (assemble-var-indices
          right-variable-type?
          (full-evaluation-output-pattern abstract-data)))]
-      [(multi _ _ init _ final)
-       (assemble-var-indices right-variable-type? (append (map cdr (init-constraints init)) (map cdr (final-constraints final))))]))
+      [(multi _ _ (init ic) _ (final fc))
+       (assemble-var-indices right-variable-type? (map cdr (append ic fc)))]))
   (remove-duplicates (assemble-aux right-variable-type? abstract-data)))
 (provide
  (proc-doc/names
@@ -124,19 +124,20 @@
         (cond [(none? acc) subterm-max]
               [(none? subterm-max) acc]
               [else (some (max (some-v acc) (some-v subterm-max)))]))))
-  (cond [(abstract-variable? abstraction)
-         (if (right-variable-type? abstraction) (some (avar-index abstraction)) (none))]
-        [(abstract-function? abstraction)
-         (foldl max-of-args-accumulator (none) (abstract-function-args abstraction))]
-        [(abstract-atom? abstraction)
-         (foldl max-of-args-accumulator (none) (abstract-atom-args abstraction))]
-        [(list? abstraction)
-         (foldl max-of-args-accumulator (none) abstraction)]
-        [(abstract-rule? abstraction)
-         (maximum-var-index (cons (abstract-rule-head abstraction) (abstract-rule-body abstraction)) right-variable-type?)]
-        [(full-evaluation? abstraction)
-         (maximum-var-index (list (full-evaluation-input-pattern abstraction) (full-evaluation-output-pattern abstraction)) right-variable-type?)]))
-(provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
+  (match abstraction
+    [(? abstract-variable?)
+     (if (right-variable-type? abstraction) (some (avar-index abstraction)) (none))]
+    [(or (abstract-function sym args) (abstract-atom sym args))
+     (foldl max-of-args-accumulator (none) args)]
+    [(? list?)
+     (foldl max-of-args-accumulator (none) abstraction)]
+    [(? abstract-rule?)
+     (maximum-var-index (cons (abstract-rule-head abstraction) (abstract-rule-body abstraction)) right-variable-type?)]
+    [(? full-evaluation?)
+     (maximum-var-index (list (full-evaluation-input-pattern abstraction) (full-evaluation-output-pattern abstraction)) right-variable-type?)]
+    [(multi _ _ (init ic) _ (final fc))
+     (maximum-var-index (map cdr (append ic fc)) right-variable-type?)]))
+(provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem*? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
 
 (module+ test
   (check-equal? (maximum-var-index (interpret-abstract-term "γ1") g?) (some 1))

@@ -56,10 +56,10 @@
  (proc-doc/names
   offset-vars
   (->
-   (or/c abstract-domain-elem? abstract-knowledge?)
+   (or/c abstract-domain-elem*? abstract-knowledge?)
    exact-integer?
    exact-integer?
-   (or/c abstract-domain-elem? abstract-knowledge?))
+   (or/c abstract-domain-elem*? abstract-knowledge?))
   (renamee a-offset g-offset)
   @{Offset the "any" variables in an abstraction by @racket[a-offset]
  and offset the "ground" variables by @racket[g-offset].}))
@@ -75,9 +75,9 @@
 (provide
  (contract-out
   [rename-apart
-   (-> (or/c abstract-domain-elem? abstract-knowledge?)
-       abstract-domain-elem?
-       (or/c abstract-domain-elem? abstract-knowledge?))]))
+   (-> (or/c abstract-domain-elem*? abstract-knowledge?)
+       abstract-domain-elem*?
+       (or/c abstract-domain-elem*? abstract-knowledge?))]))
 (module+ test
   (require "cclp-interpreter.rkt" "domain-switching.rkt" (prefix-in ak: "abstract-knowledge.rkt"))
   (test-case
