@@ -122,8 +122,8 @@
 
 (define (unfold-multi* idx conjunction)
   (define m (list-ref conjunction idx))
-  (define a-off (assemble-var-indices a? conjunction))
-  (define g-off (assemble-var-indices g? conjunction))
+  (define a-off (apply max (cons 0 (assemble-var-indices a? conjunction))))
+  (define g-off (apply max (cons 0 (assemble-var-indices g? conjunction))))
   (define pairs (unfold-multi m a-off g-off))
   (map (match-lambda [(cons unf sub) (apply-substitution sub (append (take conjunction idx) unf (drop conjunction (add1 idx))))]) pairs)) ; replace the multi, apply substitution to the whole thing
 (provide unfold-multi*)
