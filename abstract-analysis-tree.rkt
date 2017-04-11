@@ -135,6 +135,16 @@
       #f ; resolvents have not yet been visited, so no index
       (list))
      (list)))
+  (define (m-unf->node m-unf)
+    (node
+     (tree-label
+      m-unf
+      (none)
+      (list)
+      #f
+      #f
+      (list))
+     (list)))
   (match-define (cons candidate predecessors) (candidate-and-predecessors top (list)))
   (if candidate
       (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
@@ -170,7 +180,7 @@
                               (if (abstract-atom? selected-conjunct)
                                   (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))
                                   (unfold-multi* it conjunction))]
-                             [child-nodes (map resolvent->node resolvents)]
+                             [child-nodes (if (abstract-atom? selected-conjunct) (map resolvent->node resolvents) (map m-unf->node resolvents))]
                              [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
                              [updated-top (replace-first-subtree top candidate updated-candidate)])
                         (cons updated-candidate updated-top))
