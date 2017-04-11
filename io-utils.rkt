@@ -6,9 +6,9 @@
 
 (define (prompt-for-integer)
   (define read-something (read))
-  (if (exact-integer? read-something)
+  (if (exact-nonnegative-integer? read-something)
       read-something
-      (begin (displayln "Not an integer!")
+      (begin (displayln "Not an integer >= 0!")
              (prompt-for-integer))))
 (module+ test
   (require rackunit)
@@ -21,7 +21,7 @@
 (provide
  (proc-doc/names
   prompt-for-integer
-  (-> exact-positive-integer?)
+  (-> exact-nonnegative-integer?)
   ()
   @{"Asks the user to enter a positive integer and returns it."}))
 

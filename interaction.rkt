@@ -129,14 +129,19 @@
      ["proceed"
       (cdr (proceed))]
      ["fast-forward"
-      (match-let ([(cons continue? new-tree) (proceed)])
-        (while continue?
-               (begin (set! tree new-tree)
-                      (match (proceed)
-                        [(cons c? nt?)
-                         (begin (set! continue? c?)
-                                (set! new-tree nt?))])))
-        new-tree)]
+      (begin
+        (displayln "Maximum number of steps? (0 to keep going indefinitely)")
+        (match-let* ([steps (prompt-for-integer)]
+                     [indefinitely? (equal? steps 0)]
+                     [(cons continue? new-tree) (proceed)])
+          (while (and continue? (or indefinitely? (> steps 0)))
+                 (begin (set! tree new-tree)
+                        (set! steps (sub1 steps))
+                        (match (proceed)
+                          [(cons c? nt?)
+                           (begin (set! continue? c?)
+                                  (set! new-tree nt?))])))
+          new-tree))]
      ["save analysis"
       (let* ([out (open-output-file filename #:exists 'truncate/replace)]
              [serialized-tree (serialize tree)])
