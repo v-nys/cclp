@@ -35,12 +35,12 @@
      (or
       (foldr
        (λ (c acc)
-         (if (and (not acc) (tree-label? (node-label c)))
+         (if (and (not acc) (or (generalization? (node-label c)) (tree-label? (node-label c))))
              (largest-node-index c)
              acc))
        #f
        children)
-      (tree-label-index label))]))
+      (label-index label))]))
 (provide
  (proc-doc/names
   largest-node-index
@@ -72,8 +72,9 @@
     [(or (node (tree-label c (none) _ _ i pp) (list single-child))
          (node (widening c (none) _ i pp) (list single-child)))
      (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    [(or (node (tree-label c (some v) _ _ i pp) children)
-         (node (widening c (some v) _ i pp) children))
+    [(or (node (tree-label c (some v) _ _ i _) children)
+         (node (generalization c (some v) i _ _) children)
+         (node (widening c (some v) _ i _) children))
      (foldl
       (λ (child acc2)
         (if (car acc2)
@@ -121,6 +122,8 @@
     (match candidate
       [(node (tree-label c _ sub r _ _) _)
        (node (tree-label c sel sub r idx new-edges) children)]
+      [(node (generalization c _ _ _ a-r) _)
+       (node (generalization c sel idx new-edges a-r) children)]
       [(node (widening c _ m _ _) _)
        (node (widening c sel m idx new-edges) children)]
       [(node (case c _ _ _) _)
@@ -149,11 +152,8 @@
   (if candidate
       (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
                    [conjunction (label-conjunction (node-label candidate))]
-                   [equivalent-predecessor
-                    (findf
-                     (λ (p-and-i) (renames? (car p-and-i) conjunction))
-                     predecessors)]
-                   [(cons gen-conjunction gen-rngs) (if (null? (node-children top)) (cons conjunction (list)) (generalize (active-branch top)))])
+                   [equivalent-predecessor #f]
+                   [(cons gen-conjunction gen-rngs) (cons conjunction (list))])
         (cond [equivalent-predecessor
                (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]

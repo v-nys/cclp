@@ -71,7 +71,7 @@
 (provide
  (struct*-doc
   resolvent
-  ([conjunction (listof abstract-atom?)]
+  ([conjunction (listof abstract-conjunct?)]
    [substitution (listof abstract-equality?)]
    [knowledge (or/c rule? full-evaluation?)])
   @{Summarizes the result of a resolution step.}))
