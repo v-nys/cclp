@@ -163,7 +163,8 @@
         (displayln "precedence pairs:")
         (for ([precedence (in-edges prior)]) (displayln precedence))
         (displayln "step:")
-        (displayln step-acc))]
+        (displayln step-acc)
+        tree)]
      ["end analysis"
       (set! analyzing? #f)]))))
 

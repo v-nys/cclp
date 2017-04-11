@@ -13,7 +13,8 @@
   "gen-graph-structs.rkt"
   (only-in "generational-graph.rkt" gen-number< gen-add1 gen-sub1 generational-graph-skeleton annotate-general! candidate-targets rdag-level)
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
-  (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right))
+  (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
+  racket/logging)
 (require (for-doc scribble/manual))
 
 (define gen-range-descending? (compose not gen-range-ascending?))
