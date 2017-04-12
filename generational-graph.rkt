@@ -230,20 +230,25 @@
       (cond [(eqv? (+ v1-depth delta) live-depth)
              (list (cons v2 live-descs) eq-descs)]
             [(and (< 0 delta +inf.0)
-                  (renames-with-corresponding-args?
-                   (gen-node-conjunct v1)
-                   (gen-node-conjunct v2)))
+                  (and
+                   (abstract-atom? (gen-node-conjunct v2))
+                   (renames-with-corresponding-args?
+                    (gen-node-conjunct v1)
+                    (gen-node-conjunct v2))))
              (list live-descs (cons v2 eq-descs))]
             [else acc])))
   (define (right-genealogy? v)
-    (match-let ([(list live-descs eq-descs)
-                 (foldl (curry classify v (hash-ref dists `(,root ,v))) '(() ()) verts)])
-      (ormap
-       (λ (d) (and (findf (curry ancestor? d) live-descs)
-                   (findf (compose not (curry ancestor? d)) live-descs)))
-       eq-descs)))
+    (if (abstract-atom? (gen-node-conjunct v))
+        (match-let ([(list live-descs eq-descs)
+                     (foldl (curry classify v (hash-ref dists `(,root ,v))) '(() ()) verts)])
+          (ormap
+           (λ (d) (and (findf (curry ancestor? d) live-descs)
+                       (findf (compose not (curry ancestor? d)) live-descs)))
+           eq-descs))
+        #f))
   (define (accumulate-vert v acc)
     (if (right-genealogy? v) (cons v acc) acc))
+  ;; also read the following from bottom to top
   (define indirect-candidates (foldl accumulate-vert (list) verts))
   (define (ancestor-in? c cs)
     (ormap (λ (e) (ancestor? e c)) cs))
