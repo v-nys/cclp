@@ -209,11 +209,9 @@
   (check-true (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'eq (list (a 1) (a 2))) 4 #f #f #t)))
   (check-false (descendant-renames-with-corresponding-args? sl-graph-skeleton (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t #t))))
 
-;; finds potential target atoms for recursion analysis.
-;; root is the root of the rooted DAG (i.e. the skeleton)
-;; live-depth indicates depth from which an atom may survive indefinitely
+;; Finds potential target atoms for recursion analysis.
 ; REFACTOR: live-depth is probably redundant, as is root, because the skeleton is a DAG
-(define (candidate-targets skeleton [root #f] [live-depth #f]) ; "OPTIONAL" ARGS ARE IGNORED!
+(define (candidate-targets skeleton [root #f] [live-depth #f]) ; "OPTIONAL" ARGS ARE IGNORED! remove in calls.
   (define dists (floyd-warshall skeleton))
   (define (max-dist el acc)
     (define dist (hash-ref dists el))
@@ -223,29 +221,24 @@
   (define live-depth (hash-ref dists max-key))
   (define verts (get-vertices skeleton))
   (define (ancestor? v1 v2) (< 0 (hash-ref dists `(,v1 ,v2)) +inf.0))
-  ;; read the following definitions from bottom to top
-  (define (classify v1 v1-depth v2 acc)
-    (match-let ([(list live-descs eq-descs) acc]
-                [delta (hash-ref dists `(,v1 ,v2))])
-      (cond [(eqv? (+ v1-depth delta) live-depth)
-             (list (cons v2 live-descs) eq-descs)]
-            [(and (< 0 delta +inf.0)
-                  (and
-                   (abstract-atom? (gen-node-conjunct v2))
-                   (renames-with-corresponding-args?
-                    (gen-node-conjunct v1)
-                    (gen-node-conjunct v2))))
-             (list live-descs (cons v2 eq-descs))]
-            [else acc])))
-  (define (right-genealogy? v)
-    (if (abstract-atom? (gen-node-conjunct v))
-        (match-let ([(list live-descs eq-descs)
-                     (foldl (curry classify v (hash-ref dists `(,root ,v))) '(() ()) verts)])
-          (ormap
-           (λ (d) (and (findf (curry ancestor? d) live-descs)
-                       (findf (compose not (curry ancestor? d)) live-descs)))
-           eq-descs))
-        #f))
+  (define (has-live-descendant? v1)
+    (define v1-depth (hash-ref dists `(,root ,v1)))
+    (ormap (λ (v2) (= (+ v1-depth (hash-ref dists `(,v1 ,v2))) live-depth)) verts))
+  (define (right-genealogy? v1)
+    (let ([direct-live-lines 0]
+          [eq-descendant? #f])
+      (for ([v2 verts] #:break (and (= direct-live-lines 2) eq-descendant?))
+        (let ([dist (hash-ref dists `(,v1 ,v2))])
+          (when (and (= dist 1) (has-live-descendant? v2))
+            (set! direct-live-lines (add1 direct-live-lines)))
+          (when (and (not eq-descendant?)
+                     (< 0 dist +inf.0)
+                     (abstract-atom? (gen-node-conjunct v2))
+                     (renames-with-corresponding-args?
+                      (gen-node-conjunct v1)
+                      (gen-node-conjunct v2)))
+            (set! eq-descendant? #t))))
+      (and (= direct-live-lines 2) eq-descendant?)))
   (define (accumulate-vert v acc)
     (if (right-genealogy? v) (cons v acc) acc))
   ;; also read the following from bottom to top
