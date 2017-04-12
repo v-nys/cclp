@@ -68,7 +68,7 @@
           (cons (add1 uid) (add1 idx)))])
       (cons uid-acc 0)
       (label-conjunction label))
-      graph]
+     graph]
     ; if there are unfoldings and there is a selection
     [(list-rest
       (or (tree-label tl-con1 (some selected1) _ _ _ _)
@@ -212,21 +212,43 @@
 ;; finds potential target atoms for recursion analysis.
 ;; root is the root of the rooted DAG (i.e. the skeleton)
 ;; live-depth indicates depth from which an atom may survive indefinitely
-(define (candidate-targets skeleton root live-depth)
-  (define (candidate-targets-aux skeleton root live-depth [depth-acc 0])
-    (if (>= depth-acc live-depth)
-        (list)
-        (let ([candidates-among-descendants
-               (foldl
-                (λ (c candidate-acc)
-                  (append candidate-acc (candidate-targets-aux skeleton c live-depth (+ depth-acc 1))))
-                (list)
-                (get-neighbors skeleton root))])
-          (if (and (multiple-direct-live-lines? skeleton root live-depth depth-acc)
-                   (descendant-renames-with-corresponding-args? skeleton root))
-              (list root)
-              candidates-among-descendants))))
-  (remove-duplicates (candidate-targets-aux skeleton root live-depth 0)))
+; REFACTOR: live-depth is probably redundant, as is root, because the skeleton is a DAG
+(define (candidate-targets skeleton [root #f] [live-depth #f]) ; "OPTIONAL" ARGS ARE IGNORED!
+  (define dists (floyd-warshall skeleton))
+  (define (max-dist el acc)
+    (define dist (hash-ref dists el))
+    (if (and (not (equal? dist +inf.0)) (or (not acc) (> dist (hash-ref dists acc)))) el acc))
+  (define max-key (foldl max-dist #f (hash-keys dists)))
+  (define root (car max-key))
+  (define live-depth (hash-ref dists max-key))
+  (define verts (get-vertices skeleton))
+  (define (ancestor? v1 v2) (< 0 (hash-ref dists `(,v1 ,v2)) +inf.0))
+  ;; read the following definitions from bottom to top
+  (define (classify v1 v1-depth v2 acc)
+    (match-let ([(list live-descs eq-descs) acc]
+                [delta (hash-ref dists `(,v1 ,v2))])
+      (cond [(eqv? (+ v1-depth delta) live-depth)
+             (list (cons v2 live-descs) eq-descs)]
+            [(and (< 0 delta +inf.0)
+                  (renames-with-corresponding-args?
+                   (gen-node-conjunct v1)
+                   (gen-node-conjunct v2)))
+             (list live-descs (cons v2 eq-descs))]
+            [else acc])))
+  (define (right-genealogy? v)
+    (match-let ([(list live-descs eq-descs)
+                 (foldl (curry classify v (hash-ref dists `(,root ,v))) '(() ()) verts)])
+      (ormap
+       (λ (d) (and (findf (curry ancestor? d) live-descs)
+                   (findf (compose not (curry ancestor? d)) live-descs)))
+       eq-descs)))
+  (define (accumulate-vert v acc)
+    (if (right-genealogy? v) (cons v acc) acc))
+  (define indirect-candidates (foldl accumulate-vert (list) verts))
+  (define (ancestor-in? c cs)
+    (ormap (λ (e) (ancestor? e c)) cs))
+  (filter (λ (ic) (not (ancestor-in? ic indirect-candidates))) indirect-candidates))
+
 (module+ test
   (define sl-skeleton-root
     (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t #t))

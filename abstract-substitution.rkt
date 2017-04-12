@@ -120,10 +120,10 @@
  (proc-doc/names
   apply-substitution
   (-> abstract-substitution?
-      (or/c abstract-domain-elem?
+      (or/c abstract-domain-elem*?
             abstract-knowledge?
             (listof abstract-conjunct?))
-      (or/c abstract-domain-elem?
+      (or/c abstract-domain-elem*?
             abstract-knowledge?
             (listof abstract-conjunct?)))
   (subst substitution-object)

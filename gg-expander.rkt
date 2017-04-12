@@ -20,20 +20,20 @@
    (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
      (syntax/loc caller-stx
        (define NODE-NUM
-         (gen-node CONJUNCT NUMBER GEN-RANGE #t))))]
+         (gen-node CONJUNCT NUMBER GEN-RANGE #t #t))))]
   [(_ NUMBER (unselected-conjunct CONJUNCT) GEN-RANGE)
    (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
      (syntax/loc caller-stx
        (define NODE-NUM
-         (gen-node CONJUNCT NUMBER GEN-RANGE #f))))]
+         (gen-node CONJUNCT NUMBER GEN-RANGE #f #t))))]
   [(_ NUMBER (selected-conjunct CONJUNCT))
    (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
      (syntax/loc caller-stx
-       (define NODE-NUM (gen-node CONJUNCT NUMBER #f #t))))]
+       (define NODE-NUM (gen-node CONJUNCT NUMBER #f #t #t))))]
   [(_ NUMBER (unselected-conjunct CONJUNCT))
    (with-pattern ([NODE-NUM (prefix-id "node-" #'NUMBER)])
      (syntax/loc caller-stx
-       (define NODE-NUM (gen-node CONJUNCT NUMBER #f #f))))])
+       (define NODE-NUM (gen-node CONJUNCT NUMBER #f #f #t))))])
 (provide node-line)
 
 (define-macro-cases generation-range
