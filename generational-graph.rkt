@@ -40,10 +40,12 @@
 (require (for-doc scribble/manual))
 
 ;; computes how many conjuncts will be introduced when knowledge (clause or full evaluation) is applied
-(define (knowledge-output-length knowledge)
+(define (knowledge-output-length knowledge conjunct)
   (match knowledge
     [(ck:rule h b) (length b)]
-    [(full-evaluation i o) 0]))
+    [(full-evaluation i o) 0]
+    ['one (length (multi-conjunction conjunct))]
+    ['many (add1 (length (multi-conjunction conjunct)))]))
 
 ;; checks whether a value 'idx' is inside the half-open interval 'range'
 (define (contains range idx)
@@ -60,6 +62,7 @@
      (foldl
       (match-lambda**
        [(conjunct (cons uid idx))
+        ;; avoid folding if parent was a generalization, otherwise we'll get an infinite cycle
         (let ([foldable? (andmap (match-lambda [(cons (gen-node (? multi?) _ _ #t _) _) #f] [_ #t]) edges)])
           (add-vertex! graph (gen-node conjunct uid #f #f foldable?)) ; end of branch never has selection
           (for ([edge edges])
@@ -87,12 +90,12 @@
                   (when (contains (cdr edge) idx)
                     (add-directed-edge! graph (car edge) (gen-node conjunct uid #f (equal? idx selected1) foldable?))))
                 (let ([vertex-edges
-                       (cons ; pair of the current conjunct and the range of "spawned" conjuncts
+                       (cons ;; pair of the current conjunct (as a node) and the range of "spawned" conjuncts
                         (gen-node conjunct uid #f (equal? idx selected1) foldable?)
                         (if (not (equal? idx selected1))
                             (index-range range-start (add1 range-start)) ; unselected conjuncts refer to the conjunct "below" hem
-                            (index-range range-start (+ range-start (knowledge-output-length tl-rule2)))))]
-                      [new-range-start (if (not (equal? idx selected1)) (add1 range-start) (+ range-start (knowledge-output-length tl-rule2)))])
+                            (index-range range-start (+ range-start (knowledge-output-length tl-rule2 conjunct)))))]
+                      [new-range-start (if (not (equal? idx selected1)) (add1 range-start) (+ range-start (knowledge-output-length tl-rule2 conjunct)))])
                   (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
             (list uid-acc 0 0 (list))
             tl-con1)])

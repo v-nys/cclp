@@ -119,7 +119,7 @@
   ([conjunction (listof abstract-conjunct?)]
    [selection any/c]
    [substitution abstract-substitution?]
-   [rule (or/c #f (or/c full-evaluation? ck:rule?))]
+   [rule (or/c #f (or/c full-evaluation? ck:rule? 'one 'many))]
    [index (or/c #f exact-positive-integer?)]
    [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))])
   @{The contents of a node in the abstract analysis tree which has not yet been visited or which was successfully unfolded.

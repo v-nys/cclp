@@ -139,13 +139,13 @@
       #f ; resolvents have not yet been visited, so no index
       (list))
      (list)))
-  (define (m-unf->node m-unf)
+  (define (m-unf->node m-unf type)
     (node
      (tree-label
       m-unf
       (none)
       (list)
-      #f
+      type
       #f
       (list))
      (list)))
@@ -183,7 +183,7 @@
                               (if (abstract-atom? selected-conjunct)
                                   (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))
                                   (unfold-multi* it conjunction))]
-                             [child-nodes (if (abstract-atom? selected-conjunct) (map resolvent->node resolvents) (map m-unf->node resolvents))]
+                             [child-nodes (if (abstract-atom? selected-conjunct) (map resolvent->node resolvents) (map m-unf->node resolvents '(one many)))]
                              [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
                              [updated-top (replace-first-subtree top candidate updated-candidate)])
                         (cons updated-candidate updated-top))
