@@ -243,8 +243,7 @@
             (set! eq-descendant? #t))))
       (and (= direct-live-lines 2) eq-descendant?)))
   (define (accumulate-vert v acc)
-    (if (right-genealogy? v) (cons v acc) acc))
-  ;; also read the following from bottom to top
+    (if (and (abstract-atom? (gen-node-conjunct v)) (right-genealogy? v)) (cons v acc) acc))
   (define indirect-candidates (foldl accumulate-vert (list) verts))
   (define (ancestor-in? c cs)
     (ormap (λ (e) (ancestor? e c)) cs))
