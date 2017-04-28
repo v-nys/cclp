@@ -1,6 +1,7 @@
 #lang at-exp racket
 (require
   racket/match
+  racket/logging
   racket/serialize ; trees can be saved and loaded
   scribble/srcdoc)
 (require
@@ -69,9 +70,10 @@
      (cons t acc)]
     [(node (widening c (none) msg i pp) '())
      (cons (node (widening c (none) msg i pp) '()) acc)]
-    ; children but no selection = widened tree-label (or widened widening)
-    [(or (node (tree-label c (none) _ _ i pp) (list single-child))
-         (node (widening c (none) _ i pp) (list single-child)))
+    ; children but no selection = widened tree-label (or widened widening) or cycle
+    [(or (node (tree-label c (none) _ _ i _) (list single-child))
+         (node (generalization c (none) i _ _) (list single-child))
+         (node (widening c (none) _ i _) (list single-child)))
      (candidate-and-predecessors single-child (cons (cons c i) acc))]
     [(or (node (tree-label c (some v) _ _ i _) children)
          (node (generalization c (some v) i _ _) children)
