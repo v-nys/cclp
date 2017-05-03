@@ -32,10 +32,13 @@
  a (index)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'a)
-     (λ (obj) (list (a-index obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'a)
+          (λ (obj) (list (a-index obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (display (format "a~a" (a-index obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc a1 a2 equal?-recur)
@@ -54,10 +57,13 @@
  a* (multi-id atom-index local-index)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'a*)
-     (λ (obj) (list (a*-multi-id obj) (a*-atom-index obj) (a*-local-index obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'a*)
+          (λ (obj) (list (a*-multi-id obj) (a*-atom-index obj) (a*-local-index obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (display (format "a_{~a,~a,~a}" (a*-multi-id obj) (a*-atom-index obj) (a*-local-index obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc a*1 a*2 equal?-recur)
@@ -82,10 +88,13 @@
  g (index)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'g)
-     (λ (obj) (list (g-index obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'g)
+          (λ (obj) (list (g-index obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (display (format "g~a" (g-index obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc g1 g2 equal?-recur)
@@ -104,10 +113,13 @@
  g* (multi-id atom-index local-index)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'g*)
-     (λ (obj) (list (g*-multi-id obj) (g*-atom-index obj) (g*-local-index obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'g*)
+          (λ (obj) (list (g*-multi-id obj) (g*-atom-index obj) (g*-local-index obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (display (format "g_{~a,~a,~a}" (g*-multi-id obj) (g*-atom-index obj) (g*-local-index obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc g*1 g*2 equal?-recur)
@@ -166,15 +178,24 @@
   (var)
   @{Extract the index from @racket[var].}))
 
+(define (printed-form obj)
+  (define str (open-output-string))
+  (print obj str)
+  (get-output-string str))
+
 (serializable-struct
  abstract-function (functor args)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'abstract-function)
-     (λ (obj) (list (abstract-function-functor obj)
-                    (abstract-function-args obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'abstract-function)
+          (λ (obj) (list (abstract-function-functor obj) (abstract-function-args obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (if (null? (abstract-function-args obj))
+            (display (abstract-function-functor obj) out)
+            (display (format "~a(~a)" (abstract-function-functor obj) (string-join (map printed-form (abstract-function-args obj)) ",")) out))))]
  #:methods
  gen:equal+hash
  [(define (equal-proc af1 af2 equal?-recur)
@@ -196,11 +217,15 @@
  abstract-function* (functor args)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'abstract-function*)
-     (λ (obj) (list (abstract-function*-functor obj)
-                    (abstract-function*-args obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'abstract-function*)
+          (λ (obj) (list (abstract-function*-functor obj) (abstract-function*-args obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (if (null? (abstract-function*-args obj))
+            (display (abstract-function*-functor obj) out)
+            (display (format "~a(~a)" (abstract-function*-functor obj) (string-join (map printed-form (abstract-function*-args obj)) ",")) out))))]
  #:methods
  gen:equal+hash
  [(define (equal-proc af*1 af*2 equal?-recur)
@@ -222,10 +247,15 @@
  abstract-atom (symbol args)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'abstract-atom)
-     (λ (obj) (list (abstract-atom-symbol obj) (abstract-atom-args obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'abstract-atom)
+          (λ (obj) (list (abstract-atom-symbol obj) (abstract-atom-args obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (if (null? (abstract-atom-args obj))
+            (display (abstract-atom-symbol obj) out)
+            (display (format "~a(~a)" (abstract-atom-symbol obj) (string-join (map printed-form (abstract-atom-args obj)) ",")) out))))]
  #:methods
  gen:equal+hash
  [(define (equal-proc aa1 aa2 equal?-recur)
@@ -247,10 +277,15 @@
  abstract-atom* (symbol args)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'abstract-atom*)
-     (λ (obj) (list (abstract-atom*-symbol obj) (abstract-atom*-args obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'abstract-atom*)
+          (λ (obj) (list (abstract-atom*-symbol obj) (abstract-atom*-args obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (if (null? (abstract-atom*-args obj))
+            (display (abstract-atom*-symbol obj) out)
+            (display (format "~a(~a)" (abstract-atom*-symbol obj) (string-join (map printed-form (abstract-atom*-args obj)) ",")) out))))]
  #:methods
  gen:equal+hash
  [(define (equal-proc aa*1 aa*2 equal?-recur)
@@ -272,14 +307,17 @@
  multi (conjunction ascending? init consecutive final)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'multi)
-     (λ (obj) (list (multi-conjunction obj)
-                    (multi-ascending? obj)
-                    (multi-init obj)
-                    (multi-consecutive obj)
-                    (multi-final obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'multi)
+          (λ (obj) (list (multi-conjunction obj)
+                         (multi-ascending? obj)
+                         (multi-init obj)
+                         (multi-consecutive obj)
+                         (multi-final obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (display (format "multi(~a,~v,~v,~v,~v)" (string-join (map printed-form (multi-conjunction obj)) "∧") (multi-ascending? obj) (multi-init obj) (multi-consecutive obj) (multi-final obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc m1 m2 equal?-recur)
@@ -310,14 +348,24 @@
    [final final?])
   @{The multi abstraction.}))
 
+(define (format-constraints constraints)
+  (format "{~a}"
+          (string-join
+           (map (match-lambda [(cons i o) (format "~v/~v" i o)])
+                constraints)
+           ",")))
+
 (serializable-struct
  init (constraints)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'init)
-     (λ (obj) (list (init-constraints obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'init)
+          (λ (obj) (list (init-constraints obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (display (format-constraints (init-constraints obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc i1 i2 equal?-recur)
@@ -336,10 +384,15 @@
  consecutive (constraints)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'consecutive)
-     (λ (obj) (list (consecutive-constraints obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'consecutive)
+          (λ (obj) (list (consecutive-constraints obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (display
+         (format-constraints (consecutive-constraints obj))
+         out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc c1 c2 equal?-recur)
@@ -358,10 +411,15 @@
  final (constraints)
  #:methods
  gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'final)
-     (λ (obj) (list (final-constraints obj)))))]
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'final)
+          (λ (obj) (list (final-constraints obj)))) obj out mode)
+        ;; print-as-expression is not relevant in this application
+        (display
+         (format-constraints (final-constraints obj))
+         out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc f1 f2 equal?-recur)

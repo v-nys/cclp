@@ -42,6 +42,8 @@
 (require "preprior-graph.rkt")
 (require "abstract-renaming.rkt")
 (require (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))
+(require "gen-graph-structs.rkt")
+(require "generational-graph.rkt")
 (require graph)
 (require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
 
@@ -165,6 +167,18 @@
         (for ([precedence (in-edges prior)]) (displayln precedence))
         (displayln "step:")
         (displayln step-acc)
+        tree)]
+     ["show genealogical tree"
+      (let* ([active-branch (active-branch tree)]
+             [gr (if active-branch (generational-graph-skeleton active-branch) #f)]
+             [root (if active-branch (gen-node (car (tree-label-conjunction (car active-branch))) 1 #f #t #t) #f)]
+             [annotated-root (if active-branch (struct-copy gen-node root [range (gen 0 #f)]) #f)]
+             [depth (if active-branch (length active-branch) #f)]
+             [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth)) #f)]
+             [_ (if active-branch (annotate-general! gr root targets depth) #f)])
+        (if active-branch
+            (displayln (graphviz gr))
+            (displayln "There is no active branch."))
         tree)]
      ["end analysis"
       (set! analyzing? #f)]))))

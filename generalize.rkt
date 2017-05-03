@@ -703,7 +703,8 @@
        (let ([grp (group-sequential-generations (append potential current-gen) next-multi-id dummy-id lvl)])
          (struct-copy grouping acc [completed (append completed (car grp))] [potential (list node)] [current-gen (list)] [dummy-id (add1 dummy-id)]))]
       [((list (gen-node conjunct-1 _ (gen-range n m id-1 asc?) _ _)) (list-rest (gen-node _ _ (gen o id-1) #f _) _) (gen-node conjunct-2 _ (gen-range _ _ id-2 _) #f #t))
-       (struct-copy grouping acc [completed (append completed potential current-gen)] [potential (list node)] [current-gen (list)])])))
+       (struct-copy grouping acc [completed (append completed potential current-gen)] [potential (list node)] [current-gen (list)])]
+      [(_ _ _) (error (format "potential: ~a current-gen: ~a node: ~a" potential current-gen node))])))
 
 (define (generalize-level lvl)
   (define multis (filter multi? (map gen-node-conjunct lvl)))
