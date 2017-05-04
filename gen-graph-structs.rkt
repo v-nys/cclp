@@ -72,7 +72,7 @@
                           (gen-range-origin obj)
                           (gen-range-ascending? obj)))) obj out mode)
          ;; print-as-expression is not relevant in this application
-         (display (format "[~a:~a:~a->~a]" (let ([fst (gen-range-first obj)]) (if (symsum? fst) (format "~v" fst) fst)) (let ([lst (gen-range-last obj)]) (if (symsum? lst) (format "~v" lst) lst)) (gen-range-origin obj) (gen-range-origin obj)) out)))]
+         (display (format "[~a:~a:~a->~a]" (let ([fst (gen-range-first obj)]) (if (symsum? fst) (format "~v" fst) fst)) (let ([lst (gen-range-last obj)]) (if (symsum? lst) (format "~v" lst) lst)) (gen-range-ascending? obj) (gen-range-origin obj)) out)))]
   #:methods
   gen:equal+hash
   [(define (equal-proc g1 g2 equal?-recur)
