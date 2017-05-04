@@ -177,7 +177,7 @@
              [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth)) #f)]
              [_ (if active-branch (annotate-general! gr root targets depth) #f)])
         (if active-branch
-            (displayln (graphviz gr))
+            (displayln (graphviz (graph-map (λ (v) (format "~v" v)) gr)))
             (displayln "There is no active branch."))
         tree)]
      ["end analysis"

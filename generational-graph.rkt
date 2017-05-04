@@ -39,6 +39,12 @@
   "gen-graph-structs.rkt")
 (require (for-doc scribble/manual))
 
+(define (graph-map proc g)
+  (define g* (graph-copy g))
+  (for ([v (get-vertices g)]) (rename-vertex! g* v (proc v)))
+  g*)
+(provide graph-map)
+
 ;; computes how many conjuncts will be introduced when knowledge (clause or full evaluation) is applied
 (define (knowledge-output-length knowledge conjunct)
   (match knowledge

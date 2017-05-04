@@ -32,11 +32,14 @@
 (struct gen (number origin)
   #:methods
   gen:custom-write
-  [(define write-proc
-     (make-constructor-style-printer
-      (λ (obj) 'gen)
-      (λ (obj) (list (gen-number obj)
-                     (gen-origin obj)))))]
+  [(define (write-proc obj out mode)
+     (if (boolean? mode)
+         ((make-constructor-style-printer
+           (λ (obj) 'gen)
+           (λ (obj) (list (gen-number obj)
+                          (gen-origin obj)))) obj out mode)
+         ;; print-as-expression is not relevant in this application
+         (display (format "[~a->~a]" (let ([num (gen-number obj)]) (if (symsum? num) (format "~v" num) num)) (gen-origin obj)) out)))]
   #:methods
   gen:equal+hash
   [(define (equal-proc g1 g2 equal?-recur)
@@ -60,13 +63,16 @@
 (struct gen-range (first last origin ascending?)
   #:methods
   gen:custom-write
-  [(define write-proc
-     (make-constructor-style-printer
-      (λ (obj) 'gen-range)
-      (λ (obj) (list (gen-range-first obj)
-                     (gen-range-last obj)
-                     (gen-range-origin obj)
-                     (gen-range-ascending? obj)))))]
+  [(define (write-proc obj out mode)
+     (if (boolean? mode)
+         ((make-constructor-style-printer
+           (λ (obj) 'gen-range)
+           (λ (obj) (list (gen-range-first obj)
+                          (gen-range-last obj)
+                          (gen-range-origin obj)
+                          (gen-range-ascending? obj)))) obj out mode)
+         ;; print-as-expression is not relevant in this application
+         (display (format "[~a:~a:~a->~a]" (let ([fst (gen-range-first obj)]) (if (symsum? fst) (format "~v" fst) fst)) (let ([lst (gen-range-last obj)]) (if (symsum? lst) (format "~v" lst) lst)) (gen-range-origin obj) (gen-range-origin obj)) out)))]
   #:methods
   gen:equal+hash
   [(define (equal-proc g1 g2 equal?-recur)
@@ -104,14 +110,24 @@
 (struct gen-node (conjunct id range unfolded? foldable?)
   #:methods
   gen:custom-write
-  [(define write-proc
-     (make-constructor-style-printer
-      (λ (obj) 'gen-node)
-      (λ (obj) (list (gen-node-conjunct obj)
-                     (gen-node-id obj)
-                     (gen-node-range obj)
-                     (gen-node-unfolded? obj)
-                     (gen-node-foldable? obj)))))]
+  [(define (write-proc obj out mode)
+     (if (boolean? mode)
+         ((make-constructor-style-printer
+           (λ (obj) 'gen-node)
+           (λ (obj) (list (gen-node-conjunct obj)
+                          (gen-node-id obj)
+                          (gen-node-range obj)
+                          (gen-node-unfolded? obj)
+                          (gen-node-foldable? obj)))) obj out mode)
+         ;; print-as-expression is not relevant in this application
+         (display
+          (format "~a~a.~v~v~a"
+                  (if (gen-node-unfolded? obj) "*" "")
+                  (gen-node-id obj)
+                  (gen-node-conjunct obj)
+                  (gen-node-range obj)
+                  (if (gen-node-unfolded? obj) "*" ""))
+          out)))]
   #:methods
   gen:equal+hash
   [(define (equal-proc g1 g2 equal?-recur)
@@ -156,24 +172,29 @@
 (struct symsum (sym num)
   #:methods
   gen:custom-write
-  [(define write-proc
-     (make-constructor-style-printer
-      (λ (obj) 'symsum)
-      (λ (obj) (list (symsum-sym obj)
-                     (symsum-num obj)))))]
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc s1 s2 equal?-recur)
-     (and (equal?-recur (symsum-sym s1)
-                        (symsum-sym s2))
-          (equal?-recur (symsum-num s1)
-                        (symsum-num s2))))
-   (define (hash-proc s hash-recur)
-     (+ (hash-recur (symsum-sym s))
-        (hash-recur (symsum-num s))))
-   (define (hash2-proc s hash-recur)
-     (+ (hash-recur (symsum-sym s))
-        (hash-recur (symsum-num s))))])
+  [(define (write-proc obj out mode)
+     (if (boolean? mode)
+         ((make-constructor-style-printer
+           (λ (obj) 'symsum)
+           (λ (obj) (list (symsum-sym obj)
+                          (symsum-num obj)))) obj out mode)
+         ;; print-as-expression is not relevant in this application
+         (display
+          (format "~a~a~a" (symsum-sym obj) (if (>= (symsum-num obj) 0) "+" "") (symsum-num obj))
+          out)))]
+#:methods
+gen:equal+hash
+[(define (equal-proc s1 s2 equal?-recur)
+   (and (equal?-recur (symsum-sym s1)
+                      (symsum-sym s2))
+        (equal?-recur (symsum-num s1)
+                      (symsum-num s2))))
+ (define (hash-proc s hash-recur)
+   (+ (hash-recur (symsum-sym s))
+      (hash-recur (symsum-num s))))
+ (define (hash2-proc s hash-recur)
+   (+ (hash-recur (symsum-sym s))
+      (hash-recur (symsum-num s))))])
 (provide
  (struct*-doc
   symsum
@@ -185,30 +206,30 @@
      or of unfolded multi abstractions.}))
 
 (serializable-struct index-range (start end-before)
-  #:methods
-  gen:custom-write
-  [(define write-proc
-     (make-constructor-style-printer
-      (λ (obj) 'index-range)
-      (λ (obj) (list (index-range-start obj)
-                     (index-range-end-before obj)))))]
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc i1 i2 equal?-recur)
-     (and (equal?-recur (index-range-start i1)
-                        (index-range-start i2))
-          (equal?-recur (index-range-end-before i1)
-                        (index-range-end-before i2))))
-   (define (hash-proc i hash-recur)
-     (+ (hash-recur (index-range-start i))
-        (hash-recur (index-range-end-before i))))
-   (define (hash2-proc i hash-recur)
-     (+ (hash-recur (index-range-start i))
-        (hash-recur (index-range-end-before i))))])
+                     #:methods
+                     gen:custom-write
+                     [(define write-proc
+                        (make-constructor-style-printer
+                         (λ (obj) 'index-range)
+                         (λ (obj) (list (index-range-start obj)
+                                        (index-range-end-before obj)))))]
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc i1 i2 equal?-recur)
+                        (and (equal?-recur (index-range-start i1)
+                                           (index-range-start i2))
+                             (equal?-recur (index-range-end-before i1)
+                                           (index-range-end-before i2))))
+                      (define (hash-proc i hash-recur)
+                        (+ (hash-recur (index-range-start i))
+                           (hash-recur (index-range-end-before i))))
+                      (define (hash2-proc i hash-recur)
+                        (+ (hash-recur (index-range-start i))
+                           (hash-recur (index-range-end-before i))))])
 (provide
  (struct*-doc
   index-range
   ([start exact-nonnegative-integer?]
    [end-before exact-nonnegative-integer?])
   @{A range of list indices, from @racket[start] up to, but not including @racket[end-before].
- The purpose of this structure is to indicate which elements in a conjunction are abstracted when a generalization operation is applied.}))
+     The purpose of this structure is to indicate which elements in a conjunction are abstracted when a generalization operation is applied.}))
