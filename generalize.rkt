@@ -614,9 +614,10 @@
        (println "clause 40")
        (struct-copy grouping acc [completed (append completed potential (list node))] [potential #f])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct-2 _ (gen-range o p id asc?) #f #t))
-       #:when (and
-               (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
-               (renames? (append (drop (unfold-multi-many-right conjunct-1) 1) (list conjunct-2)) (unfold-multi-many conjunct-2)))
+       #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
+                (and
+                 (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
+                 (renames? (append (drop (unfold-multi-many-right conjunct-1 offset offset) 1) (list conjunct-2)) (unfold-multi-many conjunct-2))))
        (println "clause 41")
        (struct-copy grouping acc [potential (car (group-sequential-generations (append potential (list node)) next-multi-id dummy-id lvl))] [dummy-id (add1 dummy-id)])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct-2 _ (gen-range o p id asc?) #f #t))
