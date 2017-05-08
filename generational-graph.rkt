@@ -388,6 +388,7 @@
    (local-max (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f #t))
    'l1))
 
+;; add an offset to a (potentially symbolic) generation number
 (define (gen-add g o)
   (match g
     [(? exact-integer?) (+ g o)]
@@ -448,6 +449,8 @@
 ; TODO this needs separate tests!
 
 (define (apply-multi-mapping! spc parent multi-mapping graph)
+  ;; compute the generation of a child of parent-gen when substitutee-gen is replaced with substituter-gen on the same level of the RDAG
+  ;; e.g. if gen 3 becomes symbol l1, gen 4 becomes symbolic sum l1+1
   (define (translate-gen parent-gen substitutee-gen substituter-gen)
     (define gap (gen-gap parent-gen substitutee-gen))
     (cond
@@ -467,16 +470,22 @@
               [last* (gen (gen-range-last parent-gens) (gen-range-origin parent-gens))]
               [translation1 (translate-gen first* substitutee-gen substituter-gen)]
               [translation2 (translate-gen last* substitutee-gen substituter-gen)])
-         (when (and translation1 (not (equal? translation1 last*))) (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen-range parent-gens [first (gen-number translation1)])])))
-         (when (and translation2 (not (equal? translation2 first*))) (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen-range parent-gens [last (gen-number translation2)])])))
-         (when (and translation1 (equal? translation1 last*)) (rename-vertex! graph spc (struct-copy gen-node spc [range translation1])))
-         (when (and translation2 (equal? translation2 first*)) (rename-vertex! graph spc (struct-copy gen-node spc [range translation2]))))]))
+         (when (and translation1 (not (equal? translation1 last*)))
+           (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen-range parent-gens [first (gen-number translation1)])])))
+         (when (and translation2 (not (equal? translation2 first*)))
+           (rename-vertex! graph spc (struct-copy gen-node spc [range (struct-copy gen-range parent-gens [last (gen-number translation2)])])))
+         (when (and translation1 (equal? translation1 last*))
+           (rename-vertex! graph spc (struct-copy gen-node spc [range translation1])))
+         (when (and translation2 (equal? translation2 first*))
+           (rename-vertex! graph spc (struct-copy gen-node spc [range translation2]))))]))
   (for ([key (hash-keys multi-mapping)])
     (apply-single! key (hash-ref multi-mapping key)))
   ;; if the graph still contains original spc at this point, no mapping was needed
   (when (has-vertex? graph spc)
     (rename-vertex! graph spc (struct-copy gen-node spc [range parent-gens]))))
 
+;; given an annotated multi, compute which generation (in the range) disappears when the multi is unfolded in case:one
+;; the result is a pair from the disappearing generation to thereplacing generation number
 (define (disappearing-pair m-node)
   (match m-node
     [(gen-node c _ (gen-range f l id #t) _ _)
@@ -494,19 +503,18 @@
   (match-define-values
    (new-multis single-parent-conjuncts)
    (partition (λ (conjunct) (> (length (get-neighbors (transpose graph) conjunct)) 1)) level))
-  ;; disappearing multis are on the *parent* level!
-  (define gone
+  (define ex-multis
     (filter
      (lambda (c) (and (multi? (gen-node-conjunct c)) (not (ormap (compose1 multi? gen-node-conjunct) (get-neighbors graph c)))))
      parent-level))
   (define i-multi-mapping (foldl (curry annotate-new-multi! graph postfix-box) #hash() new-multis))
-  (define o-multi-mapping (foldl (λ (e acc) (let ([pair (disappearing-pair e)]) (hash-set acc (car pair) (cdr pair)))) #hash() gone))
+  (define o-multi-mapping (foldl (λ (e acc) (let ([pair (disappearing-pair e)]) (hash-set acc (car pair) (cdr pair)))) #hash() ex-multis))
   (for ([spc single-parent-conjuncts])
     (let ([parent (first (get-neighbors (transpose graph) spc))])
-      (cond [(and (null? gone) (null? new-multis))
+      (cond [(and (null? ex-multis) (null? new-multis))
              (annotate-unfolding! spc parent relevant-targets graph live-depth parent-level-number)]
             [(not (null? new-multis)) (apply-multi-mapping! spc parent i-multi-mapping graph)]
-            [(not (null? gone)) (apply-multi-mapping! spc parent o-multi-mapping graph)]))))
+            [(not (null? ex-multis)) (apply-multi-mapping! spc parent o-multi-mapping graph)]))))
 (module+ test
   (require (prefix-in almost-annotated: "analysis-trees/sameleaves-multi-branch-gen-tree-almost-annotated.rkt"))
   (define almost-annotated (graph-copy almost-annotated:val))
