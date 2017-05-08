@@ -159,7 +159,7 @@
                     (findf
                      (λ (p-and-i) (renames? (car p-and-i) conjunction))
                      predecessors)]
-                   [(cons gen-conjunction gen-rngs) (if (null? (node-children top)) (cons conjunction (list)) (generalize (active-branch top)))])
+                   [(cons gen-conjunction gen-rngs) (if (or (null? (node-children top)) equivalent-predecessor) (cons conjunction (list)) (generalize (active-branch top)))])
         (cond [equivalent-predecessor
                (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
