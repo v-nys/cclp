@@ -208,9 +208,13 @@
 (define (extract-variables v)
   (define (aux v)
     (match v
-      [(? list?) (apply append (map extract-variables v))]
+      [(? list?) (append-map extract-variables v)]
       [(or (abstract-atom _ args) (abstract-function _ args))
-       (apply append (map extract-variables args))]
+       (append-map extract-variables args)]
+      [(multi _ _ (init i) _ (final f))
+       (append
+        (extract-variables (map cdr i))
+        (extract-variables (map cdr f)))]
       [(or (? g?) (? a?)) (list v)]))
   (remove-duplicates (aux v)))
 (provide extract-variables)
