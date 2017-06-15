@@ -431,7 +431,7 @@
 (provide
  (struct*-doc
   final
-  ([constraints (listof (cons/c abstract-variable*? abstract-variable?))])
+  ([constraints (listof (cons/c abstract-variable*? abstract-term?))])
   @{Constraints pertaining to the final (in terms of recursion depth) abstracted abstract conjunction in a multi.}))
 
 (define (abstract-term? elem)
