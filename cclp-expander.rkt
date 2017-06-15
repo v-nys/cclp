@@ -130,6 +130,11 @@
 
 ; PART RELATED TO FULL EVALUATION
 
+(define-syntax (fail stx)
+  (syntax-parse stx
+    [(_ "fail") (syntax/loc stx #f)]))
+(provide fail)
+
 (define-syntax-rule (full-evaluation-section rule ...) (list rule ...))
 (provide full-evaluation-section)
 

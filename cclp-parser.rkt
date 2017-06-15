@@ -40,7 +40,7 @@ rule : (atom IMPLIES conjunction) | atom
 conjunction : atom (COMMA atom)*
 
 full-evaluation-section : (fullai-rule-with-body | fullai-rule-without-body)+
-fullai-rule-with-body : abstract-atom-with-args LEADS-TO abstract-substitution PERIOD
+fullai-rule-with-body : abstract-atom-with-args LEADS-TO (abstract-substitution | fail) PERIOD
 fullai-rule-without-body : abstract-atom-with-args PERIOD
 abstract-atom-with-args : SYMBOL OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
 abstract-atom-without-args : SYMBOL
@@ -61,3 +61,5 @@ abstract-conjunction : abstract-atom (COMMA abstract-atom)*
 
 concrete-constants-section : concrete-constant+
 concrete-constant: SYMBOL
+
+fail : SYMBOL

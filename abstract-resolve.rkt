@@ -88,9 +88,11 @@
      kb))
   (let* ([conjunct (list-ref conjunction idx)]
          [outcomes-full-eval ((curry fold-over-knowledge idx) full-evaluations)])
-    (if (null? outcomes-full-eval)
-        ((curry fold-over-knowledge idx) concrete-clauses)
-        outcomes-full-eval)))
+    (cond [(null? outcomes-full-eval)
+           ((curry fold-over-knowledge idx) concrete-clauses)]
+          [(member 'fail outcomes-full-eval)
+           (list)]
+          [else outcomes-full-eval])))
 (provide
  (proc-doc/names
   abstract-resolve
@@ -113,43 +115,48 @@
 (define (abstract-step conjunct-index conjunction knowledge concrete-constants)
   (define conjunct (list-ref conjunction conjunct-index))
   (define abstract-knowledge (if (rule? knowledge) (pre-abstract-rule knowledge concrete-constants) knowledge))
-  (define renamed-abstract-knowledge (rename-apart abstract-knowledge conjunction))
+  (define renamed-abstract-knowledge
+    (if (or (abstract-rule? abstract-knowledge) (full-evaluation-output-pattern abstract-knowledge))
+        (rename-apart abstract-knowledge conjunction)
+        #f))
   (define g-offset
     (let ([candidate (maximum-var-index conjunction g?)])
       (if (some? candidate) (some-v candidate) 0)))
-  (if (abstract-rule? renamed-abstract-knowledge)
-      (let* ([in-subst (abstract-equality
-                        conjunct
-                        (abstract-rule-head renamed-abstract-knowledge))]
-             [out-subst (abstract-unify (list in-subst) g-offset)])
-        (let*-values ([(before from) (split-at conjunction conjunct-index)]
-                      [(stitched)
-                       (append before
-                               (abstract-rule-body renamed-abstract-knowledge)
-                               (cdr from))])
-          (if (some? out-subst)
-              (begin
-                (log-debug (format "Successfully resolved with ~a" renamed-abstract-knowledge))
-                (resolvent
-                 (apply-substitution (some-v out-subst) stitched)
-                 (some-v out-subst)
-                 knowledge))
-              #f)))
-      (if (>=-extension (full-evaluation-input-pattern renamed-abstract-knowledge) conjunct)
-          (let* ([in-subst
-                  (abstract-equality
-                   conjunct
-                   (full-evaluation-output-pattern renamed-abstract-knowledge))]
-                 [out-subst (abstract-unify (list in-subst) g-offset)]
-                 [unspliced
-                  (let-values ([(before from) (split-at conjunction conjunct-index)])
-                    (append before (cdr from)))])
-            (if (some? out-subst)
-                (resolvent (apply-substitution (some-v out-subst) unspliced)
-                           (some-v out-subst)
-                           knowledge)
-                (error "output pattern could not be applied - full evaluation is wrong?")))
-          #f)))
+  (cond [(abstract-rule? renamed-abstract-knowledge)
+         (let* ([in-subst (abstract-equality
+                           conjunct
+                           (abstract-rule-head renamed-abstract-knowledge))]
+                [out-subst (abstract-unify (list in-subst) g-offset)])
+           (let*-values ([(before from) (split-at conjunction conjunct-index)]
+                         [(stitched)
+                          (append before
+                                  (abstract-rule-body renamed-abstract-knowledge)
+                                  (cdr from))])
+             (if (some? out-subst)
+                 (begin
+                   (log-debug (format "Successfully resolved with ~a" renamed-abstract-knowledge))
+                   (resolvent
+                    (apply-substitution (some-v out-subst) stitched)
+                    (some-v out-subst)
+                    knowledge))
+                 #f)))]
+        [(and (not (full-evaluation-output-pattern abstract-knowledge))
+              (>=-extension (full-evaluation-input-pattern abstract-knowledge) conjunct)) 'fail]
+        [(and (full-evaluation-output-pattern abstract-knowledge) (>=-extension (full-evaluation-input-pattern renamed-abstract-knowledge) conjunct))
+         (let* ([in-subst
+                 (abstract-equality
+                  conjunct
+                  (full-evaluation-output-pattern renamed-abstract-knowledge))]
+                [out-subst (abstract-unify (list in-subst) g-offset)]
+                [unspliced
+                 (let-values ([(before from) (split-at conjunction conjunct-index)])
+                   (append before (cdr from)))])
+           (if (some? out-subst)
+               (resolvent (apply-substitution (some-v out-subst) unspliced)
+                          (some-v out-subst)
+                          knowledge)
+               (error "output pattern could not be applied - full evaluation is wrong?")))]
+        [else #f]))
 
 (module+ test
   (require rackunit)
