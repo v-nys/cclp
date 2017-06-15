@@ -2,14 +2,14 @@
 (require
   racket/match
   racket/logging
-  racket/serialize ; trees can be saved and loaded
+  racket/serialize
   scribble/srcdoc)
 (require
   graph
   racket-tree-utils/src/tree)
 (require
   "abstract-analysis.rkt"
-  (only-in "abstract-domain-ordering.rkt" renames?)
+  (only-in "abstract-domain-ordering.rkt" renames? >=-extension)
   "abstract-knowledge.rkt"
   (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-conjunct? multi?)
   "abstract-resolve.rkt"
@@ -151,6 +151,11 @@
       #f
       (list))
      (list)))
+  (define (full-eval-covers lst)
+    (match lst
+      [(list full-eval conjunct)
+       (and (abstract-atom? conjunct)
+            (>=-extension (full-evaluation-input-pattern full-eval) conjunct))]))
   (match-define (cons candidate predecessors) (candidate-and-predecessors top (list)))
   (if candidate
       (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
@@ -159,7 +164,9 @@
                     (findf
                      (λ (p-and-i) (renames? (car p-and-i) conjunction))
                      predecessors)]
-                   [(cons gen-conjunction gen-rngs) (if (or (null? (node-children top)) equivalent-predecessor) (cons conjunction (list)) (generalize (active-branch top)))])
+                   [fully-evaluated-atom? (ormap full-eval-covers (cartesian-product full-evaluations conjunction))]
+                   [(cons gen-conjunction gen-rngs)
+                    (if (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?) (cons conjunction (list)) (generalize (active-branch top)))])
         (cond [equivalent-predecessor
                (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
