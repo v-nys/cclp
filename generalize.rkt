@@ -737,7 +737,7 @@
                  (and (renames? (cons conjunct-1 (map gen-node-conjunct current-gen)) (unfold-multi-many-right conjunct-1 offset offset)))))
        (println "clause 58")
        (let* ([grp (group-sequential-generations (append potential current-gen) next-multi-id dummy-id lvl)])
-         (struct-copy grouping acc [completed (append completed (car grp))] [potential (list node)] [dummy-id (add1 dummy-id)]))]
+         (struct-copy grouping acc [completed (append completed (car grp))] [potential (list node)] [current-gen (list)] [dummy-id (add1 dummy-id)]))]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _))
         (list-rest (gen-node _ _ (gen o id) #f _) _)
         (gen-node conjunct-2 _ (gen-range p q id asc?) #f #t))

@@ -390,13 +390,9 @@
 
 ;; add an offset to a (potentially symbolic) generation number
 (define (gen-add g o)
-  (match g
-    [(? exact-integer?) (+ g o)]
-    [(? symbol?) (symsum g o)]
-    [(symsum sym n)
-     #:when (equal? n (- o))
-     sym]
-    [(symsum sym n) (symsum sym (+ o n))]))
+  (cond [(= o 0) g]
+        [(> o 0) (gen-add (gen-add1 g) (sub1 o))]
+        [(< o 0) (gen-add (gen-sub1 g) (add1 o))]))
 
 (define (gen-add1 gen-num)
   (match gen-num
@@ -453,12 +449,7 @@
   ;; e.g. if gen 3 becomes symbol l1, gen 4 becomes symbolic sum l1+1
   (define (translate-gen parent-gen substitutee-gen substituter-gen)
     (define gap (gen-gap parent-gen substitutee-gen))
-    (cond
-      [(and gap (equal? gap 0)) (struct-copy gen parent-gen [number substituter-gen])]
-      [(and gap (number? parent-gen) (number? substitutee-gen) (> gap 0)) (struct-copy gen parent-gen [number (symsum substituter-gen gap)])]
-      [(and gap (not (number? parent-gen)) (symbol? substituter-gen)) (struct-copy gen parent-gen [number (symsum substituter-gen gap)])]
-      [(and gap (not (number? parent-gen)) (number? substituter-gen)) (struct-copy gen parent-gen [number (+ substituter-gen gap)])]
-      [else #f]))
+    (if gap (struct-copy gen parent-gen [number (gen-add substituter-gen gap)]) #f))
   (define parent-gens (gen-node-range parent))
   (define (apply-single! substitutee-gen substituter-gen)
     (cond
