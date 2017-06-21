@@ -35,7 +35,7 @@
          renamed-domain-elem2)))]
     [((? multi?) (? (listof abstract-atom?)))
      (if (<= (length (multi-conjunction domain-elem1)) (length domain-elem2))
-         (let* ([offset (apply max (assemble-var-indices (λ (_) #t) domain-elem1))]
+         (let* ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) domain-elem1)))]
                 ; don't need substitution here
                 [unf-one (car (unfold-multi-bounded 1 domain-elem1 offset offset))]
                 [unf-many (unfold-multi-many domain-elem1 offset offset)])
@@ -44,7 +44,7 @@
          #f)]
     [((? list?) (? list?))
      #:when (and (ormap multi? domain-elem1) (ormap multi? domain-elem2))
-     (let* ([off (apply max (assemble-var-indices (λ (_) #t) domain-elem2))]
+     (let* ([off (apply max (cons 0 (assemble-var-indices (λ (_) #t) domain-elem2)))]
             [first-multi (findf multi? domain-elem2)]
             [one-unf (unfold-multi-bounded 1 first-multi off off)]
             [two-unf (unfold-multi-bounded 2 first-multi off off)]
@@ -56,7 +56,7 @@
      #:when (and (ormap multi? domain-elem1) (not (ormap multi? domain-elem2)))
      (if (> (length domain-elem1) (length domain-elem2))
          #f
-         (let* ([off (apply max (assemble-var-indices (λ (_) #t) domain-elem1))]
+         (let* ([off (apply max (cons 0 (assemble-var-indices (λ (_) #t) domain-elem1)))]
                 [multis (filter multi? domain-elem1)]
                 [one-unfs (map (λ (m) (unfold-multi-bounded 1 m off off)) multis)]
                 [many-unfs (map (λ (m) (cons (unfold-multi-many m off off) (list))) multis)]
@@ -66,7 +66,7 @@
      #:when (and (not (ormap multi? domain-elem1)) (ormap multi? domain-elem2))
      #f]
     [((? multi?) (? multi?))
-     (let* ([offset (apply max (assemble-var-indices (λ (_) #t) (list domain-elem1 domain-elem2)))]
+     (let* ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (list domain-elem1 domain-elem2))))]
             ; don't need substitution here
             [unf-1 (car (unfold-multi-bounded 2 domain-elem1 offset offset))]
             [unf-2 (car (unfold-multi-bounded 2 domain-elem2 offset offset))])

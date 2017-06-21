@@ -104,7 +104,7 @@
         [(cons 'underspecified-order candidate)
          (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
          (let* ([multis (filter multi? (label-conjunction (node-label candidate)))]
-                [multi-conjuncts (apply append (map (λ (m) (let ([offset (apply max (assemble-var-indices (λ (_) #t) m))]) (car (unfold-multi-bounded 1 m offset offset)))) multis))]
+                [multi-conjuncts (apply append (map (λ (m) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) m)))]) (car (unfold-multi-bounded 1 m offset offset)))) multis))]
                 [options (remove-duplicates (map normalize-abstract-atom (append multi-conjuncts (filter abstract-atom? (label-conjunction (node-label candidate))))))]
                 [user-selection (prompt-for-selection options)]
                 [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])

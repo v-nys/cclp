@@ -182,7 +182,8 @@
                  (for ([conjunct conjunction])
                    (cond [(abstract-atom? conjunct) (add-vertex! prior conjunct)]
                          [(multi? conjunct)
-                          (let ([one-unf (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct))]) (car (unfold-multi-bounded 1 conjunct offset offset)))])
+                          (let ([one-unf (let* (
+                                                [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))]) (car (unfold-multi-bounded 1 conjunct offset offset)))])
                             (for ([multi-conjunct one-unf])
                               (add-vertex! prior multi-conjunct)))]))
                  (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))

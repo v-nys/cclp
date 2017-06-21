@@ -6,7 +6,7 @@
   "abstract-substitution.rkt"
   (only-in "abstract-unify.rkt" abstract-unify)
   (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables assemble-var-indices)
-  (only-in "data-utils.rkt" some-v))
+  (only-in "data-utils.rkt" some-v))apply 
 (require (for-doc scribble/manual))
 
 (define (single-subscript-end-equalities constraints subscript-mapping)
@@ -45,7 +45,7 @@
         (cons (apply-substitution-to-conjunction combined-substitution single-subscript-conjunction) combined-substitution))
       (match-let*
           ([many-unf (unfold-multi-many m a-off g-off)]
-           [new-off (apply max (assemble-var-indices (λ (_) #t) many-unf))]
+           [new-off (apply max (cons 0 (assemble-var-indices (λ (_) #t) many-unf)))]
            [(cons rec-unf rec-subst) (unfold-multi-bounded (- num 1) (last many-unf) new-off new-off)])
         (cons (append (drop-right many-unf 1) rec-unf) rec-subst))))
 (provide
@@ -80,7 +80,7 @@
       (unfold-multi-many m a-off g-off)
       (let* ([unf-one (unfold-multi-many m a-off g-off)]
              [unf-m (last unf-one)]
-             [off-2 (apply max (assemble-var-indices (λ (_) #t) unf-one))])
+             [off-2 (apply max (cons 0 (assemble-var-indices (λ (_) #t) unf-one)))])
         (append (drop-right unf-one 1) (unfold-multi-many-bounded (sub1 num) unf-m off-2 off-2)))))
 (provide unfold-multi-many-bounded)
 

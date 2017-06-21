@@ -109,7 +109,7 @@
        (cons
         (let* ([gen-1 (map gen-node-conjunct lvl-1)]
                [gen-2 (map gen-node-conjunct lvl-2)]
-               [offset (apply max (assemble-var-indices (λ (_) #t) (append gen-1 gen-2)))]
+               [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (append gen-1 gen-2))))]
                [offset-gen-2 (offset-vars gen-2 offset offset)]
                [subst-1 (some-v (abstract-unify (map abstract-equality gen-1 offset-gen-2) 0))]
                [shared (filter (match-lambda [(abstract-equality v1 v2) (and (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-1)) (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-2)))]) subst-1)]
@@ -139,7 +139,7 @@
         (list (gen-node (and (? multi?) existing-multi) _ (gen-range m o id asc?) _ _)))
        (let* ([existing-instance (map gen-node-conjunct single-gen)]
               [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
-              [offset (apply max (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct single-gen))))]
+              [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct single-gen)))))]
               [unifiable-instance (offset-vars subscriptless-instance offset offset)]
               [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
               [new-init
@@ -157,7 +157,7 @@
         (and (list-rest (gen-node (? abstract-atom?) _ (gen n id) _ _) first-rest) single-gen))
        (let* ([existing-instance (map gen-node-conjunct single-gen)]
               [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
-              [offset (apply max (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct single-gen))))]
+              [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct single-gen)))))]
               [unifiable-instance (offset-vars subscriptless-instance offset offset)]
               [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
               ; only this is different wrt previous case
@@ -177,7 +177,7 @@
        (let* ([placeholder-1 (multi-conjunction existing-multi-1)]
               [subscriptless-instance-1 (remove-multi-subscripts placeholder-1)]
               [subscriptless-instance-2 (remove-multi-subscripts placeholder-2)]
-              [offset (apply max (append (assemble-var-indices (λ (_) #t) subscriptless-instance-1) (assemble-var-indices (λ (_) #t) subscriptless-instance-2)))]
+              [offset (apply max (cons 0 (append (assemble-var-indices (λ (_) #t) subscriptless-instance-1) (assemble-var-indices (λ (_) #t) subscriptless-instance-2))))]
               [offset-instance-2 (offset-vars subscriptless-instance-2 offset offset)]
               [subst (some-v (abstract-unify (list (abstract-equality offset-instance-2 subscriptless-instance-1)) 0))]
               [new-final
@@ -485,7 +485,7 @@
       [(#f (list-rest (gen-node _ _ (gen n o) #f _) _) (gen-node conjunct _ (gen-range m p o asc) #f #t))
        #:when (and
                (or (and asc (equal? (gen-add1 n) m)) (and (not asc) (equal? (gen-sub1 n) m)))
-               (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct))])
+               (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))])
                  (renames?
                   (append (map gen-node-conjunct current-gen) (list conjunct))
                   (unfold-multi-many conjunct offset offset))))
@@ -516,7 +516,7 @@
        #:when
        (and
         (or (and asc? (equal? (gen-add1 n) m)) (and (not asc?) (equal? (gen-sub1 n) m)))
-        (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct))])
+        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))])
           (renames?
            (append (map gen-node-conjunct potential) (list conjunct))
            (unfold-multi-many conjunct offset offset))))
@@ -575,14 +575,14 @@
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen-range o p id-1 asc?) #f #t))
        #:when (and (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
                    (renames? (map gen-node-conjunct potential) (map gen-node-conjunct current-gen))
-                   (renames? (append (map gen-node-conjunct current-gen) (list conjunct)) (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct))]) (unfold-multi-many conjunct offset offset))))
+                   (renames? (append (map gen-node-conjunct current-gen) (list conjunct)) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))]) (unfold-multi-many conjunct offset offset))))
        (println "clause 32")
        (let* ([grp-1 (group-sequential-generations (append potential current-gen) next-multi-id dummy-id lvl)]
               [grp-2 (group-sequential-generations (append (car grp-1) (list node)) (add1 next-multi-id) (add1 dummy-id) lvl)])
          (struct-copy grouping acc [potential (car grp-2)] [current-gen (list)] [next-multi-id (cdr grp-2)] [dummy-id (+ dummy-id 2)]))]
       [((list-rest (gen-node _ _ (gen n id-1) _ _) _) (list-rest (gen-node _ _ (gen m id-1) #f _) _) (gen-node conjunct _ (gen-range o p id-1 asc?) #f #t))
        #:when (and (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
-                   (renames? (append (map gen-node-conjunct current-gen) (list conjunct)) (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct))]) (unfold-multi-many conjunct offset offset))))
+                   (renames? (append (map gen-node-conjunct current-gen) (list conjunct)) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))]) (unfold-multi-many conjunct offset offset))))
        (println "clause 33")
        (let* ([grp (group-sequential-generations (append current-gen (list node)) next-multi-id dummy-id lvl)])
          (struct-copy grouping acc [completed (append completed potential)] [potential (car grp)] [current-gen (list)] [next-multi-id (cdr grp)] [dummy-id (add1 dummy-id)]))]
@@ -614,7 +614,7 @@
        (println "clause 40")
        (struct-copy grouping acc [completed (append completed potential (list node))] [potential #f])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list) (gen-node conjunct-2 _ (gen-range o p id asc?) #f #t))
-       #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) (list conjunct-1 conjunct-2)))])
+       #:when (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (list conjunct-1 conjunct-2))))])
                 (and
                  (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
                  (renames? (append (drop (unfold-multi-many-right conjunct-1 offset offset) 1) (list conjunct-2)) (unfold-multi-many conjunct-2 offset offset))))
@@ -630,7 +630,7 @@
        (struct-copy grouping acc [completed (append completed potential)] [potential (list node)])]
       ;; BLOCK: temporary abstraction consisting of a multi, current gen not empty
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list-rest (gen-node _ _ (gen o id) #f _) _) (gen-node conjunct-2 _ (gen 0 #f) #f #t))
-       #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
+       #:when (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct-1)))])
                 (renames?
                  (unfold-multi-many-right conjunct-1 offset offset)
                  (append (map gen-node-conjunct potential) (map gen-node-conjunct current-gen))))
@@ -641,7 +641,7 @@
        (println "clause 45")
        (struct-copy grouping acc [completed (append completed potential current-gen (list node))] [current-gen (list)] [potential #f])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list-rest (gen-node _ _ (gen o id) #f _) _) (gen-node conjunct-2 _ (gen _ _) #f #f))
-       #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
+       #:when (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct-1)))])
                 (renames?
                  (unfold-multi-many-right conjunct-1 offset offset)
                  (append (map gen-node-conjunct potential) (map gen-node-conjunct current-gen))))
@@ -657,7 +657,7 @@
        (println "clause 48")
        (struct-copy grouping acc [current-gen (append current-gen (list node))])]
       [((list (gen-node conjunct-1 _ (gen-range n m id-1 asc?) _ _)) (list-rest (gen-node _ _ (gen o id-1) #f _) _) (gen-node conjunct-2 _ (gen p id-2) #f #t))
-       #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
+       #:when (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct-1)))])
                 (and (equal? id-1 id-2)
                      (if asc? (equal? p (gen-add1 o)) (equal? p (gen-sub1 o)))
                      (renames? (unfold-multi-many-right conjunct-1 offset offset) (cons conjunct-1 (map gen-node-conjunct current-gen)))))
@@ -670,7 +670,7 @@
        (println "clause 50")
        (struct-copy grouping acc [completed (append completed potential)] [potential current-gen] [current-gen (list node)])]
       [((list (gen-node conjunct-1 _ (gen-range n m id-1 asc?) _ _)) (list-rest (gen-node _ _ (gen o id-1) #f _) _) (gen-node conjunct-2 _ (gen p id-2) #f #t))
-       #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
+       #:when (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct-1)))])
                 (and (not (equal? id-1 id-2))
                      (renames? (unfold-multi-many-right conjunct-1 offset offset) (cons conjunct-1 (map gen-node-conjunct current-gen)))))
        (println "clause 51")
@@ -681,7 +681,7 @@
        (println "clause 52")
        (struct-copy grouping acc [completed (append completed potential current-gen)] [potential #f] [current-gen (list node)])]
       [((list (gen-node conjunct-1 _ (gen-range n m id asc?) _ _)) (list-rest (gen-node _ _ (gen o id) #f _) _) (gen-node conjunct-2 _ (gen-range _ _ _ _) #f #f))
-       #:when (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
+       #:when (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct-1)))])
                 (renames?
                  (unfold-multi-many-right conjunct-1 offset offset)
                  (append (map gen-node-conjunct potential) (map gen-node-conjunct current-gen))))
@@ -697,7 +697,7 @@
        #:when (and
                (or (and asc? (equal? p (gen-add1 o)))
                    (and (not asc?) (equal? p (gen-sub1 o))))
-               (let* ([offset (apply max (assemble-var-indices (λ (_) #t) (cons conjunct-1 (cons conjunct-2 (map gen-node-conjunct current-gen)))))]
+               (let* ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (cons conjunct-1 (cons conjunct-2 (map gen-node-conjunct current-gen))))))]
                       [unf-left (unfold-multi-many conjunct-2 offset offset)]
                       [lock-left (renames? (append (map gen-node-conjunct current-gen) (list conjunct-2)) unf-left)]
                       [lock-right (renames? (cons conjunct-1 (map gen-node-conjunct current-gen)) (unfold-multi-many-right conjunct-1 offset offset))]) (and lock-left lock-right)))
@@ -709,7 +709,7 @@
        #:when (and
                (or (and asc? (equal? p (gen-add1 o)))
                    (and (not asc?) (equal? p (gen-sub1 o))))
-               (let* ([offset (apply max (assemble-var-indices (λ (_) #t) (cons conjunct-1 (cons conjunct-2 (map gen-node-conjunct current-gen)))))]
+               (let* ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (cons conjunct-1 (cons conjunct-2 (map gen-node-conjunct current-gen))))))]
                       [unf-left (unfold-multi-many conjunct-2 offset offset)]
                       [lock-left? (renames? (append (map gen-node-conjunct current-gen) (list conjunct-2)) unf-left)]) lock-left?))
        (println "clause 56")
@@ -720,7 +720,7 @@
        #:when (and
                (or (and asc? (equal? p (gen-add1 o)))
                    (and (not asc?) (equal? p (gen-sub1 o))))
-               (let ([offset (apply max (assemble-var-indices (λ (_) #t) (list conjunct-1 conjunct-2)))])
+               (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (list conjunct-1 conjunct-2))))])
                  (and (renames? (cons conjunct-1 (map gen-node-conjunct current-gen)) (unfold-multi-many-right conjunct-1 offset offset))
                       (renames? (append (map gen-node-conjunct current-gen) (list conjunct-2)) (unfold-multi-many conjunct-2 offset offset)))))
        (println "clause 57")
@@ -733,7 +733,7 @@
        #:when (and
                (or (and asc? (equal? p (gen-add1 o)))
                    (and (not asc?) (equal? p (gen-sub1 o))))
-               (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
+               (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct-1)))])
                  (and (renames? (cons conjunct-1 (map gen-node-conjunct current-gen)) (unfold-multi-many-right conjunct-1 offset offset)))))
        (println "clause 58")
        (let* ([grp (group-sequential-generations (append potential current-gen) next-multi-id dummy-id lvl)])
@@ -744,7 +744,7 @@
        #:when (and
                (or (and asc? (equal? p (gen-add1 o)))
                    (and (not asc?) (equal? p (gen-sub1 o))))
-               (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-2))])
+               (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct-2)))])
                  (renames? (append (map gen-node-conjunct current-gen) (list conjunct-2)) (unfold-multi-many conjunct-2 offset offset))))
        (println "clause 59")
        (let* ([grp (group-sequential-generations (append current-gen (list node)) next-multi-id dummy-id lvl)])
@@ -759,7 +759,7 @@
        (struct-copy grouping acc [completed (append completed potential current-gen)] [potential (list node)] [current-gen (list)])]
       [((list (gen-node conjunct-1 _ (gen-range n m id-1 asc?) _ _)) (list-rest (gen-node _ _ (gen o id-1) #f _) _) (gen-node conjunct-2 _ (gen-range _ _ id-2 _) #f #t))
        #:when (and (not (eqv? id-1 id-2))
-                   (let ([offset (apply max (assemble-var-indices (λ (_) #t) conjunct-1))])
+                   (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct-1)))])
                      (renames?
                       (unfold-multi-many-right conjunct-1 offset offset)
                       (append (map gen-node-conjunct potential) (map gen-node-conjunct current-gen)))))

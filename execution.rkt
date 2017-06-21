@@ -74,7 +74,7 @@
   (if full-eval-index
       full-eval-index
       (let* ([multis (filter multi? conjunction)]
-             [multi-conjuncts (apply append (map (λ (m) (let ([offset (apply max (assemble-var-indices (λ (_) #t) m))]) (car (unfold-multi-bounded 1 m offset offset)))) multis))]
+             [multi-conjuncts (apply append (map (λ (m) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) m)))]) (car (unfold-multi-bounded 1 m offset offset)))) multis))]
              [unique (unique-atoms (map normalize-abstract-atom (append (filter abstract-atom? conjunction) multi-conjuncts)))]
              ; note: tc always has reachability of self, even when there are no self loops!
              [tc (transitive-closure preprior)]
@@ -89,7 +89,7 @@
         (begin
           (if (not first-choice)
               #f
-              (findf-index (λ (c) (if (abstract-atom? c) (renames? c first-choice) (ormap (λ (mc) (renames? mc first-choice)) (let ([offset (apply max (assemble-var-indices (λ (_) #t) c))]) (car (unfold-multi-bounded 1 c offset offset)))))) conjunction))))))
+              (findf-index (λ (c) (if (abstract-atom? c) (renames? c first-choice) (ormap (λ (mc) (renames? mc first-choice)) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) c)))]) (car (unfold-multi-bounded 1 c offset offset)))))) conjunction))))))
 (module+ test
   (let* ([preprior (mk-preprior-graph)]
          [conjunction (interpret-abstract-conjunction "foo(γ1,α1)")])
