@@ -43,7 +43,8 @@
 (require "abstract-renaming.rkt")
 (require (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))
 (require "gen-graph-structs.rkt")
-(require "generational-graph.rkt")
+(require "generational-graph.rkt"
+         "mi-map.rkt")
 (require graph)
 (require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
 
@@ -180,6 +181,8 @@
             (displayln (graphviz (graph-map (λ (v) (format "~v" v)) gr)))
             (displayln "There is no active branch."))
         tree)]
+     ["generate meta-interpreter map"
+      (display-mi-map tree)]
      ["end analysis"
       (set! analyzing? #f)]))))
 
