@@ -23,8 +23,7 @@
 #lang racket
 
 (require "abstract-multi-domain.rkt" "abstract-substitution.rkt")
-(struct full-ai-rule (input-pattern output-substitution [idx #:auto])
-  #:auto-value 1
+(struct full-ai-rule (input-pattern output-substitution idx)
   #:methods
   gen:equal+hash
   [(define (equal-proc f1 f2 equal?-recur)

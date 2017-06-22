@@ -23,8 +23,7 @@
 #lang racket
 (require "concrete-domain.rkt")
 (require racket/serialize)
-(serializable-struct rule (head body [idx #:auto])
-                     #:auto-value 1
+(serializable-struct rule (head body idx)
                      #:transparent
                      #:methods
                      gen:equal+hash

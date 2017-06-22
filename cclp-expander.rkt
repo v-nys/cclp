@@ -36,6 +36,7 @@
 (require "abstract-domain-ordering.rkt")
 (require "preprior-graph.rkt")
 (require (only-in sugar/coerce ->symbol))
+(require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 
 ; PUTTING THE THREE PARTS TOGETHER
 
@@ -67,18 +68,21 @@
 (define-for-syntax (inject-rule-id-stx rule-stx id)
   (syntax-parse rule-stx #:literals (rule)
     [(rule arg ...)
-     (syntax/loc rule-stx
-       (rule arg ... id))]))
+     (cons
+      (quasisyntax/loc rule-stx
+        (rule arg ... #,id))
+      (add1 id))]))
 
 (require (for-syntax (only-in racket-list-utils/utils map-accumulatel)))
 (define-syntax (program-section stx)
-  (syntax/loc stx
-    (map-accumulatel
-     (λ (rule-stx rule-nb)
-       (cons (inject-rule-id-stx rule-stx rule-nb) (add1 rule-nb)))
-     1
-     (cdr (syntax->list stx)))))
-
+  (with-syntax ([(RULE-STX ...)
+                 (car
+                  (map-accumulatel
+                   inject-rule-id-stx
+                   1
+                   (odd-elems (cdr (syntax->list stx)))))])
+    (syntax/loc stx
+      (list RULE-STX ...))))
 (provide program-section)
 
 (define-syntax (atom stx)
@@ -121,8 +125,8 @@
 
 (define-syntax (rule stx)
   (syntax-parse stx
-    [(_ atom) (syntax/loc stx (ck:rule atom '()))]
-    [(_ atom ":-" conjunction) (syntax/loc stx (ck:rule atom conjunction))]))
+    [(_ atom id) (syntax/loc stx (ck:rule atom '() id))]
+    [(_ atom ":-" conjunction id) (syntax/loc stx (ck:rule atom conjunction id))]))
 (provide rule)
 
 (define-syntax (conjunction stx)
@@ -142,15 +146,29 @@
     [(_ "fail") (syntax/loc stx #f)]))
 (provide fail)
 
-(define-syntax-rule (full-evaluation-section rule ...) (list rule ...))
+(define-for-syntax (inject-full-ai-rule air-stx id)
+  (syntax-parse
+      air-stx
+    [(type args ...)
+     (cons #`(type args ... #,id) (add1 id))]))
+
+(define-syntax (full-evaluation-section stx)
+  (with-syntax
+      ([(INJECTED-RULE ...)
+        (car
+         (map-accumulatel
+          inject-full-ai-rule
+          1
+          (cdr (syntax->list stx))))])
+    (syntax/loc stx (list INJECTED-RULE ...))))
 (provide full-evaluation-section)
 
-(define-syntax-rule (fullai-rule-with-body atom "->" subst ".")
-  (fai:full-ai-rule atom subst))
+(define-syntax-rule (fullai-rule-with-body atom "->" subst "." idx)
+  (fai:full-ai-rule atom subst idx))
 (provide fullai-rule-with-body)
 
-(define-syntax-rule (fullai-rule-without-body atom ".")
-  (fai:full-ai-rule atom (list)))
+(define-syntax-rule (fullai-rule-without-body atom "." idx)
+  (fai:full-ai-rule atom (list) idx))
 (provide fullai-rule-without-body)
 
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
@@ -316,10 +334,12 @@
      (abstract-variable
       (abstract-variable-g "γ" 2))
      ")")
-    ".")
+    "."
+    1)
    (fai:full-ai-rule
     (ad:abstract-atom 'myatom (list (ad:g 1) (ad:g 2)))
-    (list)))
+    (list)
+    1))
 
   (check-equal?
    (fullai-rule-with-body
@@ -350,8 +370,10 @@
       "/"
       (abstract-variable
        (abstract-variable-g "γ" 3))))
-    ".")
+    "."
+    1)
    (fai:full-ai-rule
     (ad:abstract-atom 'del (list (ad:a 1) (ad:g 1) (ad:a 2)))
     (list (as:abstract-equality (ad:a 1) (ad:g 2))
-          (as:abstract-equality (ad:a 2) (ad:g 3))))))
+          (as:abstract-equality (ad:a 2) (ad:g 3)))
+    1)))
