@@ -64,13 +64,12 @@
 
 (define (selected-index conjunction preprior full-ai-rules)
   (define full-eval-index
-    (foldl
-     (λ (r acc)
-       (if acc
-           acc
-           (findf-index (λ (atom) (>=-extension (full-evaluation-input-pattern r) atom)) conjunction)))
-     #f
-     full-ai-rules))
+    (foldl (λ (c i acc)
+             (or acc
+                 (and (memf (λ (r) (>=-extension (full-evaluation-input-pattern r) c)) full-ai-rules) i)))
+           #f
+           conjunction
+           (stream->list (in-range 0 (length conjunction)))))
   (if full-eval-index
       full-eval-index
       (let* ([multis (filter multi? conjunction)]
