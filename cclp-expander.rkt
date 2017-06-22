@@ -71,7 +71,9 @@
   (syntax-parse stx
     [(_) (syntax/loc stx (list))]
     [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...)
-     (syntax/loc stx (cons _KNOWLEDGE (program-section _MOREKNOWLEDGE ...)))]))
+     (syntax/loc stx
+       (cons _KNOWLEDGE
+             (program-section _MOREKNOWLEDGE ...)))]))
 (provide program-section)
 
 (define-syntax (atom stx)

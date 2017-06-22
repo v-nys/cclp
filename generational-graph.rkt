@@ -48,7 +48,7 @@
 ;; computes how many conjuncts will be introduced when knowledge (clause or full evaluation) is applied
 (define (knowledge-output-length knowledge conjunct)
   (match knowledge
-    [(ck:rule h b) (length b)]
+    [(ck:rule h b _) (length b)]
     [(full-evaluation i o) 0]
     ['one (length (multi-conjunction conjunct))]
     ['many (add1 (length (multi-conjunction conjunct)))]))
