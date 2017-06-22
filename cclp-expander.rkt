@@ -33,8 +33,6 @@
 (require (for-syntax syntax/parse))
 (require (only-in "interaction.rkt" cclp-top cclp))
 (require racket/contract)
-(require (for-syntax (only-in racket-list-utils/utils odd-elems)))
-(require (for-syntax (only-in racket remove-duplicates match second third)))
 (require "abstract-domain-ordering.rkt")
 (require "preprior-graph.rkt")
 (require (only-in sugar/coerce ->symbol))
@@ -62,18 +60,25 @@
   (syntax-parse stx
     [(_ _PARSE-TREE ...)
      (syntax/loc stx (#%module-begin
-        (cclp-top current-contract-region _PARSE-TREE ...)))]))
+                      (cclp-top current-contract-region _PARSE-TREE ...)))]))
 (provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
+(define-for-syntax (inject-rule-id-stx rule-stx id)
+  (syntax-parse rule-stx #:literals (rule)
+    [(rule arg ...)
+     (syntax/loc rule-stx
+       (rule arg ... id))]))
 
+(require (for-syntax (only-in racket-list-utils/utils map-accumulatel)))
 (define-syntax (program-section stx)
-  (syntax-parse stx
-    [(_) (syntax/loc stx (list))]
-    [(_ _KNOWLEDGE _PERIOD _MOREKNOWLEDGE ...)
-     (syntax/loc stx
-       (cons _KNOWLEDGE
-             (program-section _MOREKNOWLEDGE ...)))]))
+  (syntax/loc stx
+    (map-accumulatel
+     (λ (rule-stx rule-nb)
+       (cons (inject-rule-id-stx rule-stx rule-nb) (add1 rule-nb)))
+     1
+     (cdr (syntax->list stx)))))
+
 (provide program-section)
 
 (define-syntax (atom stx)
@@ -166,7 +171,7 @@
 (define-syntax-rule (abstract-variable specific-var) specific-var)
 (provide abstract-variable)
 
-; M.O.: string is hier eigenlijk vrij overbodig...
+; M.O.: string is hier overbodig...
 (define-syntax-rule (abstract-variable-a "α" index) (ad:a (quote index)))
 (provide abstract-variable-a)
 
