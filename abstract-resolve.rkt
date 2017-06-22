@@ -186,7 +186,8 @@
 
   (let ([full-eval
          (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                          (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)"))])
+                          (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+                          1)])
     (check-equal?
      (abstract-resolve
       (interpret-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")

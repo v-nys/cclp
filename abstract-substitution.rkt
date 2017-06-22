@@ -107,7 +107,8 @@
 (define (apply-substitution-to-full-evaluation subst fe)
   (full-evaluation
    (apply-substitution-to-conjunct subst (full-evaluation-input-pattern fe))
-   (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))))
+   (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))
+   (full-evaluation-idx fe)))
 (provide apply-substitution-to-full-evaluation)
 
 (define (apply-substitution subst substitution-object)

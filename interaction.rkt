@@ -334,12 +334,6 @@
 (define (cclp-run filename program-data)
   (define serialized-filename
     (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
-  (define (full-ai-rule->full-evaluation r)
-    (full-evaluation
-     (full-ai-rule-input-pattern r)
-     (if (full-ai-rule-output-substitution r)
-         (apply-substitution (full-ai-rule-output-substitution r) (full-ai-rule-input-pattern r))
-         #f)))
   (define full-evaluations (map full-ai-rule->full-evaluation (cclp-full-ai-rules program-data)))
   (define program-data-aux (struct-copy cclp program-data [full-ai-rules full-evaluations]))
   (interactive-dispatch

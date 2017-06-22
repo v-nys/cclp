@@ -51,13 +51,16 @@
 
 (define (write-full-eval obj port mode)
   (if (boolean? mode)
-      (fprintf port "#(struct:full-evaluation ~s ~s)" (full-evaluation-input-pattern obj) (full-evaluation-output-pattern obj))
+      (fprintf port "#(struct:full-evaluation ~s ~s)" (full-evaluation-input-pattern obj) (full-evaluation-output-pattern obj) (full-evaluation-idx obj))
       (begin (fprintf port "~v" (full-evaluation-input-pattern obj))
              (fprintf port " -> ")
              (fprintf port "~v" (full-evaluation-output-pattern obj))
              (fprintf port "."))))
 
-(serializable-struct full-evaluation (input-pattern output-pattern) #:transparent #:methods gen:custom-write [(define write-proc write-full-eval)])
+(serializable-struct full-evaluation (input-pattern output-pattern idx)
+                     #:transparent
+                     #:methods
+                     gen:custom-write [(define write-proc write-full-eval)])
 (provide (struct-out full-evaluation))
 
 (define (abstract-knowledge? k) (or (abstract-rule? k) (full-evaluation? k)))

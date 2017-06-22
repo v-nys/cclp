@@ -340,7 +340,7 @@
    (cd:function 'cons (list (cd:variable 'X) (cd:variable 'Y)))))
 (provide lplist)
 
-(define-syntax-rule (fullai-rule aa as) (ak:full-evaluation aa (as:apply-substitution as aa)))
+(define-syntax-rule (fullai-rule aa as) (ak:full-evaluation aa (as:apply-substitution as aa) 1))
 (provide fullai-rule)
 
 (define-macro-cases generalization

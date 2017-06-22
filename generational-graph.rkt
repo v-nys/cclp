@@ -49,7 +49,7 @@
 (define (knowledge-output-length knowledge conjunct)
   (match knowledge
     [(ck:rule h b _) (length b)]
-    [(full-evaluation i o) 0]
+    [(full-evaluation i o _) 0]
     ['one (length (multi-conjunction conjunct))]
     ['many (add1 (length (multi-conjunction conjunct)))]))
 

@@ -108,13 +108,15 @@
    (assemble-var-indices
     a?
     (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
+                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+                     1))
    (list 1 2))
   (check-equal?
    (assemble-var-indices
     g?
     (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
+                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+                     1))
    (list 1 2 3 4)))
 
 (define (maximum-var-index abstraction right-variable-type?)

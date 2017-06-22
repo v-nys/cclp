@@ -39,7 +39,8 @@
 (define (full-ai-rule->full-evaluation r)
   (full-evaluation
    (faid:full-ai-rule-input-pattern r)
-   (apply-substitution (faid:full-ai-rule-output-substitution r) (faid:full-ai-rule-input-pattern r))))
+   (apply-substitution (faid:full-ai-rule-output-substitution r) (faid:full-ai-rule-input-pattern r))
+   (faid:full-ai-rule-idx r)))
 (provide
  (proc-doc/names
   full-ai-rule->full-evaluation
