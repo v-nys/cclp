@@ -58,52 +58,14 @@
 (struct cclp (clauses full-ai-rules concrete-constants query))
 (provide (struct-out cclp))
 
-;(define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
-;  (define (proceed #:new-edges [new-edges (list)])
-;    (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior #:new-edges new-edges)])
-;      (match outcome
-;        ['no-candidate
-;         (begin
-;           (displayln "There are no more candidates. Analysis is complete.")
-;           (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)
-;           )]
-;        [(cons 'underspecified-order candidate)
-;         (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
-;         (let* ([options (remove-duplicates (map normalize-abstract-atom (label-conjunction (node-label candidate))))]
-;                [user-selection (prompt-for-selection options)]
-;                [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])
-;           (with-handlers
-;               ([exn:fail?
-;                 (lambda (_)
-;                   (begin (display "Selection breaks the strict partial ordering requirement. Selection rule will not be updated.")
-;                          (for ([precedence new-precedences]) (remove-directed-edge! prior (car precedence) (cdr precedence)))
-;                          (interactive-analysis tree clauses full-evaluations filename concrete-constants prior)))])
-;             (begin (proceed #:new-edges new-precedences))))]
-;        [(cons updated-candidate updated-top)
-;         (begin
-;           (newline)
-;           (tree-display updated-candidate print-tree-label)
-;           (newline)
-;           (interactive-analysis updated-top clauses full-evaluations filename concrete-constants prior)
-;           )])))
-;  (interactive-dispatch
-;   "What do you want to do?"
-;   ("proceed"
-;    (proceed))
-;   ("rewind"
-;    (error "not implemented yet"))
-;   ("show top level"
-;    (error "not implemented yet"))
-;   ("fast-forward"
-;    (error "not implemented yet"))))
-
 (define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior #:step [step-acc 1] #:history [edge-history (make-hash)])
   (define analyzing? #t)
   (define (proceed)
     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
       (match outcome
         [(cons 'underspecified-order candidate)
-         (displayln "Partial order is underspecified.\nPlease select the atom which takes precedence from the following list.")
+         (displayln "Partial order is underspecified.")
+         (displayln "Please select the atom which takes precedence from the following list.")
          (let* ([multis (filter multi? (label-conjunction (node-label candidate)))]
                 [multi-conjuncts (apply append (map (λ (m) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) m)))]) (car (unfold-multi-bounded 1 m offset offset)))) multis))]
                 [options (remove-duplicates (map normalize-abstract-atom (append multi-conjuncts (filter abstract-atom? (label-conjunction (node-label candidate))))))]
@@ -186,115 +148,6 @@
      ["end analysis"
       (set! analyzing? #f)]))))
 
-
-;    (match (candidate-and-predecessors tree '())
-;      [(cons #f _)
-;       (begin (displayln "There are no nodes left to analyze.")
-;              (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants))]
-;      [(cons candidate preds)
-;       ; TODO we can select a candidate (conjunction) regardless of preprior
-;       ; but to advance the analysis, we may need to update the partial order
-;       ; if the candidate contains conjuncts which are not in its topmost partial order,
-;       ; or if it contains a new combination of conjuncts seen before but not ordered wrt to one another
-;       ; we need additional interaction
-;       ; also, what happens when a branch is completed?
-;       ; sibling branches are updated
-;       ; 
-;       (let-values ([(updated-candidate updated-top)
-;                     (advance-analysis tree candidate clauses full-evaluations concrete-constants next-index preds)])
-;         (begin
-;           (newline)
-;           (tree-display updated-candidate print-tree-label)
-;           (newline)
-;           (interactive-analysis
-;            updated-top clauses full-evaluations (+ next-index 1) filename concrete-constants)))]))))
-
-;(define-values (show-top proceed go-back save widen case-split genealogy end)
-;  (values "show top level" "proceed" "rewind last operation" "save analysis" "widen the current node" "apply a case split" "show genealogical analysis" "end analysis"))
-;(define choice (prompt-for-answer "What do you want to do?" show-top proceed go-back save widen case-split genealogy end))
-;(cond
-;    [(equal? choice show-top)
-;     (begin (newline)
-;            (tree-display tree print-tree-label)
-;            (newline)
-;            (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants))]
-        
-;[(equal? choice proceed)
-; (match (candidate-and-predecessors tree '())
-;  [(cons (none) _)
-;  (begin (displayln "There are no nodes left to analyze.")
-;         (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants))]
-; [(cons (some candidate) preds)
-; TODO we can select a candidate (conjunction) regardless of preprior
-; but to advance the analysis, we may need to update the partial order
-; if the candidate contains conjuncts which are not in its topmost partial order,
-; or if it contains a new combination of conjuncts seen before but not ordered wrt to one another
-; we need additional interaction
-; also, what happens when a branch is completed?
-; sibling branches are updated
-; 
-;  (let-values ([(updated-candidate updated-top)
-;                (advance-analysis tree candidate clauses full-evaluations concrete-constants next-index preds)])
-;    (begin
-;      (newline)
-;      (tree-display updated-candidate print-tree-label)
-;      (newline)
-;      (interactive-analysis
-;       updated-top clauses full-evaluations (+ next-index 1) filename concrete-constants)))])]
-        
-;    [(equal? choice go-back)
-;     (let ([rewound (rewind tree)])
-;       (if rewound
-;           (begin
-;             (tree-display (car rewound) print-tree-label)
-;             (interactive-analysis (cdr rewound) clauses full-evaluations (- next-index 1) filename concrete-constants))
-;           (displayln "Can't go back any further!")))]
-;    [(equal? choice save)
-;     (let* ([out (open-output-file filename #:exists 'truncate/replace)]
-;            [serialized-tree (serialize tree)])
-;       (begin
-;         (write serialized-tree out)
-;         (close-output-port out)
-;         (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)))]
-;    [(equal? choice widen)
-;     (match (candidate-and-predecessors tree '())
-;       [(cons (none) _)
-;        (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)]
-;       ; candidate can be either a tree-label or a widening
-;       [(cons (some candidate) _)
-;        (begin
-;          (displayln "Please enter a conjunction with an equal or greater extension.")
-;          (define read-conjunction (read))
-;          (define widened-conjunction (interpret-abstract-conjunction read-conjunction))
-;          (displayln "Please enter a reason why widening was applied.")
-;          (define read-reason (read))
-;          (define updated-label
-;            (match (node-label candidate)
-;              [(tree-label c se su r #f) (tree-label c se su r next-index)]
-;              [(widening c se msg #f) (widening c se msg next-index)]
-;              [_ (error "candidate type unaccounted for")]))
-;          (define updated-top
-;            (replace-first-subtree
-;             tree
-;             candidate
-;             (node updated-label (list (node (widening widened-conjunction (none) read-reason #f) '())))))
-;          (interactive-analysis updated-top clauses full-evaluations (+ next-index 1) filename concrete-constants))])]
-;    [(equal? choice case-split)
-;     ; similar to widen, but user should enter as many conjunctions as they like
-;     ; the conjunctions do not need to (and in most cases will not) specify the candidate
-;     (error "not implemented yet")]
-;    [(equal? choice genealogy)
-;     (let* ([active-branch (active-branch-info tree)]
-;            [outputs (if active-branch (generational-trees active-branch) #f)])
-;       (begin
-;         (if active-branch
-;             (if (empty? outputs)
-;                 (displayln "There are no target atoms for recursion analysis.")
-;                 (map (λ (t) (tree-display t print-atom-with-generation-node)) outputs))
-;             (displayln "There is no active branch."))
-;         (interactive-analysis tree clauses full-evaluations next-index filename concrete-constants)))]
-;    [(equal? choice end) (void)]
-;))
 
 (define (begin-analysis program-data filename)
   (match program-data
