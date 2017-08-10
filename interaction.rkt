@@ -145,6 +145,8 @@
         tree)]
      ["generate meta-interpreter map"
       (display-mi-map tree)]
+     ["generate generalization/2 clauses"
+      (display-generalization-clauses tree)]
      ["end analysis"
       (set! analyzing? #f)]))))
 
