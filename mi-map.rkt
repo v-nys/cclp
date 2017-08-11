@@ -40,21 +40,20 @@
   tree)
 (provide display-mi-map)
 
-(define (untangle init-ac)
-  (cons init-ac (list)))
+(define (untangle init-ac building-blocks)
+  (list init-ac init-ac (list)))
 
 (module+ test
   (require rackunit)
-  ;; which extra data is needed?
-  ;; multi pattern: for the second argument
-  ;; init-consecutive-final: for untangling aliasing with the constraints
-  ;; 
   (check-equal?
    (untangle
-    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),length(α5,γ5)"))
-   (cons
-     (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α6,α2),filter(γ3,α7,α3),filter(γ4,α8,α4),sift(α9,α5),length(α10,γ5)")
-     (list (cons (a 1) (a 6)) (cons (a 2) (a 7)) (cons (a 3) (a 8)) (cons (a 4) (a 9)) (cons (a 5) (a 10)))))
+    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),length(α5,γ5)")
+    (list
+     (cons 1 1)
+     (cons 2 2)))
+   (list
+    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α6,α2),filter(γ3,α7,α3),filter(γ4,α8,α4),sift(α9,α5),length(α10,γ5)")
+    (list (cons (a 1) (a 6)) (cons (a 2) (a 7)) (cons (a 3) (a 8)) (cons (a 4) (a 9)) (cons (a 5) (a 10)))))
   (check-equal?
    (untangle
     (list
@@ -71,12 +70,13 @@
       (final (list (cons (a* 1 'L 2) (a 3)))))
      (abstract-atom 'filter (list (g 3) (a 3) (a 4)))
      (abstract-atom 'sift (list (a 4) (a 5)))
-     (abstract-atom 'length (list (a 5) (g 4)))))
-   (cons
-     (list
-      (abstract-atom 'integers (list (g 1) (a 1)))
-      (abstract-atom 'filter (list (g 2) (a 6) (a 2)))
-      (multi
+     (abstract-atom 'length (list (a 5) (g 4))))
+    (list (cons 1 1) (cons 2 2)))
+   (list
+    (list
+     (abstract-atom 'integers (list (g 1) (a 1)))
+     (abstract-atom 'filter (list (g 2) (a 6) (a 2)))
+     (multi
       (list
        (abstract-atom*
         'filter
@@ -85,40 +85,42 @@
       (init (list (cons (a* 1 1 1) (a 7))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
       (final (list (cons (a* 1 'L 2) (a 3)))))
-      (abstract-atom 'filter (list (g 3) (a 8) (a 4)))
-      (abstract-atom 'sift (list (a 9) (a 5)))
-      (abstract-atom 'length (list (a 10) (g 4))))
-     (list (cons (a 1) (a 6)) (cons (a 2) (a 7)) (cons (a 3) (a 8)) (cons (a 4) (a 9)) (cons (a 5) (a 10)))))
+     (abstract-atom 'filter (list (g 3) (a 8) (a 4)))
+     (abstract-atom 'sift (list (a 9) (a 5)))
+     (abstract-atom 'length (list (a 10) (g 4))))
+    (list (cons (a 1) (a 6)) (cons (a 2) (a 7)) (cons (a 3) (a 8)) (cons (a 4) (a 9)) (cons (a 5) (a 10)))))
   (check-equal?
    (untangle
+    (append
+     (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),append(α1,α2,α3),collect(γ3,α4),append(α3,α4,α5)")
+     (cons
+      (multi
+       (list
+        (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
+        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+       #f
+       (init (list (cons (a* 1 1 2) (a 5))))
+       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
+       (final (list (cons (a* 1 'L 3) (a 6)))))
+      (interpret-abstract-conjunction "collect(γ4,α7),eq(α6,α7)")))
     (list
-     (abstract-atom 'collect (list (g 1) (a 1)))
-     (multi
-      (list
-       (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
-       (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
-      #f
-      (init (list (cons (a* 1 1 2) (a 1))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
-      (final (list (cons (a* 1 'L 3) (a 2)))))
-     (abstract-atom 'collect (list (g 2) (a 3)))
-     (abstract-atom 'eq (list (a 2) (a 3)))))
-   (cons
-    (list
-     (abstract-atom 'collect (list (g 1) (a 1)))
-     (multi
-      (list
-       (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
-       (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
-      #f
-      (init (list (cons (a* 1 1 2) (a 4))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
-      (final (list (cons (a* 1 'L 3) (a 2)))))
-     (abstract-atom 'collect (list (g 2) (a 3)))
-     (abstract-atom 'eq (list (a 5) (a 6))))
-    (list (cons (a 1) (a 4)) (cons (a 2) (a 5)) (cons (a 3) (a 6)))))
-  ;; TODO: needs more tests for the annoying scenarios, e.g. multiple multis, multi like in graph coloring,...
-  )
+     (cons 4 5) ; the second collect-append pair
+     (cons 6 6))) ; the existing multi
+   (list
+    (append
+     (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),append(α8,α9,α3),collect(γ3,α4),append(α10,α11,α5)")
+     (cons
+      (multi
+       (list
+        (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
+        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+       #f
+       (init (list (cons (a* 1 1 2) (a 12))))
+       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
+       (final (list (cons (a* 1 'L 3) (a 6)))))
+      (interpret-abstract-conjunction "collect(γ4,α7),eq(α13,α7)")))
+    (list (cons (a 1) (a 8)) (cons (a 2) (a 9)) (cons (a 3) (a 10)) (cons (a 4) (a 11)) (cons (a 5) (a 12)) (cons (a 6) (a 13))))))
+;; TODO: needs more tests for the annoying scenarios, e.g. multiple multis, multi like in graph coloring,...
 
 (define (generate-generalization-clause x y)
   (display "not implemented yet"))
