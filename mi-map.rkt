@@ -1,8 +1,10 @@
 #lang racket
-(require racket-tree-utils/src/tree)
-(require "abstract-analysis.rkt")
-(require (prefix-in ak: "abstract-knowledge.rkt"))
-(require (prefix-in ck: "concrete-knowledge.rkt"))
+(require racket-tree-utils/src/tree
+         "abstract-analysis.rkt"
+         (prefix-in ak: "abstract-knowledge.rkt")
+         (prefix-in ck: "concrete-knowledge.rkt")
+         "abstract-multi-domain.rkt"
+         "cclp-interpreter.rkt")
 
 (define (mi-map-visit-from idx n)
   (match n
@@ -38,16 +40,21 @@
   tree)
 (provide display-mi-map)
 
-
+(define (untangle init-ac)
+  (cons init-ac (list)))
 
 (module+ test
   (require rackunit)
+  ;; which extra data is needed?
+  ;; multi pattern: for the second argument
+  ;; init-consecutive-final: for untangling aliasing with the constraints
+  ;; 
   (check-equal?
    (untangle
     (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),length(α5,γ5)"))
    (cons
      (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α6,α2),filter(γ3,α7,α3),filter(γ4,α8,α4),sift(α9,α5),length(α10,γ5)")
-     (list ((a 1) . (a 6)) ((a 2) . (a 7)) ((a 3) . (a 8)) ((a 4) . (a 9)) ((a 5) . (a 10)))))
+     (list (cons (a 1) (a 6)) (cons (a 2) (a 7)) (cons (a 3) (a 8)) (cons (a 4) (a 9)) (cons (a 5) (a 10)))))
   (check-equal?
    (untangle
     (list
@@ -81,7 +88,7 @@
       (abstract-atom 'filter (list (g 3) (a 8) (a 4)))
       (abstract-atom 'sift (list (a 9) (a 5)))
       (abstract-atom 'length (list (a 10) (g 4))))
-     (list ((a 1) . (a 6)) ((a 2) . (a 7)) ((a 3) . (a 8)) ((a 4) . (a 9)) ((a 5) . (a 10)))))
+     (list (cons (a 1) (a 6)) (cons (a 2) (a 7)) (cons (a 3) (a 8)) (cons (a 4) (a 9)) (cons (a 5) (a 10)))))
   (check-equal?
    (untangle
     (list
@@ -90,11 +97,12 @@
       (list
        (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+      #f
       (init (list (cons (a* 1 1 2) (a 1))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
       (final (list (cons (a* 1 'L 3) (a 2)))))
      (abstract-atom 'collect (list (g 2) (a 3)))
-     (abstract-atom 'eq (list (a 2) (a 3))))
+     (abstract-atom 'eq (list (a 2) (a 3)))))
    (cons
     (list
      (abstract-atom 'collect (list (g 1) (a 1)))
@@ -102,14 +110,15 @@
       (list
        (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+      #f
       (init (list (cons (a* 1 1 2) (a 4))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
       (final (list (cons (a* 1 'L 3) (a 2)))))
      (abstract-atom 'collect (list (g 2) (a 3)))
      (abstract-atom 'eq (list (a 5) (a 6))))
-    (list ((a 1) . (a 4)) ((a 2) . (a 5)) ((a 3) . (a 6)))))
+    (list (cons (a 1) (a 4)) (cons (a 2) (a 5)) (cons (a 3) (a 6)))))
   ;; TODO: needs more tests for the annoying scenarios, e.g. multiple multis, multi like in graph coloring,...
-  ))
+  )
 
 (define (generate-generalization-clause x y)
   (display "not implemented yet"))
