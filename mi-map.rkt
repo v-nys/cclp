@@ -1,7 +1,33 @@
 #lang racket
-(require racket-tree-utils/src/tree
+; MIT License
+;
+; Copyright (c) 2017 Vincent Nys
+; 
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+; 
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+; 
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+
+(require (only-in racket/syntax format-symbol)
+         racket-tree-utils/src/tree
          "abstract-analysis.rkt"
          (prefix-in ak: "abstract-knowledge.rkt")
+         (only-in "abstraction-inspection-utils.rkt"
+                  extract-variables/duplicates
+                  extract-subscripted-variables/duplicates)
          (prefix-in ck: "concrete-knowledge.rkt")
          "abstract-multi-domain.rkt"
          "cclp-interpreter.rkt")
@@ -41,7 +67,32 @@
 (provide display-mi-map)
 
 (define (untangle init-ac building-blocks)
-  (list init-ac init-ac (list)))
+  (define (find-max-vars e acc)
+    (list))
+  (define (maybe-rename-occurrence e acc)
+    (list))
+  (define (rename-first-occurrences ac occurrence-renamings)
+    ac)
+  (define var-occurrences
+    (append
+     (extract-subscripted-variables/duplicates init-ac)
+     (extract-variables/duplicates init-ac)))
+  (define max-var-indices
+    (foldl find-max-vars empty var-occurrences))
+  (define occurrence-renamings
+    (foldl maybe-rename-occurrence `(() ,(hash) ,max-var-indices)))
+  (rename-first-occurrences init-ac occurrence-renamings))
+
+;; synthesis of generalization/2 head does not need info about generations or internal aliasing
+(struct simplified-multi (conjunction init final))
+
+(define (simplify-multis acon)
+  (define (simplify m)
+    (match m
+      [(multi conj a? i cons f)
+       (simplified-multi conj i f)]
+      [_ m]))
+  (map simplify acon))
 
 (module+ test
   (require rackunit)
@@ -110,10 +161,11 @@
     (append
      (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),append(α8,α9,α3),collect(γ3,α4),append(α10,α11,α5)")
      (cons
+      ;; TODO: how to deal with aliasing inside abstracted pattern?
       (multi
        (list
         (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
-        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 4) (a* 1 'i 3)))) ; !!
        #f
        (init (list (cons (a* 1 1 2) (a 12))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
@@ -124,6 +176,21 @@
 
 (define (generate-generalization-clause x y)
   (display "not implemented yet"))
+
+;; auxiliary function for untangle
+;; allows comparison of constructors
+(define (symbolize-avar-constructor abstract-var)
+  (match abstract-var
+    [(a _) 'a]
+    [(g _) 'g]
+    [(a* id 'i j)
+     (format-symbol "a-~a-i" id)]
+    [(g* id 'i j)
+     (format-symbol "g-~a-i" id)]))
+(module+ test
+  (check-equal?
+   (symbolize-avar-constructor (a* 2 'i 3))
+   'a-2-i))
 
 (define (generalization-clause-visit-from conjunction1 n)
   (match n

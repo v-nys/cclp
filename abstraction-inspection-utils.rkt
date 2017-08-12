@@ -178,16 +178,32 @@
   (check-equal?
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f))
 
-;; used so generalization of level keeps multi ID's separate
-(define (extract-subscripted-variables v)
-  (define (aux v)
+(define (extract-subscripted-variables/duplicates v)
     (match v
+      [(list-rest h t)
+       (append
+        (extract-subscripted-variables/duplicates h)
+        (append-map extract-subscripted-variables/duplicates t))]
       [(multi conjunction _ _ _ _)
-       (apply append (map extract-subscripted-variables conjunction))]
+       (append-map extract-subscripted-variables/duplicates conjunction)]
       [(or (abstract-atom* _ args) (abstract-function* _ args))
-       (apply append (map extract-subscripted-variables args))]
-      [(or (? g*?) (? a*?)) (list v)]))
-  (remove-duplicates (aux v)))
+       (append-map extract-subscripted-variables/duplicates args)]
+      [(or (? g*?) (? a*?)) (list v)]
+      [_ empty]))
+(provide
+ (proc-doc/names
+  extract-subscripted-variables/duplicates
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom*? abstract-function*? a*? g*?)
+   (listof (or/c a*? g*?)))
+  (v)
+  @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
+ in order of occurrence. Only takes into account local index i, not 1, i+1 or L.}))
+
+;; used so generalization of level keeps multi ID's separate
+;; only extracts from the pattern
+(define (extract-subscripted-variables v)
+  (remove-duplicates (extract-subscripted-variables/duplicates v)))
 (module+ test
   (check-equal?
    (extract-subscripted-variables
@@ -202,21 +218,41 @@
 (provide
  (proc-doc/names
   extract-subscripted-variables
-  (-> (or/c multi? abstract-atom*? abstract-function*? a*? g*?) (listof (or/c a*? g*?)))
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom*? abstract-function*? a*? g*?)
+   (listof (or/c a*? g*?)))
   (v)
-  @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
- in order of occurrence, without duplicates.}))
+  @{Like @racket[extract-subscripted-variables], but without duplicates.}))
 
-(define (extract-variables v)
-  (define (aux v)
+(define (extract-variables/duplicates v)
     (match v
-      [(? list?) (append-map extract-variables v)]
-      [(or (abstract-atom _ args) (abstract-function _ args))
-       (append-map extract-variables args)]
+      [(? list?)
+       (append-map extract-variables/duplicates v)]
+      [(or
+        (abstract-atom _ args)
+        (abstract-function _ args))
+       (append-map extract-variables/duplicates args)]
       [(multi _ _ (init i) _ (final f))
        (append
-        (extract-variables (map cdr i))
-        (extract-variables (map cdr f)))]
+        (extract-variables/duplicates (map cdr i))
+        (extract-variables/duplicates (map cdr f)))]
       [(or (? g?) (? a?)) (list v)]))
-  (remove-duplicates (aux v)))
-(provide extract-variables)
+(provide
+ (proc-doc/names
+  extract-variables/duplicates
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom? abstract-function? a? g?)
+   (listof (or/c a? g?)))
+  (v)
+  @{Extracts all @racket[abstract-variable] values in @racket[v] and returns them as a list, in order of occurrence.}))
+
+(define (extract-variables v)
+  (remove-duplicates (extract-variables/duplicates v)))
+(provide
+ (proc-doc/names
+  extract-variables
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom? abstract-function? a? g?)
+   (listof (or/c a? g?)))
+  (v)
+  @{Like @racket[extract-variables/duplicates], but without duplicates.}))
