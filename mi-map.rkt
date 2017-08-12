@@ -67,8 +67,17 @@
 (provide display-mi-map)
 
 (define (untangle init-ac building-blocks)
-  (define (find-max-vars e acc)
-    (list))
+  (define (find-max-vars occ acc)
+    (define symbolic-constructor (symbolize-avar-constructor occ))
+    (define current-max (hash-ref acc symbolic-constructor #f))
+    (define occ-local-index
+      (if (abstract-variable? occ)
+          (avar-index occ)
+          (avar*-local-index occ)))
+    (if (or (not current-max)
+            (> occ-local-index current-max))
+        (hash-set acc symbolic-constructor occ-local-index)
+        acc))
   (define (maybe-rename-occurrence e acc)
     (list))
   (define (rename-first-occurrences ac occurrence-renamings)
@@ -78,7 +87,7 @@
      (extract-subscripted-variables/duplicates init-ac)
      (extract-variables/duplicates init-ac)))
   (define max-var-indices
-    (foldl find-max-vars empty var-occurrences))
+    (foldl find-max-vars (hash) var-occurrences))
   (define occurrence-renamings
     (foldl maybe-rename-occurrence `(() ,(hash) ,max-var-indices)))
   (rename-first-occurrences init-ac occurrence-renamings))
