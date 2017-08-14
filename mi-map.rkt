@@ -21,7 +21,8 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-(require (only-in racket/syntax format-symbol)
+(require racket/set
+         (only-in racket/syntax format-symbol)
          racket-tree-utils/src/tree
          "abstract-analysis.rkt"
          (prefix-in ak: "abstract-knowledge.rkt")
@@ -30,7 +31,8 @@
                   extract-subscripted-variables/duplicates)
          (prefix-in ck: "concrete-knowledge.rkt")
          "abstract-multi-domain.rkt"
-         "cclp-interpreter.rkt")
+         "cclp-interpreter.rkt"
+         (only-in "control-flow.rkt" aif it))
 
 (define (mi-map-visit-from idx n)
   (match n
@@ -66,21 +68,111 @@
   tree)
 (provide display-mi-map)
 
+(define (rename-occurrence replacee replacer locus)
+  (define (compound-constructor l)
+    (match l
+      [(abstract-atom _ _) abstract-atom]
+      [(abstract-function _ _) abstract-function]
+      [(abstract-atom* _ _) abstract-atom*]
+      [(abstract-function* _ _) abstract-function*]))
+  (define rename (curry rename-occurrence replacee replacer))
+  (match locus
+    [(or
+      (? abstract-variable?)
+      (? abstract-variable*?))
+     (if
+      (equal? locus replacee)
+      `(,replacer . #t)
+      `(,locus . #f))]
+    [(or
+      (abstract-atom sym args)
+      (abstract-function sym args)
+      (abstract-atom* sym args)
+      (abstract-function* sym args))
+     (match-let
+         ([constructor (compound-constructor locus)]
+          [(cons after success?)
+           (rename args)])
+       (cons (constructor sym after) success?))]
+    [(multi patt asc? init consec final)
+     (match-let
+         ([(cons after success?)
+           (rename patt)])
+       (cons (multi after asc? init consec final) success?))]
+    [(list)
+     (cons locus #f)]
+    [(list-rest h t)
+     (match-let
+         ([(cons after success?)
+           (rename h)])
+       (if success?
+           (cons (cons after t) success?)
+           (match-let
+               ([(cons renamed-t eventual-success?)
+                 (rename t)])
+             (cons
+              (cons h renamed-t)
+              eventual-success?))))]))
+(module+ test
+  (check-equal?
+   (rename-occurrence
+    (a 3)
+    (a 101)
+    (interpret-abstract-conjunction
+     "foo(γ1,α1),bar(γ2,α2),baz(γ3,α3),quux(γ3,α3),poit(γ4,α4)"))
+   (cons
+    (interpret-abstract-conjunction
+     "foo(γ1,α1),bar(γ2,α2),baz(γ3,α101),quux(γ3,α3),poit(γ4,α4)")
+    #t)))
+                      
+
 (define (untangle init-ac building-blocks)
+  (define (rename-occurrences locus aliases)
+    (match aliases
+      [(list) locus]
+      [(list-rest (cons replacee replacer) tail)
+       (rename-occurrences
+        (car (rename-occurrence replacee replacer locus))
+        tail)]))
+  (define (extract-avar-constructor e)
+    (match e
+      [(a _) a]
+      [(g _) g]
+      [(a* i j _) (curry a* i j)]
+      [(g* i j _) (curry g* i j)]))
+  (define (local-index v)
+    (if (abstract-variable? v)
+        (avar-index v)
+        (avar*-local-index v)))
   (define (find-max-vars occ acc)
-    (define symbolic-constructor (symbolize-avar-constructor occ))
-    (define current-max (hash-ref acc symbolic-constructor #f))
-    (define occ-local-index
-      (if (abstract-variable? occ)
-          (avar-index occ)
-          (avar*-local-index occ)))
+    (define symbolic-constructor
+      (symbolize-avar-constructor occ))
+    (define current-max
+      (aif (hash-ref acc symbolic-constructor #f)
+           (local-index it)
+           #f))
     (if (or (not current-max)
-            (> occ-local-index current-max))
-        (hash-set acc symbolic-constructor occ-local-index)
+            (> (local-index occ) current-max))
+        (hash-set acc symbolic-constructor occ)
         acc))
-  (define (maybe-rename-occurrence e acc)
-    (list))
-  (define (rename-first-occurrences ac occurrence-renamings)
+  (define (maybe-map-occurrence e acc)
+    (match acc
+      [(list aliases encountered maxima)
+       (if (set-member? encountered e)
+           (let* ([constructor (extract-avar-constructor e)]
+                  [symbolized-constructor (symbolize-avar-constructor e)]
+                  [current-max (local-index (hash-ref maxima symbolized-constructor))])
+             (list
+              (cons
+               `(,e . ,(constructor (add1 current-max)))
+               aliases)
+              encountered
+              (hash-set
+               maxima
+               symbolized-constructor
+               (constructor (add1 current-max)))))
+           (list aliases (set-add encountered e) maxima))]))
+  (define (rename-first ac occurrence-renamings)
     ac)
   (define var-occurrences
     (append
@@ -89,8 +181,11 @@
   (define max-var-indices
     (foldl find-max-vars (hash) var-occurrences))
   (define occurrence-renamings
-    (foldl maybe-rename-occurrence `(() ,(hash) ,max-var-indices)))
-  (rename-first-occurrences init-ac occurrence-renamings))
+    (first
+     (foldl maybe-map-occurrence `(() ,(set) ,max-var-indices) var-occurrences)))
+  (list
+   (rename-occurrences init-ac occurrence-renamings)
+   occurrence-renamings))
 
 ;; synthesis of generalization/2 head does not need info about generations or internal aliasing
 (struct simplified-multi (conjunction init final))
@@ -112,8 +207,13 @@
      (cons 1 1)
      (cons 2 2)))
    (list
-    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α6,α2),filter(γ3,α7,α3),filter(γ4,α8,α4),sift(α9,α5),length(α10,γ5)")
-    (list (cons (a 1) (a 6)) (cons (a 2) (a 7)) (cons (a 3) (a 8)) (cons (a 4) (a 9)) (cons (a 5) (a 10)))))
+    (interpret-abstract-conjunction "integers(γ1,α6),filter(γ2,α1,α7),filter(γ3,α2,α8),filter(γ4,α3,α9),sift(α4,α10),length(α5,γ5)")
+    (list
+     (cons (a 5) (a 10))
+     (cons (a 4) (a 9))
+     (cons (a 3) (a 8))
+     (cons (a 2) (a 7))
+     (cons (a 1) (a 6)))))
   (check-equal?
    (untangle
     (list
