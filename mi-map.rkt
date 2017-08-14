@@ -234,21 +234,26 @@
     (list (cons 1 1) (cons 2 2)))
    (list
     (list
-     (abstract-atom 'integers (list (g 1) (a 1)))
-     (abstract-atom 'filter (list (g 2) (a 6) (a 2)))
+     (abstract-atom 'integers (list (g 1) (a 6)))
+     (abstract-atom 'filter (list (g 2) (a 1) (a 7)))
      (multi
       (list
        (abstract-atom*
         'filter
         (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
-      (init (list (cons (a* 1 1 1) (a 7))))
+      (init (list (cons (a* 1 1 1) (a 2))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final (list (cons (a* 1 'L 2) (a 3)))))
-     (abstract-atom 'filter (list (g 3) (a 8) (a 4)))
-     (abstract-atom 'sift (list (a 9) (a 5)))
-     (abstract-atom 'length (list (a 10) (g 4))))
-    (list (cons (a 1) (a 6)) (cons (a 2) (a 7)) (cons (a 3) (a 8)) (cons (a 4) (a 9)) (cons (a 5) (a 10)))))
+      (final (list (cons (a* 1 'L 2) (a 8)))))
+     (abstract-atom 'filter (list (g 3) (a 3) (a 9)))
+     (abstract-atom 'sift (list (a 4) (a 10)))
+     (abstract-atom 'length (list (a 5) (g 4))))
+    (list
+     (cons (a 5) (a 10))
+     (cons (a 4) (a 9))
+     (cons (a 3) (a 8))
+     (cons (a 2) (a 7))
+     (cons (a 1) (a 6)))))
   (check-equal?
    (untangle
     (append
