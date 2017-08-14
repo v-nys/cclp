@@ -1,7 +1,7 @@
-#lang racket
+#lang at-exp racket
 ; MIT License
 ;
-; Copyright (c) 2017 Vincent Nys
+; Copyright (c) 2016-2017 Vincent Nys
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-(require racket/set
+(require scribble/srcdoc
+         (for-doc scribble/manual)
+         racket/set
          (only-in racket/syntax format-symbol)
          racket-tree-utils/src/tree
          "abstract-analysis.rkt"
@@ -195,18 +197,6 @@
   (list
    (rename-occurrences init-ac occurrence-renamings)
    occurrence-renamings))
-
-;; synthesis of generalization/2 head does not need info about generations or internal aliasing
-(struct simplified-multi (conjunction init final))
-
-(define (simplify-multis acon)
-  (define (simplify m)
-    (match m
-      [(multi conj a? i cons f)
-       (simplified-multi conj i f)]
-      [_ m]))
-  (map simplify acon))
-
 (module+ test
   (require rackunit)
   (check-equal?
@@ -302,7 +292,21 @@
      (cons (a 5) (a 12))
      (cons (a 6) (a 13))
      (cons (a 7) (a 14))))))
-;; TODO: needs more tests for the annoying scenarios, e.g. multiple multis, multi like in graph coloring,...
+(provide
+ (proc-doc/names
+  untangle
+  (->
+   (listof abstract-conjunct?)
+   (listof
+    (cons/c
+     exact-positive-integer?
+     exact-positive-integer?))
+   (listof abstract-conjunct?))
+  (ac bb)
+  @{Undoes the aliasing in abstract conjunction @racket[ac] and returns an association list with duplicate keys with the required information to restore aliasing.
+ This is useful for generation of generalization/2 clauses for the meta-interpreter, as aliasing must be matched in these clauses and must not be enforced by unification.
+ The list @racket[bb] is a list of "building blocks", pairs of exact integers such that left-and-right-inclusive ranges from the first to the second integer are generalized using a multi.
+ Each index range is represented as a pair and a list of pairs is used to separate individual building blocks which make up the multi, or existing multi abstractions which are integrated (in which case the range is always a pair of identical values).}))
 
 (define (generate-generalization-clause x y)
   (display "not implemented yet"))
