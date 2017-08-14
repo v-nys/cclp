@@ -67,7 +67,14 @@
 (define (display-mi-map tree)
   (visit mi-map-visitor tree)
   tree)
-(provide display-mi-map)
+(provide
+ (proc-doc/names
+  display-mi-map
+  (->
+   node?
+   void?)
+  (tree)
+  @{Summarizes the transitions between nodes in an abstract tree @racket[tree] in terms of the node numbers involved and the transition type (generalization, cycle, standard transition i.e. unfolding).}))
 
 (define (rename-occurrence replacee replacer locus)
   (define (compound-constructor l)
@@ -136,60 +143,128 @@
     (interpret-abstract-conjunction
      "foo(γ1,α1),bar(γ2,α2),baz(γ3,α101),quux(γ3,α3),poit(γ4,α4)")
     #t)))
-                      
 
-(define (untangle init-ac building-blocks)
-  (define (rename-occurrences locus aliases)
-    (match aliases
-      [(list) locus]
-      [(list-rest (cons replacee replacer) tail)
-       (rename-occurrences
-        (car (rename-occurrence replacee replacer locus))
-        tail)]))
-  (define (extract-avar-constructor e)
+(define (rename-occurrences locus aliases)
+  (match aliases
+    [(list) locus]
+    [(list-rest (cons replacee replacer) tail)
+     (rename-occurrences
+      (car (rename-occurrence replacee replacer locus))
+      tail)]))
+(module+ test
+  (check-equal?
+   (rename-occurrences
+    (interpret-abstract-conjunction
+     "foo(γ1,α1),bar(γ2,α2),baz(γ3,α3),quux(γ3,α3),narf(γ3,α3),poit(γ4,α4)")
+    (list
+     (cons (a 1) (a 5))
+     (cons (a 3) (a 6))))
+   (interpret-abstract-conjunction
+    "foo(γ1,α5),bar(γ2,α2),baz(γ3,α6),quux(γ3,α3),narf(γ3,α3),poit(γ4,α4)")))
+(provide
+ (proc-doc/names
+  rename-occurrences
+  (->
+   (listof abstract-conjunct?)
+   (listof
+    (or/c
+     (cons/c a? a?)
+     (cons/c g? g?)
+     (cons/c a*? a*?)
+     (cons/c g*? g*?)))
+   (listof abstract-conjunct?))
+  (ac al)
+  @{Renames occurrences of the variables occurring in @racket[ac] as first elements in pairs in @racket[al] to variables occurring as the corresponding second elements.
+ The list @racket[al] is an association list with duplicate keys.
+ If @racket[al] contains entries with the same key, e.g. @racket[cons((a 1) (a 2))] and @racket[cons((a 1) (a 3))], the first occurrence of the key will be replaced with the first associated value, etc.}))
+
+;; private function, should be clear enough
+(define (extract-avar-constructor e)
     (match e
       [(a _) a]
       [(g _) g]
       [(a* i j _) (curry a* i j)]
       [(g* i j _) (curry g* i j)]))
-  (define (local-index v)
+
+;; private function, should be clear enough
+(define (local-index v)
     (if (abstract-variable? v)
         (avar-index v)
         (avar*-local-index v)))
-  (define (find-max-vars occ acc)
-    (define symbolic-constructor
-      (symbolize-avar-constructor occ))
-    (define current-max
-      (aif (hash-ref acc symbolic-constructor #f)
-           (local-index it)
-           #f))
-    (if (or (not current-max)
-            (> (local-index occ) current-max))
-        (hash-set acc symbolic-constructor occ)
-        acc))
-  (define (maybe-map-occurrence e acc)
-    (match acc
-      [(list aliases encountered maxima)
-       (if (set-member? encountered e)
-           (let* ([constructor (extract-avar-constructor e)]
-                  [symbolized-constructor (symbolize-avar-constructor e)]
-                  [current-max (local-index (hash-ref maxima symbolized-constructor))])
-             (list
-              (cons
-               `(,e . ,(constructor (add1 current-max)))
-               aliases)
-              encountered
-              (hash-set
-               maxima
-               symbolized-constructor
-               (constructor (add1 current-max)))))
-           (list aliases (set-add encountered e) maxima))]))
-  (define (rename-first ac occurrence-renamings)
-    ac)
+
+(define (find-max-vars occ acc)
+  (define symbolic-constructor
+    (symbolize-avar-constructor occ))
+  (define current-max
+    (aif (hash-ref acc symbolic-constructor #f)
+         (local-index it)
+         #f))
+  (if (or (not current-max)
+          (> (local-index occ) current-max))
+      (hash-set acc symbolic-constructor occ)
+      acc))
+(provide
+ (proc-doc/names
+  find-max-vars
+  (->
+   (or/c abstract-variable? abstract-variable*?)
+   (hash/c
+    symbol?
+    (or/c abstract-variable? abstract-variable*?))
+   (hash/c
+    symbol?
+    (or/c abstract-variable? abstract-variable*?)))
+  (occ acc)
+  @{Can be folded over a list of variables to obtain the maximum variable index for each "type" of variable, e.g. those with constructor @racket[a], @racket[g] or @racket[a*] and @racket[g*], where the multi ID and the symbolic index @racket['i] are curried over the constructor in the latter two cases.}))
+
+(define occurrence-acc/c
+  (list/c
+    (listof
+     (or/c
+      (cons/c a? a?)
+      (cons/c g? g?)
+      (cons/c a*? a*?)
+      (cons/c g*? g*?)))
+    set?
+    (listof
+     (cons/c
+      symbol?
+      (or/c abstract-variable? abstract-variable*?)))))
+(provide occurrence-acc/c)
+  
+(define (maybe-map-occurrence e acc)
+  (match acc
+    [(list aliases encountered maxima)
+     (if (set-member? encountered e)
+         (let* ([constructor (extract-avar-constructor e)]
+                [symbolized-constructor (symbolize-avar-constructor e)]
+                [current-max (local-index (hash-ref maxima symbolized-constructor))])
+           (list
+            (cons
+             `(,e . ,(constructor (add1 current-max)))
+             aliases)
+            encountered
+            (hash-set
+             maxima
+             symbolized-constructor
+             (constructor (add1 current-max)))))
+         (list aliases (set-add encountered e) maxima))]))
+(provide
+ (proc-doc/names
+  maybe-map-occurrence
+  (->
+   (or/c abstract-variable? abstract-variable*?)
+   occurrence-acc/c
+   occurrence-acc/c)
+  (e acc)
+  @{Foldable function which takes an abstract variable @racket[e] and updates an accumulator to reflect that the variable has either been encountered for the first time or has been given a new explicit alias.}))
+
+(define (untangle init-ac building-blocks)
   (define var-occurrences
     (extract-all-variables/duplicates init-ac))
   (define max-var-indices
     (foldl find-max-vars (hash) var-occurrences))
+  ;; gives fresh variables for n-1 occurrences of each abstract variable in var-occurrences
   (define occurrence-renamings
     (reverse
      (first
@@ -346,4 +421,11 @@
 (define (display-generalization-clauses tree)
   (visit generalization-clause-visitor tree)
   tree)
-(provide display-generalization-clauses)
+(provide
+ (proc-doc/names
+ display-generalization-clauses
+ (->
+  node?
+  void?)
+ (tree)
+ @{Prints out the @code{generalization/2} clauses required by the Prolog meta-interpreter.}))

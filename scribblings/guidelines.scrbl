@@ -4,6 +4,15 @@ The following are conventions I try to stick to for the CCLP code base.
 I have not always been consistent, which is part of the reason why I'm writing them down.
 They may contradict some more common Racket guidelines that I am not aware of.
 
+@section{Closing issues}
+Before any issue (i.e. a feature, bug or other atomic modification) is closed,
+the following checks are required:
+@itemlist[
+ @item{Is the principle behind the code reasonably elegant?}
+ @item{Is every public function documented?}
+ @item{Is every public function properly tested?}
+ @item{Is the interface compact and testable?}]
+
 @section{Ordering @racket[require] forms}
 Forms that involve @racket[require] are organized as follows:
 @itemlist[
