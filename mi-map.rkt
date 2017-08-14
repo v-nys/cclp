@@ -282,19 +282,26 @@
      (cons 6 6))) ; the existing multi
    (list
     (append
-     (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),append(α8,α9,α3),collect(γ3,α4),append(α10,α11,α5)")
+     (interpret-abstract-conjunction "collect(γ1,α8),collect(γ2,α9),append(α1,α2,α10),collect(γ3,α11),append(α3,α4,α12)")
      (cons
-      ;; TODO: how to deal with aliasing inside abstracted pattern?
       (multi
        (list
-        (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
-        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 4) (a* 1 'i 3)))) ; !!
+        (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 4)))
+        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3)))) ; !!
        #f
-       (init (list (cons (a* 1 1 2) (a 12))))
+       (init (list (cons (a* 1 1 2) (a 5))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
-       (final (list (cons (a* 1 'L 3) (a 6)))))
-      (interpret-abstract-conjunction "collect(γ4,α7),eq(α13,α7)")))
-    (list (cons (a 1) (a 8)) (cons (a 2) (a 9)) (cons (a 3) (a 10)) (cons (a 4) (a 11)) (cons (a 5) (a 12)) (cons (a 6) (a 13))))))
+       (final (list (cons (a* 1 'L 3) (a 13)))))
+      (interpret-abstract-conjunction "collect(γ4,α14),eq(α6,α7)")))
+    (list
+     (cons (a 1) (a 8))
+     (cons (a 2) (a 9))
+     (cons (a 3) (a 10))
+     (cons (a 4) (a 11))
+     (cons (a* 1 'i 1) (a* 1 'i 4))
+     (cons (a 5) (a 12))
+     (cons (a 6) (a 13))
+     (cons (a 7) (a 14))))))
 ;; TODO: needs more tests for the annoying scenarios, e.g. multiple multis, multi like in graph coloring,...
 
 (define (generate-generalization-clause x y)
