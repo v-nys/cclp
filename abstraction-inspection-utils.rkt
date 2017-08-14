@@ -178,18 +178,43 @@
   (check-equal?
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f))
 
-(define (extract-subscripted-variables/duplicates v)
+(define (extract-all-variables/duplicates v)
     (match v
       [(list-rest h t)
        (append
-        (extract-subscripted-variables/duplicates h)
-        (append-map extract-subscripted-variables/duplicates t))]
-      [(multi conjunction _ _ _ _)
-       (append-map extract-subscripted-variables/duplicates conjunction)]
-      [(or (abstract-atom* _ args) (abstract-function* _ args))
-       (append-map extract-subscripted-variables/duplicates args)]
-      [(or (? g*?) (? a*?)) (list v)]
+        (extract-all-variables/duplicates h)
+        (append-map extract-all-variables/duplicates t))]
+      [(multi conjunction _ (init ic) _ (final fc))
+       (append
+        (append-map extract-all-variables/duplicates conjunction)
+        (append-map (compose extract-all-variables/duplicates cdr) ic)
+        (append-map (compose extract-all-variables/duplicates cdr) fc))]
+      [(or
+        (abstract-atom _ args)
+        (abstract-function _ args)
+        (abstract-atom* _ args)
+        (abstract-function* _ args))
+       (append-map extract-all-variables/duplicates args)]
+      [(or
+        (g _)
+        (a _)
+        (g* _ _ _)
+        (a* _ _ _))
+       (list v)]
       [_ empty]))
+(provide
+ (proc-doc/names
+  extract-all-variables/duplicates
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom? abstract-function? abstract-atom*? abstract-function*? a? g? a*? g*?)
+   (listof (or/c a? g? a*? g*?)))
+  (v)
+  @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
+ in order of occurrence. Only takes into account local index i, not 1, i+1 or L.}))
+
+(define (extract-subscripted-variables/duplicates v)
+  (filter (λ (v) (abstract-variable*? v))
+          (extract-all-variables/duplicates v)))
 (provide
  (proc-doc/names
   extract-subscripted-variables/duplicates
@@ -225,18 +250,9 @@
   @{Like @racket[extract-subscripted-variables], but without duplicates.}))
 
 (define (extract-variables/duplicates v)
-    (match v
-      [(? list?)
-       (append-map extract-variables/duplicates v)]
-      [(or
-        (abstract-atom _ args)
-        (abstract-function _ args))
-       (append-map extract-variables/duplicates args)]
-      [(multi _ _ (init i) _ (final f))
-       (append
-        (extract-variables/duplicates (map cdr i))
-        (extract-variables/duplicates (map cdr f)))]
-      [(or (? g?) (? a?)) (list v)]))
+    (filter
+     (λ (v) (abstract-variable? v))
+     (extract-all-variables/duplicates v)))
 (provide
  (proc-doc/names
   extract-variables/duplicates

@@ -27,8 +27,7 @@
          "abstract-analysis.rkt"
          (prefix-in ak: "abstract-knowledge.rkt")
          (only-in "abstraction-inspection-utils.rkt"
-                  extract-variables/duplicates
-                  extract-subscripted-variables/duplicates)
+                  extract-all-variables/duplicates)
          (prefix-in ck: "concrete-knowledge.rkt")
          "abstract-multi-domain.rkt"
          "cclp-interpreter.rkt"
@@ -94,11 +93,22 @@
           [(cons after success?)
            (rename args)])
        (cons (constructor sym after) success?))]
-    [(multi patt asc? init consec final)
+    [(multi patt asc? (init ic) consec (final fc))
      (match-let
-         ([(cons after success?)
-           (rename patt)])
-       (cons (multi after asc? init consec final) success?))]
+         ([(cons after-1 success-1?)
+           (rename patt)]
+          [(cons after-2 success-2?)
+           (rename (map cdr ic))]
+          [(cons after-3 success-3?)
+           (rename (map cdr fc))]
+          [zip (λ (l1 l2) (map (λ (e1 e2) (cons e1 e2)) l1 l2))])
+       (cond [success-1?
+              (cons (multi after-1 asc? (init ic) consec (final fc)) success-1?)]
+             [success-2?
+              (cons (multi patt asc? (init (zip (map car ic) after-2)) consec (final fc)) success-2?)]
+             [success-3?
+              (cons (multi patt asc? (init ic) consec (final (zip (map car fc) after-3))) success-3?)]
+             [else (cons locus #f)]))]
     [(list)
      (cons locus #f)]
     [(list-rest h t)
@@ -175,14 +185,13 @@
   (define (rename-first ac occurrence-renamings)
     ac)
   (define var-occurrences
-    (append
-     (extract-subscripted-variables/duplicates init-ac)
-     (extract-variables/duplicates init-ac)))
+    (extract-all-variables/duplicates init-ac))
   (define max-var-indices
     (foldl find-max-vars (hash) var-occurrences))
   (define occurrence-renamings
-    (first
-     (foldl maybe-map-occurrence `(() ,(set) ,max-var-indices) var-occurrences)))
+    (reverse
+     (first
+      (foldl maybe-map-occurrence `(() ,(set) ,max-var-indices) var-occurrences))))
   (list
    (rename-occurrences init-ac occurrence-renamings)
    occurrence-renamings))
@@ -209,11 +218,11 @@
    (list
     (interpret-abstract-conjunction "integers(γ1,α6),filter(γ2,α1,α7),filter(γ3,α2,α8),filter(γ4,α3,α9),sift(α4,α10),length(α5,γ5)")
     (list
-     (cons (a 5) (a 10))
-     (cons (a 4) (a 9))
-     (cons (a 3) (a 8))
+     (cons (a 1) (a 6))
      (cons (a 2) (a 7))
-     (cons (a 1) (a 6)))))
+     (cons (a 3) (a 8))
+     (cons (a 4) (a 9))
+     (cons (a 5) (a 10)))))
   (check-equal?
    (untangle
     (list
@@ -249,11 +258,11 @@
      (abstract-atom 'sift (list (a 4) (a 10)))
      (abstract-atom 'length (list (a 5) (g 4))))
     (list
-     (cons (a 5) (a 10))
-     (cons (a 4) (a 9))
-     (cons (a 3) (a 8))
+     (cons (a 1) (a 6))
      (cons (a 2) (a 7))
-     (cons (a 1) (a 6)))))
+     (cons (a 3) (a 8))
+     (cons (a 4) (a 9))
+     (cons (a 5) (a 10)))))
   (check-equal?
    (untangle
     (append
