@@ -275,6 +275,28 @@
   (v)
   @{Like @racket[extract-variables/duplicates], but without duplicates.}))
 
+(define (get-multi-id m)
+  (match m
+    [(multi patt _ _ _ _)
+     (get-multi-id patt)]
+    [(list-rest h t)
+     (or (get-multi-id h)
+         (get-multi-id t))]
+    [(or
+      (abstract-atom* _ args)
+      (abstract-function* _ args))
+     (get-multi-id args)]
+    [(or
+      (a* id _ _)
+      (g* id _ _))
+     id]))
+(provide
+ (proc-doc/names
+  get-multi-id
+  (-> multi? exact-positive-integer?)
+  (m)
+  @{Extracts the unique identifier from any @racket[abstract-variable*?] in @racket[m]}))
+
 (define (extract-abstract-compounds v)
   (match v
     [(? list?)
@@ -288,7 +310,8 @@
       (abstract-function* _ args))
      (cons v (append-map extract-abstract-compounds args))]
     [(multi patt _ _ _ _)
-     (append-map extract-abstract-compounds patt)]
+     (let ([multi-id (get-multi-id v)])
+       (map (λ (e) (cons e multi-id)) (append-map extract-abstract-compounds patt)))]
     [_ (list)]))
 (module+ test
   (check-equal?
@@ -326,31 +349,37 @@
       (consecutive (list))
       (final (list)))))
    (list
-    (abstract-function*
-     'bar
-     (list
-      (abstract-function*
-       'baz
-       (list
-        (abstract-function*
-         'quux
-         empty)))
-      (g* 1 'i 1)))
-    (abstract-function*
-     'baz
-     (list
-      (abstract-function*
-       'quux
-       empty)))
-    (abstract-function*
-     'quux
-     empty))))
+    (cons
+     (abstract-function*
+      'bar
+      (list
+       (abstract-function*
+        'baz
+        (list
+         (abstract-function*
+          'quux
+          empty)))
+       (g* 1 'i 1)))
+     1)
+    (cons
+     (abstract-function*
+      'baz
+      (list
+       (abstract-function*
+        'quux
+        empty)))
+     1)
+    (cons
+     (abstract-function*
+      'quux
+      empty)
+     1))))
 (provide
  (proc-doc/names
   extract-abstract-compounds
   (->
    (listof abstract-conjunct?)
-   (listof (or/c abstract-function? abstract-function*?)))
+   (listof (or/c abstract-function? (cons/c abstract-function*? exact-positive-integer?))))
   (ac)
   @{Collects all @racket[abstract-function?] and @racket[abstract-function*?] terms in @racket[ac],
  with the exception of those in the constraints of any @racket[multi?]. It also includes nested terms.

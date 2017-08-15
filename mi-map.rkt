@@ -25,10 +25,12 @@
          (for-doc scribble/manual)
          racket/set
          (only-in racket/syntax format-symbol)
+         (only-in racket-list-utils/utils map-accumulatel)
          racket-tree-utils/src/tree
          "abstract-analysis.rkt"
          (prefix-in ak: "abstract-knowledge.rkt")
          (only-in "abstraction-inspection-utils.rkt"
+                  extract-abstract-compounds
                   extract-all-variables/duplicates)
          (prefix-in ck: "concrete-knowledge.rkt")
          "abstract-multi-domain.rkt"
@@ -430,16 +432,48 @@
   (tree)
   @{Prints out the @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
 
-(define (deconstruct ac)
-  ;; TODO implement
-  ;; 1 find all top-level compounds, then those at the level below,...
-  ;; 2 generate fresh abstract variables
-  ;; 3 replace from inside to outside
+; note: compound can be an abstract-function or a pair (abstract-function*, multi id)
+; also note: this is a map-accumulated function, not a folded one!
+(define (compute-subst c occs)
+  (let* ([corresponding-maximum
+          (if (abstract-function? c)
+              (hash-ref occs 'a (a 1))
+              (hash-ref
+               occs
+               (format-symbol "a-~a-i" (cdr c))
+               (a* (cdr c) 'i 1)))]
+         [new-maximum
+          ((extract-avar-constructor corresponding-maximum)
+           (add1 (local-index corresponding-maximum)))])
+    (cons
+     (cons c new-maximum)
+     (hash-set occs (symbolize-avar-constructor new-maximum) new-maximum))))
+(module+ test
+  (check-equal?
+   (compute-subst
+    (interpret-abstract-term "foo(bar(baz))")
+    (hash 'a1-i (a* 1 'i 10) 'a (a 7)))
+   (cons
+    (cons (interpret-abstract-term "foo(bar(baz))") (a 8))
+    (hash 'a1-i (a* 1 'i 10) 'a (a 8))))
+  (check-equal?
+   (compute-subst
+    (cons (abstract-function* 'nil empty) 3)
+    (hash 'a-3-i (a* 3 'i 10)))
+    (cons
+     (cons (cons (abstract-function* 'nil empty) 3) (a* 3 'i 11))
+     (hash 'a-3-i (a* 3 'i 11)))))
 
-  ;  sift(A40B,A39A),
-  ;                alt_length(G28A39B,G20)
-  
-  (cons ac empty))
+(define (deconstruct ac)
+  (define (apply-subst e acc)
+    acc) ; TODO find one term syntactically matching lhs from e in acc and replace it
+  (let* ([compounds (extract-abstract-compounds ac)]
+         [var-occurrences (extract-all-variables/duplicates ac)]
+         [max-var-indices (foldl find-max-vars (hash) var-occurrences)]
+         [substs (car (map-accumulatel compute-subst max-var-indices compounds))])
+    (cons
+     (foldr apply-subst ac substs)
+     substs)))
 (module+ test
   (check-equal?
    (deconstruct
