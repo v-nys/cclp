@@ -21,8 +21,10 @@
 ; SOFTWARE.
 
 #lang at-exp racket
-(require "abstract-multi-domain.rkt")
-(require "abstract-knowledge.rkt")
+(require "abstract-knowledge.rkt"
+         "abstract-multi-domain.rkt"
+         (only-in "cclp-interpreter.rkt"
+                  interpret-abstract-term))
 (require "data-utils.rkt")
 
 (require scribble/srcdoc)
@@ -179,29 +181,29 @@
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f))
 
 (define (extract-all-variables/duplicates v)
-    (match v
-      [(list-rest h t)
-       (append
-        (extract-all-variables/duplicates h)
-        (append-map extract-all-variables/duplicates t))]
-      [(multi conjunction _ (init ic) _ (final fc))
-       (append
-        (append-map extract-all-variables/duplicates conjunction)
-        (append-map (compose extract-all-variables/duplicates cdr) ic)
-        (append-map (compose extract-all-variables/duplicates cdr) fc))]
-      [(or
-        (abstract-atom _ args)
-        (abstract-function _ args)
-        (abstract-atom* _ args)
-        (abstract-function* _ args))
-       (append-map extract-all-variables/duplicates args)]
-      [(or
-        (g _)
-        (a _)
-        (g* _ _ _)
-        (a* _ _ _))
-       (list v)]
-      [_ empty]))
+  (match v
+    [(list-rest h t)
+     (append
+      (extract-all-variables/duplicates h)
+      (append-map extract-all-variables/duplicates t))]
+    [(multi conjunction _ (init ic) _ (final fc))
+     (append
+      (append-map extract-all-variables/duplicates conjunction)
+      (append-map (compose extract-all-variables/duplicates cdr) ic)
+      (append-map (compose extract-all-variables/duplicates cdr) fc))]
+    [(or
+      (abstract-atom _ args)
+      (abstract-function _ args)
+      (abstract-atom* _ args)
+      (abstract-function* _ args))
+     (append-map extract-all-variables/duplicates args)]
+    [(or
+      (g _)
+      (a _)
+      (g* _ _ _)
+      (a* _ _ _))
+     (list v)]
+    [_ empty]))
 (provide
  (proc-doc/names
   extract-all-variables/duplicates
@@ -250,9 +252,9 @@
   @{Like @racket[extract-subscripted-variables], but without duplicates.}))
 
 (define (extract-variables/duplicates v)
-    (filter
-     (λ (v) (abstract-variable? v))
-     (extract-all-variables/duplicates v)))
+  (filter
+   (λ (v) (abstract-variable? v))
+   (extract-all-variables/duplicates v)))
 (provide
  (proc-doc/names
   extract-variables/duplicates
@@ -272,3 +274,84 @@
    (listof (or/c a? g?)))
   (v)
   @{Like @racket[extract-variables/duplicates], but without duplicates.}))
+
+(define (extract-abstract-compounds v)
+  (match v
+    [(? list?)
+     (append-map extract-abstract-compounds v)]
+    [(or
+      (abstract-atom _ args)
+      (abstract-atom* _ args))
+     (append-map extract-abstract-compounds args)]
+    [(or
+      (abstract-function _ args)
+      (abstract-function* _ args))
+     (cons v (append-map extract-abstract-compounds args))]
+    [(multi patt _ _ _ _)
+     (append-map extract-abstract-compounds patt)]
+    [_ (list)]))
+(module+ test
+  (check-equal?
+   (extract-abstract-compounds
+    (interpret-abstract-conjunction "foo(bar(baz(nil)),quux),poit,narf(zorp(α1,γ1))"))
+   (list
+    (interpret-abstract-term "bar(baz(nil))")
+    (interpret-abstract-term "baz(nil)")
+    (abstract-function 'nil empty)
+    (abstract-function 'quux empty)
+    (abstract-function 'zorp (list (a 1) (g 1)))))
+  (check-equal?
+   (extract-abstract-compounds
+    (list
+     (multi
+      (list
+       (abstract-atom*
+        'foo
+        (list
+         (a* 1 'i 1)
+         (abstract-function*
+          'bar
+          (list
+           (abstract-function*
+            'baz
+            (list
+             (abstract-function*
+              'quux
+              empty)))
+           (g* 1 'i 1))))))
+      #t
+      (init
+       (list
+        (cons (a* 1 'i 1) (abstract-function 'nil empty))))
+      (consecutive (list))
+      (final (list)))))
+   (list
+    (abstract-function*
+     'bar
+     (list
+      (abstract-function*
+       'baz
+       (list
+        (abstract-function*
+         'quux
+         empty)))
+      (g* 1 'i 1)))
+    (abstract-function*
+     'baz
+     (list
+      (abstract-function*
+       'quux
+       empty)))
+    (abstract-function*
+     'quux
+     empty))))
+(provide
+ (proc-doc/names
+  extract-abstract-compounds
+  (->
+   (listof abstract-conjunct?)
+   (listof (or/c abstract-function? abstract-function*?)))
+  (ac)
+  @{Collects all @racket[abstract-function?] and @racket[abstract-function*?] terms in @racket[ac],
+ with the exception of those in the constraints of any @racket[multi?]. It also includes nested terms.
+ This function can contain duplicates and the compounds are in order of occurrence (with nested terms immediately following the containing term, unless the preceding term also had more nested terms).}))
