@@ -180,17 +180,17 @@
 
 ;; private function, should be clear enough
 (define (extract-avar-constructor e)
-    (match e
-      [(a _) a]
-      [(g _) g]
-      [(a* i j _) (curry a* i j)]
-      [(g* i j _) (curry g* i j)]))
+  (match e
+    [(a _) a]
+    [(g _) g]
+    [(a* i j _) (curry a* i j)]
+    [(g* i j _) (curry g* i j)]))
 
 ;; private function, should be clear enough
 (define (local-index v)
-    (if (abstract-variable? v)
-        (avar-index v)
-        (avar*-local-index v)))
+  (if (abstract-variable? v)
+      (avar-index v)
+      (avar*-local-index v)))
 
 (define (find-max-vars occ acc)
   (define symbolic-constructor
@@ -219,17 +219,17 @@
 
 (define occurrence-acc/c
   (list/c
-    (listof
-     (or/c
-      (cons/c a? a?)
-      (cons/c g? g?)
-      (cons/c a*? a*?)
-      (cons/c g*? g*?)))
-    set?
-    (listof
-     (cons/c
-      symbol?
-      (or/c abstract-variable? abstract-variable*?)))))
+   (listof
+    (or/c
+     (cons/c a? a?)
+     (cons/c g? g?)
+     (cons/c a*? a*?)
+     (cons/c g*? g*?)))
+   set?
+   (listof
+    (cons/c
+     symbol?
+     (or/c abstract-variable? abstract-variable*?)))))
 (provide occurrence-acc/c)
   
 (define (maybe-map-occurrence e acc)
@@ -423,9 +423,97 @@
   tree)
 (provide
  (proc-doc/names
- display-generalization-clauses
- (->
-  node?
-  void?)
- (tree)
- @{Prints out the @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
+  display-generalization-clauses
+  (->
+   node?
+   void?)
+  (tree)
+  @{Prints out the @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
+
+(define (deconstruct ac)
+  ;; TODO implement
+  ;; 1 find all top-level compounds, then those at the level below,...
+  ;; 2 generate fresh abstract variables
+  ;; 3 replace from inside to outside
+
+  ;  sift(A40B,A39A),
+  ;                alt_length(G28A39B,G20)
+  
+  (cons ac empty))
+(module+ test
+  (check-equal?
+   (deconstruct
+    (interpret-abstract-conjunction
+     "sift(α40,α39),alt_length([γ28|α390],γ20)"))
+   (cons
+    (interpret-abstract-conjunction
+     "sift(α40,α39),alt_length(α41,γ20)")
+    (list
+     (cons
+      (abstract-function 'cons (list (g 28) (a 390)))
+      (a 41)))))
+  (check-equal?
+   (deconstruct
+    (list
+     (abstract-atom 'filter (list (g 89) (a 121) (a 122)))
+     (multi
+      (list
+       (abstract-atom*
+        'filter
+        (list
+         (g* 1 'i 25)
+         (a* 1 'i 34)
+         (a* 1 'i 35))))
+      #t
+      (init
+       (list
+        (cons (a* 1 1 34)
+              (abstract-function 'cons (list (g 90) (a 1220))))))
+      (consecutive
+       (list
+        (cons (a* 1 'i+1 34)
+              (a* 1 'i 35))))
+      (final
+       (list
+        (cons (a* 1 'L 35)
+              (a 124)))))))
+   (cons
+    (list
+     (abstract-atom 'filter (list (g 89) (a 121) (a 122)))
+     (multi
+      (list
+       (abstract-atom*
+        'filter
+        (list
+         (g* 1 'i 25)
+         (a* 1 'i 34)
+         (a* 1 'i 35))))
+      #t
+      (init
+       (list
+        (cons (a* 1 1 34)
+              (a 1221))))
+      (consecutive
+       (list
+        (cons (a* 1 'i+1 34)
+              (a* 1 'i 35))))
+      (final
+       (list
+        (cons (a* 1 'L 35)
+              (a 124))))))
+    (cons
+     (abstract-function 'cons (list (g 90) (a 1220)))
+     (a 1221)))))
+(provide
+ (proc-doc/names
+  deconstruct
+  (->
+   (listof abstract-conjunct?)
+   (cons/c
+    (listof abstract-conjunct?)
+    (listof
+     (cons/c
+      (or/c abstract-function? abstract-function*?)
+      (or/c abstract-variable? abstract-variable*?)))))
+  (ac)
+  @{Computes fresh abstract variables to replace the compounds in an abstract conjunction in @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
