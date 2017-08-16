@@ -452,10 +452,10 @@
   (check-equal?
    (compute-subst
     (interpret-abstract-term "foo(bar(baz))")
-    (hash 'a1-i (a* 1 'i 10) 'a (a 7)))
+    (hash 'a (a 7)))
    (cons
     (cons (interpret-abstract-term "foo(bar(baz))") (a 8))
-    (hash 'a1-i (a* 1 'i 10) 'a (a 8))))
+    (hash 'a (a 8))))
   (check-equal?
    (compute-subst
     (cons (abstract-function* 'nil empty) 3)
