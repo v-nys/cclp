@@ -263,7 +263,7 @@
   (e acc)
   @{Foldable function which takes an abstract variable @racket[e] and updates an accumulator to reflect that the variable has either been encountered for the first time or has been given a new explicit alias.}))
 
-(define (untangle init-ac building-blocks)
+(define (untangle init-ac)
   (define var-occurrences
     (extract-all-variables/duplicates init-ac))
   (define max-var-indices
@@ -280,10 +280,7 @@
   (require rackunit)
   (check-equal?
    (untangle
-    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),length(α5,γ5)")
-    (list
-     (cons 1 1)
-     (cons 2 2)))
+    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),length(α5,γ5)"))
    (list
     (interpret-abstract-conjunction "integers(γ1,α6),filter(γ2,α1,α7),filter(γ3,α2,α8),filter(γ4,α3,α9),sift(α4,α10),length(α5,γ5)")
     (list
@@ -308,8 +305,7 @@
       (final (list (cons (a* 1 'L 2) (a 3)))))
      (abstract-atom 'filter (list (g 3) (a 3) (a 4)))
      (abstract-atom 'sift (list (a 4) (a 5)))
-     (abstract-atom 'length (list (a 5) (g 4))))
-    (list (cons 1 1) (cons 2 2)))
+     (abstract-atom 'length (list (a 5) (g 4)))))
    (list
     (list
      (abstract-atom 'integers (list (g 1) (a 6)))
@@ -346,10 +342,7 @@
        (init (list (cons (a* 1 1 2) (a 5))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
        (final (list (cons (a* 1 'L 3) (a 6)))))
-      (interpret-abstract-conjunction "collect(γ4,α7),eq(α6,α7)")))
-    (list
-     (cons 4 5) ; the second collect-append pair
-     (cons 6 6))) ; the existing multi
+      (interpret-abstract-conjunction "collect(γ4,α7),eq(α6,α7)"))))
    (list
     (append
      (interpret-abstract-conjunction "collect(γ1,α8),collect(γ2,α9),append(α1,α2,α10),collect(γ3,α11),append(α3,α4,α12)")
@@ -378,16 +371,10 @@
   untangle
   (->
    (listof abstract-conjunct?)
-   (listof
-    (cons/c
-     exact-positive-integer?
-     exact-positive-integer?))
    (listof abstract-conjunct?))
-  (ac bb)
+  (ac)
   @{Undoes the aliasing in abstract conjunction @racket[ac] and returns an association list with duplicate keys with the required information to restore aliasing.
- This is useful for generation of generalization/2 clauses for the meta-interpreter, as aliasing must be matched in these clauses and must not be enforced by unification.
- The list @racket[bb] is a list of "building blocks", pairs of exact integers such that left-and-right-inclusive ranges from the first to the second integer are generalized using a multi.
- Each index range is represented as a pair and a list of pairs is used to separate individual building blocks which make up the multi, or existing multi abstractions which are integrated (in which case the range is always a pair of identical values).}))
+ This is useful for generation of generalization/2 clauses for the meta-interpreter, as aliasing must be matched in these clauses and must not be enforced by unification.}))
 
 (define (generate-generalization-clause x y)
   (display "not implemented yet"))
