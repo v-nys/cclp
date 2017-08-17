@@ -486,7 +486,6 @@
                success?))]
            [(cons (cons (? abstract-function*?) m-id) _) acc]
            [(cons (? abstract-function?) _)
-            ;; FIXME: is this why the second test case is failing?
             (match-let
                 ([(cons init-after success?)
                   (apply-subst e (cons (map cdr ic) #f))])
@@ -646,3 +645,103 @@
       (or/c abstract-variable? abstract-variable*?)))))
   (ac)
   @{Computes fresh abstract variables to replace the compounds in an abstract conjunction in @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
+
+(define (generalization/2-head-arg1 ac)
+  (format "[TODO]"))
+(module+ test
+  ;; based on node 33
+  (check-equal?
+   (generalization/2-head-arg1
+    (interpret-abstract-conjunction
+     "integers(γ1,α6),filter(γ2,α1,α7),filter(γ3,α2,α8),filter(γ4,α3,α9),sift(α4,α10),alt_length(α11,γ5)"))
+   "[integers(G1,A6),filter(G2,A1,A7),filter(G3,A2,A8),filter(G4,A3,A9),sift(A4,A10),alt_length(A11,G5)]")
+  ;; based on node 46
+  (check-equal?
+   (generalization/2-head-arg1
+    (append
+     (interpret-abstract-conjunction
+      "integers(γ1,α6),filter(γ2,α1,α7)")
+     (cons
+      (multi
+       (list
+        (abstract-atom*
+         'filter
+         (list
+          (g* 1 'i 1)
+          (a* 1 'i 1)
+          (a* 1 'i 3))))
+       #t
+       (init
+        (list
+         (cons (a* 1 1 1) (a 2))))
+       (consecutive
+        (list
+         (cons
+          (a* 1 'i+1 1)
+          (a* 1 'i   2))))) ; unseen aliasing is not an issue for this part of generation
+      (final
+       (list
+        (cons
+         (a* 1 'L 2)
+         (a 8)))))
+     (interpret-abstract-conjunction
+      "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)")))
+   "[integers(G1,A6),filter(G2,A1,A7),multi([building_block([filter(G1i1,A1i1,A1i2)])|Tail1]),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)")
+  
+  ;; based on node 80  
+  (check-equal?
+   (generalization/2-head-arg1
+    (list
+     (abstract-atom 'integers (list (g 1) (a 7)))
+     (multi
+      (list
+       (abstract-atom*
+        'filter
+        (list
+         (g* 1 'i 1)
+         (a* 1 'i 1)
+         (a* 1 'i 3))))
+      #t
+      (init
+       (list
+        (cons
+         (a* 1 1 1)
+         (a 1))))
+      (consecutive
+       (list
+        (cons
+         (a* 1 'i+1 1)
+         (a* 1 'i   2))))
+      (final
+       (list
+        (cons
+         (a* 1 'L 2)
+         (a 8)))))
+     (abstract-atom 'filter (list (g 2) (a 2) (a 9)))
+     (multi
+      (list
+       (abstract-atom*
+        'filter
+        (list
+         (g* 2 'i 1)
+         (a* 2 'i 1)
+         (a* 2 'i 3))))
+      #t
+      (init
+       (list
+        (cons
+         (a* 2 1 1)
+         (a 3))))
+      (consecutive
+       (list
+        (cons
+         (a* 2 'i+1 1)
+         (a* 2 'i   2))))
+      (final
+       (list
+        (cons
+         (a* 2 'L 2)
+         (a 10)))))
+     (interpret-abstract-conjunction
+      "filter(γ3,α4,α11),sift(α5,α12),alt_length(α6,γ4)")))
+   "[integers(G1,A7),multi([building_block([filter(G1i1,A1i1,A1i3)])|Tail1]),filter(G2,A2,A9),multi([building_block([filter(G2i1,A2i1,A2i3)])|Tail2]),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)"))
