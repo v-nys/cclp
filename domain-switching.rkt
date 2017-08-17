@@ -200,3 +200,32 @@
 
   (check-equal? (pre-abstract-rule (interpret-concrete-rule "append([],L,L)") (list (function 'nil '())))
                 (ak:abstract-rule (interpret-abstract-atom "append(nil,α1,α1)") (list))))
+
+
+;; note: this is concrete-synth-counterpart rather than concretize because concretization of multi is infinite set
+;; this is close, but it is specifically for synthesis (which is also why constraints are not applied to concrete multi)
+(define (true-concrete-synth-counterpart elem)
+  (define (concrete-synth-counterpart e #:tail-no [tail-no 1])
+    (match e
+      [(a idx) (variable (format "A~a" idx))]
+      [(g idx) (variable (format "G~a" idx))]
+      [(a* idx1 'i idx2) (format "A~ai~a" idx1 idx2)]
+      [(g* idx1 'i idx2) (format "G~ai~a" idx1 idx2)]
+      [(or
+        (abstract-function sym args)
+        (abstract-function* sym args))
+       (function sym (map concrete-synth-counterpart args))]
+      [(or
+        (abstract-atom sym args)
+        (abstract-atom* sym args))
+       (atom sym (map concrete-synth-counterpart args))]
+      ;; TODO: multi abstractions
+      ;; concrete multi should have two args: one for first building block, one for tail
+      [(multi patt _ _ _ _)
+       (concrete-multi
+        (map concrete-synth-counterpart patt)
+        (variable (format "Tail~a" tail-no)))] ; TODO: find a good abstraction to deal with tail numbers -> map-accumulatel seems best?
+      [(? list?)
+       #:when (andmap abstract-conjunct? e)
+       (map concrete-synth-counterpart e)]))
+  (car (concrete-synth-counterpart elem #:tail-no 1)))
