@@ -31,7 +31,8 @@
          (prefix-in ak: "abstract-knowledge.rkt")
          (only-in "abstraction-inspection-utils.rkt"
                   extract-abstract-compounds
-                  extract-all-variables/duplicates)
+                  extract-all-variables/duplicates
+                  get-multi-id)
          (prefix-in ck: "concrete-knowledge.rkt")
          "abstract-multi-domain.rkt"
          "cclp-interpreter.rkt"
@@ -78,13 +79,14 @@
   (tree)
   @{Summarizes the transitions between nodes in an abstract tree @racket[tree] in terms of the node numbers involved and the transition type (generalization, cycle, standard transition i.e. unfolding).}))
 
+(define (compound-constructor l)
+  (match l
+    [(abstract-atom _ _) abstract-atom]
+    [(abstract-function _ _) abstract-function]
+    [(abstract-atom* _ _) abstract-atom*]
+    [(abstract-function* _ _) abstract-function*]))
+
 (define (rename-occurrence replacee replacer locus)
-  (define (compound-constructor l)
-    (match l
-      [(abstract-atom _ _) abstract-atom]
-      [(abstract-function _ _) abstract-function]
-      [(abstract-atom* _ _) abstract-atom*]
-      [(abstract-function* _ _) abstract-function*]))
   (define rename (curry rename-occurrence replacee replacer))
   (match locus
     [(or
@@ -316,7 +318,7 @@
       (list
        (abstract-atom*
         'filter
-        (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+        (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 3))))
       #t
       (init (list (cons (a* 1 1 1) (a 2))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
@@ -327,6 +329,7 @@
     (list
      (cons (a 1) (a 6))
      (cons (a 2) (a 7))
+     (cons (a* 1 'i 2) (a* 1 'i 3))
      (cons (a 3) (a 8))
      (cons (a 4) (a 9))
      (cons (a 5) (a 10)))))
@@ -354,7 +357,7 @@
       (multi
        (list
         (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 4)))
-        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3)))) ; !!
+        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 5))))
        #f
        (init (list (cons (a* 1 1 2) (a 5))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
@@ -367,6 +370,7 @@
      (cons (a 4) (a 11))
      (cons (a* 1 'i 1) (a* 1 'i 4))
      (cons (a 5) (a 12))
+     (cons (a* 1 'i 3) (a* 1 'i 5))
      (cons (a 6) (a 13))
      (cons (a 7) (a 14))))))
 (provide
@@ -434,45 +438,146 @@
 
 ; note: compound can be an abstract-function or a pair (abstract-function*, multi id)
 ; also note: this is a map-accumulated function, not a folded one!
-(define (compute-subst c occs)
-  (let* ([corresponding-maximum
-          (if (abstract-function? c)
-              (hash-ref occs 'a (a 1))
-              (hash-ref
-               occs
-               (format-symbol "a-~a-i" (cdr c))
-               (a* (cdr c) 'i 1)))]
-         [new-maximum
-          ((extract-avar-constructor corresponding-maximum)
-           (add1 (local-index corresponding-maximum)))])
-    (cons
-     (cons c new-maximum)
-     (hash-set occs (symbolize-avar-constructor new-maximum) new-maximum))))
+(define (compute-subst comp occs)
+  (match comp
+    [(cons c top?)
+     (let* ([corresponding-maximum
+             (if (abstract-function? c)
+                 (hash-ref occs 'a (a 1))
+                 (hash-ref
+                  occs
+                  (format-symbol "a-~a-i" (cdr c))
+                  (a* (cdr c) 'i 1)))]
+            [new-maximum
+             ((extract-avar-constructor corresponding-maximum)
+              (add1 (local-index corresponding-maximum)))])
+       (cons
+        (cons (cons c top?) new-maximum)
+        (hash-set occs (symbolize-avar-constructor new-maximum) new-maximum)))]))
 (module+ test
   (check-equal?
    (compute-subst
-    (interpret-abstract-term "foo(bar(baz))")
+    (cons (interpret-abstract-term "foo(bar(baz))") #t)
     (hash 'a (a 7)))
    (cons
-    (cons (interpret-abstract-term "foo(bar(baz))") (a 8))
+    (cons (cons (interpret-abstract-term "foo(bar(baz))") #t) (a 8))
     (hash 'a (a 8))))
   (check-equal?
    (compute-subst
-    (cons (abstract-function* 'nil empty) 3)
+    (cons (cons (abstract-function* 'nil empty) 3) #t)
     (hash 'a-3-i (a* 3 'i 10)))
-    (cons
-     (cons (cons (abstract-function* 'nil empty) 3) (a* 3 'i 11))
-     (hash 'a-3-i (a* 3 'i 11)))))
+   (cons
+    (cons (cons (cons (abstract-function* 'nil empty) 3) #t) (a* 3 'i 11))
+    (hash 'a-3-i (a* 3 'i 11)))))
+
+; NAME IS TERRIBLE!
+(define (apply-subst e acc)
+  (if (cdr acc)
+      acc
+      (match (car acc) ; reusing this a few times...
+        [(list-rest h t)
+         (match-let
+             ([(cons h-after success-1?)
+               (apply-subst e (cons h #f))]
+              [(cons t-after success-2?)
+               (apply-subst e (cons t #f))])
+           (cond
+             [success-1?
+              (cons (cons h-after t) success-1?)]
+             [success-2?
+              (cons (cons h t-after) success-2?)]
+             [else acc]))]
+        [(multi patt asc? (init ic) (consecutive cc) (final fc))
+         (match e
+           [(cons (cons (? abstract-function*?) m-id) _)
+            #:when (equal? m-id (get-multi-id (car acc)))
+            (match-let
+                ([(cons pattern-after success?)
+                  (apply-subst e (cons patt #f))])
+              (cons
+               (multi pattern-after asc? (init ic) (consecutive cc) (final fc))
+               success?))]
+           [(cons (cons (? abstract-function*?) m-id) _) acc]
+           [(cons (? abstract-function?) _)
+            ;; FIXME: is this why the second test case is failing?
+            (match-let
+                ([(cons init-after success?)
+                  (apply-subst e (cons (map cdr ic) #f))])
+              (if success?
+                  (cons
+                   (multi
+                    patt
+                    asc?
+                    (init
+                     (map cons (map car ic) init-after))
+                    (consecutive cc)
+                    (final fc))
+                   success?)
+                  acc))])]
+        [(or
+          (abstract-atom  sym (list-rest h t))
+          (abstract-atom* sym (list-rest h t)))
+         (match-let
+             ([(cons h-after success-1?)
+               (apply-subst e (cons h #f))]
+              [(cons t-after success-2?)
+               (apply-subst e (cons t #f))])
+           (cond
+             [success-1?
+              (cons ((compound-constructor (car acc)) sym (cons h-after t)) success-1?)]
+             [success-2?
+              (cons ((compound-constructor (car acc)) sym (cons h t-after)) success-2?)]
+             [else acc]))]
+        [(or
+          (abstract-function  sym (list))
+          (abstract-function* sym (list)))
+         (if
+          (equal?
+           (car acc)
+           (car e))
+          (cons (cdr e) #t)
+          acc)]
+        [(or
+          (abstract-function  sym (list-rest h t))
+          (abstract-function* sym (list-rest h t)))
+         (if (equal? (car acc) (car e))
+             (cons (cdr e) #t)
+             (match-let
+                 ([(cons h-after success-1?)
+                   (apply-subst e (cons h #f))]
+                  [(cons t-after success-2?)
+                   (apply-subst e (cons t #f))])
+               (cond
+                 [success-1?
+                  (cons ((compound-constructor (car acc)) sym (cons h-after t)) success-1?)]
+                 [success-2?
+                  (cons ((compound-constructor (car acc)) sym (cons h t-after)) success-2?)]
+                 [else acc])))]
+        [_ acc])))
+(module+ test
+  (check-equal?
+   (apply-subst
+    (cons (abstract-function 'nil empty) (a 1000))
+    (cons (interpret-abstract-conjunction "foo(bar(α1,nil)),baz(nil)") #f))
+   (cons (interpret-abstract-conjunction "foo(bar(α1,α1000)),baz(nil)") #t)))
 
 (define (deconstruct ac)
-  (define (apply-subst e acc)
-    acc) ; TODO find one term syntactically matching lhs from e in acc and replace it
   (let* ([compounds (extract-abstract-compounds ac)]
          [var-occurrences (extract-all-variables/duplicates ac)]
          [max-var-indices (foldl find-max-vars (hash) var-occurrences)]
          [substs (car (map-accumulatel compute-subst max-var-indices compounds))])
     (cons
-     (foldr apply-subst ac substs)
+     (car
+      (foldr
+       apply-subst
+       (cons ac #f)
+       (filter-map
+        (λ (s)
+          (and
+           (cdr (car s))
+           (cons (car (car s)) (cdr s))))
+        substs)))
+     ;; TODO: can remove info about top-level or not here
      substs)))
 (module+ test
   (check-equal?
@@ -481,11 +586,11 @@
      "sift(α40,α39),alt_length([γ28|α390],γ20)"))
    (cons
     (interpret-abstract-conjunction
-     "sift(α40,α39),alt_length(α41,γ20)")
+     "sift(α40,α39),alt_length(α391,γ20)")
     (list
      (cons
-      (abstract-function 'cons (list (g 28) (a 390)))
-      (a 41)))))
+      (cons (abstract-function 'cons (list (g 28) (a 390))) #t)
+      (a 391)))))
   (check-equal?
    (deconstruct
     (list
@@ -535,9 +640,12 @@
        (list
         (cons (a* 1 'L 35)
               (a 124))))))
-    (cons
-     (abstract-function 'cons (list (g 90) (a 1220)))
-     (a 1221)))))
+    (list
+     (cons
+      (cons
+       (abstract-function 'cons (list (g 90) (a 1220)))
+       #t)
+      (a 1221))))))
 (provide
  (proc-doc/names
   deconstruct

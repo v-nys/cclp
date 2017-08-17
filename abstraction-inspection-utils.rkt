@@ -186,10 +186,11 @@
      (append
       (extract-all-variables/duplicates h)
       (append-map extract-all-variables/duplicates t))]
-    [(multi conjunction _ (init ic) _ (final fc))
+    [(multi conjunction _ (init ic) (consecutive cc) (final fc))
      (append
       (append-map extract-all-variables/duplicates conjunction)
       (append-map (compose extract-all-variables/duplicates cdr) ic)
+      (append-map (compose extract-all-variables/duplicates cdr) cc)
       (append-map (compose extract-all-variables/duplicates cdr) fc))]
     [(or
       (abstract-atom _ args)
@@ -297,7 +298,7 @@
   (m)
   @{Extracts the unique identifier from any @racket[abstract-variable*?] in @racket[m]}))
 
-(define (extract-abstract-compounds v)
+(define (extract-abstract-compounds v #:top [top? #t])
   (match v
     [(? list?)
      (append-map extract-abstract-compounds v)]
@@ -308,21 +309,24 @@
     [(or
       (abstract-function _ args)
       (abstract-function* _ args))
-     (cons v (append-map extract-abstract-compounds args))]
-    [(multi patt _ _ _ _)
+     (cons (cons v top?) (append-map (λ (a) (extract-abstract-compounds a #:top #f)) args))]
+    [(multi patt _ (init ic) _ _)
      (let ([multi-id (get-multi-id v)])
-       (map (λ (e) (cons e multi-id)) (append-map extract-abstract-compounds patt)))]
+       (append
+        (map (λ (e) (cons (cons (car e) multi-id) (cdr e)))
+            (append-map extract-abstract-compounds patt))
+        (append-map extract-abstract-compounds (map cdr ic))))]
     [_ (list)]))
 (module+ test
   (check-equal?
    (extract-abstract-compounds
     (interpret-abstract-conjunction "foo(bar(baz(nil)),quux),poit,narf(zorp(α1,γ1))"))
    (list
-    (interpret-abstract-term "bar(baz(nil))")
-    (interpret-abstract-term "baz(nil)")
-    (abstract-function 'nil empty)
-    (abstract-function 'quux empty)
-    (abstract-function 'zorp (list (a 1) (g 1)))))
+    (cons (interpret-abstract-term "bar(baz(nil))") #t)
+    (cons (interpret-abstract-term "baz(nil)") #f)
+    (cons (abstract-function 'nil empty) #f)
+    (cons (abstract-function 'quux empty) #t)
+    (cons (abstract-function 'zorp (list (a 1) (g 1))) #t)))
   (check-equal?
    (extract-abstract-compounds
     (list
@@ -350,37 +354,48 @@
       (final (list)))))
    (list
     (cons
-     (abstract-function*
-      'bar
-      (list
-       (abstract-function*
-        'baz
-        (list
-         (abstract-function*
-          'quux
-          empty)))
-       (g* 1 'i 1)))
-     1)
+     (cons
+      (abstract-function*
+       'bar
+       (list
+        (abstract-function*
+         'baz
+         (list
+          (abstract-function*
+           'quux
+           empty)))
+        (g* 1 'i 1)))
+      1)
+     #t)
     (cons
-     (abstract-function*
-      'baz
-      (list
-       (abstract-function*
-        'quux
-        empty)))
-     1)
+     (cons
+      (abstract-function*
+       'baz
+       (list
+        (abstract-function*
+         'quux
+         empty)))
+      1)
+     #f)
     (cons
-     (abstract-function*
-      'quux
+     (cons
+      (abstract-function*
+       'quux
+       empty)
+      1)
+     #f)
+    (cons
+     (abstract-function
+      'nil
       empty)
-     1))))
+     #t))))
 (provide
  (proc-doc/names
   extract-abstract-compounds
   (->
    (listof abstract-conjunct?)
-   (listof (or/c abstract-function? (cons/c abstract-function*? exact-positive-integer?))))
+   (listof (cons/c (or/c abstract-function? (cons/c abstract-function*? exact-positive-integer?)) boolean?)))
   (ac)
-  @{Collects all @racket[abstract-function?] and @racket[abstract-function*?] terms in @racket[ac],
- with the exception of those in the constraints of any @racket[multi?]. It also includes nested terms.
- This function can contain duplicates and the compounds are in order of occurrence (with nested terms immediately following the containing term, unless the preceding term also had more nested terms).}))
+  @{Collects all @racket[abstract-function?] and @racket[abstract-function*?] terms in @racket[ac]. It also includes nested terms.
+ This function can contain duplicates and the compounds are in order of occurrence (with nested terms immediately following the containing term, unless the preceding term also had more nested terms).
+ The optional positive integer indicates which @racket[multi?] the term belongs in. The boolean part of the result indicates whether the term is a top-level term or whether it is nested inside another term.}))
