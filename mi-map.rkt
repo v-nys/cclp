@@ -35,9 +35,10 @@
                   get-multi-id)
          "abstract-multi-domain.rkt"
          "cclp-interpreter.rkt"
+         "concrete-domain.rkt"
          (prefix-in ck: "concrete-knowledge.rkt")
          (only-in "control-flow.rkt" aif it)
-         (only-in "domain-switching.rkt" concrete-synth-counterpart))
+         (only-in "domain-switching.rkt" concrete-synth-counterpart concrete-multi))
 
 (define (mi-map-visit-from idx n)
   (match n
@@ -647,6 +648,29 @@
   (ac)
   @{Computes fresh abstract variables to replace the compounds in an abstract conjunction in @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
 
+(define (synth-str concrete-e)
+  (match concrete-e
+    [(? list?)
+     (string-join
+      (map synth-str concrete-e)
+      ",")]
+    [(concrete-multi h t)
+     (format
+      "multi([building_block([~a])|~a])"
+      (synth-str h)
+      (synth-str t))]
+    [(or
+      (atom sym (list))
+      (function sym (list)))
+     (format "~a" sym)]
+    [(or
+      (atom sym lst)
+      (function sym lst))
+     (format "~a(~a)" sym (synth-str lst))]
+    [(variable v)
+     (symbol->string v)]
+    [_ (error "can't print this")]))
+
 (define (generalization/2-head-arg1 ac)
   (match-let*
       ([(cons untangled aliasing)
@@ -654,7 +678,7 @@
        [(cons deconstructed compound-replacements)
         (deconstruct untangled)]
        [counterpart (concrete-synth-counterpart deconstructed)])
-    "TODO"))
+    (format "[~a]" (synth-str counterpart))))
 (module+ test
   ;; based on node 33
   (check-equal?
@@ -693,7 +717,7 @@
           (a 8)))))
       (interpret-abstract-conjunction
        "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)"))))
-   "[integers(G1,A6),filter(G2,A1,A7),multi([building_block([filter(G1i1,A1i1,A1i2)])|Tail1]),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)")
+   "[integers(G1,A6),filter(G2,A1,A7),multi([building_block([filter(G1i1,A1i1,A1i3)])|Tail1]),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)]")
   
   ;; based on node 80  
   (check-equal?
@@ -753,4 +777,4 @@
       )
      (interpret-abstract-conjunction
       "filter(γ3,α4,α11),sift(α5,α12),alt_length(α6,γ4)")))
-   "[integers(G1,A7),multi([building_block([filter(G1i1,A1i1,A1i3)])|Tail1]),filter(G2,A2,A9),multi([building_block([filter(G2i1,A2i1,A2i3)])|Tail2]),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)"))
+   "[integers(G1,A7),multi([building_block([filter(G1i1,A1i1,A1i3)])|Tail1]),filter(G2,A2,A9),multi([building_block([filter(G2i1,A2i1,A2i3)])|Tail2]),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)]"))
