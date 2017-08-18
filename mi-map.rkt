@@ -698,57 +698,59 @@
   ;; based on node 80  
   (check-equal?
    (generalization/2-head-arg1
-    (list
-     (abstract-atom 'integers (list (g 1) (a 7)))
-     (multi
-      (list
-       (abstract-atom*
-        'filter
+    (append
+     (list
+      (abstract-atom 'integers (list (g 1) (a 7)))
+      (multi
+       (list
+        (abstract-atom*
+         'filter
+         (list
+          (g* 1 'i 1)
+          (a* 1 'i 1)
+          (a* 1 'i 3))))
+       #t
+       (init
         (list
-         (g* 1 'i 1)
-         (a* 1 'i 1)
-         (a* 1 'i 3))))
-      #t
-      (init
-       (list
-        (cons
-         (a* 1 1 1)
-         (a 1))))
-      (consecutive
-       (list
-        (cons
-         (a* 1 'i+1 1)
-         (a* 1 'i   2))))
-      (final
-       (list
-        (cons
-         (a* 1 'L 2)
-         (a 8)))))
-     (abstract-atom 'filter (list (g 2) (a 2) (a 9)))
-     (multi
-      (list
-       (abstract-atom*
-        'filter
+         (cons
+          (a* 1 1 1)
+          (a 1))))
+       (consecutive
         (list
-         (g* 2 'i 1)
-         (a* 2 'i 1)
-         (a* 2 'i 3))))
-      #t
-      (init
+         (cons
+          (a* 1 'i+1 1)
+          (a* 1 'i   2))))
+       (final
+        (list
+         (cons
+          (a* 1 'L 2)
+          (a 8)))))
+      (abstract-atom 'filter (list (g 2) (a 2) (a 9)))
+      (multi
        (list
-        (cons
-         (a* 2 1 1)
-         (a 3))))
-      (consecutive
-       (list
-        (cons
-         (a* 2 'i+1 1)
-         (a* 2 'i   2))))
-      (final
-       (list
-        (cons
-         (a* 2 'L 2)
-         (a 10)))))
+        (abstract-atom*
+         'filter
+         (list
+          (g* 2 'i 1)
+          (a* 2 'i 1)
+          (a* 2 'i 3))))
+       #t
+       (init
+        (list
+         (cons
+          (a* 2 1 1)
+          (a 3))))
+       (consecutive
+        (list
+         (cons
+          (a* 2 'i+1 1)
+          (a* 2 'i   2))))
+       (final
+        (list
+         (cons
+          (a* 2 'L 2)
+          (a 10)))))
+      )
      (interpret-abstract-conjunction
       "filter(γ3,α4,α11),sift(α5,α12),alt_length(α6,γ4)")))
    "[integers(G1,A7),multi([building_block([filter(G1i1,A1i1,A1i3)])|Tail1]),filter(G2,A2,A9),multi([building_block([filter(G2i1,A2i1,A2i3)])|Tail2]),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)"))

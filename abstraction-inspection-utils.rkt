@@ -209,8 +209,8 @@
  (proc-doc/names
   extract-all-variables/duplicates
   (->
-   (or/c (listof abstract-conjunct?) multi? abstract-atom? abstract-function? abstract-atom*? abstract-function*? a? g? a*? g*?)
-   (listof (or/c a? g? a*? g*?)))
+   (or/c abstract-domain-elem*? abstract-variable*?)
+   (listof (or/c abstract-variable? abstract-variable*?)))
   (v)
   @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
  in order of occurrence. Only takes into account local index i, not 1, i+1 or L.}))
