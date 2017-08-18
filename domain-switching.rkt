@@ -305,31 +305,46 @@
        (list (variable 'G2i2) (variable 'A2i2) (variable 'A2i3))))
      (variable 'Tail2))
     (atom 'sift (list (variable 'A3) (variable 'A4))))))
+(provide
+ (proc-doc/names
+  concrete-synth-counterpart
+  (->
+   abstract-domain-elem*?
+   (or/c
+    concrete-domain-elem?
+    concrete-multi?
+    (listof
+     (or/c
+      concrete-domain-elem?
+      concrete-multi?))))
+  (e)
+  @{Converts an abstract domain element to an element which is suitable for synthesis of concrete code.
+ Typically, this is a concrete domain element, but for multi this is an auxiliary structure.}))
 
 (struct
   concrete-multi (head tail)
   #:methods
- gen:equal+hash
- [(define (equal-proc cm1 cm2 equal?-recur)
-    (and (equal?-recur
-          (concrete-multi-head cm1)
-          (concrete-multi-head cm2))
-         (equal?-recur
-          (concrete-multi-tail cm1)
-          (concrete-multi-tail cm2))))
-  (define (hash-proc cm hash-recur)
-    (+ (hash-recur (concrete-multi-head cm))
-       (* 3 (hash-recur (concrete-multi-tail cm)))))
-  (define (hash2-proc cm hash2-recur)
-    (+ (hash2-recur (concrete-multi-head cm))
-       (hash2-recur (concrete-multi-tail cm))))]
+  gen:equal+hash
+  [(define (equal-proc cm1 cm2 equal?-recur)
+     (and (equal?-recur
+           (concrete-multi-head cm1)
+           (concrete-multi-head cm2))
+          (equal?-recur
+           (concrete-multi-tail cm1)
+           (concrete-multi-tail cm2))))
+   (define (hash-proc cm hash-recur)
+     (+ (hash-recur (concrete-multi-head cm))
+        (* 3 (hash-recur (concrete-multi-tail cm)))))
+   (define (hash2-proc cm hash2-recur)
+     (+ (hash2-recur (concrete-multi-head cm))
+        (hash2-recur (concrete-multi-tail cm))))]
   #:methods
- gen:custom-write
- [(define write-proc
-    (make-constructor-style-printer
-     (λ (obj) 'concrete-multi)
-     (λ (obj) (list (concrete-multi-head obj)
-                    (concrete-multi-tail obj)))))])
+  gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (λ (obj) 'concrete-multi)
+      (λ (obj) (list (concrete-multi-head obj)
+                     (concrete-multi-tail obj)))))])
 (provide
  (struct*-doc
   concrete-multi

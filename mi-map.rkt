@@ -33,10 +33,11 @@
                   extract-abstract-compounds
                   extract-all-variables/duplicates
                   get-multi-id)
-         (prefix-in ck: "concrete-knowledge.rkt")
          "abstract-multi-domain.rkt"
          "cclp-interpreter.rkt"
-         (only-in "control-flow.rkt" aif it))
+         (prefix-in ck: "concrete-knowledge.rkt")
+         (only-in "control-flow.rkt" aif it)
+         (only-in "domain-switching.rkt" concrete-synth-counterpart))
 
 (define (mi-map-visit-from idx n)
   (match n
@@ -647,7 +648,13 @@
   @{Computes fresh abstract variables to replace the compounds in an abstract conjunction in @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
 
 (define (generalization/2-head-arg1 ac)
-  (format "[TODO]"))
+  (match-let*
+      ([(cons untangled aliasing)
+        (untangle ac)]
+       [(cons deconstructed compound-replacements)
+        (deconstruct untangled)]
+       [counterpart (concrete-synth-counterpart deconstructed)])
+    "TODO"))
 (module+ test
   ;; based on node 33
   (check-equal?
@@ -679,13 +686,13 @@
          (cons
           (a* 1 'i+1 1)
           (a* 1 'i   2)))) ; unseen aliasing is not an issue for this part of generation
-      (final
-       (list
-        (cons
-         (a* 1 'L 2)
-         (a 8)))))
-     (interpret-abstract-conjunction
-      "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)"))))
+       (final
+        (list
+         (cons
+          (a* 1 'L 2)
+          (a 8)))))
+      (interpret-abstract-conjunction
+       "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)"))))
    "[integers(G1,A6),filter(G2,A1,A7),multi([building_block([filter(G1i1,A1i1,A1i2)])|Tail1]),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)")
   
   ;; based on node 80  
