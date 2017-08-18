@@ -678,14 +678,14 @@
         (list
          (cons
           (a* 1 'i+1 1)
-          (a* 1 'i   2))))) ; unseen aliasing is not an issue for this part of generation
+          (a* 1 'i   2)))) ; unseen aliasing is not an issue for this part of generation
       (final
        (list
         (cons
          (a* 1 'L 2)
          (a 8)))))
      (interpret-abstract-conjunction
-      "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)")))
+      "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)"))))
    "[integers(G1,A6),filter(G2,A1,A7),multi([building_block([filter(G1i1,A1i1,A1i2)])|Tail1]),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)")
   
   ;; based on node 80  
