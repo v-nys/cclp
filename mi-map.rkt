@@ -38,7 +38,8 @@
          "concrete-domain.rkt"
          (prefix-in ck: "concrete-knowledge.rkt")
          (only-in "control-flow.rkt" aif it)
-         (only-in "domain-switching.rkt" concrete-synth-counterpart concrete-multi))
+         (only-in "domain-switching.rkt" concrete-synth-counterpart concrete-multi)
+         (only-in "gen-graph-structs.rkt" index-range))
 
 (define (mi-map-visit-from idx n)
   (match n
@@ -54,7 +55,7 @@
      (displayln (format "transition_from_to_via(~a,~a,one)." idx idx2))]
     [(node (tree-label _ _ _ 'many idx2 _) _)
      (displayln (format "transition_from_to_via(~a,~a,many)." idx idx2))]
-    [(node (generalization _ _ idx2 _ _) _)
+    [(node (generalization _ _ idx2 _ _ _) _)
      (displayln (format "generalization_from_to(~a,~a)" idx idx2))]
     [(node (cycle cycle-idx) _)
      (displayln (format "cycle_from_to(~a,~a)." idx cycle-idx))]
@@ -378,8 +379,48 @@
   @{Undoes the aliasing in abstract conjunction @racket[ac] and returns an association list with duplicate keys with the required information to restore aliasing.
  This is useful for generation of generalization/2 clauses for the meta-interpreter, as aliasing must be matched in these clauses and must not be enforced by unification.}))
 
-(define (generate-generalization-clause x y)
+(define (generate-generalization-clause parent child blocks)
   (display "not implemented yet"))
+(module+ test
+  (define node-33-parent-conjunction
+    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),alt_length(α5,γ5)"))
+  (define node-33-child-conjunction
+    (append
+     (cons
+      (abstract-atom 'integers (list (g 1) (a 1)))
+      (list
+       (multi
+        (list
+         (abstract-atom*
+          'filter
+          (list
+           (g* 1 'i 1)
+           (a* 1 'i 1)
+           (a* 1 'i 2))))
+        #t
+        (init
+         (list
+          (cons (a* 1 1 1) (a 2))))
+        (consecutive
+         (list
+          (cons
+           (a* 1 'i+1 1)
+           (a* 1 'i   2))))
+        (final
+         (list
+          (cons
+           (a* 1 'L 2)
+           (a 3)))))))
+     (interpret-abstract-conjunction "sift(α4,α5),alt_length(α5,γ5)")))
+    
+;  (check-equal?
+;   (generate-generalization-clause
+;    node-33-parent-conjunction
+;    node-33-child-conjunction
+;    (list (cons (index-range 1 2) 1)
+;          (cons (index-range 2 3) 1)))
+;   "")
+  )
 
 ;; auxiliary function for untangle
 ;; allows comparison of constructors
@@ -398,11 +439,12 @@
 
 (define (generalization-clause-visit-from conjunction1 n)
   (match n
-    [(node (generalization conjunction2 _ _ _ _) _)
+    [(node (generalization conjunction2 _ _ _ _ building-blocks) _)
      (display
       (generate-generalization-clause
        conjunction1
-       conjunction2))]
+       conjunction2
+       building-blocks))]
     [_ (void)]))
 
 (define (generalization-clause-visitor n)
@@ -684,8 +726,8 @@
   (check-equal?
    (generalization/2-head-arg1
     (interpret-abstract-conjunction
-     "integers(γ1,α6),filter(γ2,α1,α7),filter(γ3,α2,α8),filter(γ4,α3,α9),sift(α4,α10),alt_length(α11,γ5)"))
-   "[integers(G1,A6),filter(G2,A1,A7),filter(G3,A2,A8),filter(G4,A3,A9),sift(A4,A10),alt_length(A11,G5)]")
+     "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),alt_length([γ5|α5],γ6)"))
+   "[integers(G1,A6),filter(G2,A1,A7),filter(G3,A2,A8),filter(G4,A3,A9),sift(A4,A10),alt_length(A11,G6)]")
   ;; based on node 46
   (check-equal?
    (generalization/2-head-arg1

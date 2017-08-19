@@ -131,7 +131,7 @@
         (displayln "step:")
         (displayln step-acc)
         tree)]
-     ["show genealogical tree"
+     ["show genealogical graph"
       (let* ([active-branch (active-branch tree)]
              [gr (if active-branch (generational-graph-skeleton active-branch) #f)]
              [root (if active-branch (gen-node (car (tree-label-conjunction (car active-branch))) 1 #f #t #t) #f)]
@@ -140,7 +140,11 @@
              [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth)) #f)]
              [_ (if active-branch (annotate-general! gr root targets depth) #f)])
         (if active-branch
-            (displayln (graphviz (graph-map (λ (v) (format "~v" v)) gr)))
+            (displayln
+             (graphviz
+              (graph-map
+               (λ (v) (format "~v" v))
+               gr)))
             (displayln "There is no active branch."))
         tree)]
      ["generate meta-interpreter map"
@@ -149,7 +153,6 @@
       (display-generalization-clauses tree)]
      ["end analysis"
       (set! analyzing? #f)]))))
-
 
 (define (begin-analysis program-data filename)
   (match program-data
@@ -247,7 +250,7 @@
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
     [(or (tree-label con sel _ _ i _)
-         (generalization con sel i _ _))
+         (generalization con sel i _ _ _))
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out))]

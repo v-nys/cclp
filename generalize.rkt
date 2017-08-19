@@ -1016,14 +1016,17 @@
   (define depth (length br))
   (define targets (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth))) ; is this really the best place for this? might want to smooth over generation elsewhere...
   (annotate-general! gr root targets depth)
-  (define lvl (sort (rdag-level gr annotated-root depth) < #:key gen-node-id))
+  (define lvl
+    (sort (rdag-level gr annotated-root depth) < #:key gen-node-id))
   (define gen-lvl (generalize-level lvl))
-  (cons (map gen-node-conjunct gen-lvl) (generalized-ranges lvl gen-lvl)))
+  (cons
+   (map gen-node-conjunct gen-lvl)
+   (generalized-ranges lvl gen-lvl)))
 (provide
  (proc-doc/names
   generalize
-  (-> (listof (or/c tree-label? generalization?)) (cons/c (listof abstract-conjunct?) (listof index-range?)))
+  (-> (listof (or/c tree-label? generalization?)) list?)
   (candidate-branch)
   @{Applies generalization to the bottom level of @racket[candidate-branch].
- Returns a pair consisting of the generalized conjunction and the generalized index ranges.
+ Returns a triple consisting of the generalized conjunction, the generalized index ranges and the assignment of building blocks to introduced multis.
  If generalization has no effect, the generalized conjunction is identical to the initial conjunction and the list of ranges is empty.}))

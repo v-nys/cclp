@@ -81,7 +81,7 @@
     ; if there are unfoldings and there is a selection
     [(list-rest
       (or (tree-label tl-con1 (some selected1) _ _ _ _)
-          (generalization tl-con1 (some selected1) _ _ _))
+          (generalization tl-con1 (some selected1) _ _ _ _))
       (tree-label _ _ _ tl-rule2 _ _)
       l-rest)
      (match-let
@@ -110,7 +110,7 @@
     [(list-rest
       ;; generalization followed by generalization is possible on paper, but implementation never does this
       (tree-label tl-con1 (none) _ _ _ _)
-      (generalization _ _ _ _ abstracted-ranges)
+      (generalization _ _ _ _ abstracted-ranges _) ; TODO may be able to utilize last field, which was added later
       l-rest)
      (match-let
          ([(list next-uid _ _ add-edges)
@@ -156,15 +156,15 @@
     [(node (cycle _) '()) #f]
     [(node (tree-label c (none) s r #f ie) '())
      (list (tree-label c (none) s r #f ie))]
-    [(node (generalization c (none) #f ie rngs) '())
-     (list (generalization c (none) #f ie rngs))]
+    [(node (generalization c (none) #f ie rngs bb) '())
+     (list (generalization c (none) #f ie rngs bb))]
     [(node (tree-label c sel s r i ie) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch c))) #f ch)
           (cons (tree-label c sel s r i ie) it)
           #f)]
-    [(node (generalization c sel i ie rngs) ch)
+    [(node (generalization c sel i ie rngs bb) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch c))) #f ch)
-          (cons (generalization c sel i ie rngs) it)
+          (cons (generalization c sel i ie rngs bb) it)
           #f)]))
 (provide
  (proc-doc/names

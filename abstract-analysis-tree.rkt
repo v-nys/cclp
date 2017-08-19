@@ -37,7 +37,11 @@
      (or
       (foldr
        (λ (c acc)
-         (if (and (not acc) (or (generalization? (node-label c)) (tree-label? (node-label c))))
+         (if (and
+              (not acc)
+              (or
+               (generalization? (node-label c))
+               (tree-label? (node-label c))))
              (largest-node-index c)
              acc))
        #f
@@ -66,17 +70,17 @@
     [(node (cycle _) '()) (cons #f acc)]
     [(node (widening '() _ _ _ _) '()) (cons #f acc)] ; odd, but not impossible...
     [(or (node (tree-label c (none) _ _ #f _) '())
-         (node (generalization c (none) #f _ _) '()))
+         (node (generalization c (none) #f _ _ _) '()))
      (cons t acc)]
     [(node (widening c (none) msg i pp) '())
      (cons (node (widening c (none) msg i pp) '()) acc)]
     ; children but no selection = widened tree-label (or widened widening) or cycle
     [(or (node (tree-label c (none) _ _ i _) (list single-child))
-         (node (generalization c (none) i _ _) (list single-child))
+         (node (generalization c (none) i _ _ _) (list single-child))
          (node (widening c (none) _ i _) (list single-child)))
      (candidate-and-predecessors single-child (cons (cons c i) acc))]
     [(or (node (tree-label c (some v) _ _ i _) children)
-         (node (generalization c (some v) i _ _) children)
+         (node (generalization c (some v) i _ _ _) children)
          (node (widening c (some v) _ i _) children))
      (foldl
       (λ (child acc2)
@@ -125,8 +129,8 @@
     (match candidate
       [(node (tree-label c _ sub r _ _) _)
        (node (tree-label c sel sub r idx new-edges) children)]
-      [(node (generalization c _ _ _ a-r) _)
-       (node (generalization c sel idx new-edges a-r) children)]
+      [(node (generalization c _ _ _ a-r bb) _)
+       (node (generalization c sel idx new-edges a-r bb) children)]
       [(node (widening c _ m _ _) _)
        (node (widening c sel m idx new-edges) children)]
       [(node (case c _ _ _) _)
@@ -165,15 +169,18 @@
                      (λ (p-and-i) (renames? (car p-and-i) conjunction))
                      predecessors)]
                    [fully-evaluated-atom? (ormap full-eval-covers (cartesian-product full-evaluations conjunction))]
-                   [(cons gen-conjunction gen-rngs)
-                    (if (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?) (cons conjunction (list)) (generalize (active-branch top)))])
+                   [(list gen-conjunction gen-rngs bb)
+                    (if
+                     (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?)
+                     (cons conjunction (list))
+                     (generalize (active-branch top)))])
         (cond [equivalent-predecessor
                (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
                       [updated-top (replace-first-subtree top candidate updated-candidate)])
                  (cons updated-candidate updated-top))]
-              [(not (null? gen-rngs))
-               (let* ([gen-node (node (generalization gen-conjunction (none) #f '() gen-rngs) '())]
+              [(not (null? bb))
+               (let* ([gen-node (node (generalization gen-conjunction (none) #f '() gen-rngs bb) '())]
                       [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
                       [updated-top (replace-first-subtree top candidate updated-candidate)])
                  (cons updated-candidate updated-top))]
