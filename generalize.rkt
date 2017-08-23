@@ -518,12 +518,9 @@
        (null? current-gen)
        (multi? (gen-node-conjunct node))
        (not (strung-together? potential node)))
-      ;; FIXME: dit is voorbarig?
-      ;; in geval van meerdere conjuncten in multi betekent dit dat multi altijd naar completed zal doorschuiven
-      ;; current-gen wordt niet-leeg, maar potential en current-gen zijn niet strung-together op moment toevoeging eerste atom
-      ;; dus hier klopt alvast iets niet
       (and
        (not (null? current-gen))
+       (not (equal? (gen-node-range (first current-gen)) (gen-node-range node)))
        (not (strung-together? potential current-gen))
        (subsequent-gens?
         (gen-node-range (first potential))
