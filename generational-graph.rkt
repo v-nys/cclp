@@ -388,6 +388,34 @@
    (local-max (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f #t))
    'l1))
 
+(define (gen-range-first/gen rng)
+  (gen (gen-range-first rng) (gen-range-origin rng)))
+(provide gen-range-first/gen)
+
+(define (gen-range-last/gen rng)
+  (gen (gen-range-last rng) (gen-range-origin rng)))
+(provide gen-range-last/gen)
+
+(define (subsequent-gens? g1 g2)
+  (match* (g1 g2)
+    [((? gen?) (? gen?))
+     (or (equal? (gen-add1 g1) g2)
+         (equal? (gen-sub1 g1) g2))]
+    [((? gen?) (? gen-range?))
+     (if (gen-range-ascending? g2)
+         (equal? (gen-add1 g1) (gen-range-first/gen g2))
+         (equal? (gen-sub1 g1) (gen-range-first/gen g2)))]
+    [((? gen-range?) (? gen?))
+     (if (gen-range-ascending? g1)
+         (equal? (gen-add1 (gen-range-last/gen g1)) g2)
+         (equal? (gen-sub1 (gen-range-last/gen g1)) g2))]
+    [((gen-range f1 l1 o asc?) (gen-range f2 l2 o asc?))
+     (if asc?
+         (equal? (gen-add1 (gen-range-last/gen g1)) (gen-range-first/gen g2))
+         (equal? (gen-sub1 (gen-range-last/gen g1)) (gen-range-first/gen g2)))]
+    [(_ _) #f]))
+(provide subsequent-gens?)
+
 ;; add an offset to a (potentially symbolic) generation number
 (define (gen-add g o)
   (cond [(= o 0) g]
