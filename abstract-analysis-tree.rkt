@@ -171,6 +171,7 @@
                        (λ (p-and-i) (renames? (car p-and-i) conjunction))
                        predecessors)]
                      [fully-evaluated-atom? (ormap full-eval-covers (cartesian-product full-evaluations conjunction))]
+                     ;; TODO actually use building blocks
                      [(list gen-conjunction gen-rngs bb)
                         (if
                          (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?)
@@ -182,7 +183,7 @@
                           [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
                           [updated-top (replace-first-subtree top candidate updated-candidate)])
                      (cons updated-candidate updated-top))]
-                  [(not (null? bb))
+                  [(not (null? gen-rngs)) ;; TODO: update to building-blocks
                    (let* ([gen-node (node (generalization gen-conjunction (none) #f '() gen-rngs bb) '())]
                           [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
                           [updated-top (replace-first-subtree top candidate updated-candidate)])

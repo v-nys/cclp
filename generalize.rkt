@@ -351,6 +351,7 @@
 ;; folding could keep some conjuncts in current-gen or potential
 ;; these should be considered completed, as well
 (define (finalize g)
+  (log-debug "finalizing grouping: ~a" g)
   (match g
     [(grouping co #f cu _ _ _)
      (append co cu)]
@@ -806,6 +807,7 @@
   (define lvl
     (sort (rdag-level gr annotated-root depth) < #:key gen-node-id))
   (define gen-lvl (generalize-level lvl))
+  (log-debug "outcome of generalization is ~a" (map gen-node-conjunct gen-lvl))
   (list
    (map gen-node-conjunct gen-lvl)
    (generalized-ranges lvl gen-lvl)
