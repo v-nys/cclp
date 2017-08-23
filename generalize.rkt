@@ -425,7 +425,7 @@
 (define (next-potential potential current-gen node fresh-multi-id fresh-dummy-id lvl)
   (cond
     [(can-group? potential current-gen node)
-     (cdr
+     (car
       (group-sequential-generations
        (append
         potential
@@ -438,6 +438,7 @@
     [(multi? (gen-node-conjunct node))
      (list node)]
     [(and
+      (not potential)
       (not (null? current-gen))
       (abstract-atom? (gen-node-conjunct node))
       (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node)))
@@ -465,10 +466,10 @@
         (or
          (and asc? (equal? (gen-add1 n) m))
          (and (not asc?) (equal? (gen-sub1 n) m)))
-        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))])
+        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (map gen-node-conjunct a))))])
           (renames?
-           (append (map gen-node-conjunct potential) (list conjunct))
-           (unfold-multi-many conjunct offset offset))))]
+           (append (map gen-node-conjunct potential) (list (multi conjunct asc? i c f)))
+           (unfold-multi-many (multi conjunct asc? i c f) offset offset))))]
       [(_ _) #f]))
   (define (multi-joins-atoms? m a)
     (match* (m a)
@@ -479,30 +480,30 @@
         (or
          (and asc? (equal? (gen-add1 l) n))
          (and (not asc?) (equal? (gen-sub1 l) n)))
-        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))])
+        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (map gen-node-conjunct a))))])
           (renames?
-           (unfold-multi-many-right conjunct offset offset)
+           (unfold-multi-many-right (multi conjunct asc? i c f) offset offset)
            (append (map gen-node-conjunct potential) (map gen-node-conjunct a)))))]
       [(_ _) #f]))
   (define (multi-joins-multi? m1 m2)
     (match* (m1 m2)
-      [((list (gen-node (multi conjunct-1 asc? _ _ _) _ (gen-range _ m r asc?) _ _))
-        (gen-node (multi conjunct-2 asc? _ _ _) _ (gen-range o _ r asc?) _ _))
-       (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (list conjunct-1 conjunct-2))))])
+      [((list (gen-node (and (multi _ asc? _ _ _) conjunct-1) _ (gen-range _ m r asc?) _ _))
+        (gen-node (and (multi _ asc? _ _ _) conjunct-2) _ (gen-range o _ r asc?) _ _))
+       (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (cons conjunct-2 (map gen-node-conjunct m1)))))])
          (and
           (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
           (renames? (append (drop (unfold-multi-many-right conjunct-1 offset offset) 1) (list conjunct-2)) (unfold-multi-many conjunct-2 offset offset))))]
       [(_ _) #f]))
   #2dmatch
-  ╔══════════════════════════════════════════════════════╦═════════════════════════════════════════════════════╦════════════════════════════════════════╦════╗
-  ║ potential suffix                                     ║ (list-rest (gen-node (? abstract-atom?) _ _ _ _) _) ║ (gen-node (? multi?) _ _ _ _)          ║ _  ║
-  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════╬════════════════════════════════════════╬════╣
-  ║ (list-rest (gen-node (? abstract-atom?) _ _ _ _) _)  ║ (atoms-join-atoms? potential suffix)                ║ (atoms-join-multi? potential suffix)   ║    ║
-  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════╬════════════════════════════════════════╣    ║
-  ║ (list-rest (gen-node (? multi?) _ _ _ _) _)          ║ (multi-joins-atoms? potential suffix)               ║ (multi-joins-multi? potential suffix)  ║    ║
-  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════╩════════════════════════════════════════╝    ║
-  ║ _                                                    ║                                                                                                #f ║
-  ╚══════════════════════════════════════════════════════╩═══════════════════════════════════════════════════════════════════════════════════════════════════╝)
+  ╔══════════════════════════════════════════════════════╦═════════════════════════════════════════════════════════════╦════════════════════════════════════════════════╦════╗
+  ║ potential suffix                                     ║ (list-rest (gen-node (? abstract-atom?) _ _ _ _) _)         ║ (gen-node (? multi?) _ _ _ _)                  ║ _  ║
+  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════════════╬════════════════════════════════════════════════╬════╣
+  ║ (list-rest (gen-node (? abstract-atom?) _ _ _ _) _)  ║ (atoms-join-atoms? potential suffix)                        ║ (atoms-join-multi? potential suffix)           ║    ║
+  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════════════╬════════════════════════════════════════════════╣    ║
+  ║ (list-rest (gen-node (? multi?) _ _ _ _) _)          ║ (multi-joins-atoms? (first potential) suffix)               ║ (multi-joins-multi? (first potential) suffix)  ║    ║
+  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════════════╩════════════════════════════════════════════════╝    ║
+  ║ _                                                    ║                                                                                                                #f ║
+  ╚══════════════════════════════════════════════════════╩═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝)
 
 (define (next-completed completed potential current-gen node)
   (append
@@ -516,6 +517,10 @@
        (null? current-gen)
        (multi? (gen-node-conjunct node))
        (not (strung-together? potential node)))
+      ;; FIXME: dit is voorbarig?
+      ;; in geval van meerdere conjuncten in multi betekent dit dat multi altijd naar completed zal doorschuiven
+      ;; current-gen wordt niet-leeg, maar potential en current-gen zijn niet strung-together op moment toevoeging eerste atom
+      ;; dus hier klopt alvast iets niet
       (and
        (not (null? current-gen))
        (not (strung-together? potential current-gen))
@@ -540,6 +545,9 @@
        empty)))
 
 (define (group-conjuncts node acc)
+  (log-debug "applying group-conjuncts")
+  (log-debug "acc is ~a" acc)
+  (log-debug "current node is ~a" node)
   (match-let ([(and (grouping completed potential current-gen fresh-multi-id fresh-dummy-id lvl) acc-grouping) acc])
     (struct-copy
       grouping
@@ -547,7 +555,7 @@
       [completed (next-completed completed potential current-gen node)]
       [potential (next-potential potential current-gen node fresh-multi-id fresh-dummy-id lvl)]
       [current-gen (next-current-gen current-gen node)]
-      [next-multi-id (next-multi-id potential current-gen node multi-id)]
+      [next-multi-id (next-multi-id potential current-gen node fresh-multi-id)]
       [dummy-id (next-dummy-id potential current-gen node fresh-dummy-id)])))
 
 (define (generalize-level lvl)
