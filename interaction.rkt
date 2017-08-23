@@ -59,6 +59,7 @@
 (provide (struct-out cclp))
 
 (define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior #:step [step-acc 1] #:history [edge-history (make-hash)])
+  (log-debug "performing interactive analysis")
   (define analyzing? #t)
   (define (proceed)
     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
@@ -169,8 +170,11 @@
   (define logger (make-logger 'cc #f))
   (current-logger logger)
   (with-logging-to-port (current-error-port)
-    (λ () (cclp-run filename program-data))
-    'info))
+    (λ ()
+      (begin
+        (log-debug "logger is active")
+        (cclp-run filename program-data)))
+    'debug))
 (provide
  (proc-doc/names
   cclp-top

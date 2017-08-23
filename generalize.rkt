@@ -494,15 +494,15 @@
           (renames? (append (drop (unfold-multi-many-right conjunct-1 offset offset) 1) (list conjunct-2)) (unfold-multi-many conjunct-2 offset offset))))]
       [(_ _) #f]))
   #2dmatch
-  ╔════════════════════════════════════════╦═════════════════════════════════════════════════════╦════════════════════════════════════════╦════╗
-  ║ (first potential) suffix               ║ (list-rest (gen-node (? abstract-atom?) _ _ _ _) _) ║ (gen-node (? multi?) _ _ _ _)          ║ _  ║
-  ╠════════════════════════════════════════╬═════════════════════════════════════════════════════╬════════════════════════════════════════╬════╣
-  ║ (gen-node (? abstract-atom?) _ _ _ _)  ║ (atoms-join-atoms? potential suffix)                ║ (atoms-join-multi? potential suffix)   ║    ║
-  ╠════════════════════════════════════════╬═════════════════════════════════════════════════════╬════════════════════════════════════════╣    ║
-  ║ (gen-node (? multi?) _ _ _ _)          ║ (multi-joins-atoms? potential suffix)               ║ (multi-joins-multi? potential suffix)  ║    ║
-  ╠════════════════════════════════════════╬═════════════════════════════════════════════════════╩════════════════════════════════════════╝    ║
-  ║ _                                      ║                                                                                                #f ║
-  ╚════════════════════════════════════════╩═══════════════════════════════════════════════════════════════════════════════════════════════════╝)
+  ╔══════════════════════════════════════════════════════╦═════════════════════════════════════════════════════╦════════════════════════════════════════╦════╗
+  ║ potential suffix                                     ║ (list-rest (gen-node (? abstract-atom?) _ _ _ _) _) ║ (gen-node (? multi?) _ _ _ _)          ║ _  ║
+  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════╬════════════════════════════════════════╬════╣
+  ║ (list-rest (gen-node (? abstract-atom?) _ _ _ _) _)  ║ (atoms-join-atoms? potential suffix)                ║ (atoms-join-multi? potential suffix)   ║    ║
+  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════╬════════════════════════════════════════╣    ║
+  ║ (list-rest (gen-node (? multi?) _ _ _ _) _)          ║ (multi-joins-atoms? potential suffix)               ║ (multi-joins-multi? potential suffix)  ║    ║
+  ╠══════════════════════════════════════════════════════╬═════════════════════════════════════════════════════╩════════════════════════════════════════╝    ║
+  ║ _                                                    ║                                                                                                #f ║
+  ╚══════════════════════════════════════════════════════╩═══════════════════════════════════════════════════════════════════════════════════════════════════╝)
 
 (define (next-completed completed potential current-gen node)
   (append
@@ -529,28 +529,26 @@
      (not (null? current-gen))
      (not
       (or
-       (equal? (gen-range (first current-gen)) (gen-range node))
-       (subsequent-gens? (gen-range (first current-gen)) (gen-range node))
+       (equal? (gen-node-range (first current-gen)) (gen-node-range node))
+       (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node))
        (can-group? potential current-gen node))))
     current-gen
     empty)
-   (if (or (equal? (gen-range node) (gen 0 #f))
+   (if (or (equal? (gen-node-range node) (gen 0 #f))
            (not (gen-node-foldable? node)))
        (list node)
        empty)))
 
 (define (group-conjuncts node acc)
-  (match-let ([(cons (grouping completed potential current-gen fresh-multi-id fresh-dummy-id lvl) node-idx) acc])
-    (cons
-     (struct-copy
+  (match-let ([(and (grouping completed potential current-gen fresh-multi-id fresh-dummy-id lvl) acc-grouping) acc])
+    (struct-copy
       grouping
-      acc
-      [completed (next-completed )]
+      acc-grouping
+      [completed (next-completed completed potential current-gen node)]
       [potential (next-potential potential current-gen node fresh-multi-id fresh-dummy-id lvl)]
       [current-gen (next-current-gen current-gen node)]
       [next-multi-id (next-multi-id potential current-gen node multi-id)]
-      [dummy-id (next-dummy-id potential current-gen node fresh-dummy-id)])
-     (add1 node-idx))))
+      [dummy-id (next-dummy-id potential current-gen node fresh-dummy-id)])))
 
 (define (generalize-level lvl)
   (define multis (filter multi? (map gen-node-conjunct lvl)))
@@ -562,11 +560,10 @@
         1))
   (define dummy-id (add1 (apply max (map gen-node-id lvl))))
   (finalize ; move stragglers to completed
-   (car ; don't care about next multi ID
     (foldl
      group-conjuncts
-     (cons (grouping (list) #f (list) next-multi-id dummy-id lvl) 0)
-     (sort lvl < #:key gen-node-id)))))
+     (grouping (list) #f (list) next-multi-id dummy-id lvl)
+     (sort lvl < #:key gen-node-id))))
 (module+ test
   (require rackunit)
   (check-equal?
@@ -801,9 +798,10 @@
   (define lvl
     (sort (rdag-level gr annotated-root depth) < #:key gen-node-id))
   (define gen-lvl (generalize-level lvl))
-  (cons
+  (list
    (map gen-node-conjunct gen-lvl)
-   (generalized-ranges lvl gen-lvl)))
+   (generalized-ranges lvl gen-lvl)
+   (list))) ;; FIXME: needs the actual building blocks!
 (provide
  (proc-doc/names
   generalize

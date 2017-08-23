@@ -125,6 +125,7 @@
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
 (define (advance-analysis top clauses full-evaluations concrete-constants prior #:new-edges [new-edges (list)])
+  (log-debug "advancing analysis")
   (define (update-candidate candidate idx sel new-edges children)
     (match candidate
       [(node (tree-label c _ sub r _ _) _)
@@ -162,49 +163,51 @@
             (>=-extension (full-evaluation-input-pattern full-eval) conjunct))]))
   (match-define (cons candidate predecessors) (candidate-and-predecessors top (list)))
   (if candidate
-      (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
-                   [conjunction (label-conjunction (node-label candidate))]
-                   [equivalent-predecessor
-                    (findf
-                     (λ (p-and-i) (renames? (car p-and-i) conjunction))
-                     predecessors)]
-                   [fully-evaluated-atom? (ormap full-eval-covers (cartesian-product full-evaluations conjunction))]
-                   [(list gen-conjunction gen-rngs bb)
-                    (if
-                     (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?)
-                     (cons conjunction (list))
-                     (generalize (active-branch top)))])
-        (cond [equivalent-predecessor
-               (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
-                      [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
-                      [updated-top (replace-first-subtree top candidate updated-candidate)])
-                 (cons updated-candidate updated-top))]
-              [(not (null? bb))
-               (let* ([gen-node (node (generalization gen-conjunction (none) #f '() gen-rngs bb) '())]
-                      [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
-                      [updated-top (replace-first-subtree top candidate updated-candidate)])
-                 (cons updated-candidate updated-top))]
-              [else
-               (begin
-                 (for ([conjunct conjunction])
-                   (cond [(abstract-atom? conjunct) (add-vertex! prior conjunct)]
-                         [(multi? conjunct)
-                          (let ([one-unf (let* (
-                                                [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))]) (car (unfold-multi-bounded 1 conjunct offset offset)))])
-                            (for ([multi-conjunct one-unf])
-                              (add-vertex! prior multi-conjunct)))]))
-                 (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
-                 (aif (selected-index conjunction prior full-evaluations)
-                      (let* ([selected-conjunct (list-ref conjunction it)]
-                             [resolvents
-                              (if (abstract-atom? selected-conjunct)
-                                  (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))
-                                  (unfold-multi* it conjunction))]
-                             [child-nodes (if (abstract-atom? selected-conjunct) (map resolvent->node resolvents) (map m-unf->node resolvents '(one many)))]
-                             [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
-                             [updated-top (replace-first-subtree top candidate updated-candidate)])
-                        (cons updated-candidate updated-top))
-                      (cons 'underspecified-order candidate)))]))
+      (begin
+        (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
+                     [conjunction (label-conjunction (node-label candidate))]
+                     [equivalent-predecessor
+                      (findf
+                       (λ (p-and-i) (renames? (car p-and-i) conjunction))
+                       predecessors)]
+                     [fully-evaluated-atom? (ormap full-eval-covers (cartesian-product full-evaluations conjunction))]
+                     [(list gen-conjunction gen-rngs bb)
+                        (if
+                         (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?)
+                         (list conjunction (list) (list))
+                         (generalize (active-branch top)))])
+          (begin
+            (cond [equivalent-predecessor
+                   (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
+                          [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
+                          [updated-top (replace-first-subtree top candidate updated-candidate)])
+                     (cons updated-candidate updated-top))]
+                  [(not (null? bb))
+                   (let* ([gen-node (node (generalization gen-conjunction (none) #f '() gen-rngs bb) '())]
+                          [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
+                          [updated-top (replace-first-subtree top candidate updated-candidate)])
+                     (cons updated-candidate updated-top))]
+                  [else
+                   (begin
+                     (for ([conjunct conjunction])
+                       (cond [(abstract-atom? conjunct) (add-vertex! prior conjunct)]
+                             [(multi? conjunct)
+                              (let ([one-unf (let* (
+                                                    [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))]) (car (unfold-multi-bounded 1 conjunct offset offset)))])
+                                (for ([multi-conjunct one-unf])
+                                  (add-vertex! prior multi-conjunct)))]))
+                     (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
+                     (aif (selected-index conjunction prior full-evaluations)
+                          (let* ([selected-conjunct (list-ref conjunction it)]
+                                 [resolvents
+                                  (if (abstract-atom? selected-conjunct)
+                                      (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))
+                                      (unfold-multi* it conjunction))]
+                                 [child-nodes (if (abstract-atom? selected-conjunct) (map resolvent->node resolvents) (map m-unf->node resolvents '(one many)))]
+                                 [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
+                                 [updated-top (replace-first-subtree top candidate updated-candidate)])
+                            (cons updated-candidate updated-top))
+                          (cons 'underspecified-order candidate)))]))))
       'no-candidate))
 (provide
  (proc-doc/names
