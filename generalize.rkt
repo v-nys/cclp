@@ -448,10 +448,10 @@
 (define (strung-together? potential suffix)
   (define (atoms-join-atoms? a1 a2)
     (and (or (equal?
-              (gen-add1 (gen-node-range (first a1)))
+              (gen-increment (gen-node-range (first a1)))
               (gen-node-range (first a2)))
              (equal?
-              (gen-sub1 (gen-node-range (first a1)))
+              (gen-decrement (gen-node-range (first a1)))
               (gen-node-range (first a2))))
          (renames?
           (map gen-node-conjunct a1)

@@ -399,20 +399,20 @@
 (define (subsequent-gens? g1 g2)
   (match* (g1 g2)
     [((? gen?) (? gen?))
-     (or (equal? (gen-add1 g1) g2)
-         (equal? (gen-sub1 g1) g2))]
+     (or (equal? (gen-increment g1) g2)
+         (equal? (gen-decrement g1) g2))]
     [((? gen?) (? gen-range?))
      (if (gen-range-ascending? g2)
-         (equal? (gen-add1 g1) (gen-range-first/gen g2))
-         (equal? (gen-sub1 g1) (gen-range-first/gen g2)))]
+         (equal? (gen-increment g1) (gen-range-first/gen g2))
+         (equal? (gen-decrement g1) (gen-range-first/gen g2)))]
     [((? gen-range?) (? gen?))
      (if (gen-range-ascending? g1)
-         (equal? (gen-add1 (gen-range-last/gen g1)) g2)
-         (equal? (gen-sub1 (gen-range-last/gen g1)) g2))]
+         (equal? (gen-increment (gen-range-last/gen g1)) g2)
+         (equal? (gen-decrement (gen-range-last/gen g1)) g2))]
     [((gen-range f1 l1 o asc?) (gen-range f2 l2 o asc?))
      (if asc?
-         (equal? (gen-add1 (gen-range-last/gen g1)) (gen-range-first/gen g2))
-         (equal? (gen-sub1 (gen-range-last/gen g1)) (gen-range-first/gen g2)))]
+         (equal? (gen-increment (gen-range-last/gen g1)) (gen-range-first/gen g2))
+         (equal? (gen-decrement (gen-range-last/gen g1)) (gen-range-first/gen g2)))]
     [(_ _) #f]))
 (provide subsequent-gens?)
 
@@ -421,6 +421,16 @@
   (cond [(= o 0) g]
         [(> o 0) (gen-add (gen-add1 g) (sub1 o))]
         [(< o 0) (gen-add (gen-sub1 g) (add1 o))]))
+
+(define (gen-increment g)
+  (match g
+    [(gen num o) (gen (gen-add1 num) o)]))
+(provide gen-increment)
+
+(define (gen-decrement g)
+  (match g
+    [(gen num o) (gen (gen-sub1 num) o)]))
+(provide gen-decrement)
 
 (define (gen-add1 gen-num)
   (match gen-num
@@ -459,7 +469,7 @@
         (and tg (descendant-renames-with-corresponding-args? graph tg ann-parent)))
       (multiple-direct-live-lines? graph ann-parent live-depth curr-depth))
      (if parent-unfolded?
-         (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen (gen-add1 (gen-number parent-gen)) (gen-origin parent-gen))]))
+         (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen-increment parent-gen)]))
          (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen])))]
     [(or (abstract-atom? parent-conjunct) (not parent-unfolded?))
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen]))]
