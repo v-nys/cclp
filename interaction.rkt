@@ -144,7 +144,7 @@
             (displayln
              (graphviz
               (graph-map
-               (λ (v) (format "~v" v))
+               (λ (v) (format "\"~v\"" v))
                gr)))
             (displayln "There is no active branch."))
         tree)]
