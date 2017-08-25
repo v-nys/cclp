@@ -112,6 +112,8 @@
       (tree-label tl-con1 (none) _ _ _ _)
       (generalization _ _ _ _ abstracted-ranges _) ; TODO may be able to utilize last field, which was added later
       l-rest)
+     (log-debug "first element on branch: ~a" (first branch))
+     (log-debug "second element on branch: ~a" (second branch))
      (match-let
          ([(list next-uid _ _ add-edges)
            (foldl
