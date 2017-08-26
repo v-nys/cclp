@@ -6,7 +6,7 @@
   (only-in "abstract-analysis.rkt" tree-label? tree-label-conjunction generalization?)
   "abstract-multi-domain.rkt"
   (only-in "abstract-domain-ordering.rkt" renames?)
-  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables extract-variables)
+  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables extract-variables get-multi-id)
   (only-in "abstract-renaming.rkt" offset-vars)
   (only-in "abstract-unify.rkt" abstract-unify)
   (only-in "abstract-substitution.rkt" abstract-equality apply-substitution)
@@ -100,6 +100,8 @@
 ;; if a conjunct is in the growing abstraction, it belongs there and it respects the pattern
 ;; also returns the next valid fresh id for a multi (which may be the input id if it was not needed)
 (define (group-sequential-generations potential fresh-id dummy-id lvl)
+  ;; !!!!! POTENTIAL HERE IS NOT THE POTENTIAL FIELD OF A GROUPING BUT AN EXTENSION !!!!!
+  ;; RENAME!
   (define partitioning (group-by gen-node-range potential))
   (define (aux partitioning)
     (match partitioning
@@ -379,11 +381,28 @@
      (list node)]
     [else empty]))
 
+(define (can-group?/pcgn potential current-gen node)
+  (and (multi? (gen-node-conjunct node))
+       (strung-together? potential current-gen) ; implies not null
+       (let ([combined
+              (car
+               (group-sequential-generations
+                (append potential current-gen))
+                (add1
+                 (max
+                  (if (multi? (first potential)) (get-multi-id (gen-node-conjunct (first potential))) 0)
+                  (get-multi-id (gen-node-conjunct node))))
+                1 ; dummy ID is irrelevant here
+                (append potential current-gen (list node)))])
+         (strung-together? combined node))))
+
 (define (can-group? potential current-gen node)
   (and (not (can-append-to-current-gen? current-gen node))
-       (if (null? current-gen)
-           (strung-together? potential node)
-           (strung-together? potential current-gen))))
+       (or
+        (can-group?/pcgn potential current-gen node)
+        (if (null? current-gen)
+            (strung-together? potential node)
+            (strung-together? potential current-gen)))))
 
 (define (next-dummy-id potential current-gen node dummy-id)
   (if (can-group? potential current-gen node)
@@ -403,11 +422,13 @@
 (define (resets-potential? potential current-gen node)
   (or (not (gen-node-foldable? node))
       (equal? (gen-node-range node) (gen 0 #f))
-      (not (or (null? current-gen)
-               (can-append-to-current-gen? current-gen node)
-               (subsequent-gens?
-                (gen-node-range (first current-gen))
-                (gen-node-range node))))
+      ;; cannot append to current gen -> has to be shifted if possible
+      ;; no point shifting current gen -> even if we can group with current-gen, potential becomes #f
+      (and (not (null? current-gen))
+           (not (can-append-to-current-gen? current-gen node))
+           (not (subsequent-gens?
+                 (gen-node-range (first current-gen))
+                 (gen-node-range node))))
       (and potential
            (null? current-gen) ; implies potential is multi
            (not (subsequent-gens?
@@ -424,27 +445,36 @@
   @{Tests whether the current combination of a potential abstraction @racket[potential], a current generation @racket[current-gen] and a node @racket[node] being processed leads to the complete absence of a potential abstraction in the next step, represented as @racket[#f].}))
 
 (define (next-potential potential current-gen node fresh-multi-id fresh-dummy-id lvl)
+  (define (group h t)
+    (car
+     (group-sequential-generations
+      (append h t)
+      fresh-multi-id
+      fresh-dummy-id
+      lvl)))
   (cond
-    [(can-group? potential current-gen node)
-     (car
-      (group-sequential-generations
-       (append
-        potential
-        (if (not (null? current-gen))
-            current-gen
-            (list node)))
-       fresh-multi-id
-       fresh-dummy-id
-       lvl))]
-    [(multi? (gen-node-conjunct node))
-     (list node)]
+    [(resets-potential? potential current-gen node) #f] ; only case for #f
     [(and
       (not (null? current-gen))
       (abstract-atom? (gen-node-conjunct node))
       (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node)))
-     current-gen]
-    [(resets-potential? potential current-gen node) #f]
-    [else potential]))
+     current-gen] ; only case leading to list of atoms
+    [(and (not (can-append-to-current-gen? current-gen node))
+          (can-group?/pcgn potential current-gen node))
+     (group (group potential current-gen) (list node))]
+    [(and (not (can-append-to-current-gen? current-gen node))
+          (not (null? current-gen))
+          (strung-together? potential current-gen))
+     (group potential current-gen)]
+    [(and (null? current-gen)
+          (strung-together? potential node))
+     (group potential (list node))]
+    ; note the order: only if grouping is impossible
+    [(multi? (gen-node-conjunct node))
+     (list node)]
+    [(can-append-to-current-gen? current-gen node)
+     potential]
+    [else (error "missing an option")]))
 
 (define (strung-together? potential suffix)
   (define (atoms-join-atoms? a1 a2)
