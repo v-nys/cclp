@@ -387,13 +387,13 @@
        (let ([combined
               (car
                (group-sequential-generations
-                (append potential current-gen))
+                (append potential current-gen)
                 (add1
                  (max
                   (if (multi? (first potential)) (get-multi-id (gen-node-conjunct (first potential))) 0)
                   (get-multi-id (gen-node-conjunct node))))
                 1 ; dummy ID is irrelevant here
-                (append potential current-gen (list node)))])
+                (append potential current-gen (list node))))])
          (strung-together? combined node))))
 
 (define (can-group? potential current-gen node)
@@ -453,27 +453,30 @@
       fresh-dummy-id
       lvl)))
   (cond
-    [(resets-potential? potential current-gen node) #f] ; only case for #f
+    [(resets-potential? potential current-gen node) (cons #f 'reset)] ; only case for #f
     [(and
       (not (null? current-gen))
       (abstract-atom? (gen-node-conjunct node))
       (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node)))
-     current-gen] ; only case leading to list of atoms
+     (cons current-gen 'replaced-by-current-gen)] ; only case leading to list of atoms
     [(and (not (can-append-to-current-gen? current-gen node))
           (can-group?/pcgn potential current-gen node))
-     (group (group potential current-gen) (list node))]
+     (cons (group (group potential current-gen) (list node)) 'extended)]
     [(and (not (can-append-to-current-gen? current-gen node))
           (not (null? current-gen))
           (strung-together? potential current-gen))
-     (group potential current-gen)]
+     (cons (group potential current-gen) 'extended)]
+    [(and (multi? (gen-node-conjunct node))
+          (not (null? current-gen))
+          (strung-together? current-gen (list node)))
+     (cons (group current-gen (list node)) 'replaced-by-cgn)]
     [(and (null? current-gen)
           (strung-together? potential node))
-     (group potential (list node))]
-    ; note the order: only if grouping is impossible
+     (cons (group potential (list node)) 'extended)]
     [(multi? (gen-node-conjunct node))
-     (list node)]
+     (cons (list node) 'replaced-by-node)]
     [(can-append-to-current-gen? current-gen node)
-     potential]
+     (cons potential 'retained)]
     [else (error "missing an option")]))
 
 (define (strung-together? potential suffix)
@@ -535,52 +538,67 @@
   ║ _                                                    ║                                                                                                                #f ║
   ╚══════════════════════════════════════════════════════╩═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝)
 
-(define (next-completed completed potential current-gen node)
+;???
+;; FIXME: afwerken
+;; idee is om zoveel mogelijk met p te groeperen
+;;; als niets met p groepeert, gewoon p als resultaat
+;(define (maximal-p-extension potential current-gen node)
+;  (match* (potential current-gen node)
+;    ; fields of gen-node: conjunct id range unfolded? foldable?
+;    [((list-rest (gen-node (? atom?) _ _ _ _) _) (list) (gen-node (? atom?) _ _ _ _))
+;     potential]
+;    [((list-rest (gen-node (? atom?) _ r1 _ _) _) (list) (gen-node (? multi?) _ r2 _ _))
+;     #:when (and (subsequent-gens? r1 r2) (strung-together? potential node))
+;     (car (group-sequential-generations ))]
+;    [((list-rest (gen-node (? atom?) _ r1 _ _) _) (list-rest (gen-node _ _ r2 _ _) _) (gen-node (? atom?) _ r3 _ _))]
+;    [((list-rest (gen-node (? atom?) _ r1 _ _) _) (list-rest (gen-node _ _ r2 _ _) _) (gen-node (? multi?) _ r3 _ _))]
+;
+;    [((list-rest (gen-node (? multi?) _ _ _ _) _) (list) (gen-node (? atom?) _ _ _ _))
+;     potential]
+;    [((list-rest (gen-node (? multi?) _ r1 _ _) _) (list) (gen-node (? multi?) _ r2 _ _))
+;     #:when (and (subsequent-gens? r1 r2) (strung-together? potential node))
+;     (car (group-sequential-generations ))]
+;    [((list-rest (gen-node (? multi?) _ r1 _ _) _) (list-rest (gen-node _ _ r2 _ _) _) (gen-node (? atom?) _ r3 _ _))]
+;    [((list-rest (gen-node (? multi?) _ r1 _ _) _) (list-rest (gen-node _ _ r2 _ _) _) (gen-node (? multi?) _ r3 _ _))]))
+
+(define (next-completed completed potential current-gen node expl fresh-multi-id fresh-dummy-id lvl)
+  (define (eq-any? e0 e1 . es)
+    (or (eq? e0 e1)
+        (ormap (λ (e) (eq? e0 e)) es)))
   (append
    completed
+   (cond
+     [(or (not potential) (eq-any? expl 'extended 'retained)) empty]
+     [(and
+       (eq-any? expl 'replaced-by-node 'reset)
+       (strung-together? potential current-gen))
+      (car (group-sequential-generations (append potential current-gen) fresh-multi-id fresh-dummy-id lvl))]
+     [(eq-any? expl 'replaced-by-node 'reset 'replaced-by-current-gen 'replaced-by-cgn)
+      potential])
    (if
     (and
-     potential
-     (or
-      (resets-potential? potential current-gen node)
-      (and
-       (null? current-gen)
-       (multi? (gen-node-conjunct node))
-       (not (strung-together? potential node)))
-      (and
-       (not (null? current-gen))
-       (not (equal? (gen-node-range (first current-gen)) (gen-node-range node)))
-       (not (strung-together? potential current-gen))
-       (subsequent-gens?
-        (gen-node-range (first potential))
-        (gen-node-range (first current-gen))))))
-    potential
-    empty)
-   (if
-    (and
-     (not (null? current-gen))
-     (not
-      (or
-       (equal? (gen-node-range (first current-gen)) (gen-node-range node))
-       (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node))
-       (can-group? potential current-gen node))))
+     (not (null? current-gen)) ; so (first current-gen) is safe after this
+     (and
+      (not (equal? (gen-node-range (first current-gen)) (gen-node-range node))) ; can't append
+      (not (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node))) ; can't shift
+      (not (can-group? potential current-gen node)))) ; can't subsume in any way
     current-gen
     empty)
+   ;; not the same as "can-be-in-current-gen?" because that includes multi
    (if (or (equal? (gen-node-range node) (gen 0 #f))
            (not (gen-node-foldable? node)))
        (list node)
        empty)))
 
 (define (group-conjuncts node acc)
-  (log-debug "applying group-conjuncts")
-  (log-debug "acc is ~a" acc)
-  (log-debug "current node is ~a" node)
-  (match-let ([(and (grouping completed potential current-gen fresh-multi-id fresh-dummy-id lvl) acc-grouping) acc])
+  (match-let* ([(and (grouping completed potential current-gen fresh-multi-id fresh-dummy-id lvl) acc-grouping) acc]
+               [(cons next-potential-value next-potential-explanation)
+                (next-potential potential current-gen node fresh-multi-id fresh-dummy-id lvl)])
     (struct-copy
      grouping
      acc-grouping
-     [completed (next-completed completed potential current-gen node)]
-     [potential (next-potential potential current-gen node fresh-multi-id fresh-dummy-id lvl)]
+     [completed (next-completed completed potential current-gen node next-potential-explanation fresh-multi-id fresh-dummy-id lvl)]
+     [potential next-potential-value]
      [current-gen (next-current-gen current-gen node)]
      [next-multi-id (next-multi-id potential current-gen node fresh-multi-id)]
      [dummy-id (next-dummy-id potential current-gen node fresh-dummy-id)])))
@@ -822,7 +840,7 @@
           #f)])
     (check-equal?
      (generalize-level (list node1 node2))
-     (list (gen-node-conjunct node1) (gen-node-conjunct node2)))))
+     (list node1 node2))))
 (provide
  (proc-doc/names
   generalize-level
