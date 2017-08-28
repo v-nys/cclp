@@ -463,7 +463,7 @@
      (cons (group (group potential current-gen) (list node)) 'extended)]
     [(and (multi? (gen-node-conjunct node))
           (not (null? current-gen))
-          (strung-together? current-gen (list node)))
+          (strung-together? current-gen node))
      (cons (group current-gen (list node)) 'replaced-by-cgn)]
     [(and (null? current-gen)
           (strung-together? potential node))
@@ -650,16 +650,12 @@
      #t
      (init
       (list
-       (cons (g* 1 1 2) (g 2))
-       (cons (a* 1 1 1) (a 1))
-       (cons (a* 1 1 2) (a 2))))
+       (cons (a* 1 1 1) (a 1))))
      (consecutive
       (list
        (cons (a* 1 'i+1 1) (a* 1 'i 2))))
      (final
       (list
-       (cons (g* 1 'L 2) (g 3))
-       (cons (a* 1 'L 1) (a 2))
        (cons (a* 1 'L 2) (a 3)))))
     (abstract-atom 'filter (list (g 4) (abstract-function 'cons (list (g 5) (a 3) (a 4))) (a 5)))
     (multi
@@ -667,16 +663,12 @@
      #t
      (init
       (list
-       (cons (g* 2 1 6) (g 6))
-       (cons (a* 2 1 5) (a 5))
-       (cons (a* 2 1 6) (a 6))))
+       (cons (a* 2 1 5) (a 5))))
      (consecutive
       (list
        (cons (a* 2 'i+1 5) (a* 2 'i 6))))
      (final
       (list
-       (cons (g* 2 'L 6) (g 7))
-       (cons (a* 2 'L 5) (a 6))
        (cons (a* 2 'L 6) (a 7)))))
     (abstract-atom 'filter (list (g 8) (a 7) (a 8)))
     (abstract-atom 'sift (list (a 8) (a 9)))
@@ -749,9 +741,6 @@
              (list (cons (a* 1 'i+1 2) (a* 1 'i 3))))
             (final
              (list
-              (cons (g* 1 'L 1) (g 7))
-              (cons (a* 1 'L 1) (a 8))
-              (cons (a* 1 'L 2) (a 9))
               (cons (a* 1 'L 3) (a 10)))))
            7
            (gen-range 3 1 1 #f)
@@ -770,17 +759,11 @@
      #f
      (init
       (list
-       (cons (g* 1 1 1) (g 4))
-       (cons (a* 1 1 1) (a 4))
-       (cons (a* 1 1 2) (a 3))
-       (cons (a* 1 1 3) (a 5))))
+       (cons (a* 1 1 2) (a 3))))
      (consecutive
       (list (cons (a* 1 'i+1 2) (a* 1 'i 3))))
      (final
       (list
-       (cons (g* 1 'L 1) (g 7))
-       (cons (a* 1 'L 1) (a 8))
-       (cons (a* 1 'L 2) (a 9))
        (cons (a* 1 'L 3) (a 10)))))
     (abstract-atom 'collect (list (g 11) (a 11)))
     (abstract-atom 'eq (list (a 10) (a 11)))))
