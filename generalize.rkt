@@ -643,19 +643,11 @@
       (abstract-atom* 'append (list (a* 1 'i 3) (a* 1 'i 4) (a* 1 'i 5))))
      #f
      (init
-      (list
-       (cons (g* 1 1 4) (g 4))
-       (cons (a* 1 1 4) (a 4))
-       (cons (a* 1 1 3) (a 3))
-       (cons (a* 1 1 5) (a 5))))
+      (list (cons (a* 1 1 3) (a 3))))
      (consecutive
       (list (cons (a* 1 'i+1 3) (a* 1 'i 5))))
      (final
-      (list
-       (cons (g* 1 'L 4) (g 6))
-       (cons (a* 1 'L 4) (a 6))
-       (cons (a* 1 'L 3) (a 5))
-       (cons (a* 1 'L 5) (a 7)))))
+      (list (cons (a* 1 'L 5) (a 7)))))
     (abstract-atom 'collect (list (g 8) (a 8)))
     (abstract-atom 'eq (list (a 7) (a 8)))))
   (check-equal?
