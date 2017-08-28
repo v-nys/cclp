@@ -33,13 +33,16 @@
   "data-utils.rkt" ; selection is still expressed as a maybe
   (prefix-in faid: "fullai-domain.rkt")
   (only-in "gen-graph-structs.rkt" index-range?)
+  (only-in "control-flow.rkt" aif it)
   "preprior-graph.rkt")
 (require (for-doc scribble/manual))
 
 (define (full-ai-rule->full-evaluation r)
   (full-evaluation
    (faid:full-ai-rule-input-pattern r)
-   (apply-substitution (faid:full-ai-rule-output-substitution r) (faid:full-ai-rule-input-pattern r))
+   (aif (faid:full-ai-rule-output-substitution r)
+        (apply-substitution it (faid:full-ai-rule-input-pattern r))
+        #f)
    (faid:full-ai-rule-idx r)))
 (provide
  (proc-doc/names

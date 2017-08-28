@@ -174,7 +174,7 @@
       (begin
         (log-debug "logger is active")
         (cclp-run filename program-data)))
-    'debug))
+    'warning))
 (provide
  (proc-doc/names
   cclp-top

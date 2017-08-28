@@ -143,7 +143,8 @@
 
 (define-syntax (fail stx)
   (syntax-parse stx
-    [(_ "fail") (syntax/loc stx #f)]))
+    [(_ "fail")
+     (syntax/loc stx #f)]))
 (provide fail)
 
 (define-for-syntax (inject-full-ai-rule air-stx id)
