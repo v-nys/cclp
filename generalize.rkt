@@ -102,6 +102,7 @@
 (define (group-sequential-generations potential fresh-id dummy-id lvl)
   ;; !!!!! POTENTIAL HERE IS NOT THE POTENTIAL FIELD OF A GROUPING BUT AN EXTENSION !!!!!
   ;; RENAME!
+  ;; TODO: simplify, this thing is bloated
   (define partitioning (group-by gen-node-range potential))
   (define (aux partitioning)
     (match partitioning
@@ -116,9 +117,9 @@
                [subst-1 (some-v (abstract-unify (map abstract-equality gen-1 offset-gen-2) 0))]
                [shared (filter (match-lambda [(abstract-equality v1 v2) (and (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-1)) (member (offset-vars v2 (- offset) (- offset)) (extract-variables gen-2)))]) subst-1)]
                [new-consecutive (map (match-lambda [(abstract-equality (a idx1) (a idx2)) (cons (a* fresh-id 'i+1 idx1) (a* fresh-id 'i (- idx2 offset)))] [(abstract-equality (g idx1) (g idx2)) (cons (g* fresh-id 'i+1 idx1) (g* fresh-id 'i (- idx2 offset)))]) shared)]
-               [gen-vars (extract-variables (map gen-node-conjunct (append lvl-1 lvl-2)))]
                [context (foldr (λ (el acc) (if (or (member el lvl-1) (member el lvl-2)) acc (cons el acc))) '() lvl)]
                [context-vars (extract-variables (map gen-node-conjunct context))]
+               [new-init (map (λ (v) (cons (prefix-subscripts fresh-id 1 v) v)) (filter (λ (v) (member v context-vars)) (extract-variables (map gen-node-conjunct lvl-1))))]
                [new-final (foldr (λ (el acc)
                                    (match el
                                      [(abstract-equality (a idx1) (a idx2)) (if (member (a (- idx2 offset)) context-vars) (cons (cons (a* fresh-id 'L idx1) (a (- idx2 offset))) acc) acc)]
@@ -128,7 +129,7 @@
             (multi
              (prefix-subscripts fresh-id 'i (map gen-node-conjunct lvl-1))
              (gen-number< genn-1 genn-2)
-             (init (map (λ (v) (cons (prefix-subscripts fresh-id 1 v) v)) (filter (λ (v) (member v context-vars)) (extract-variables (map gen-node-conjunct lvl-1)))))
+             (init new-init)
              (consecutive new-consecutive)
              (final new-final))
             dummy-id
@@ -137,41 +138,49 @@
             #t)))
         (add1 fresh-id))]
       [(list
-        (and (list-rest (gen-node (? abstract-atom?) _ (gen n id) _ _) first-rest) single-gen)
-        (list (gen-node (and (? multi?) existing-multi) _ (gen-range m o id asc?) _ _)))
-       (let* ([existing-instance (map gen-node-conjunct single-gen)]
+        (and (list-rest (gen-node (? abstract-atom?) _ (gen n id) _ _) first-rest) lvl-1)
+        (and (list (gen-node (and (? multi?) existing-multi) _ (gen-range m o id asc?) _ _)) lvl-2))
+       (let* ([existing-instance (map gen-node-conjunct lvl-1)]
               [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
-              [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct single-gen)))))]
+              [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct lvl-1)))))]
               [unifiable-instance (offset-vars subscriptless-instance offset offset)]
               [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
+              [context (foldr (λ (el acc) (if (or (member el lvl-1) (member el lvl-2)) acc (cons el acc))) '() lvl)]
+              [context-vars (extract-variables (map gen-node-conjunct context))]
               [new-init
                (init
-                (map
-                 (match-lambda
-                   [(abstract-equality var1 var2)
-                    (cons
-                     (prefix-subscripts (multi-id existing-multi) 1 (offset-vars var1 (- offset) (- offset)))
-                     var2)])
-                 unification))])
+                (filter
+                 (match-lambda [(cons v1 v2) (member v2 context-vars)])
+                 (map
+                  (match-lambda
+                    [(abstract-equality var1 var2)
+                     (cons
+                      (prefix-subscripts (multi-id existing-multi) 1 (offset-vars var1 (- offset) (- offset)))
+                      var2)])
+                  unification)))])
          (cons (list (gen-node (struct-copy multi existing-multi [init new-init]) dummy-id (gen-range n o id asc?) #f #t)) fresh-id))]     
       [(list
-        (list (gen-node (and (? multi?) existing-multi) _ (gen-range m o id asc?) _ _))
-        (and (list-rest (gen-node (? abstract-atom?) _ (gen n id) _ _) first-rest) single-gen))
-       (let* ([existing-instance (map gen-node-conjunct single-gen)]
+        (and (list (gen-node (and (? multi?) existing-multi) _ (gen-range m o id asc?) _ _)) lvl-1)
+        (and (list-rest (gen-node (? abstract-atom?) _ (gen n id) _ _) first-rest) lvl-2))
+       (let* ([existing-instance (map gen-node-conjunct lvl-2)]
               [subscriptless-instance (remove-multi-subscripts (multi-conjunction existing-multi))]
-              [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct single-gen)))))]
+              [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (append subscriptless-instance (map gen-node-conjunct lvl-2)))))]
               [unifiable-instance (offset-vars subscriptless-instance offset offset)]
               [unification (some-v (abstract-unify (list (abstract-equality unifiable-instance existing-instance)) 0))]
+              [context (foldr (λ (el acc) (if (or (member el lvl-1) (member el lvl-2)) acc (cons el acc))) '() lvl)]
+              [context-vars (extract-variables (map gen-node-conjunct context))]
               ; only this is different wrt previous case
               [new-final
                (final
-                (map
-                 (match-lambda
-                   [(abstract-equality var1 var2)
-                    (cons
-                     (prefix-subscripts (multi-id existing-multi) 'L (offset-vars var1 (- offset) (- offset)))
-                     var2)])
-                 unification))])
+                (filter
+                 (match-lambda [(cons v1 v2) (member v2 context-vars)])
+                 (map
+                  (match-lambda
+                    [(abstract-equality var1 var2)
+                     (cons
+                      (prefix-subscripts (multi-id existing-multi) 'L (offset-vars var1 (- offset) (- offset)))
+                      var2)])
+                  unification)))])
          (cons (list (gen-node (struct-copy multi existing-multi [final new-final]) dummy-id (gen-range m n id asc?) #f #t)) fresh-id))]      
       [(list
         (list (gen-node (and (? multi?) existing-multi-1) _ (gen-range n m id asc?) _ _))
