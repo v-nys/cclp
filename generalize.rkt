@@ -454,18 +454,13 @@
       lvl)))
   (cond
     [(resets-potential? potential current-gen node) (cons #f 'reset)] ; only case for #f
-    [(and
-      (not (null? current-gen))
-      (abstract-atom? (gen-node-conjunct node))
-      (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node)))
-     (cons current-gen 'replaced-by-current-gen)] ; only case leading to list of atoms
-    [(and (not (can-append-to-current-gen? current-gen node))
-          (can-group?/pcgn potential current-gen node))
-     (cons (group (group potential current-gen) (list node)) 'extended)]
     [(and (not (can-append-to-current-gen? current-gen node))
           (not (null? current-gen))
           (strung-together? potential current-gen))
      (cons (group potential current-gen) 'extended)]
+    [(and (not (can-append-to-current-gen? current-gen node))
+          (can-group?/pcgn potential current-gen node))
+     (cons (group (group potential current-gen) (list node)) 'extended)]
     [(and (multi? (gen-node-conjunct node))
           (not (null? current-gen))
           (strung-together? current-gen (list node)))
@@ -473,6 +468,11 @@
     [(and (null? current-gen)
           (strung-together? potential node))
      (cons (group potential (list node)) 'extended)]
+    [(and
+      (not (null? current-gen))
+      (abstract-atom? (gen-node-conjunct node))
+      (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node)))
+     (cons current-gen 'replaced-by-current-gen)] ; only case leading to list of atoms
     [(multi? (gen-node-conjunct node))
      (cons (list node) 'replaced-by-node)]
     [(can-append-to-current-gen? current-gen node)
@@ -538,28 +538,7 @@
   ║ _                                                    ║                                                                                                                #f ║
   ╚══════════════════════════════════════════════════════╩═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝)
 
-;???
-;; FIXME: afwerken
-;; idee is om zoveel mogelijk met p te groeperen
-;;; als niets met p groepeert, gewoon p als resultaat
-;(define (maximal-p-extension potential current-gen node)
-;  (match* (potential current-gen node)
-;    ; fields of gen-node: conjunct id range unfolded? foldable?
-;    [((list-rest (gen-node (? atom?) _ _ _ _) _) (list) (gen-node (? atom?) _ _ _ _))
-;     potential]
-;    [((list-rest (gen-node (? atom?) _ r1 _ _) _) (list) (gen-node (? multi?) _ r2 _ _))
-;     #:when (and (subsequent-gens? r1 r2) (strung-together? potential node))
-;     (car (group-sequential-generations ))]
-;    [((list-rest (gen-node (? atom?) _ r1 _ _) _) (list-rest (gen-node _ _ r2 _ _) _) (gen-node (? atom?) _ r3 _ _))]
-;    [((list-rest (gen-node (? atom?) _ r1 _ _) _) (list-rest (gen-node _ _ r2 _ _) _) (gen-node (? multi?) _ r3 _ _))]
-;
-;    [((list-rest (gen-node (? multi?) _ _ _ _) _) (list) (gen-node (? atom?) _ _ _ _))
-;     potential]
-;    [((list-rest (gen-node (? multi?) _ r1 _ _) _) (list) (gen-node (? multi?) _ r2 _ _))
-;     #:when (and (subsequent-gens? r1 r2) (strung-together? potential node))
-;     (car (group-sequential-generations ))]
-;    [((list-rest (gen-node (? multi?) _ r1 _ _) _) (list-rest (gen-node _ _ r2 _ _) _) (gen-node (? atom?) _ r3 _ _))]
-;    [((list-rest (gen-node (? multi?) _ r1 _ _) _) (list-rest (gen-node _ _ r2 _ _) _) (gen-node (? multi?) _ r3 _ _))]))
+
 
 (define (next-completed completed potential current-gen node expl fresh-multi-id fresh-dummy-id lvl)
   (define (eq-any? e0 e1 . es)
@@ -714,16 +693,12 @@
         #t
         (init
          (list
-          (cons (g* 1 1 1) (g 2))
-          (cons (a* 1 1 1) (a 1))
-          (cons (a* 1 1 2) (a 2))))
+          (cons (a* 1 1 1) (a 1))))
         (consecutive
          (list
           (cons (a* 1 'i+1 1) (a* 1 'i 2))))
         (final
          (list
-          (cons (g* 1 'L 1) (g 3))
-          (cons (a* 1 'L 1) (a 3))
           (cons (a* 1 'L 2) (a 4)))))
        3
        (gen-range 1 3 1 #t)
@@ -741,16 +716,12 @@
      #t
      (init
       (list
-       (cons (g* 1 1 1) (g 2))
-       (cons (a* 1 1 1) (a 1))
-       (cons (a* 1 1 2) (a 2))))
+       (cons (a* 1 1 1) (a 1))))
      (consecutive
       (list
        (cons (a* 1 'i+1 1) (a* 1 'i 2))))
      (final
       (list
-       (cons (g* 1 'L 1) (g 4))
-       (cons (a* 1 'L 1) (a 4))
        (cons (a* 1 'L 2) (a 5)))))
     (abstract-atom 'filter (list (g 10) (abstract-function 'cons (list (g 5) (a 5))) (a 6)))
     (abstract-atom 'filter (list (g 6) (a 6) (a 7)))
