@@ -58,6 +58,16 @@
 (struct cclp (clauses full-ai-rules concrete-constants query))
 (provide (struct-out cclp))
 
+(define (save-analysis filename tree edge-history step-acc prior)
+  (let* ([out (open-output-file filename #:exists 'truncate/replace)]
+         [serialized-tree (serialize tree)])
+    (begin
+      (write serialized-tree out)
+      (write (serialize edge-history) out)
+      (write (serialize step-acc) out)
+      (write (serialize prior) out)
+      (close-output-port out))))
+
 (define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior #:step [step-acc 1] #:history [edge-history (make-hash)])
   (log-debug "performing interactive analysis")
   (define analyzing? #t)
@@ -107,18 +117,14 @@
                         (match (proceed)
                           [(cons c? nt?)
                            (begin (set! continue? c?)
-                                  (set! new-tree nt?))])))
+                                  (set! new-tree nt?))])
+                        (save-analysis
+                         (format "~a.~a" filename (size new-tree))
+                         new-tree edge-history step-acc prior)))
           new-tree))]
      ["save analysis"
-      (let* ([out (open-output-file filename #:exists 'truncate/replace)]
-             [serialized-tree (serialize tree)])
-        (begin
-          (write serialized-tree out)
-          (write (serialize edge-history) out)
-          (write (serialize step-acc) out)
-          (write (serialize prior) out)
-          (close-output-port out)
-          tree))]
+      (save-analysis filename tree edge-history step-acc prior)
+      tree]
      ["show top level tree"
       (begin
         (newline)
