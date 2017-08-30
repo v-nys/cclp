@@ -374,7 +374,7 @@
   (and (not (multi? (gen-node-conjunct node)))
        (not (equal? (gen-node-range node)
                     (gen 0 #f)))
-       gen-node-foldable? node))
+       (gen-node-foldable? node)))
 
 ;; whether we can append also depends on contents of current gen
 (define (can-append-to-current-gen? current-gen node)
@@ -411,7 +411,8 @@
         (can-group?/pcgn potential current-gen node)
         (if (null? current-gen)
             (strung-together? potential node)
-            (strung-together? potential current-gen)))))
+            (or (strung-together? potential current-gen)
+                (strung-together? current-gen node))))))
 
 (define (next-dummy-id potential current-gen node dummy-id)
   (if (can-group? potential current-gen node)
@@ -556,7 +557,9 @@
   (append
    completed
    (cond
-     [(or (not potential) (eq-any? expl 'extended 'retained)) empty]
+     [(or
+       (not potential)
+       (eq-any? expl 'extended 'retained)) empty]
      [(and
        (eq-any? expl 'replaced-by-node 'reset)
        (strung-together? potential current-gen))
@@ -567,9 +570,23 @@
     (and
      (not (null? current-gen)) ; so (first current-gen) is safe after this
      (and
-      (not (equal? (gen-node-range (first current-gen)) (gen-node-range node))) ; can't append
-      (not (subsequent-gens? (gen-node-range (first current-gen)) (gen-node-range node))) ; can't shift
-      (not (can-group? potential current-gen node)))) ; can't subsume in any way
+      (not ; can't append new node to current-gen
+       (equal?
+        (gen-node-range (first current-gen))
+        (gen-node-range node)))
+      (not ; can't shift current-gen to become next potential
+       (and
+        (subsequent-gens?
+         (gen-node-range (first current-gen))
+         (gen-node-range node))
+        (gen-node-foldable? node)
+        (abstract-atom?
+         (gen-node-conjunct node))))
+      (not ; can't subsume in any way: we know current-gen is not null so it must be part of group
+       (can-group?
+        potential
+        current-gen
+        node))))
     current-gen
     empty)
    ;; not the same as "can-be-in-current-gen?" because that includes multi
@@ -728,6 +745,51 @@
     (abstract-atom 'filter (list (g 6) (a 6) (a 7)))
     (abstract-atom 'sift (list (a 7) (a 8)))
     (abstract-atom 'len (list (a 8) (g 7)))))
+  (check-equal?
+   (map
+    gen-node-conjunct
+    (generalize-level
+     (list
+      (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
+      (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
+      (gen-node
+       (multi
+        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+        #t
+        (init
+         (list
+          (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 2))))))
+        (consecutive
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+        (final
+         (list
+          (cons (a* 1 'L 2) (a 3)))))
+       3
+       (gen-range 2 'n 1 #t)
+       #f
+       #t)
+      (gen-node (abstract-atom 'filter (list (g 4) (a 3) (a 4))) 4 (gen (symsum 'n 1) 1) #f #t)
+      (gen-node (abstract-atom 'sift (list (a 4) (a 5))) 5 (gen (symsum 'n 1) 1) #f #t)
+      (gen-node (abstract-atom 'len (list (a 5) (g 6))) 6 (gen 0 #f) #f #t))))
+   (list
+    (abstract-atom 'integers (list (g 1) (a 1)))
+    (abstract-atom 'filter (list (g 2) (a 1) (a 2)))
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init
+      (list
+       (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 2))))))
+     (consecutive
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final
+      (list
+       (cons (a* 1 'L 2) (a 3)))))
+    (abstract-atom 'filter (list (g 4) (a 3) (a 4)))
+    (abstract-atom 'sift (list (a 4) (a 5)))
+    (abstract-atom 'len (list (a 5) (g 6)))))
   (check-equal?
    (map gen-node-conjunct
         (generalize-level
