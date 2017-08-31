@@ -392,18 +392,15 @@
 
 (define (can-group?/pcgn potential current-gen node)
   (and (multi? (gen-node-conjunct node))
-       (strung-together? potential current-gen) ; implies not null
+       (strung-together? current-gen node) ; implies not current-gen not empty
        (let ([combined
-              (car
+              (caar
                (group-sequential-generations
-                (append potential current-gen)
-                (add1
-                 (max
-                  (if (multi? (first potential)) (get-multi-id (gen-node-conjunct (first potential))) 0)
-                  (get-multi-id (gen-node-conjunct node))))
+                (append current-gen (list node))
+                (add1 (get-multi-id (gen-node-conjunct node)))
                 1 ; dummy ID is irrelevant here
                 (append potential current-gen (list node))))])
-         (strung-together? combined node))))
+         (strung-together? potential combined))))
 
 (define (can-group? potential current-gen node)
   (and (not (can-append-to-current-gen? current-gen node))
@@ -465,19 +462,19 @@
   (cond
     [(resets-potential? potential current-gen node) (cons #f 'reset)] ; only case for #f
     [(and (not (can-append-to-current-gen? current-gen node))
+          (can-group?/pcgn potential current-gen node))
+     (cons (group (group potential current-gen) (list node)) 'extended)]
+    [(and (not (can-append-to-current-gen? current-gen node))
           (not (null? current-gen))
           (strung-together? potential current-gen))
      (cons (group potential current-gen) 'extended)]
-    [(and (not (can-append-to-current-gen? current-gen node))
-          (can-group?/pcgn potential current-gen node))
-     (cons (group (group potential current-gen) (list node)) 'extended)]
+    [(and (null? current-gen)
+          (strung-together? potential node))
+     (cons (group potential (list node)) 'extended)]
     [(and (multi? (gen-node-conjunct node))
           (not (null? current-gen))
           (strung-together? current-gen node))
      (cons (group current-gen (list node)) 'replaced-by-cgn)]
-    [(and (null? current-gen)
-          (strung-together? potential node))
-     (cons (group potential (list node)) 'extended)]
     [(and
       (not (null? current-gen))
       (abstract-atom? (gen-node-conjunct node))
@@ -504,26 +501,26 @@
     (match* (a m)
       [((list-rest
          (gen-node _ _ (gen n r) _ _) _)
-        (gen-node (multi conjunct asc? i c f) _ (gen-range m _ r asc?) _ _))
+        (gen-node (multi conjunct asc? i c f) _ (gen-range l _ r asc?) _ _))
        (and
         (or
-         (and asc? (equal? (gen-add1 n) m))
-         (and (not asc?) (equal? (gen-sub1 n) m)))
-        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (map gen-node-conjunct a))))])
+         (and asc? (equal? (gen-add1 n) l))
+         (and (not asc?) (equal? (gen-sub1 n) l)))
+        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (map gen-node-conjunct (cons m a)))))])
           (renames?
            (append (map gen-node-conjunct potential) (list (multi conjunct asc? i c f)))
            (unfold-multi-many (multi conjunct asc? i c f) offset offset))))]
       [(_ _) #f]))
   (define (multi-joins-atoms? m a)
     (match* (m a)
-      [((gen-node (multi conjunct asc? i c f) _ (gen-range m l r asc?) _ _)
+      [((gen-node (multi conjunct asc? i c f) _ (gen-range _ l r asc?) _ _)
         (list-rest
          (gen-node _ _ (gen n r) _ _) _))
        (and
         (or
          (and asc? (equal? (gen-add1 l) n))
          (and (not asc?) (equal? (gen-sub1 l) n)))
-        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (map gen-node-conjunct a))))])
+        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (map gen-node-conjunct (cons m a)))))])
           (renames?
            (unfold-multi-many-right (multi conjunct asc? i c f) offset offset)
            (append (map gen-node-conjunct potential) (map gen-node-conjunct a)))))]
@@ -791,34 +788,35 @@
     (abstract-atom 'sift (list (a 4) (a 5)))
     (abstract-atom 'len (list (a 5) (g 6)))))
   (check-equal?
-   (map gen-node-conjunct
-        (generalize-level
+   (map
+    gen-node-conjunct
+    (generalize-level
+     (list
+      (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 5 1) #f #t)
+      (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 (gen 5 1) #f #t)
+      (gen-node (abstract-atom 'append (list (a 1) (a 2) (a 3))) 4 (gen 5 1) #f #t)
+      (gen-node (abstract-atom 'collect (list (g 4) (a 4))) 5 (gen 4 1) #f #t)
+      (gen-node (abstract-atom 'append (list (a 3) (a 4) (a 5))) 6 (gen 4 1) #f #t)
+      (gen-node
+       (multi
+        (list
+         (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
+         (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+        #f
+        (init
          (list
-          (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 (gen 5 1) #f #t)
-          (gen-node (abstract-atom 'collect (list (g 2) (a 2))) 3 (gen 5 1) #f #t)
-          (gen-node (abstract-atom 'append (list (a 1) (a 2) (a 3))) 4 (gen 5 1) #f #t)
-          (gen-node (abstract-atom 'collect (list (g 4) (a 4))) 5 (gen 4 1) #f #t)
-          (gen-node (abstract-atom 'append (list (a 3) (a 4) (a 5))) 6 (gen 4 1) #f #t)
-          (gen-node
-           (multi
-            (list
-             (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
-             (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
-            #f
-            (init
-             (list
-              (cons (a* 1 1 2) (a 5))))
-            (consecutive
-             (list (cons (a* 1 'i+1 2) (a* 1 'i 3))))
-            (final
-             (list
-              (cons (a* 1 'L 3) (a 10)))))
-           7
-           (gen-range 3 1 1 #f)
-           #f
-           #t)
-          (gen-node (abstract-atom 'collect (list (g 11) (a 11))) 8 (gen 0 #f) #f #t)
-          (gen-node (abstract-atom 'eq (list (a 10) (a 11))) 9 (gen 0 #f) #f #t))))
+          (cons (a* 1 1 2) (a 5))))
+        (consecutive
+         (list (cons (a* 1 'i+1 2) (a* 1 'i 3))))
+        (final
+         (list
+          (cons (a* 1 'L 3) (a 10)))))
+       7
+       (gen-range 3 1 1 #f)
+       #f
+       #t)
+      (gen-node (abstract-atom 'collect (list (g 11) (a 11))) 8 (gen 0 #f) #f #t)
+      (gen-node (abstract-atom 'eq (list (a 10) (a 11))) 9 (gen 0 #f) #f #t))))
    (list
     (abstract-atom 'collect (list (g 1) (a 1)))
     (abstract-atom 'collect (list (g 2) (a 2)))
@@ -857,7 +855,52 @@
           #f)])
     (check-equal?
      (generalize-level (list node1 node2))
-     (list node1 node2))))
+     (list node1 node2)))
+  (check-equal?
+   (map
+    gen-node-conjunct
+    (generalize-level
+     (list
+      (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
+      (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
+      (gen-node (abstract-atom 'filter (list (g 3) (a 2) (a 3))) 4 (gen 2 1) #f #t)
+      (gen-node
+       (multi
+        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+        #t
+        (init
+         (list
+          (cons (a* 1 1 1) (a 3))))
+        (consecutive
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+        (final
+         (list
+          (cons (a* 1 'L 2) (a 4)))))
+       5
+       (gen-range 3 'n 1 #t)
+       #f
+       #t)
+      (gen-node (abstract-atom 'filter (list (g 4) (a 4) (a 5))) 6 (gen (symsum 'n 1) 1) #f #t)
+      (gen-node (abstract-atom 'sift (list (a 5) (a 6))) 7 (gen (symsum 'n 1) 1) #f #t)
+      (gen-node (abstract-atom 'len (list (a 6) (g 5))) 8 (gen 0 #f) #f #t))))
+   (list
+    (abstract-atom 'integers (list (g 1) (a 1)))
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init
+      (list
+       (cons (a* 1 1 1) (a 1))))
+     (consecutive
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final
+      (list
+       (cons (a* 1 'L 2) (a 4)))))
+    (abstract-atom 'filter (list (g 4) (a 4) (a 5)))
+    (abstract-atom 'sift (list (a 5) (a 6)))
+    (abstract-atom 'len (list (a 6) (g 5))))))
 (provide
  (proc-doc/names
   generalize-level
