@@ -466,9 +466,11 @@
           (can-group?/pcgn potential current-gen node))
      (let ([first-grouping (group current-gen (list node) lvl)])
        (cons (group potential first-grouping (replace-sublist lvl (append current-gen (list node)) first-grouping)) 'extended))]
+    ;; FIXME: the issue is here? can't group pcgn, but n is a multi, so that should immediately become the next potential
     [(and (not (can-append-to-current-gen? current-gen node))
           (not (null? current-gen))
-          (strung-together? potential current-gen))
+          (strung-together? potential current-gen)
+          (not (multi? (gen-node-conjunct node))))
      (cons (group potential current-gen lvl) 'extended)]
     [(and (null? current-gen)
           (strung-together? potential node))
@@ -902,7 +904,65 @@
        (cons (a* 1 'L 2) (a 4)))))
     (abstract-atom 'filter (list (g 4) (a 4) (a 5)))
     (abstract-atom 'sift (list (a 5) (a 6)))
-    (abstract-atom 'len (list (a 6) (g 5))))))
+    (abstract-atom 'len (list (a 6) (g 5)))))
+  (check-equal?
+   (map
+    gen-node-conjunct
+    (generalize-level
+     (list
+      (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
+      (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
+      (gen-node (abstract-atom 'filter (list (g 3) (a 2) (a 3))) 4 (gen 2 1) #f #t)
+      (gen-node
+       (multi
+        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+        #t
+        (init
+         (list
+          (cons (a* 1 1 1) (abstract-function 'cons (list (g 4) (a 3))))))
+        (consecutive
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+        (final
+         (list
+          (cons (a* 1 'L 2) (a 4)))))
+       5
+       (gen-range 3 'n 1 #t)
+       #f
+       #t)
+      (gen-node (abstract-atom 'filter (list (g 5) (a 4) (a 5))) 6 (gen (symsum 'n 1) 1) #f #t)
+      (gen-node (abstract-atom 'sift (list (a 5) (a 6))) 7 (gen (symsum 'n 1) 1) #f #t)
+      (gen-node (abstract-atom 'len (list (a 6) (g 6))) 8 (gen 0 #f) #f #t))))
+   (list
+    (abstract-atom 'integers (list (g 1) (a 1)))
+    (multi
+        (list (abstract-atom* 'filter (list (g* 2 'i 2) (a* 2 'i 1) (a* 2 'i 2))))
+        #t
+        (init
+         (list
+          (cons (a* 2 1 1) (a 1))))
+        (consecutive
+         (list
+          (cons (a* 2 'i+1 1) (a* 2 'i 2))))
+        (final
+         (list
+          (cons (a* 2 'L 2) (a 3)))))
+    (multi
+        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+        #t
+        (init
+         (list
+          (cons (a* 1 1 1) (abstract-function 'cons (list (g 4) (a 3))))))
+        (consecutive
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+        (final
+         (list
+          (cons (a* 1 'L 2) (a 4)))))
+    (abstract-atom 'filter (list (g 5) (a 4) (a 5)))
+    (abstract-atom 'sift (list (a 5) (a 6)))
+    (abstract-atom 'len (list (a 6) (g 6))))))
+
 (provide
  (proc-doc/names
   generalize-level
