@@ -15,6 +15,7 @@
   "generational-graph.rkt"
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
+  (only-in racket-list-utils/utils replace-sublist)
   racket/logging)
 (require (for-doc scribble/manual))
 
@@ -452,7 +453,7 @@
   @{Tests whether the current combination of a potential abstraction @racket[potential], a current generation @racket[current-gen] and a node @racket[node] being processed leads to the complete absence of a potential abstraction in the next step, represented as @racket[#f].}))
 
 (define (next-potential potential current-gen node fresh-multi-id fresh-dummy-id lvl)
-  (define (group h t)
+  (define (group h t lvl)
     (car
      (group-sequential-generations
       (append h t)
@@ -463,18 +464,19 @@
     [(resets-potential? potential current-gen node) (cons #f 'reset)] ; only case for #f
     [(and (not (can-append-to-current-gen? current-gen node))
           (can-group?/pcgn potential current-gen node))
-     (cons (group (group potential current-gen) (list node)) 'extended)]
+     (let ([first-grouping (group current-gen (list node) lvl)])
+       (cons (group potential first-grouping (replace-sublist lvl (append current-gen (list node)) first-grouping)) 'extended))]
     [(and (not (can-append-to-current-gen? current-gen node))
           (not (null? current-gen))
           (strung-together? potential current-gen))
-     (cons (group potential current-gen) 'extended)]
+     (cons (group potential current-gen lvl) 'extended)]
     [(and (null? current-gen)
           (strung-together? potential node))
-     (cons (group potential (list node)) 'extended)]
+     (cons (group potential (list node) lvl) 'extended)]
     [(and (multi? (gen-node-conjunct node))
           (not (null? current-gen))
           (strung-together? current-gen node))
-     (cons (group current-gen (list node)) 'replaced-by-cgn)]
+     (cons (group current-gen (list node) lvl) 'replaced-by-cgn)]
     [(and
       (not (null? current-gen))
       (abstract-atom? (gen-node-conjunct node))
