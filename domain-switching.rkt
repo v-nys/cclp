@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 ; functionality for switching between the concrete and abstract domain
-; essentially the abstraction function α and concretization function γ
+; essentially the abstraction function α and concretization function γconc
 
 #lang at-exp racket
 (require
@@ -34,6 +34,9 @@
 (require (prefix-in ck: "concrete-knowledge.rkt") (prefix-in ak: "abstract-knowledge.rkt"))
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
+
+(define cons-symbol (string->symbol "'[|]'"))
+(define concrete-nil (function (string->symbol "[]") (list)))
 
 (define (get-maximum-abstract-var type-test? index-selector vals)
   (foldl
@@ -213,6 +216,10 @@
 ;; note: this is concrete-synth-counterpart rather than concretize because concretization of multi is infinite set
 ;; this is close, but it is specifically for synthesis (which is also why constraints are not applied to concrete multi)
 (define (concrete-synth-counterpart elem)
+  (define (atom->function a)
+    (match a
+      [(atom sym args)
+       (function sym args)]))
   (define (aux e tail-no)
     (match e
       [(a idx) (cons (variable (format-symbol "A~a" idx)) tail-no)]
@@ -230,8 +237,17 @@
       [(multi patt _ _ _ _)
        (cons
         (concrete-multi
-         (map (λ (a) (car (aux a 'dummy))) patt)
-         (variable (format-symbol "Tail~a" tail-no)))
+         (function
+          cons-symbol
+          (list
+           (function
+            'building_block
+            (list
+             (foldr
+              (λ (e acc) (function cons-symbol (list e acc)))
+              concrete-nil
+              (map (compose atom->function (λ (a) (car (aux a 'dummy)))) patt))))
+           (variable (format-symbol "Tail~a" tail-no)))))
         (add1 tail-no))]
       [(? list?)
        #:when (andmap abstract-conjunct? e)
@@ -287,23 +303,39 @@
    (list
     (atom 'integers (list (variable 'G1) (variable 'A1)))
     (concrete-multi
-     (list
-      (atom
-       'filterA
-       (list (variable 'G1i1) (variable 'A1i1) (variable 'A1i2)))
-      (atom
-       'filterB
-       (list (variable 'G1i2) (variable 'A1i2) (variable 'A1i3))))
-     (variable 'Tail1))
+     (function
+      cons-symbol
+      (list
+       (function
+        'building_block
+        (list
+         (function
+          cons-symbol
+          (list
+           (function 'filterA (list (variable 'G1i1) (variable 'A1i1) (variable 'A1i2)))
+           (function
+            cons-symbol
+            (list
+             (function 'filterB (list (variable 'G1i2) (variable 'A1i2) (variable 'A1i3)))
+             concrete-nil))))))
+       (variable 'Tail1))))
     (concrete-multi
-     (list
-      (atom
-       'filterA
-       (list (variable 'G2i1) (variable 'A2i1) (variable 'A2i2)))
-      (atom
-       'filterB
-       (list (variable 'G2i2) (variable 'A2i2) (variable 'A2i3))))
-     (variable 'Tail2))
+     (function
+      cons-symbol
+      (list
+       (function
+        'building_block
+        (list
+         (function
+          cons-symbol
+          (list
+           (function 'filterA (list (variable 'G2i1) (variable 'A2i1) (variable 'A2i2)))
+           (function
+            cons-symbol
+            (list
+             (function 'filterB (list (variable 'G2i2) (variable 'A2i2) (variable 'A2i3)))
+             concrete-nil))))))
+       (variable 'Tail2))))
     (atom 'sift (list (variable 'A3) (variable 'A4))))))
 (provide
  (proc-doc/names
@@ -322,32 +354,25 @@
  Typically, this is a concrete domain element, but for multi this is an auxiliary structure.}))
 
 (struct
-  concrete-multi (head tail)
+  concrete-multi (lst)
   #:methods
   gen:equal+hash
   [(define (equal-proc cm1 cm2 equal?-recur)
-     (and (equal?-recur
-           (concrete-multi-head cm1)
-           (concrete-multi-head cm2))
-          (equal?-recur
-           (concrete-multi-tail cm1)
-           (concrete-multi-tail cm2))))
+     (equal?-recur
+      (concrete-multi-lst cm1)
+      (concrete-multi-lst cm2)))
    (define (hash-proc cm hash-recur)
-     (+ (hash-recur (concrete-multi-head cm))
-        (* 3 (hash-recur (concrete-multi-tail cm)))))
+     (hash-recur (concrete-multi-lst cm)))
    (define (hash2-proc cm hash2-recur)
-     (+ (hash2-recur (concrete-multi-head cm))
-        (hash2-recur (concrete-multi-tail cm))))]
+     (hash2-recur (concrete-multi-lst cm)))]
   #:methods
   gen:custom-write
   [(define write-proc
      (make-constructor-style-printer
       (λ (obj) 'concrete-multi)
-      (λ (obj) (list (concrete-multi-head obj)
-                     (concrete-multi-tail obj)))))])
+      (λ (obj) (list (concrete-multi-lst obj)))))])
 (provide
  (struct*-doc
   concrete-multi
-  ([head (listof atom?)]
-   [tail variable?])
+  ([lst function?])
   @{A concrete counterpart to multi which can be used for code generation.}))

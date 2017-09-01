@@ -41,6 +41,9 @@
          (only-in "domain-switching.rkt" concrete-synth-counterpart concrete-multi)
          (only-in "gen-graph-structs.rkt" index-range))
 
+(define cons-symbol (string->symbol "'[|]'"))
+(define concrete-nil (function (string->symbol "[]") (list)))
+
 (define (mi-map-visit-from idx n)
   (match n
     [(node (tree-label (list) _ _ (ck:rule _ _ rule-idx) #f _) _)
@@ -380,6 +383,12 @@
  This is useful for generation of generalization/2 clauses for the meta-interpreter, as aliasing must be matched in these clauses and must not be enforced by unification.}))
 
 (define (generate-generalization-clause parent child blocks)
+  ; first, compute untangled and deconstructed parent
+  ; then, compute the concrete version of that (this should also yield an abstract-concrete substitution)
+  ; that becomes the first argument
+  ; then, from the building blocks, figure out which elements in that concrete version are grouped
+  ; that gives the second argument
+  ; then, compute the body: needs the abstract-concrete substitution (for translation and groundness), the deconstruction (nonvar and decomposition), the aliasing pairs (for obvious reasons)
   (display "not implemented yet"))
 (module+ test
   (define node-33-parent-conjunction
@@ -413,13 +422,13 @@
            (a 3)))))))
      (interpret-abstract-conjunction "sift(α4,α5),alt_length(α5,γ5)")))
     
-;  (check-equal?
-;   (generate-generalization-clause
-;    node-33-parent-conjunction
-;    node-33-child-conjunction
-;    (list (cons (index-range 1 2) 1)
-;          (cons (index-range 2 3) 1)))
-;   "")
+  ;  (check-equal?
+  ;   (generate-generalization-clause
+  ;    node-33-parent-conjunction
+  ;    node-33-child-conjunction
+  ;    (list (cons (index-range 1 2) 1)
+  ;          (cons (index-range 2 3) 1)))
+  ;   "")
   )
 
 ;; auxiliary function for untangle
@@ -696,11 +705,10 @@
      (string-join
       (map synth-str concrete-e)
       ",")]
-    [(concrete-multi h t)
+    [(concrete-multi lst)
      (format
-      "multi([building_block([~a])|~a])"
-      (synth-str h)
-      (synth-str t))]
+      "multi(~a)"
+      (synth-str lst))]
     [(or
       (atom sym (list))
       (function sym (list)))
@@ -712,6 +720,43 @@
     [(variable v)
      (symbol->string v)]
     [_ (error "can't print this")]))
+(module+ test
+  ; really shows the need for αγ lang extension...
+  (check-equal?
+   (synth-str
+    (list
+     (atom 'integers (map variable '(G24 A31A)))
+     (concrete-multi
+      (function
+       cons-symbol
+       (list
+        (function
+         'building_block
+         (list
+          (function
+           cons-symbol
+           (list         
+            (function
+             'filter
+             (map variable '(G25 A31B A35A)))
+            concrete-nil))))
+        (function
+         cons-symbol
+         (list
+          (function
+           'building_block
+           (list
+            (function
+             cons-symbol
+             (list
+              (function
+               'filter
+               (map variable '(G27 A35B A38A)))
+              concrete-nil))))
+          concrete-nil)))))
+     (atom 'filter (map variable '(G28 A38B A40A)))
+     (atom 'sift (map variable '(A40B A39A)))
+     (atom 'alt_length (map variable '(G28A39B G20)))))   "integers(G24,A31A),multi('[|]'(building_block('[|]'(filter(G25,A31B,A35A),[])),'[|]'(building_block('[|]'(filter(G27,A35B,A38A),[])),[]))),filter(G28,A38B,A40A),sift(A40B,A39A),alt_length(G28A39B,G20)"))
 
 (define (generalization/2-head-arg1 ac)
   (match-let*
@@ -759,7 +804,7 @@
           (a 8)))))
       (interpret-abstract-conjunction
        "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)"))))
-   "[integers(G1,A6),filter(G2,A1,A7),multi([building_block([filter(G1i1,A1i1,A1i3)])|Tail1]),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)]")
+   "[integers(G1,A6),filter(G2,A1,A7),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)]")
   
   ;; based on node 80  
   (check-equal?
@@ -815,8 +860,7 @@
         (list
          (cons
           (a* 2 'L 2)
-          (a 10)))))
-      )
+          (a 10))))))
      (interpret-abstract-conjunction
       "filter(γ3,α4,α11),sift(α5,α12),alt_length(α6,γ4)")))
-   "[integers(G1,A7),multi([building_block([filter(G1i1,A1i1,A1i3)])|Tail1]),filter(G2,A2,A9),multi([building_block([filter(G2i1,A2i1,A2i3)])|Tail2]),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)]"))
+"[integers(G1,A7),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),filter(G2,A2,A9),multi('[|]'(building_block('[|]'(filter(G2i1,A2i1,A2i3),[])),Tail2)),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)]"))

@@ -15,7 +15,7 @@
   "generational-graph.rkt"
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
-  (only-in racket-list-utils/utils replace-sublist)
+  (only-in racket-list-utils/utils replace-sublist map-accumulatel)
   racket/logging)
 (require (for-doc scribble/manual))
 
@@ -563,9 +563,9 @@
        (eq-any? expl 'extended 'retained)) empty]
      [(and
        (eq-any? expl 'replaced-by-node 'reset)
-       (strung-together? potential current-gen))
+       (strung-together? potential current-gen)) ; length is that associated with potential + length of current-gen
       (car (group-sequential-generations (append potential current-gen) fresh-multi-id fresh-dummy-id lvl))]
-     [(eq-any? expl 'replaced-by-node 'reset 'replaced-by-current-gen 'replaced-by-cgn)
+     [(eq-any? expl 'replaced-by-node 'reset 'replaced-by-current-gen 'replaced-by-cgn) ; length is that associated with potential
       potential])
    (if
     (and
@@ -961,19 +961,7 @@
        (cons (a* 1 'L 2) (a 4)))))
     (abstract-atom 'filter (list (g 5) (a 4) (a 5)))
     (abstract-atom 'sift (list (a 5) (a 6)))
-    (abstract-atom 'len (list (a 6) (g 6)))))
-  (check-equal?
-   ; coloring(a92),allsafe(g507,g508,g506,a92),allsafe(g511,g512,g506,a92),allsafe(g515,g516,g506,a92),allsafe(g215,g216,cons(g517,g506),cons(g518,a92)),safe(cons(g517,g506),cons(g518,a92))
-   (map
-    gen-node-conjunct
-    (generalize-level
-     (list
-      (gen-node (abstract-atom 'coloring (list (a 92))) 2 (gen 0 #f) #f #t)
-      (gen-node (abstract-atom 'allsafe (list (g 507) (g 508) (g 506) (a 92))) 3 (gen 1 1) #f #t)
-      (gen-node (abstract-atom 'allsafe (list (g 511) (g 512) (g 506) (a 92))) 4 (gen 2 1) #f #t)
-      (gen-node (abstract-atom 'allsafe (list (g 515) (g 516) (abstract-function 'cons (list (g 517) (g 506))) (abstract-function 'cons (list (g 518) (a 92))))) 5 (gen 3 1) #f #t)
-      (gen-node (abstract-atom 'safe (list (abstract-function 'cons (list (g 517) (g 506))) (abstract-function 'cons (list (g 518) (a 92))))) 6 (gen 3 1) #f #t))))
-   (list)))
+    (abstract-atom 'len (list (a 6) (g 6))))))
 
 (provide
  (proc-doc/names
@@ -981,6 +969,77 @@
   (-> (listof gen-node?) (listof gen-node?))
   (lvl)
   @{Attempts to generalize the conjunction represented by @racket[lvl].}))
+
+(define (infer-bb pre post)
+  (define (grouping-proc gen-seq st)
+    (let ([l (length gen-seq)])
+      (cons (index-range st (+ st l)) (+ st l))))
+  (define (conversion-proc rng Δ)
+    (match rng
+      [(index-range start end-before)
+       (cons
+        (cons
+         (car
+          (map-accumulatel
+           grouping-proc
+           start
+           (group-by
+            gen-node-range
+            (take
+             (drop pre start)
+             (- end-before start)))))
+         (- start Δ))
+        (+ Δ (- end-before start 1)))]))
+  (let ([rngs (generalized-ranges pre post)])
+    (car (map-accumulatel conversion-proc 0 rngs))))
+(module+ test
+  (check-equal?
+   (infer-bb
+    (list
+     (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 3) (a 2) (a 3))) 4 (gen 2 1) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 4) (a 3) (abstract-function 'cons (list (g 5) (a 4))))) 5 (gen 3 1) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 5) (a 4) (a 5))) 6 (gen 4 1) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 6) (a 5) (a 6))) 7 (gen 5 1) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 7) (a 6) (a 7))) 8 (gen 6 1) #f #t)
+     (gen-node (abstract-atom 'sift (list (a 7) (a 8))) 9 (gen 6 1) #f #t)
+     (gen-node (abstract-atom 'length (list (a 8) (g 8))) 10 (gen 0 #f) #f #t))
+    (list
+     (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
+     (gen-node
+      (multi
+       (list (abstract-atom* 'filter (list (g* 1 'i 2) (a* 1 'i 1) (a* 1 'i 2))))
+       #t
+       (init
+        (list
+         (cons (a* 1 1 1) (a 1))))
+       (consecutive
+        (list
+         (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+       (final
+        (list
+         (cons (a* 1 'L 2) (a 3)))))
+      11 (gen-range 1 'n 1 #t) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 4) (a 3) (abstract-function 'cons (list (g 5) (a 4))))) 5 (gen (symsum 'n 1) 1) #f #t)
+     (gen-node
+      (multi
+       (list (abstract-atom* 'filter (list (g* 2 'i 2) (a* 2 'i 1) (a* 2 'i 2))))
+       #t
+       (init
+        (list
+         (cons (a* 2 1 1) (a 4))))
+       (consecutive
+        (list
+         (cons (a* 2 'i+1 1) (a* 2 'i 2))))
+       (final
+        (list
+         (cons (a* 2 'L 2) (a 5)))))
+      12 (gen-range (symsum 'n 2) 'm 1 #t) #f #t)
+     (gen-node (abstract-atom 'filter (list (g 5) (a 5) (a 6))) 8 (gen (symsum 'm 1) 1) #f #t)
+     (gen-node (abstract-atom 'sift (list (a 5) (a 6))) 9 (gen (symsum 'm 1) 1) #f #t)
+     (gen-node (abstract-atom 'length (list (a 6) (g 6))) 10 (gen 0 #f) #f #t)))
+   (list (cons (list (index-range 1 2) (index-range 2 3)) 1) (cons (list (index-range 4 5) (index-range 5 6)) 3))))
 
 (define (generalize br)
   (define gr (generational-graph-skeleton br))
@@ -996,7 +1055,7 @@
   (list
    (map gen-node-conjunct gen-lvl)
    (generalized-ranges lvl gen-lvl)
-   (list))) ;; FIXME: needs the actual building blocks!
+   (infer-bb lvl gen-lvl))) ;; FIXME: needs the actual building blocks!
 (provide
  (proc-doc/names
   generalize
