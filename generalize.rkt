@@ -936,32 +936,44 @@
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
     (multi
-        (list (abstract-atom* 'filter (list (g* 2 'i 2) (a* 2 'i 1) (a* 2 'i 2))))
-        #t
-        (init
-         (list
-          (cons (a* 2 1 1) (a 1))))
-        (consecutive
-         (list
-          (cons (a* 2 'i+1 1) (a* 2 'i 2))))
-        (final
-         (list
-          (cons (a* 2 'L 2) (a 3)))))
+     (list (abstract-atom* 'filter (list (g* 2 'i 2) (a* 2 'i 1) (a* 2 'i 2))))
+     #t
+     (init
+      (list
+       (cons (a* 2 1 1) (a 1))))
+     (consecutive
+      (list
+       (cons (a* 2 'i+1 1) (a* 2 'i 2))))
+     (final
+      (list
+       (cons (a* 2 'L 2) (a 3)))))
     (multi
-        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-        #t
-        (init
-         (list
-          (cons (a* 1 1 1) (abstract-function 'cons (list (g 4) (a 3))))))
-        (consecutive
-         (list
-          (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-        (final
-         (list
-          (cons (a* 1 'L 2) (a 4)))))
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init
+      (list
+       (cons (a* 1 1 1) (abstract-function 'cons (list (g 4) (a 3))))))
+     (consecutive
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final
+      (list
+       (cons (a* 1 'L 2) (a 4)))))
     (abstract-atom 'filter (list (g 5) (a 4) (a 5)))
     (abstract-atom 'sift (list (a 5) (a 6)))
-    (abstract-atom 'len (list (a 6) (g 6))))))
+    (abstract-atom 'len (list (a 6) (g 6)))))
+  (check-equal?
+   ; coloring(a92),allsafe(g507,g508,g506,a92),allsafe(g511,g512,g506,a92),allsafe(g515,g516,g506,a92),allsafe(g215,g216,cons(g517,g506),cons(g518,a92)),safe(cons(g517,g506),cons(g518,a92))
+   (map
+    gen-node-conjunct
+    (generalize-level
+     (list
+      (gen-node (abstract-atom 'coloring (list (a 92))) 2 (gen 0 #f) #f #t)
+      (gen-node (abstract-atom 'allsafe (list (g 507) (g 508) (g 506) (a 92))) 3 (gen 1 1) #f #t)
+      (gen-node (abstract-atom 'allsafe (list (g 511) (g 512) (g 506) (a 92))) 4 (gen 2 1) #f #t)
+      (gen-node (abstract-atom 'allsafe (list (g 515) (g 516) (abstract-function 'cons (list (g 517) (g 506))) (abstract-function 'cons (list (g 518) (a 92))))) 5 (gen 3 1) #f #t)
+      (gen-node (abstract-atom 'safe (list (abstract-function 'cons (list (g 517) (g 506))) (abstract-function 'cons (list (g 518) (a 92))))) 6 (gen 3 1) #f #t))))
+   (list)))
 
 (provide
  (proc-doc/names
