@@ -48,8 +48,8 @@
 ;; computes how many conjuncts will be introduced when knowledge (clause or full evaluation) is applied
 (define (knowledge-output-length knowledge conjunct)
   (match knowledge
-    [(ck:rule h b) (length b)]
-    [(full-evaluation i o) 0]
+    [(ck:rule h b _) (length b)]
+    [(full-evaluation i o _) 0]
     ['one (length (multi-conjunction conjunct))]
     ['many (add1 (length (multi-conjunction conjunct)))]))
 
@@ -81,7 +81,7 @@
     ; if there are unfoldings and there is a selection
     [(list-rest
       (or (tree-label tl-con1 (some selected1) _ _ _ _)
-          (generalization tl-con1 (some selected1) _ _ _))
+          (generalization tl-con1 (some selected1) _ _ _ _))
       (tree-label _ _ _ tl-rule2 _ _)
       l-rest)
      (match-let
@@ -110,8 +110,10 @@
     [(list-rest
       ;; generalization followed by generalization is possible on paper, but implementation never does this
       (tree-label tl-con1 (none) _ _ _ _)
-      (generalization _ _ _ _ abstracted-ranges)
+      (generalization _ _ _ _ abstracted-ranges _) ; TODO may be able to utilize last field, which was added later
       l-rest)
+     (log-debug "first element on branch: ~a" (first branch))
+     (log-debug "second element on branch: ~a" (second branch))
      (match-let
          ([(list next-uid _ _ add-edges)
            (foldl
@@ -156,15 +158,15 @@
     [(node (cycle _) '()) #f]
     [(node (tree-label c (none) s r #f ie) '())
      (list (tree-label c (none) s r #f ie))]
-    [(node (generalization c (none) #f ie rngs) '())
-     (list (generalization c (none) #f ie rngs))]
+    [(node (generalization c (none) #f ie rngs bb) '())
+     (list (generalization c (none) #f ie rngs bb))]
     [(node (tree-label c sel s r i ie) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch c))) #f ch)
           (cons (tree-label c sel s r i ie) it)
           #f)]
-    [(node (generalization c sel i ie rngs) ch)
+    [(node (generalization c sel i ie rngs bb) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch c))) #f ch)
-          (cons (generalization c sel i ie rngs) it)
+          (cons (generalization c sel i ie rngs bb) it)
           #f)]))
 (provide
  (proc-doc/names
@@ -388,11 +390,49 @@
    (local-max (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f #t))
    'l1))
 
+(define (gen-range-first/gen rng)
+  (gen (gen-range-first rng) (gen-range-origin rng)))
+(provide gen-range-first/gen)
+
+(define (gen-range-last/gen rng)
+  (gen (gen-range-last rng) (gen-range-origin rng)))
+(provide gen-range-last/gen)
+
+(define (subsequent-gens? g1 g2)
+  (match* (g1 g2)
+    [((? gen?) (? gen?))
+     (or (equal? (gen-increment g1) g2)
+         (equal? (gen-decrement g1) g2))]
+    [((? gen?) (? gen-range?))
+     (if (gen-range-ascending? g2)
+         (equal? (gen-increment g1) (gen-range-first/gen g2))
+         (equal? (gen-decrement g1) (gen-range-first/gen g2)))]
+    [((? gen-range?) (? gen?))
+     (if (gen-range-ascending? g1)
+         (equal? (gen-increment (gen-range-last/gen g1)) g2)
+         (equal? (gen-decrement (gen-range-last/gen g1)) g2))]
+    [((gen-range f1 l1 o asc?) (gen-range f2 l2 o asc?))
+     (if asc?
+         (equal? (gen-increment (gen-range-last/gen g1)) (gen-range-first/gen g2))
+         (equal? (gen-decrement (gen-range-last/gen g1)) (gen-range-first/gen g2)))]
+    [(_ _) #f]))
+(provide subsequent-gens?)
+
 ;; add an offset to a (potentially symbolic) generation number
 (define (gen-add g o)
   (cond [(= o 0) g]
         [(> o 0) (gen-add (gen-add1 g) (sub1 o))]
         [(< o 0) (gen-add (gen-sub1 g) (add1 o))]))
+
+(define (gen-increment g)
+  (match g
+    [(gen num o) (gen (gen-add1 num) o)]))
+(provide gen-increment)
+
+(define (gen-decrement g)
+  (match g
+    [(gen num o) (gen (gen-sub1 num) o)]))
+(provide gen-decrement)
 
 (define (gen-add1 gen-num)
   (match gen-num
@@ -431,7 +471,7 @@
         (and tg (descendant-renames-with-corresponding-args? graph tg ann-parent)))
       (multiple-direct-live-lines? graph ann-parent live-depth curr-depth))
      (if parent-unfolded?
-         (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen (gen-add1 (gen-number parent-gen)) (gen-origin parent-gen))]))
+         (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen-increment parent-gen)]))
          (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen])))]
     [(or (abstract-atom? parent-conjunct) (not parent-unfolded?))
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range parent-gen]))]

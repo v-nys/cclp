@@ -21,8 +21,10 @@
 ; SOFTWARE.
 
 #lang at-exp racket
-(require "abstract-multi-domain.rkt")
-(require "abstract-knowledge.rkt")
+(require "abstract-knowledge.rkt"
+         "abstract-multi-domain.rkt"
+         (only-in "cclp-interpreter.rkt"
+                  interpret-abstract-term))
 (require "data-utils.rkt")
 
 (require scribble/srcdoc)
@@ -108,13 +110,15 @@
    (assemble-var-indices
     a?
     (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
+                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+                     1))
    (list 1 2))
   (check-equal?
    (assemble-var-indices
     g?
     (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")))
+                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+                     1))
    (list 1 2 3 4)))
 
 (define (maximum-var-index abstraction right-variable-type?)
@@ -176,16 +180,58 @@
   (check-equal?
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f))
 
+(define (extract-all-variables/duplicates v)
+  (match v
+    [(list-rest h t)
+     (append
+      (extract-all-variables/duplicates h)
+      (append-map extract-all-variables/duplicates t))]
+    [(multi conjunction _ (init ic) (consecutive cc) (final fc))
+     (append
+      (append-map extract-all-variables/duplicates conjunction)
+      (append-map (compose extract-all-variables/duplicates cdr) ic)
+      (append-map (compose extract-all-variables/duplicates cdr) cc)
+      (append-map (compose extract-all-variables/duplicates cdr) fc))]
+    [(or
+      (abstract-atom _ args)
+      (abstract-function _ args)
+      (abstract-atom* _ args)
+      (abstract-function* _ args))
+     (append-map extract-all-variables/duplicates args)]
+    [(or
+      (g _)
+      (a _)
+      (g* _ _ _)
+      (a* _ _ _))
+     (list v)]
+    [_ empty]))
+(provide
+ (proc-doc/names
+  extract-all-variables/duplicates
+  (->
+   (or/c abstract-domain-elem*? abstract-variable*?)
+   (listof (or/c abstract-variable? abstract-variable*?)))
+  (v)
+  @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
+ in order of occurrence. Only takes into account local index i, not 1, i+1 or L.}))
+
+(define (extract-subscripted-variables/duplicates v)
+  (filter (λ (v) (abstract-variable*? v))
+          (extract-all-variables/duplicates v)))
+(provide
+ (proc-doc/names
+  extract-subscripted-variables/duplicates
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom*? abstract-function*? a*? g*?)
+   (listof (or/c a*? g*?)))
+  (v)
+  @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
+ in order of occurrence. Only takes into account local index i, not 1, i+1 or L.}))
+
 ;; used so generalization of level keeps multi ID's separate
+;; only extracts from the pattern
 (define (extract-subscripted-variables v)
-  (define (aux v)
-    (match v
-      [(multi conjunction _ _ _ _)
-       (apply append (map extract-subscripted-variables conjunction))]
-      [(or (abstract-atom* _ args) (abstract-function* _ args))
-       (apply append (map extract-subscripted-variables args))]
-      [(or (? g*?) (? a*?)) (list v)]))
-  (remove-duplicates (aux v)))
+  (remove-duplicates (extract-subscripted-variables/duplicates v)))
 (module+ test
   (check-equal?
    (extract-subscripted-variables
@@ -200,21 +246,156 @@
 (provide
  (proc-doc/names
   extract-subscripted-variables
-  (-> (or/c multi? abstract-atom*? abstract-function*? a*? g*?) (listof (or/c a*? g*?)))
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom*? abstract-function*? a*? g*?)
+   (listof (or/c a*? g*?)))
   (v)
-  @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
- in order of occurrence, without duplicates.}))
+  @{Like @racket[extract-subscripted-variables], but without duplicates.}))
+
+(define (extract-variables/duplicates v)
+  (filter
+   (λ (v) (abstract-variable? v))
+   (extract-all-variables/duplicates v)))
+(provide
+ (proc-doc/names
+  extract-variables/duplicates
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom? abstract-function? a? g?)
+   (listof (or/c a? g?)))
+  (v)
+  @{Extracts all @racket[abstract-variable] values in @racket[v] and returns them as a list, in order of occurrence.}))
 
 (define (extract-variables v)
-  (define (aux v)
-    (match v
-      [(? list?) (append-map extract-variables v)]
-      [(or (abstract-atom _ args) (abstract-function _ args))
-       (append-map extract-variables args)]
-      [(multi _ _ (init i) _ (final f))
+  (remove-duplicates (extract-variables/duplicates v)))
+(provide
+ (proc-doc/names
+  extract-variables
+  (->
+   (or/c (listof abstract-conjunct?) multi? abstract-atom? abstract-function? a? g?)
+   (listof (or/c a? g?)))
+  (v)
+  @{Like @racket[extract-variables/duplicates], but without duplicates.}))
+
+(define (get-multi-id m)
+  (match m
+    [(multi patt _ _ _ _)
+     (get-multi-id patt)]
+    [(list-rest h t)
+     (or (get-multi-id h)
+         (get-multi-id t))]
+    [(or
+      (abstract-atom* _ args)
+      (abstract-function* _ args))
+     (get-multi-id args)]
+    [(or
+      (a* id _ _)
+      (g* id _ _))
+     id]))
+(provide
+ (proc-doc/names
+  get-multi-id
+  (-> multi? exact-positive-integer?)
+  (m)
+  @{Extracts the unique identifier from any @racket[abstract-variable*?] in @racket[m]}))
+
+(define (extract-abstract-compounds v #:top [top? #t])
+  (match v
+    [(? list?)
+     (append-map extract-abstract-compounds v)]
+    [(or
+      (abstract-atom _ args)
+      (abstract-atom* _ args))
+     (append-map extract-abstract-compounds args)]
+    [(or
+      (abstract-function _ args)
+      (abstract-function* _ args))
+     (cons (cons v top?) (append-map (λ (a) (extract-abstract-compounds a #:top #f)) args))]
+    [(multi patt _ (init ic) _ _)
+     (let ([multi-id (get-multi-id v)])
        (append
-        (extract-variables (map cdr i))
-        (extract-variables (map cdr f)))]
-      [(or (? g?) (? a?)) (list v)]))
-  (remove-duplicates (aux v)))
-(provide extract-variables)
+        (map (λ (e) (cons (cons (car e) multi-id) (cdr e)))
+            (append-map extract-abstract-compounds patt))
+        (append-map extract-abstract-compounds (map cdr ic))))]
+    [_ (list)]))
+(module+ test
+  (check-equal?
+   (extract-abstract-compounds
+    (interpret-abstract-conjunction "foo(bar(baz(nil)),quux),poit,narf(zorp(α1,γ1))"))
+   (list
+    (cons (interpret-abstract-term "bar(baz(nil))") #t)
+    (cons (interpret-abstract-term "baz(nil)") #f)
+    (cons (abstract-function 'nil empty) #f)
+    (cons (abstract-function 'quux empty) #t)
+    (cons (abstract-function 'zorp (list (a 1) (g 1))) #t)))
+  (check-equal?
+   (extract-abstract-compounds
+    (list
+     (multi
+      (list
+       (abstract-atom*
+        'foo
+        (list
+         (a* 1 'i 1)
+         (abstract-function*
+          'bar
+          (list
+           (abstract-function*
+            'baz
+            (list
+             (abstract-function*
+              'quux
+              empty)))
+           (g* 1 'i 1))))))
+      #t
+      (init
+       (list
+        (cons (a* 1 'i 1) (abstract-function 'nil empty))))
+      (consecutive (list))
+      (final (list)))))
+   (list
+    (cons
+     (cons
+      (abstract-function*
+       'bar
+       (list
+        (abstract-function*
+         'baz
+         (list
+          (abstract-function*
+           'quux
+           empty)))
+        (g* 1 'i 1)))
+      1)
+     #t)
+    (cons
+     (cons
+      (abstract-function*
+       'baz
+       (list
+        (abstract-function*
+         'quux
+         empty)))
+      1)
+     #f)
+    (cons
+     (cons
+      (abstract-function*
+       'quux
+       empty)
+      1)
+     #f)
+    (cons
+     (abstract-function
+      'nil
+      empty)
+     #t))))
+(provide
+ (proc-doc/names
+  extract-abstract-compounds
+  (->
+   (listof abstract-conjunct?)
+   (listof (cons/c (or/c abstract-function? (cons/c abstract-function*? exact-positive-integer?)) boolean?)))
+  (ac)
+  @{Collects all @racket[abstract-function?] and @racket[abstract-function*?] terms in @racket[ac]. It also includes nested terms.
+ This function can contain duplicates and the compounds are in order of occurrence (with nested terms immediately following the containing term, unless the preceding term also had more nested terms).
+ The optional positive integer indicates which @racket[multi?] the term belongs in. The boolean part of the result indicates whether the term is a top-level term or whether it is nested inside another term.}))

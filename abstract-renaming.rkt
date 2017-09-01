@@ -101,13 +101,15 @@
   (test-case
    "a properly renamed full evaluation should be obtained"
    (let* ([full-eval (ak:full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                                         (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)"))]
+                                         (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+                                         1)]
           [abstract-conjunction
            (interpret-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")]
           [renamed-abstract-rule (rename-apart full-eval abstract-conjunction)]
           [expected
            (ak:full-evaluation (interpret-abstract-atom "del(α15,[γ20|γ21],α16)")
-                               (interpret-abstract-atom "del(γ22,[γ20|γ21],γ23)"))])
+                               (interpret-abstract-atom "del(γ22,[γ20|γ21],γ23)")
+                               1)])
      (check-equal?
       renamed-abstract-rule
       expected))))

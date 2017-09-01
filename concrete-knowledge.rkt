@@ -23,17 +23,20 @@
 #lang racket
 (require "concrete-domain.rkt")
 (require racket/serialize)
-(serializable-struct rule (head body)
+(serializable-struct rule (head body idx)
                      #:transparent
                      #:methods
                      gen:equal+hash
                      [(define (equal-proc r1 r2 equal?-recur)
                         (and (equal?-recur (rule-head r1) (rule-head r2))
-                             (equal?-recur (rule-body r1) (rule-body r2))))
+                             (equal?-recur (rule-body r1) (rule-body r2))
+                             (equal?-recur (rule-idx r1) (rule-idx r2))))
                       (define (hash-proc my-rule hash-recur)
                         (+ (hash-recur (rule-head my-rule))
-                           (* 3 (hash-recur (rule-body my-rule)))))
+                           (* 3 (hash-recur (rule-body my-rule)))
+                           (* 5 (hash-recur (rule-idx my-rule)))))
                       (define (hash2-proc my-rule hash2-recur)
                         (+ (hash2-recur (rule-head my-rule))
-                           (hash2-recur (rule-body my-rule))))])
+                           (hash2-recur (rule-body my-rule))
+                           (hash2-recur (rule-idx my-rule))))])
 (provide (struct-out rule))

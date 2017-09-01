@@ -38,7 +38,7 @@
 (serializable-struct abstract-equality (term1 term2) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-equality)])
 (provide (struct-out abstract-equality))
 
-(define (abstract-substitution? l) (andmap abstract-equality? l))
+(define (abstract-substitution? l) (and (list? l) (andmap abstract-equality? l)))
 (provide abstract-substitution?)
 
 ; note: can only substitute for an abstract variable, and there is never any reason to substitute an atom or conjunction for something, so use terms
@@ -107,7 +107,8 @@
 (define (apply-substitution-to-full-evaluation subst fe)
   (full-evaluation
    (apply-substitution-to-conjunct subst (full-evaluation-input-pattern fe))
-   (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))))
+   (apply-substitution-to-conjunct subst (full-evaluation-output-pattern fe))
+   (full-evaluation-idx fe)))
 (provide apply-substitution-to-full-evaluation)
 
 (define (apply-substitution subst substitution-object)

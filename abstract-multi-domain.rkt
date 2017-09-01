@@ -483,3 +483,9 @@
   (-> any/c boolean?)
   (val)
   @{Test whether @racket[val] is an element of the abstract multi domain.}))
+
+(define (avar*-local-index v)
+  (match v
+    [(a* _ _ i) i]
+    [(g* _ _ i) i]))
+(provide avar*-local-index)

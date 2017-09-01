@@ -101,3 +101,14 @@
   atom
   ([symbol symbol?] [args (listof term?)])
   @{An atom in the concrete domain.}))
+
+(define (concrete-domain-elem? elem)
+  (or (term? elem)
+      (atom? elem)
+      ((listof atom?) elem)))
+(provide
+ (proc-doc/names
+  concrete-domain-elem?
+  (-> any/c boolean?)
+  (val)
+  @{Test whether @racket[val] is an element of the concrete domain.}))

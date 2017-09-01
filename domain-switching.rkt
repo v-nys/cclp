@@ -24,7 +24,10 @@
 ; essentially the abstraction function α and concretization function γ
 
 #lang at-exp racket
-(require "concrete-domain.rkt")
+(require
+  (only-in racket/struct make-constructor-style-printer)
+  (only-in racket/syntax format-symbol)
+  "concrete-domain.rkt")
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
 (require racket-list-utils/utils)
@@ -190,13 +193,161 @@
    (cons (g 2) (hash (function 'dummy1 '()) (g 1) (function 'dummy2 '()) (g 2)))
    "case of constant when there is a mapping for another constant")
 
-  (let ([abstract-args (list (a 1) (a 1) (a 2) (g 1) (g 2) (g 1))]
-        ; should be able to do this more concisely using #lang lp building blocks, roughly as (expand (parse 'function "dummy(A,A,dummy2,dummy3,dummy2)"))
-        [concrete-args (list (variable 'A) (variable 'A) (variable 'B) (function 'dummy2 '()) (function 'dummy3 '()) (function 'dummy2 '()))])
-    (check-equal? (pre-abstract (function 'dummy concrete-args)) (abstract-function 'dummy abstract-args) "abstracting a complex term"))
+  ;  (let ([abstract-args (list (a 1) (a 1) (a 2) (g 1) (g 2) (g 1))]
+  ;        ; should be able to do this more concisely using #lang lp building blocks, roughly as (expand (parse 'function "dummy(A,A,dummy2,dummy3,dummy2)"))
+  ;        [concrete-args (list (variable 'A) (variable 'A) (variable 'B) (function 'dummy2 '()) (function 'dummy3 '()) (function 'dummy2 '()))])
+  ;    (check-equal? (pre-abstract (function 'dummy concrete-args)) (abstract-function 'dummy abstract-args) "abstracting a complex term"))
+  ;  (check-equal?
+  ;   (pre-abstract-rule
+  ;    (interpret-concrete-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)") (list))
+  ;   (ak:abstract-rule (interpret-abstract-atom "collect(tree(α1,α2),α3)") (list (interpret-abstract-atom "collect(α1,α4)") (interpret-abstract-atom "collect(α2,α5)") (interpret-abstract-atom "append(α4,α5,α3)"))))
+  ;
+  ;  (check-equal?
+  ;   (pre-abstract-rule
+  ;    (interpret-concrete-rule "append([],L,L)")
+  ;    (list (function 'nil '())))
+  ;   (ak:abstract-rule (interpret-abstract-atom "append(nil,α1,α1)") (list)))
+  )
 
-  (check-equal? (pre-abstract-rule (interpret-concrete-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)") (list))
-                (ak:abstract-rule (interpret-abstract-atom "collect(tree(α1,α2),α3)") (list (interpret-abstract-atom "collect(α1,α4)") (interpret-abstract-atom "collect(α2,α5)") (interpret-abstract-atom "append(α4,α5,α3)"))))
 
-  (check-equal? (pre-abstract-rule (interpret-concrete-rule "append([],L,L)") (list (function 'nil '())))
-                (ak:abstract-rule (interpret-abstract-atom "append(nil,α1,α1)") (list))))
+;; note: this is concrete-synth-counterpart rather than concretize because concretization of multi is infinite set
+;; this is close, but it is specifically for synthesis (which is also why constraints are not applied to concrete multi)
+(define (concrete-synth-counterpart elem)
+  (define (aux e tail-no)
+    (match e
+      [(a idx) (cons (variable (format-symbol "A~a" idx)) tail-no)]
+      [(g idx) (cons (variable (format-symbol "G~a" idx)) tail-no)]
+      [(a* idx1 'i idx2) (cons (variable (format-symbol "A~ai~a" idx1 idx2)) tail-no)]
+      [(g* idx1 'i idx2) (cons (variable (format-symbol "G~ai~a" idx1 idx2)) tail-no)]
+      [(or
+        (abstract-function sym args)
+        (abstract-function* sym args))
+       (cons (function sym (map (λ (a) (car (aux a 'dummy))) args)) tail-no)]
+      [(or
+        (abstract-atom sym args)
+        (abstract-atom* sym args))
+       (cons (atom sym (map (λ (a) (car (aux a 'dummy))) args)) tail-no)]
+      [(multi patt _ _ _ _)
+       (cons
+        (concrete-multi
+         (map (λ (a) (car (aux a 'dummy))) patt)
+         (variable (format-symbol "Tail~a" tail-no)))
+        (add1 tail-no))]
+      [(? list?)
+       #:when (andmap abstract-conjunct? e)
+       (map-accumulatel aux tail-no e)]))
+  (car (aux elem 1)))
+(module+ test
+  (check-equal?
+   (concrete-synth-counterpart
+    (interpret-abstract-conjunction
+     "integers(γ1,α6),filter(γ2,α1,α7),filter(γ3,α2,α8),filter(γ4,α3,α9),sift(α4,α10),alt_length(α11,γ5)"))
+   (list
+    (atom 'integers (list (variable 'G1) (variable 'A6)))
+    (atom 'filter (list (variable 'G2) (variable 'A1) (variable 'A7)))
+    (atom 'filter (list (variable 'G3) (variable 'A2) (variable 'A8)))
+    (atom 'filter (list (variable 'G4) (variable 'A3) (variable 'A9)))
+    (atom 'sift (list (variable 'A4) (variable 'A10)))
+    (atom 'alt_length (list (variable 'A11) (variable 'G5)))))
+  (check-equal?
+   (concrete-synth-counterpart
+    (list
+     (abstract-atom 'integers (list (g 1) (a 1)))
+     (multi
+      (list
+       (abstract-atom* 'filterA (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2)))
+       (abstract-atom* 'filterB (list (g* 1 'i 2) (a* 1 'i 2) (a* 1 'i 3))))
+      #t
+      (init
+       (list
+        (cons (a* 1 'i 1) (a 1))))
+      (consecutive
+       (list
+        (cons (a* 1 'i+1 1) (a* 1 'i 3))))
+      (final
+       (list
+        (cons (a* 1 'L 3) (a 2)))))
+     (multi
+      (list
+       (abstract-atom* 'filterA (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2)))
+       (abstract-atom* 'filterB (list (g* 2 'i 2) (a* 2 'i 2) (a* 2 'i 3))))
+      #t
+      (init
+       (list
+        (cons
+         (a* 2 'i 1)
+         (abstract-function 'cons (list (g 2) (a 2))))))
+      (consecutive
+       (list
+        (cons (a* 2 'i+1 1) (a* 2 'i 3))))
+      (final
+       (list
+        (cons (a* 2 'L 3) (a 3)))))
+     (abstract-atom 'sift (list (a 3) (a 4)))))
+   (list
+    (atom 'integers (list (variable 'G1) (variable 'A1)))
+    (concrete-multi
+     (list
+      (atom
+       'filterA
+       (list (variable 'G1i1) (variable 'A1i1) (variable 'A1i2)))
+      (atom
+       'filterB
+       (list (variable 'G1i2) (variable 'A1i2) (variable 'A1i3))))
+     (variable 'Tail1))
+    (concrete-multi
+     (list
+      (atom
+       'filterA
+       (list (variable 'G2i1) (variable 'A2i1) (variable 'A2i2)))
+      (atom
+       'filterB
+       (list (variable 'G2i2) (variable 'A2i2) (variable 'A2i3))))
+     (variable 'Tail2))
+    (atom 'sift (list (variable 'A3) (variable 'A4))))))
+(provide
+ (proc-doc/names
+  concrete-synth-counterpart
+  (->
+   abstract-domain-elem*?
+   (or/c
+    concrete-domain-elem?
+    concrete-multi?
+    (listof
+     (or/c
+      concrete-domain-elem?
+      concrete-multi?))))
+  (e)
+  @{Converts an abstract domain element to an element which is suitable for synthesis of concrete code.
+ Typically, this is a concrete domain element, but for multi this is an auxiliary structure.}))
+
+(struct
+  concrete-multi (head tail)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc cm1 cm2 equal?-recur)
+     (and (equal?-recur
+           (concrete-multi-head cm1)
+           (concrete-multi-head cm2))
+          (equal?-recur
+           (concrete-multi-tail cm1)
+           (concrete-multi-tail cm2))))
+   (define (hash-proc cm hash-recur)
+     (+ (hash-recur (concrete-multi-head cm))
+        (* 3 (hash-recur (concrete-multi-tail cm)))))
+   (define (hash2-proc cm hash2-recur)
+     (+ (hash2-recur (concrete-multi-head cm))
+        (hash2-recur (concrete-multi-tail cm))))]
+  #:methods
+  gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (λ (obj) 'concrete-multi)
+      (λ (obj) (list (concrete-multi-head obj)
+                     (concrete-multi-tail obj)))))])
+(provide
+ (struct*-doc
+  concrete-multi
+  ([head (listof atom?)]
+   [tail variable?])
+  @{A concrete counterpart to multi which can be used for code generation.}))
