@@ -1055,7 +1055,7 @@
   (list
    (map gen-node-conjunct gen-lvl)
    (generalized-ranges lvl gen-lvl)
-   (infer-bb lvl gen-lvl))) ;; FIXME: needs the actual building blocks!
+   (infer-bb lvl gen-lvl)))
 (provide
  (proc-doc/names
   generalize

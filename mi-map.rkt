@@ -27,6 +27,7 @@
          (only-in racket/syntax format-symbol)
          (only-in racket-list-utils/utils map-accumulatel)
          racket-tree-utils/src/tree
+         sugar/coerce
          "abstract-analysis.rkt"
          (prefix-in ak: "abstract-knowledge.rkt")
          (only-in "abstraction-inspection-utils.rkt"
@@ -38,8 +39,9 @@
          "concrete-domain.rkt"
          (prefix-in ck: "concrete-knowledge.rkt")
          (only-in "control-flow.rkt" aif it)
-         (only-in "domain-switching.rkt" concrete-synth-counterpart concrete-multi)
-         (only-in "gen-graph-structs.rkt" index-range))
+         "domain-switching.rkt"
+         (only-in "gen-graph-structs.rkt" index-range index-range-start index-range-end-before)
+         (only-in "io-utils.rkt" between?))
 
 (define cons-symbol (string->symbol "'[|]'"))
 (define concrete-nil (function (string->symbol "[]") (list)))
@@ -719,7 +721,7 @@
      (format "~a(~a)" sym (synth-str lst))]
     [(variable v)
      (symbol->string v)]
-    [_ (error "can't print this")]))
+    [else (error (format "can't print this: ~a" else))]))
 (module+ test
   ; really shows the need for αγ lang extension...
   (check-equal?
@@ -763,104 +765,366 @@
       ([(cons untangled aliasing)
         (untangle ac)]
        [(cons deconstructed compound-replacements)
-        (deconstruct untangled)]
-       [counterpart (concrete-synth-counterpart deconstructed)])
-    (format "[~a]" (synth-str counterpart))))
+        (deconstruct untangled)])
+    (concrete-synth-counterpart deconstructed)))
+;(format "[~a]" (synth-str counterpart))
 (module+ test
   ;; based on node 33
   (check-equal?
-   (generalization/2-head-arg1
-    (interpret-abstract-conjunction
-     "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),alt_length([γ5|α5],γ6)"))
+   (format
+    "[~a]"
+    (synth-str
+     (generalization/2-head-arg1
+      (interpret-abstract-conjunction
+       "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),alt_length([γ5|α5],γ6)"))))
    "[integers(G1,A6),filter(G2,A1,A7),filter(G3,A2,A8),filter(G4,A3,A9),sift(A4,A10),alt_length(A11,G6)]")
   ;; based on node 46
   (check-equal?
-   (generalization/2-head-arg1
-    (append
-     (interpret-abstract-conjunction
-      "integers(γ1,α6),filter(γ2,α1,α7)")
-     (cons
-      (multi
-       (list
-        (abstract-atom*
-         'filter
+   (format
+    "[~a]"
+    (synth-str
+     (generalization/2-head-arg1
+      (append
+       (interpret-abstract-conjunction
+        "integers(γ1,α6),filter(γ2,α1,α7)")
+       (cons
+        (multi
          (list
-          (g* 1 'i 1)
-          (a* 1 'i 1)
-          (a* 1 'i 3))))
-       #t
-       (init
-        (list
-         (cons (a* 1 1 1) (a 2))))
-       (consecutive
-        (list
-         (cons
-          (a* 1 'i+1 1)
-          (a* 1 'i   2)))) ; unseen aliasing is not an issue for this part of generation
-       (final
-        (list
-         (cons
-          (a* 1 'L 2)
-          (a 8)))))
-      (interpret-abstract-conjunction
-       "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)"))))
+          (abstract-atom*
+           'filter
+           (list
+            (g* 1 'i 1)
+            (a* 1 'i 1)
+            (a* 1 'i 3))))
+         #t
+         (init
+          (list
+           (cons (a* 1 1 1) (a 2))))
+         (consecutive
+          (list
+           (cons
+            (a* 1 'i+1 1)
+            (a* 1 'i   2)))) ; unseen aliasing is not an issue for this part of generation
+         (final
+          (list
+           (cons
+            (a* 1 'L 2)
+            (a 8)))))
+        (interpret-abstract-conjunction
+         "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)"))))))
    "[integers(G1,A6),filter(G2,A1,A7),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)]")
   
   ;; based on node 80  
   (check-equal?
-   (generalization/2-head-arg1
-    (append
+   (format
+    "[~a]"
+    (synth-str
+     (generalization/2-head-arg1
+      (append
+       (list
+        (abstract-atom 'integers (list (g 1) (a 7)))
+        (multi
+         (list
+          (abstract-atom*
+           'filter
+           (list
+            (g* 1 'i 1)
+            (a* 1 'i 1)
+            (a* 1 'i 3))))
+         #t
+         (init
+          (list
+           (cons
+            (a* 1 1 1)
+            (a 1))))
+         (consecutive
+          (list
+           (cons
+            (a* 1 'i+1 1)
+            (a* 1 'i   2))))
+         (final
+          (list
+           (cons
+            (a* 1 'L 2)
+            (a 8)))))
+        (abstract-atom 'filter (list (g 2) (a 2) (a 9)))
+        (multi
+         (list
+          (abstract-atom*
+           'filter
+           (list
+            (g* 2 'i 1)
+            (a* 2 'i 1)
+            (a* 2 'i 3))))
+         #t
+         (init
+          (list
+           (cons
+            (a* 2 1 1)
+            (a 3))))
+         (consecutive
+          (list
+           (cons
+            (a* 2 'i+1 1)
+            (a* 2 'i   2))))
+         (final
+          (list
+           (cons
+            (a* 2 'L 2)
+            (a 10))))))
+       (interpret-abstract-conjunction
+        "filter(γ3,α4,α11),sift(α5,α12),alt_length(α6,γ4)")))))
+   "[integers(G1,A7),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),filter(G2,A2,A9),multi('[|]'(building_block('[|]'(filter(G2i1,A2i1,A2i3),[])),Tail2)),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)]"))
+
+(define (generalization/2-head-arg2 arg1 bbs)
+  (define (elem-append lst e) (append lst (list e)))
+  (define bb-ranges (append-map (λ (p) (car p)) bbs))
+  (define bb-starts (map index-range-start bb-ranges))
+  (define bb-ends (map index-range-end-before bb-ranges))
+  (define (blockify atoms)
+    (function
+     'building_block
      (list
-      (abstract-atom 'integers (list (g 1) (a 7)))
-      (multi
+      (concrete-listify
+       (map atom->function atoms)))))
+  (define (wrapper-proc conjunct idx acc)
+    (match acc
+      [(cons conjunction building-block)
+       (match* ((->boolean (member idx bb-starts))
+                (->boolean (member idx bb-ends))
+                (->boolean building-block)
+                (concrete-multi? conjunct))
+         [(#f #f #f  _) (cons (elem-append conjunction conjunct) #f)]
+         [(#f #f #t #f) (cons conjunction (elem-append building-block conjunct))]
+         [(#f #t #f  _) (cons (elem-append conjunction conjunct) #f)]
+         [(#f #t #t  _) (cons (append conjunction (list (blockify building-block)) (list conjunct)) #f)]
+         [(#t #f #f #f) (cons conjunction (list conjunct))]
+         [(#t #t #f #f) (cons conjunction (list conjunct))]
+         [(#t #t #f #t) (cons (elem-append conjunction conjunct) #f)]
+         [(#t #t #t #f) (cons (append conjunction (list (blockify building-block))) (list conjunct))]
+         [(#t #t #t #t) (cons (append conjunction (list (blockify building-block)) (list conjunct)) #f)]
+         [( _  _  _  _) (error "impossible pattern for building block grouping")])]))
+  (define (complete-wrap res)
+    (match res
+      [(cons con #f) con]
+      [(cons con bb)
+       (append
+        con
+        (list
+         (function
+          'building_block
+          bb)))]))
+  (define (group-bb-info bbs)
+    (car
+     (map-accumulatel
+      (λ (e acc)
+        (match e
+          [(cons rngs pos)
+           (let ([new-range
+                  (index-range
+                   (index-range-start
+                    (first rngs))
+                   (+
+                    (index-range-start
+                     (first rngs))
+                    (length rngs)))]
+                 [δ (- (+
+                        (index-range-start
+                         (first rngs))
+                        (length rngs))
+                       (index-range-end-before (last rngs)))])
+             (cons
+              (cons
+               new-range
+               (- pos acc))
+              (+ acc δ)))]))
+      0
+      bbs)))
+  (let* ([wrapped
+          (complete-wrap
+           (foldl
+            wrapper-proc
+            (cons empty #f)
+            arg1
+            (range (length arg1))))]
+         [grouped-bbs
+          (group-bb-info bbs)])
+    (foldl
+     (λ (wci acc)
+       (match acc
+         [(list conjunction appends ti)
+          (let
+              ([containing-range
+                (findf
+                 (λ (r) ; only using car r / car containing-range -> probably don't need multi index position...
+                   (between?
+                    wci
+                    (index-range-start (car r))
+                    (sub1
+                     (index-range-end-before (car r)))))
+                 grouped-bbs)])
+            (cond
+              [(and containing-range (= (index-range-start (car containing-range)) wci))
+               (match-let ([(list new-multi new-appends new-ti)
+                            (group-multi-range wrapped (car containing-range) ti)])
+                 (list
+                  (append conjunction (list new-multi))
+                  (if
+                   (not (null? new-appends))
+                   (append appends new-appends)
+                   appends)
+                  new-ti))] ; take all the conjuncts in the range and group them
+              [containing-range acc]
+              [else (list (append conjunction (list (list-ref wrapped wci))) appends ti)]))]))
+     (list empty empty 1)
+     (stream->list
+      (in-range
+       (length wrapped))))))
+
+(define (group-multi-range conjunction/bbs rng fresh-tail-index)
+  (define (contents-as-list e)
+    (define (racket-listify lst)
+      (match lst
+        [(variable sym) lst] ; can create improper lists!
+        [(function (quote \[\]) (list)) empty]
+        [(function (quote \'\[\|\]\') (list-rest c1 c2))
+         (cons c1 (racket-listify (first c2)))]))
+    (if (concrete-multi? e)
+        (racket-listify
+         (concrete-multi-lst e))
+        (list e)))
+  (define (folded-proc e acc)
+    (match acc
+      ; contents contains contents of a concrete-multi, but it is an (improper) Racket list!
+      ; building blocks are just list elements, but in case an existing multi is added, contents becomes an improper list
+      [(list contents appends ti)
+       #:when (variable? (improper-tail contents))
        (list
-        (abstract-atom*
-         'filter
+        (append
+         (proper-prefix contents)
+         (variable (format-symbol "Tail~a" fresh-tail-index)))
+        (cons
          (list
-          (g* 1 'i 1)
-          (a* 1 'i 1)
-          (a* 1 'i 3))))
-       #t
-       (init
-        (list
-         (cons
-          (a* 1 1 1)
-          (a 1))))
-       (consecutive
-        (list
-         (cons
-          (a* 1 'i+1 1)
-          (a* 1 'i   2))))
-       (final
-        (list
-         (cons
-          (a* 1 'L 2)
-          (a 8)))))
-      (abstract-atom 'filter (list (g 2) (a 2) (a 9)))
-      (multi
+          (improper-tail contents)
+          (contents-as-list e)
+          (variable
+           (format-symbol "Tail~a" fresh-tail-index)))
+         appends)
+        (add1 ti))]
+      [(list contents appends ti)
        (list
-        (abstract-atom*
-         'filter
+        (append contents (contents-as-list e))
+        appends
+        ti)]))
+  (let* ([rng-contents
+          (take
+           (drop
+            conjunction/bbs
+            (index-range-start rng))
+           (-
+            (index-range-end-before rng)
+            (index-range-start rng)))]
+         [raw (foldl folded-proc (list empty empty fresh-tail-index) rng-contents)])
+    (list (concrete-multi (concrete-listify (first raw))) (second raw) (third raw))))
+; TODO: test for building block followed by multi, for multi followed by bb, for several tailed multis
+(module+ test
+  (check-equal?
+   (group-multi-range
+    (list
+     (function
+      'building_block
+      (list
+       (concrete-listify
+        (list
+         (function 'filter (list (variable 'G1) (variable 'A1) (variable 'A2)))))))
+     (function
+      'building_block
+      (list
+       (concrete-listify
+        (list
+         (function 'filter (list (variable 'G2) (variable 'A2) (variable 'A3))))))))
+    (index-range 0 2)
+    1)
+   (list
+    (concrete-multi
+     (concrete-listify
+      (list
+       (function
+        'building_block
+        (list
+         (concrete-listify
+          (list
+           (function 'filter (list (variable 'G1) (variable 'A1) (variable 'A2)))))))
+       (function
+        'building_block
+        (list
+         (concrete-listify
+          (list
+           (function 'filter (list (variable 'G2) (variable 'A2) (variable 'A3))))))))))
+    empty
+    1)))
+
+; TODO definitely needs tests for when existing multi is extended
+(module+ test
+  (check-equal?
+   (format
+    "[~a]"
+    (synth-str
+     (first
+      (generalization/2-head-arg2
+       (generalization/2-head-arg1
+        (interpret-abstract-conjunction
+         "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),alt_length([γ5|α5],γ6)"))
+       (list
+        (cons
          (list
-          (g* 2 'i 1)
-          (a* 2 'i 1)
-          (a* 2 'i 3))))
-       #t
-       (init
-        (list
-         (cons
-          (a* 2 1 1)
-          (a 3))))
-       (consecutive
-        (list
-         (cons
-          (a* 2 'i+1 1)
-          (a* 2 'i   2))))
-       (final
-        (list
-         (cons
-          (a* 2 'L 2)
-          (a 10))))))
-     (interpret-abstract-conjunction
-      "filter(γ3,α4,α11),sift(α5,α12),alt_length(α6,γ4)")))
-"[integers(G1,A7),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),filter(G2,A2,A9),multi('[|]'(building_block('[|]'(filter(G2i1,A2i1,A2i3),[])),Tail2)),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)]"))
+          (index-range 1 2)
+          (index-range 2 3))
+         1))))))
+   "[integers(G1,A6),multi('[|]'(building_block('[|]'(filter(G2,A1,A7),[])),'[|]'(building_block('[|]'(filter(G3,A2,A8),[])),[]))),filter(G4,A3,A9),sift(A4,A10),alt_length(A11,G6)]")
+  (let* ([pre
+          (list
+           (abstract-atom 'integers (list (g 36) (a 820)))
+           (abstract-atom 'filter (list (g 62) (a 821) (a 830)))
+           (multi
+            (list
+             (abstract-atom*
+              'filter
+              (list
+               (g* 1 'i 1)
+               (a* 1 'i 1)
+               (a* 1 'i 2))))
+            #t
+            (init
+             (list
+              (cons
+               (a* 1 1 1)
+               (a 831))))
+            (consecutive
+             (list
+              (cons
+               (a* 1 'i+1 1)
+               (a* 1 'i   2))))
+            (final
+             (list
+              (cons
+               (a* 1 'L 2)
+               (a 380)))))
+           (abstract-atom 'filter (list (g 28) (a 381) (a 400)))
+           (abstract-atom 'sift (list (a 401) (a 420)))
+           (abstract-atom 'alt_length (list (a 421) (g 32))))]
+         [arg1 (generalization/2-head-arg1 pre)])
+    (check-equal?
+     (format
+      "[~a]"
+      (synth-str
+       (first
+        (generalization/2-head-arg2
+         arg1
+         (list
+          (cons
+           (list
+            (index-range 1 2)
+            (index-range 2 3))
+           1))))))
+     "[integers(G36,A820),multi('[|]'(building_block('[|]'(filter(G62,A821,A830),[])),'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1))),filter(G28,A381,A400),sift(A401,A420),alt_length(A421,G32)]")))

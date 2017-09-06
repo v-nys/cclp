@@ -41,6 +41,7 @@
 
 (define (between? val lower upper)
   (and (>= val lower) (<= val upper)))
+(provide between?)
 
 (define-syntax-rule (interactive-dispatch prompt (label body ...) ...)
   (#%app

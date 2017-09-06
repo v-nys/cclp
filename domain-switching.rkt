@@ -37,6 +37,28 @@
 
 (define cons-symbol (string->symbol "'[|]'"))
 (define concrete-nil (function (string->symbol "[]") (list)))
+(define (concrete-listify lst)
+  (let* ([prefix (proper-prefix lst)]
+         [proper? (equal? prefix lst)])
+  (foldr
+   (λ (e acc) (function cons-symbol (list e acc)))
+   (if proper? concrete-nil (improper-tail lst))
+   (if proper? lst prefix))))
+(provide concrete-listify)
+
+(define (improper-tail imlist)
+  (match imlist
+    [(cons h t)
+     (improper-tail t)]
+    [t t]))
+(provide improper-tail)
+
+(define (proper-prefix lst)
+  (match lst
+    [(list-rest h t)
+     (cons h (proper-prefix t))]
+    [_ empty]))
+(provide proper-prefix)
 
 (define (get-maximum-abstract-var type-test? index-selector vals)
   (foldl
@@ -215,11 +237,14 @@
 
 ;; note: this is concrete-synth-counterpart rather than concretize because concretization of multi is infinite set
 ;; this is close, but it is specifically for synthesis (which is also why constraints are not applied to concrete multi)
+
+(define (atom->function a)
+  (match a
+    [(atom sym args)
+     (function sym args)]))
+(provide atom->function)
+
 (define (concrete-synth-counterpart elem)
-  (define (atom->function a)
-    (match a
-      [(atom sym args)
-       (function sym args)]))
   (define (aux e tail-no)
     (match e
       [(a idx) (cons (variable (format-symbol "A~a" idx)) tail-no)]
@@ -234,6 +259,7 @@
         (abstract-atom sym args)
         (abstract-atom* sym args))
        (cons (atom sym (map (λ (a) (car (aux a 'dummy))) args)) tail-no)]
+      ; FIXME: need to apply init bindings
       [(multi patt _ _ _ _)
        (cons
         (concrete-multi
@@ -243,10 +269,7 @@
            (function
             'building_block
             (list
-             (foldr
-              (λ (e acc) (function cons-symbol (list e acc)))
-              concrete-nil
-              (map (compose atom->function (λ (a) (car (aux a 'dummy)))) patt))))
+             (concrete-listify (map (compose atom->function (λ (a) (car (aux a 'dummy)))) patt))))
            (variable (format-symbol "Tail~a" tail-no)))))
         (add1 tail-no))]
       [(? list?)
