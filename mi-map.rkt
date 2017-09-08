@@ -33,11 +33,15 @@
          (only-in "abstraction-inspection-utils.rkt"
                   extract-abstract-compounds
                   extract-all-variables/duplicates
-                  get-multi-id)
+                  extract-all-variables/duplicates/exclude-consecutive
+                  get-multi-id
+                  maximum-var-index)
          "abstract-multi-domain.rkt"
+         (only-in "abstract-renaming.rkt" rename-apart)
          "cclp-interpreter.rkt"
          "concrete-domain.rkt"
          (prefix-in ck: "concrete-knowledge.rkt")
+         (only-in "concrete-inspection-utils.rkt" mask-singletons extract-all-concrete-variables/duplicates)
          (only-in "control-flow.rkt" aif it)
          "domain-switching.rkt"
          (only-in "gen-graph-structs.rkt" index-range index-range-start index-range-end-before)
@@ -273,7 +277,7 @@
 
 (define (untangle init-ac)
   (define var-occurrences
-    (extract-all-variables/duplicates init-ac))
+    (extract-all-variables/duplicates/exclude-consecutive init-ac))
   (define max-var-indices
     (foldl find-max-vars (hash) var-occurrences))
   ;; gives fresh variables for n-1 occurrences of each abstract variable in var-occurrences
@@ -322,10 +326,10 @@
       (list
        (abstract-atom*
         'filter
-        (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 3))))
+        (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
       (init (list (cons (a* 1 1 1) (a 2))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))) ; note: use of a variable in consecutive is not considered aliasing!
       (final (list (cons (a* 1 'L 2) (a 8)))))
      (abstract-atom 'filter (list (g 3) (a 3) (a 9)))
      (abstract-atom 'sift (list (a 4) (a 10)))
@@ -333,7 +337,6 @@
     (list
      (cons (a 1) (a 6))
      (cons (a 2) (a 7))
-     (cons (a* 1 'i 2) (a* 1 'i 3))
      (cons (a 3) (a 8))
      (cons (a 4) (a 9))
      (cons (a 5) (a 10)))))
@@ -358,7 +361,7 @@
       (multi
        (list
         (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 4)))
-        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 5))))
+        (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
        #f
        (init (list (cons (a* 1 1 2) (a 5))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
@@ -371,7 +374,6 @@
      (cons (a 4) (a 11))
      (cons (a* 1 'i 1) (a* 1 'i 4))
      (cons (a 5) (a 12))
-     (cons (a* 1 'i 3) (a* 1 'i 5))
      (cons (a 6) (a 13))
      (cons (a 7) (a 14))))))
 (provide
@@ -379,59 +381,291 @@
   untangle
   (->
    (listof abstract-conjunct?)
-   (listof abstract-conjunct?))
+   list?)
   (ac)
-  @{Undoes the aliasing in abstract conjunction @racket[ac] and returns an association list with duplicate keys with the required information to restore aliasing.
+  @{Undoes the aliasing in abstract conjunction @racket[ac] and returns the modified conjunction plus association list with duplicate keys with the required information to restore aliasing.
  This is useful for generation of generalization/2 clauses for the meta-interpreter, as aliasing must be matched in these clauses and must not be enforced by unification.}))
 
-(define (generate-generalization-clause parent child blocks)
-  ; first, compute untangled and deconstructed parent
-  ; then, compute the concrete version of that (this should also yield an abstract-concrete substitution)
-  ; that becomes the first argument
-  ; then, from the building blocks, figure out which elements in that concrete version are grouped
-  ; that gives the second argument
-  ; then, compute the body: needs the abstract-concrete substitution (for translation and groundness), the deconstruction (nonvar and decomposition), the aliasing pairs (for obvious reasons)
-  (display "not implemented yet"))
-(module+ test
-  (define node-33-parent-conjunction
-    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),alt_length(α5,γ5)"))
-  (define node-33-child-conjunction
-    (append
-     (cons
-      (abstract-atom 'integers (list (g 1) (a 1)))
+(define (deconstruction-atoms replacements)
+  (append-map
+   (match-lambda
+     [(cons (cons (abstract-function sym args) top?) repl-avar)
       (list
-       (multi
+       (format "nonvar(~a)" (synth-str (concrete-synth-counterpart repl-avar)))
+       (format
+        "~a =.. [~a~a]"
+        (synth-str (concrete-synth-counterpart repl-avar))
+        sym
+        (if
+         (not
+          (null? args))
+         (string-join
+          (map (compose synth-str concrete-synth-counterpart) args)
+          ","
+          #:before-first ",")
+         "")))])
+   replacements))
+
+(define (groundness-atoms con repl)
+  (remove-duplicates
+   (filter
+    (λ (v)
+      (eqv?
+       (string-ref
+        (symbol->string
+         (variable-name v))
+        0)
+       #'G))
+    (append
+     (extract-all-concrete-variables/duplicates con)
+     (extract-all-concrete-variables/duplicates
+      (map
+       (match-lambda
+         [(cons (cons afunc _) _)
+          (concrete-synth-counterpart afunc)])
+       repl))))))
+
+(define (append-atoms appends)
+  (map
+   (match-lambda
+     [(list (variable name-tail1) contents-as-list (variable name-tail2))
+      (format
+       "append(~a,~a,~a)"
+       name-tail1
+       (concrete-listify
+        contents-as-list)
+       name-tail2)])
+   appends))
+
+(define (aliasing-constraints aliasing)
+  (map
+   (match-lambda
+     [(cons av1 av2)
+      (format
+       "~a == ~a"
+       (synth-str (concrete-synth-counterpart av1))
+       (synth-str (concrete-synth-counterpart av2)))])
+   aliasing))
+
+(define (pattern-check a-multi c-multi)
+  (define (concrete-patternize e)
+    (match e
+      [(? list?)
+       (string-join
+        (map concrete-patternize e)
+        ",")]
+      [(or
+        (abstract-atom sym args)
+        (abstract-function sym args))
+       (format
+        "~a(~a)"
+        sym
+        (string-join
+         (map
+          concrete-patternize
+          args)
+         ","))]
+      [(a* _ _ _) "_-a"]
+      [(g* _ _ _) "_-g"]))
+  (match* (a-multi c-multi)
+    [((multi patt _ _ _ _) (concrete-multi c-lst))
+     (format
+      "check_pattern(~a,building_block([~a]))"
+      (synth-str c-lst)
+      (concrete-patternize patt))]))
+
+(define (localize a)
+  (match a
+    [(? list?) (map localize a)]
+    [(abstract-atom* sym args)
+     (abstract-atom sym (map localize args))]
+    [(abstract-function* sym args)
+     (abstract-function sym (map localize args))]
+    [(a* _ _ i) (a i)]
+    [(g* _ _ i) (g i)]))
+
+(define (consecutive-check a-multi c-multi acon)
+  (define (correct-aliasing local-pattern consec fresh)
+    (define (replacement-proc e acc)
+      (match e
+        [(abstract-atom sym args)
+         (match-let
+             ([(cons replaced new-fresh)
+               (map-accumulatel replacement-proc fresh args)])
+           (cons (abstract-atom sym replaced) new-fresh))]
+        [(abstract-function sym args)
+         (match-let
+             ([(cons replaced new-fresh)
+               (map-accumulatel replacement-proc fresh args)])
+           (cons (abstract-function sym replaced) new-fresh))]
+        [(a i)
+         ; would be more readable if consec was turned into a hash
+         #:when (member e (map (compose localize car) consec))
+         (cons (cdr (findf (match-lambda [(cons k v) (equal? (localize k) e)]) consec)) fresh)]
+        [(g i)
+         ; would be more readable if consec was turned into a hash
+         #:when (member e (map (compose localize car) consec))
+         (cons (cdr (findf (match-lambda [(cons k v) (equal? (localize k) e)]) consec)) fresh)]
+        [(a i)
+         (cons (a fresh) (add1 fresh))]
+        [(g i)
+         (cons (g fresh) (add1 fresh))]))
+    (car
+     (map-accumulatel
+      replacement-proc
+      fresh
+      local-pattern)))
+  (let* ([localized-pattern (localize (multi-conjunction a-multi))]
+         [fresh (add1 (maximum-var-index localized-pattern (λ (_) #t)))]
+         [correctly-aliased (correct-aliasing localized-pattern (consecutive-constraints (multi-consecutive a-multi)) fresh)]
+         [joined-and-renamed (rename-apart (list localized-pattern correctly-aliased) acon)]
+         [masked (mask-singletons joined-and-renamed)])
+    (format "check_consecutive(~a,building_block(~a),building_block(~a))" (concrete-multi-lst c-multi) (first masked) (second masked))))
+
+(define (last-check a-multi c-multi)
+  (define (erase-or-substitute constraints e)
+    (match e
+      [(abstract-atom sym args)
+       (abstract-atom sym (map (curry erase-or-substitute constraints) args))]
+      [(abstract-function sym args)
+       (abstract-function sym (map (curry erase-or-substitute constraints) args))]
+      [(? abstract-variable?)
+       (aif
+        (hash-ref constraints e)
+        it
+        (abstract-function 'd empty))]))
+  (let* ([localized-pattern
+          (multi-conjunction a-multi)]
+         [localized-constraints
+          (map (match-lambda [(cons k v) (cons (localize k) v)]) (final-constraints (multi-final a-multi)))]
+         [aarg2
+          (erase-or-substitute
+           (make-hash localized-constraints)
+           localized-pattern)])
+    (format "check_last(~a,building_block([~a]))" (concrete-multi-lst c-multi) (concrete-synth-counterpart aarg2))))
+
+(define (init-check a-multi c-multi)
+  (define (first-elem-lst lst-func)
+    (match lst-func
+      [(function cons-symbol args)
+       (function cons-symbol (list (first args) concrete-nil))]))
+  (define (erase-or-substitute constraints e)
+    (match e
+      [(abstract-atom sym args)
+       (atom sym (map (curry erase-or-substitute constraints) args))]
+      [(abstract-function sym args)
+       (function sym (map (curry erase-or-substitute constraints) args))]
+      [(? abstract-variable?)
+       (aif
+        (hash-ref constraints e)
+        (concrete-synth-counterpart it)
+        (function '- (list (variable '_) (function 'a empty))))]))
+  (let* ([localized-pattern
+          (multi-conjunction a-multi)]
+         [localized-constraints
+          (map (match-lambda [(cons k v) (cons (localize k) v)]) (init-constraints (multi-init a-multi)))]
+         [aarg2
+          (erase-or-substitute
+           (make-hash localized-constraints)
+           localized-pattern)])
+    (format "check_init(~a,building_block([~a]))" (first-elem-lst (concrete-multi-lst c-multi)) (concrete-synth-counterpart aarg2))))
+
+(define (multi-checks acon con)
+  (foldl
+   (λ (a c acc)
+     (cond
+       [(and (multi? a) (concrete-multi? c))
         (list
-         (abstract-atom*
-          'filter
+         (pattern-check a c)
+         (init-check a c)
+         (consecutive-check a c acon)
+         (last-check a c))]
+       [(xor (multi? a) (concrete-multi? c))
+        (error "abstract and concrete conjunction are out of sync")]
+       [else acc]))
+   empty
+   acon
+   con))
+
+(define (generate-generalization-clause parent blocks)
+  (match-let*
+      ([(list untangled aliasing)
+        (untangle parent)]
+       [(cons deconstructed compound-replacements)
+        (deconstruct untangled)]
+       [arg1 (concrete-synth-counterpart deconstructed)]
+       [(list arg2 appends _ti)
+        (generalization/2-head-arg2 arg1 blocks)]
+       [body-atoms
+        (append
+         (deconstruction-atoms compound-replacements)
+         (aliasing-constraints aliasing)
+         (groundness-atoms arg1 compound-replacements)
+         (append-atoms appends)
+         (multi-checks parent arg1)
+         (list "!"))])
+    (format
+     "generalization([~a],[~a]) :- \n  ~a."
+     (synth-str arg1)
+     (synth-str arg2)
+     (string-join body-atoms ",\n  "))))
+(module+ test
+  (let ([node-33-parent-conjunction
+         (append
+          (interpret-abstract-conjunction
+           (string-append
+            "integers(γ1,α1),"
+            "filter(γ2,α1,α2),"
+            "filter(γ3,α2,α3),"
+            "filter(γ4,α3,α4),"
+            "sift(α4,α5)"))
           (list
-           (g* 1 'i 1)
-           (a* 1 'i 1)
-           (a* 1 'i 2))))
-        #t
-        (init
+           (abstract-atom
+            'alt_length
+            (list
+             (abstract-function
+              cons-symbol ; interpret-... just parses straight brackets as 'cons instead of cons-symbol
+              (list (g 5) (a 5)))
+             (g 6)))))]
+        [node-33-building-blocks
          (list
-          (cons (a* 1 1 1) (a 2))))
-        (consecutive
-         (list
-          (cons
-           (a* 1 'i+1 1)
-           (a* 1 'i   2))))
-        (final
-         (list
-          (cons
-           (a* 1 'L 2)
-           (a 3)))))))
-     (interpret-abstract-conjunction "sift(α4,α5),alt_length(α5,γ5)")))
+          (cons (list (index-range 1 2) (index-range 2 3)) 1))])
+    (check-equal?
+     (generate-generalization-clause
+      node-33-parent-conjunction
+      node-33-building-blocks)
+     (string-append
+      "generalization(["
+      "integers(G1,A6),"
+      "filter(G2,A1,A7),"
+      "filter(G3,A2,A8),"
+      "filter(G4,A3,A9),"
+      "sift(A4,A10),"
+      "alt_length(A11,G6)"
+      "],["
+      "integers(G1,A6),"
+      "multi('[|]'("
+      "building_block('[|]'(filter(G2,A1,A7),[])),"
+      "'[|]'(building_block('[|]'(filter(G3,A2,A8),[])),[]))),"
+      "filter(G4,A3,A9),"
+      "sift(A4,A10),"
+      "alt_length(A11,G6)"
+      "]) :- \n"
+      "  nonvar(A11),\n"
+      "  A11 =.. ['[|]',G5,A5],\n"
+      "  A1 == A6,\n"
+      "  A2 == A7,\n"
+      "  A3 == A8,\n"
+      "  A4 == A9,\n"
+      "  A5 == A10,\n"
+      "  !."))))
     
-  ;  (check-equal?
-  ;   (generate-generalization-clause
-  ;    node-33-parent-conjunction
-  ;    node-33-child-conjunction
-  ;    (list (cons (index-range 1 2) 1)
-  ;          (cons (index-range 2 3) 1)))
-  ;   "")
-  )
+;  (check-equal?
+;   (generate-generalization-clause
+;    node-33-parent-conjunction
+;    (list (cons (index-range 1 2) 1)
+;          (cons (index-range 2 3) 1)))
+;   "")
 
 ;; auxiliary function for untangle
 ;; allows comparison of constructors
@@ -762,7 +996,7 @@
 
 (define (generalization/2-head-arg1 ac)
   (match-let*
-      ([(cons untangled aliasing)
+      ([(list untangled aliasing)
         (untangle ac)]
        [(cons deconstructed compound-replacements)
         (deconstruct untangled)])
@@ -874,7 +1108,14 @@
             (a 10))))))
        (interpret-abstract-conjunction
         "filter(γ3,α4,α11),sift(α5,α12),alt_length(α6,γ4)")))))
-   "[integers(G1,A7),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),filter(G2,A2,A9),multi('[|]'(building_block('[|]'(filter(G2i1,A2i1,A2i3),[])),Tail2)),filter(G3,A4,A11),sift(A5,A12),alt_length(A6,G4)]"))
+   (string-append
+    "[integers(G1,A7),"
+    "multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),"
+    "filter(G2,A2,A9),"
+    "multi('[|]'(building_block('[|]'(filter(G2i1,A2i1,A2i3),[])),Tail2)),"
+    "filter(G3,A4,A11),"
+    "sift(A5,A12),"
+    "alt_length(A6,G4)]")))
 
 (define (generalization/2-head-arg2 arg1 bbs)
   (define (elem-append lst e) (append lst (list e)))
@@ -1127,4 +1368,4 @@
             (index-range 1 2)
             (index-range 2 3))
            1))))))
-     "[integers(G36,A820),multi('[|]'(building_block('[|]'(filter(G62,A821,A830),[])),'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1))),filter(G28,A381,A400),sift(A401,A420),alt_length(A421,G32)]")))
+     "[integers(G36,A820),multi('[|]'(building_block('[|]'(filter(G62,A821,A830),[])),'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1))),filter(G28,A381,A400),sift(A401,A420),alt_length(A421,G32)]")))

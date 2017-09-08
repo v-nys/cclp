@@ -180,24 +180,25 @@
   (check-equal?
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f))
 
-(define (extract-all-variables/duplicates v)
+(define (extract-all-variables/duplicates/base v exclude-consecutive?)
+  (define rec (λ (e) (extract-all-variables/duplicates/base e exclude-consecutive?)))
   (match v
     [(list-rest h t)
      (append
-      (extract-all-variables/duplicates h)
-      (append-map extract-all-variables/duplicates t))]
+      (rec h)
+      (append-map rec t))]
     [(multi conjunction _ (init ic) (consecutive cc) (final fc))
      (append
-      (append-map extract-all-variables/duplicates conjunction)
-      (append-map (compose extract-all-variables/duplicates cdr) ic)
-      (append-map (compose extract-all-variables/duplicates cdr) cc)
-      (append-map (compose extract-all-variables/duplicates cdr) fc))]
+      (append-map rec conjunction)
+      (append-map (compose rec cdr) ic)
+      (if exclude-consecutive? empty (append-map (compose rec cdr) cc))
+      (append-map (compose rec cdr) fc))]
     [(or
       (abstract-atom _ args)
       (abstract-function _ args)
       (abstract-atom* _ args)
       (abstract-function* _ args))
-     (append-map extract-all-variables/duplicates args)]
+     (append-map rec args)]
     [(or
       (g _)
       (a _)
@@ -205,6 +206,21 @@
       (a* _ _ _))
      (list v)]
     [_ empty]))
+
+(define (extract-all-variables/duplicates/exclude-consecutive v)
+  (extract-all-variables/duplicates/base v #t))
+(provide
+ (proc-doc/names
+  extract-all-variables/duplicates/exclude-consecutive
+  (->
+   (or/c abstract-domain-elem*? abstract-variable*?)
+   (listof (or/c abstract-variable? abstract-variable*?)))
+  (v)
+  @{Extracts all @racket[abstract-variable*] values in @racket[v] and returns them as a list,
+ in order of occurrence. Unlike @racket[extract-all-variables/duplicates], this does not take into account variables with index i which occur in consecutive constraints.}))
+
+(define (extract-all-variables/duplicates v)
+  (extract-all-variables/duplicates/base v #f))
 (provide
  (proc-doc/names
   extract-all-variables/duplicates
