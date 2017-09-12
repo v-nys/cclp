@@ -39,8 +39,7 @@
         [(some? opt2) (some-v opt2)]
         [else default]))
 
-; TODO might want some tests here, buddy
-(define (offset-vars renamee a-offset g-offset)
+(define (offset-vars/substitution renamee a-offset g-offset)
   (let* ([a-indices (assemble-var-indices a? renamee)]
          [g-indices (assemble-var-indices g? renamee)]
          [subst
@@ -51,7 +50,12 @@
            (map
             (λ (index) (abstract-equality (g index) (g (+ g-offset index))))
             g-indices))])
-    (apply-substitution subst renamee)))
+    (cons
+     (apply-substitution subst renamee)
+     subst)))
+
+(define (offset-vars renamee a-offset g-offset)
+  (car (offset-vars/substitution renamee a-offset g-offset)))
 (provide
  (proc-doc/names
   offset-vars
@@ -64,14 +68,18 @@
   @{Offset the "any" variables in an abstraction by @racket[a-offset]
  and offset the "ground" variables by @racket[g-offset].}))
 
-(define (rename-apart renamee non-renamee)
+(define (rename-apart/substitution renamee non-renamee)
   (let* ([g-max-non-renamee (maximum-var-index non-renamee g?)]
          [a-max-non-renamee (maximum-var-index non-renamee a?)]
          [g-max-renamee (maximum-var-index renamee g?)]
          [a-max-renamee (maximum-var-index renamee a?)]
          [g-offset (opt-max g-max-non-renamee g-max-renamee 0)]
          [a-offset (opt-max a-max-non-renamee a-max-renamee 0)])
-    (offset-vars renamee a-offset g-offset)))
+    (offset-vars/substitution renamee a-offset g-offset)))
+(provide rename-apart/substitution)
+
+(define (rename-apart renamee non-renamee)
+  (car (rename-apart/substitution renamee non-renamee)))
 (provide
  (contract-out
   [rename-apart

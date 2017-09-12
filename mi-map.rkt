@@ -30,15 +30,16 @@
          sugar/coerce
          "abstract-analysis.rkt"
          (prefix-in ak: "abstract-knowledge.rkt")
+         (only-in "abstract-substitution.rkt" apply-substitution)
          (only-in "abstraction-inspection-utils.rkt"
                   extract-abstract-compounds
                   extract-variables/duplicates
                   extract-all-variables/duplicates
-                  extract-all-variables/duplicates/exclude-consecutive-and-last
+                  extract-all-variables/duplicates/exclude-constraints
                   get-multi-id
                   maximum-var-index)
          "abstract-multi-domain.rkt"
-         (only-in "abstract-renaming.rkt" rename-apart)
+         (only-in "abstract-renaming.rkt" rename-apart rename-apart/substitution)
          "cclp-interpreter.rkt"
          "concrete-domain.rkt"
          (prefix-in ck: "concrete-knowledge.rkt")
@@ -279,7 +280,7 @@
 
 (define (untangle init-ac)
   (define var-occurrences
-    (extract-all-variables/duplicates/exclude-consecutive-and-last init-ac))
+    (extract-all-variables/duplicates/exclude-constraints init-ac))
   (define max-var-indices
     (foldl find-max-vars (hash) var-occurrences))
   ;; gives fresh variables for n-1 occurrences of each abstract variable in var-occurrences
@@ -323,7 +324,7 @@
    (list
     (list
      (abstract-atom 'integers (list (g 1) (a 6)))
-     (abstract-atom 'filter (list (g 2) (a 1) (a 7)))
+     (abstract-atom 'filter (list (g 2) (a 1) (a 2)))
      (multi
       (list
        (abstract-atom*
@@ -333,14 +334,13 @@
       (init (list (cons (a* 1 1 1) (a 2))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))) ; note: use of a variable in consecutive is not considered aliasing!
       (final (list (cons (a* 1 'L 2) (a 3)))))
-     (abstract-atom 'filter (list (g 3) (a 3) (a 8)))
-     (abstract-atom 'sift (list (a 4) (a 9)))
+     (abstract-atom 'filter (list (g 3) (a 3) (a 7)))
+     (abstract-atom 'sift (list (a 4) (a 8)))
      (abstract-atom 'length (list (a 5) (g 4))))
     (list
      (cons (a 1) (a 6))
-     (cons (a 2) (a 7))
-     (cons (a 4) (a 8))
-     (cons (a 5) (a 9)))))
+     (cons (a 4) (a 7))
+     (cons (a 5) (a 8)))))
   (check-equal?
    (untangle
     (append
@@ -357,7 +357,7 @@
       (interpret-abstract-conjunction "collect(γ4,α7),eq(α6,α7)"))))
    (list
     (append
-     (interpret-abstract-conjunction "collect(γ1,α8),collect(γ2,α9),append(α1,α2,α10),collect(γ3,α11),append(α3,α4,α12)")
+     (interpret-abstract-conjunction "collect(γ1,α8),collect(γ2,α9),append(α1,α2,α10),collect(γ3,α11),append(α3,α4,α5)")
      (cons
       (multi
        (list
@@ -367,15 +367,14 @@
        (init (list (cons (a* 1 1 2) (a 5))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
        (final (list (cons (a* 1 'L 3) (a 6)))))
-      (interpret-abstract-conjunction "collect(γ4,α13),eq(α6,α7)")))
+      (interpret-abstract-conjunction "collect(γ4,α12),eq(α6,α7)")))
     (list
      (cons (a 1) (a 8))
      (cons (a 2) (a 9))
      (cons (a 3) (a 10))
      (cons (a 4) (a 11))
      (cons (a* 1 'i 1) (a* 1 'i 4))
-     (cons (a 5) (a 12))
-     (cons (a 7) (a 13))))))
+     (cons (a 7) (a 12))))))
 (provide
  (proc-doc/names
   untangle
@@ -432,8 +431,9 @@
       (format
        "append(~a,~a,~a)"
        name-tail1
-       (concrete-listify
-        contents-as-list)
+       (synth-str
+        (concrete-listify
+         contents-as-list))
        name-tail2)])
    appends))
 
@@ -555,7 +555,7 @@
            localized-pattern)])
     (format "check_last(~a,building_block([~a]))" (synth-str (concrete-multi-lst c-multi)) (synth-str (concrete-synth-counterpart aarg2)))))
 
-(define (init-check a-multi c-multi)
+(define (new-init-check a-multi c-multi acon con)
   (define (first-elem-lst lst-func)
     (match lst-func
       [(function cons-symbol args)
@@ -572,16 +572,64 @@
        (aif
         (hash-ref constraints e #f)
         (concrete-synth-counterpart it)
-        (function '- (list (variable '_) (function 'a empty))))]))
-  (let* ([localized-pattern
-          (localize (multi-conjunction a-multi))]
-         [localized-constraints
-          (map (match-lambda [(cons k v) (cons (localize k) v)]) (init-constraints (multi-init a-multi)))]
-         [aarg2
-          (erase-or-substitute
-           (make-hash localized-constraints)
-           localized-pattern)])
-    (format "check_init(~a,building_block([~a]))" (synth-str (first-elem-lst (concrete-multi-lst c-multi))) (synth-str aarg2))))
+        (variable '_))]))
+  (match-let*
+      ([(cons localized-pattern subst)
+        (rename-apart/substitution
+         (localize
+          (multi-conjunction a-multi))
+         acon)]
+       [localized-constraints
+        (map
+         (match-lambda [(cons k v) (cons (apply-substitution subst (localize k)) v)])
+         (init-constraints (multi-init a-multi)))]
+       [template-bb
+        (erase-or-substitute
+         (make-hash localized-constraints)
+         localized-pattern)])
+    (format
+     "unchanged_under_substitution([~a],~a,[building_block([~a])])"
+     (synth-str con)
+     (synth-str (first-elem-lst (concrete-multi-lst c-multi)))
+     (synth-str template-bb))))
+
+;; TODO merge with previous function
+(define (new-last-check a-multi c-multi acon con)
+  (define (erase-or-substitute constraints e)
+    (match e
+      [(? list?)
+       (map (curry erase-or-substitute constraints) e)]
+      [(abstract-atom sym args)
+       (atom sym (map (curry erase-or-substitute constraints) args))]
+      [(abstract-function sym args)
+       (function sym (map (curry erase-or-substitute constraints) args))]
+      [(? abstract-variable?)
+       (aif
+        (hash-ref constraints e #f)
+        (concrete-synth-counterpart it)
+        (variable '_))]))
+  (match-let*
+      ([(cons localized-pattern subst)
+        (rename-apart/substitution
+         (localize
+          (multi-conjunction a-multi))
+         acon)]
+       [localized-constraints
+        (map
+         (match-lambda [(cons k v) (cons (apply-substitution subst (localize k)) v)])
+         (final-constraints (multi-final a-multi)))]
+       [template-bb
+        (erase-or-substitute
+         (make-hash localized-constraints)
+         localized-pattern)])
+    (let ([last-bb (symbol->string (gensym "Last"))])
+      (format
+       "last(~a,~a),unchanged_under_substitution([~a],~a,[building_block([~a])])"
+       (synth-str (concrete-multi-lst c-multi))
+       last-bb
+       (synth-str con)
+       last-bb
+       (synth-str template-bb)))))
 
 (define (multi-checks acon con additional-vars)
   (foldl
@@ -590,9 +638,9 @@
        [(and (multi? a) (concrete-multi? c))
         (list
          (pattern-check a c)
-         (init-check a c)
+         (new-init-check a c acon con)
          (consecutive-check a c acon additional-vars)
-         (last-check a c))]
+         (new-last-check a c acon con))]
        [(xor (multi? a) (concrete-multi? c))
         (error "abstract and concrete conjunction are out of sync")]
        [else acc]))
@@ -612,15 +660,20 @@
        [body-atoms
         (append
          (deconstruction-atoms compound-replacements)
-         (aliasing-constraints aliasing) ; should not produce this if abstract variable only occurs in Last
-         (map (compose (λ (e) (format "ground(~a)" e)) synth-str) (groundness-atoms arg1 compound-replacements))
          (append-atoms appends) ; introduces new vars TailN but these will never clash with other names
          (multi-checks
           parent
           arg1
           (append
-            (map cdr aliasing)
-            (extract-variables/duplicates deconstructed)))
+           (map cdr aliasing)
+           (extract-variables/duplicates deconstructed)))
+         (aliasing-constraints aliasing) ; should not produce this if abstract variable only occurs in Last
+         (map
+          (compose
+           (λ (e)
+             (format "ground(~a)" e))
+           synth-str)
+          (groundness-atoms arg1 compound-replacements))
          (list "!"))])
     (format
      "generalization([~a],[~a]) :- \n  ~a."
@@ -730,32 +783,110 @@
      (string-append
       "generalization(["
       "integers(G1,A6),"
-      "filter(G2,A1,A7),"
+      "filter(G2,A1,A2),"
       "multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),"
-      "filter(G3,A3,A8),"
-      "sift(A4,A9),"
+      "filter(G3,A3,A7),"
+      "sift(A4,A8),"
       "alt_length(A5,G4)],"
       "["
       "integers(G1,A6),"
       "multi('[|]'("
-        "building_block('[|]'(filter(G2,A1,A7),[])),"
-        "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),"
-          "Tail1))),"
-      "filter(G3,A3,A8),"
-      "sift(A4,A9),"
+      "building_block('[|]'(filter(G2,A1,A2),[])),"
+      "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),"
+      "Tail1))),"
+      "filter(G3,A3,A7),"
+      "sift(A4,A8),"
       "alt_length(A5,G4)]) :- \n"
+      "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(_-g,_-a,_-a)])),\n"
+      "  check_init('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),building_block([filter(-(_,a),-(A2,a),-(_,a))])),\n"
+      "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G5,A9,A10)]),building_block([filter(G7,A10,A11)])),\n"
+      "  check_last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(d,d,A3)])),\n"
       "  A1 == A6,\n"
-      "  A2 == A7,\n"
-      "  A4 == A8,\n"
-      "  A5 == A9,\n"
+      "  A4 == A7,\n"
+      "  A5 == A8,\n"
       "  ground(G1),\n"
       "  ground(G2),\n"
       "  ground(G1i1),\n"
       "  ground(G3),\n"
       "  ground(G4),\n"
+      "  !.")))
+  (let ([node-61-parent-conjunction
+         (append
+          (list
+           (abstract-atom 'integers (list (g 1) (a 1)))
+           (multi
+            (list
+             (abstract-atom*
+              'filter
+              (list
+               (g* 1 'i 1)
+               (a* 1 'i 1)
+               (a* 1 'i 2))))
+            #t
+            (init
+             (list
+              (cons (a* 1 1 1)
+                    (a 1))))
+            (consecutive
+             (list
+              (cons (a* 1 'i+1 1)
+                    (a* 1 'i 2))))
+            (final
+             (list
+              (cons (a* 1 'L 2)
+                    (a 2))))))
+          (interpret-abstract-conjunction
+           (string-append
+            "filter(γ2,α2,α3),"
+            "filter(γ3,α3,α4),"
+            "sift(α4,α5)"))
+          (list
+           (abstract-atom
+            'alt_length
+            (list
+             (abstract-function cons-symbol (list (g 4) (a 5)))
+             (g 6)))))]
+        [node-61-building-blocks
+         (list
+          (cons
+           (list
+            (index-range 1 2)
+            (index-range 2 3))
+           1))])
+    (check-equal?
+     (generate-generalization-clause
+      node-61-parent-conjunction
+      node-61-building-blocks)
+     (string-append
+      "generalization(["
+      "integers(G1,A1),"
+      "multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),"
+      "filter(G2,A2,A6),"
+      "filter(G3,A3,A7),"
+      "sift(A4,A8),"
+      "alt_length(A9,G6)],"
+      "["
+      "integers(G1,A1),"
+      "multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail2)),"
+      "filter(G3,A3,A7),"
+      "sift(A4,A8),"
+      "alt_length(A9,G6)]) :- \n  "
+      "nonvar(A9),\n"
+      "  A9 =.. ['[|]',G4,A5],\n"
+      "  append(Tail1,'[|]'(building_block('[|]'(filter(G2,A2,A6),[])),[]),Tail2),\n"
       "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(_-g,_-a,_-a)])),\n"
-      "  check_init('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),building_block([filter(-(_,a),A2,-(_,a))])),\n"
-      "  check_last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(d,d,A3)])),\n"
+      "  check_init('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),building_block([filter(-(_,a),-(A1,a),-(_,a))])),\n"
+      "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G7,A10,A11)]),building_block([filter(G9,A11,A12)])),\n"
+      "  check_last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(d,d,A2)])),\n"
+      "  A3 == A6,\n"
+      "  A4 == A7,\n"
+      "  A5 == A8,\n"
+      "  ground(G1),\n"
+      "  ground(G1i1),\n"
+      "  ground(G2),\n"
+      "  ground(G3),\n"
+      "  ground(G6),\n"
+      "  ground(G4),\n"
       "  !."))))
 
 ;; auxiliary function for untangle
@@ -1213,6 +1344,20 @@
   (define bb-ranges (append-map (λ (p) (car p)) bbs))
   (define bb-starts (map index-range-start bb-ranges))
   (define bb-ends (map index-range-end-before bb-ranges))
+  (define max-ti
+    (apply
+     max
+     (map
+      (compose
+       string->number
+       (λ (s) (substring s 4))
+       symbol->string
+       variable-name)
+      (cons
+       (variable 'Tail0)
+       (filter
+        (compose (λ (s) (string-prefix? s "Tail")) symbol->string variable-name)
+        (extract-all-concrete-variables arg1))))))
   (define (blockify atoms)
     (function
      'building_block
@@ -1231,6 +1376,7 @@
          [(#f #t #f  _) (cons (elem-append conjunction conjunct) #f)]
          [(#f #t #t  _) (cons (append conjunction (list (blockify building-block)) (list conjunct)) #f)]
          [(#t #f #f #f) (cons conjunction (list conjunct))]
+         [(#t #f #f #t) (cons (elem-append conjunction conjunct) #f)]
          [(#t #t #f #f) (cons conjunction (list conjunct))]
          [(#t #t #f #t) (cons (elem-append conjunction conjunct) #f)]
          [(#t #t #t #f) (cons (append conjunction (list (blockify building-block))) (list conjunct))]
@@ -1308,7 +1454,7 @@
                   new-ti))] ; take all the conjuncts in the range and group them
               [containing-range acc]
               [else (list (append conjunction (list (list-ref wrapped wci))) appends ti)]))]))
-     (list empty empty 1)
+     (list empty empty (add1 max-ti)) ; conjunction, append clauses, tail index
      (stream->list
       (in-range
        (length wrapped))))))
