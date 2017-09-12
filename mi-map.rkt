@@ -34,7 +34,7 @@
                   extract-abstract-compounds
                   extract-variables/duplicates
                   extract-all-variables/duplicates
-                  extract-all-variables/duplicates/exclude-consecutive
+                  extract-all-variables/duplicates/exclude-consecutive-and-last
                   get-multi-id
                   maximum-var-index)
          "abstract-multi-domain.rkt"
@@ -279,7 +279,7 @@
 
 (define (untangle init-ac)
   (define var-occurrences
-    (extract-all-variables/duplicates/exclude-consecutive init-ac))
+    (extract-all-variables/duplicates/exclude-consecutive-and-last init-ac))
   (define max-var-indices
     (foldl find-max-vars (hash) var-occurrences))
   ;; gives fresh variables for n-1 occurrences of each abstract variable in var-occurrences
@@ -332,16 +332,15 @@
       #t
       (init (list (cons (a* 1 1 1) (a 2))))
       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))) ; note: use of a variable in consecutive is not considered aliasing!
-      (final (list (cons (a* 1 'L 2) (a 8)))))
-     (abstract-atom 'filter (list (g 3) (a 3) (a 9)))
-     (abstract-atom 'sift (list (a 4) (a 10)))
+      (final (list (cons (a* 1 'L 2) (a 3)))))
+     (abstract-atom 'filter (list (g 3) (a 3) (a 8)))
+     (abstract-atom 'sift (list (a 4) (a 9)))
      (abstract-atom 'length (list (a 5) (g 4))))
     (list
      (cons (a 1) (a 6))
      (cons (a 2) (a 7))
-     (cons (a 3) (a 8))
-     (cons (a 4) (a 9))
-     (cons (a 5) (a 10)))))
+     (cons (a 4) (a 8))
+     (cons (a 5) (a 9)))))
   (check-equal?
    (untangle
     (append
@@ -367,8 +366,8 @@
        #f
        (init (list (cons (a* 1 1 2) (a 5))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
-       (final (list (cons (a* 1 'L 3) (a 13)))))
-      (interpret-abstract-conjunction "collect(γ4,α14),eq(α6,α7)")))
+       (final (list (cons (a* 1 'L 3) (a 6)))))
+      (interpret-abstract-conjunction "collect(γ4,α13),eq(α6,α7)")))
     (list
      (cons (a 1) (a 8))
      (cons (a 2) (a 9))
@@ -376,8 +375,7 @@
      (cons (a 4) (a 11))
      (cons (a* 1 'i 1) (a* 1 'i 4))
      (cons (a 5) (a 12))
-     (cons (a 6) (a 13))
-     (cons (a 7) (a 14))))))
+     (cons (a 7) (a 13))))))
 (provide
  (proc-doc/names
   untangle
@@ -734,8 +732,8 @@
       "integers(G1,A6),"
       "filter(G2,A1,A7),"
       "multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),"
-      "filter(G3,A3,A9),"
-      "sift(A4,A10),"
+      "filter(G3,A3,A8),"
+      "sift(A4,A9),"
       "alt_length(A5,G4)],"
       "["
       "integers(G1,A6),"
@@ -743,13 +741,13 @@
         "building_block('[|]'(filter(G2,A1,A7),[])),"
         "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),"
           "Tail1))),"
-      "filter(G3,A3,A9),"
-      "sift(A4,A10),"
+      "filter(G3,A3,A8),"
+      "sift(A4,A9),"
       "alt_length(A5,G4)]) :- \n"
       "  A1 == A6,\n"
       "  A2 == A7,\n"
-      "  A4 == A9,\n"
-      "  A5 == A10,\n"
+      "  A4 == A8,\n"
+      "  A5 == A9,\n"
       "  ground(G1),\n"
       "  ground(G2),\n"
       "  ground(G1i1),\n"
@@ -757,11 +755,6 @@
       "  ground(G4),\n"
       "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(_-g,_-a,_-a)])),\n"
       "  check_init('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),building_block([filter(-(_,a),A2,-(_,a))])),\n"
-      "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G5,A11,A12)]),building_block([filter(G7,A12,A13)])),\n"
-      ; note: A8 should be safe here, because we don't have an aliasing constraint for it
-      ; it is introduced for the aliasing constraints (by untangle)...
-      ; check_last takes care of this, anyway...
-      ; so should untangle always ignore Last...? looks very iffy for the abstract results, though...
       "  check_last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(d,d,A3)])),\n"
       "  !."))))
 

@@ -180,8 +180,8 @@
   (check-equal?
    (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f))
 
-(define (extract-all-variables/duplicates/base v exclude-consecutive?)
-  (define rec (λ (e) (extract-all-variables/duplicates/base e exclude-consecutive?)))
+(define (extract-all-variables/duplicates/base v exclude-consecutive-and-last?)
+  (define rec (λ (e) (extract-all-variables/duplicates/base e exclude-consecutive-and-last?)))
   (match v
     [(list-rest h t)
      (append
@@ -191,8 +191,12 @@
      (append
       (append-map rec conjunction)
       (append-map (compose rec cdr) ic)
-      (if exclude-consecutive? empty (append-map (compose rec cdr) cc))
-      (append-map (compose rec cdr) fc))]
+      (if
+       exclude-consecutive-and-last?
+       empty
+       (append
+        (append-map (compose rec cdr) cc)
+        (append-map (compose rec cdr) fc))))]
     [(or
       (abstract-atom _ args)
       (abstract-function _ args)
@@ -207,11 +211,11 @@
      (list v)]
     [_ empty]))
 
-(define (extract-all-variables/duplicates/exclude-consecutive v)
+(define (extract-all-variables/duplicates/exclude-consecutive-and-last v)
   (extract-all-variables/duplicates/base v #t))
 (provide
  (proc-doc/names
-  extract-all-variables/duplicates/exclude-consecutive
+  extract-all-variables/duplicates/exclude-consecutive-and-last
   (->
    (or/c abstract-domain-elem*? abstract-variable*?)
    (listof (or/c abstract-variable? abstract-variable*?)))
