@@ -27,11 +27,22 @@
   (c)
   @{Extracts all concrete variables from a concrete element @racket[c].}))
 
+(define (extract-all-concrete-variables c)
+  (remove-duplicates
+   (extract-all-concrete-variables/duplicates c)))
+(provide
+ (proc-doc/names
+  extract-all-concrete-variables
+  (-> (or/c concrete-domain-elem? concrete-multi? (listof (or/c term? atom? concrete-multi?))) (listof variable?))
+  (c)
+  @{Extracts all concrete variables from a concrete element @racket[c] and filters duplicates.}))
+
 (define (mask-singletons c)
   (define singletons
     ((compose
       list->set
       (curry filter (match-lambda [(cons k v) (= v 1)]))
+      hash->list
       frequencies
       extract-all-concrete-variables/duplicates)
      c))

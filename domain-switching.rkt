@@ -238,8 +238,8 @@
 ;; note: this is concrete-synth-counterpart rather than concretize because concretization of multi is infinite set
 ;; this is close, but it is specifically for synthesis (which is also why constraints are not applied to concrete multi)
 
-(define (atom->function a)
-  (match a
+(define (atom->function e)
+  (match e
     [(atom sym args)
      (function sym args)]))
 (provide atom->function)
@@ -363,7 +363,7 @@
  (proc-doc/names
   concrete-synth-counterpart
   (->
-   abstract-domain-elem*?
+   (or/c abstract-domain-elem*? abstract-variable*?)
    (or/c
     concrete-domain-elem?
     concrete-multi?

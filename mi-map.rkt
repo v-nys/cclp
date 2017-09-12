@@ -32,6 +32,7 @@
          (prefix-in ak: "abstract-knowledge.rkt")
          (only-in "abstraction-inspection-utils.rkt"
                   extract-abstract-compounds
+                  extract-variables/duplicates
                   extract-all-variables/duplicates
                   extract-all-variables/duplicates/exclude-consecutive
                   get-multi-id
@@ -41,8 +42,9 @@
          "cclp-interpreter.rkt"
          "concrete-domain.rkt"
          (prefix-in ck: "concrete-knowledge.rkt")
-         (only-in "concrete-inspection-utils.rkt" mask-singletons extract-all-concrete-variables/duplicates)
+         "concrete-inspection-utils.rkt"
          (only-in "control-flow.rkt" aif it)
+         (only-in "data-utils.rkt" some-v)
          "domain-switching.rkt"
          (only-in "gen-graph-structs.rkt" index-range index-range-start index-range-end-before)
          (only-in "io-utils.rkt" between?))
@@ -415,7 +417,7 @@
         (symbol->string
          (variable-name v))
         0)
-       #'G))
+       #\G))
     (append
      (extract-all-concrete-variables/duplicates con)
      (extract-all-concrete-variables/duplicates
@@ -455,8 +457,8 @@
         (map concrete-patternize e)
         ",")]
       [(or
-        (abstract-atom sym args)
-        (abstract-function sym args))
+        (abstract-atom* sym args)
+        (abstract-function* sym args))
        (format
         "~a(~a)"
         sym
@@ -474,9 +476,9 @@
       (synth-str c-lst)
       (concrete-patternize patt))]))
 
-(define (localize a)
-  (match a
-    [(? list?) (map localize a)]
+(define (localize e)
+  (match e
+    [(? list?) (map localize e)]
     [(abstract-atom* sym args)
      (abstract-atom sym (map localize args))]
     [(abstract-function* sym args)
@@ -484,7 +486,7 @@
     [(a* _ _ i) (a i)]
     [(g* _ _ i) (g i)]))
 
-(define (consecutive-check a-multi c-multi acon)
+(define (consecutive-check a-multi c-multi acon additional-vars)
   (define (correct-aliasing local-pattern consec fresh)
     (define (replacement-proc e acc)
       (match e
@@ -501,11 +503,11 @@
         [(a i)
          ; would be more readable if consec was turned into a hash
          #:when (member e (map (compose localize car) consec))
-         (cons (cdr (findf (match-lambda [(cons k v) (equal? (localize k) e)]) consec)) fresh)]
+         (cons (localize (cdr (findf (match-lambda [(cons k v) (equal? (localize k) e)]) consec))) fresh)]
         [(g i)
          ; would be more readable if consec was turned into a hash
          #:when (member e (map (compose localize car) consec))
-         (cons (cdr (findf (match-lambda [(cons k v) (equal? (localize k) e)]) consec)) fresh)]
+         (cons (localize (cdr (findf (match-lambda [(cons k v) (equal? (localize k) e)]) consec))) fresh)]
         [(a i)
          (cons (a fresh) (add1 fresh))]
         [(g i)
@@ -516,33 +518,44 @@
       fresh
       local-pattern)))
   (let* ([localized-pattern (localize (multi-conjunction a-multi))]
-         [fresh (add1 (maximum-var-index localized-pattern (λ (_) #t)))]
+         [fresh (add1 (some-v (maximum-var-index localized-pattern (λ (_) #t))))]
          [correctly-aliased (correct-aliasing localized-pattern (consecutive-constraints (multi-consecutive a-multi)) fresh)]
-         [joined-and-renamed (rename-apart (list localized-pattern correctly-aliased) acon)]
-         [masked (mask-singletons joined-and-renamed)])
-    (format "check_consecutive(~a,building_block(~a),building_block(~a))" (concrete-multi-lst c-multi) (first masked) (second masked))))
+         [joined-and-renamed
+          (rename-apart
+           (append localized-pattern correctly-aliased)
+           (cons (abstract-atom 'dummy additional-vars) acon))]
+         [masked (mask-singletons (concrete-synth-counterpart joined-and-renamed))])
+    (format
+     "check_consecutive(~a,building_block([~a]),building_block([~a]))"
+     (synth-str (concrete-multi-lst c-multi))
+     (synth-str (take masked (length localized-pattern)))
+     (synth-str (drop masked (length localized-pattern))))))
 
 (define (last-check a-multi c-multi)
+  ;; note: this is different from the erase-or-substitute used for init check!
+  ;; it is similar, though, so maybe consolidating is possible...
   (define (erase-or-substitute constraints e)
     (match e
+      [(? list?)
+       (map (curry erase-or-substitute constraints) e)]
       [(abstract-atom sym args)
        (abstract-atom sym (map (curry erase-or-substitute constraints) args))]
       [(abstract-function sym args)
        (abstract-function sym (map (curry erase-or-substitute constraints) args))]
       [(? abstract-variable?)
        (aif
-        (hash-ref constraints e)
+        (hash-ref constraints e #f)
         it
         (abstract-function 'd empty))]))
   (let* ([localized-pattern
-          (multi-conjunction a-multi)]
+          (localize (multi-conjunction a-multi))]
          [localized-constraints
           (map (match-lambda [(cons k v) (cons (localize k) v)]) (final-constraints (multi-final a-multi)))]
          [aarg2
           (erase-or-substitute
            (make-hash localized-constraints)
            localized-pattern)])
-    (format "check_last(~a,building_block([~a]))" (concrete-multi-lst c-multi) (concrete-synth-counterpart aarg2))))
+    (format "check_last(~a,building_block([~a]))" (synth-str (concrete-multi-lst c-multi)) (synth-str (concrete-synth-counterpart aarg2)))))
 
 (define (init-check a-multi c-multi)
   (define (first-elem-lst lst-func)
@@ -551,26 +564,28 @@
        (function cons-symbol (list (first args) concrete-nil))]))
   (define (erase-or-substitute constraints e)
     (match e
+      [(? list?)
+       (map (curry erase-or-substitute constraints) e)]
       [(abstract-atom sym args)
        (atom sym (map (curry erase-or-substitute constraints) args))]
       [(abstract-function sym args)
        (function sym (map (curry erase-or-substitute constraints) args))]
       [(? abstract-variable?)
        (aif
-        (hash-ref constraints e)
+        (hash-ref constraints e #f)
         (concrete-synth-counterpart it)
         (function '- (list (variable '_) (function 'a empty))))]))
   (let* ([localized-pattern
-          (multi-conjunction a-multi)]
+          (localize (multi-conjunction a-multi))]
          [localized-constraints
           (map (match-lambda [(cons k v) (cons (localize k) v)]) (init-constraints (multi-init a-multi)))]
          [aarg2
           (erase-or-substitute
            (make-hash localized-constraints)
            localized-pattern)])
-    (format "check_init(~a,building_block([~a]))" (first-elem-lst (concrete-multi-lst c-multi)) (concrete-synth-counterpart aarg2))))
+    (format "check_init(~a,building_block([~a]))" (synth-str (first-elem-lst (concrete-multi-lst c-multi))) (synth-str aarg2))))
 
-(define (multi-checks acon con)
+(define (multi-checks acon con additional-vars)
   (foldl
    (λ (a c acc)
      (cond
@@ -578,7 +593,7 @@
         (list
          (pattern-check a c)
          (init-check a c)
-         (consecutive-check a c acon)
+         (consecutive-check a c acon additional-vars)
          (last-check a c))]
        [(xor (multi? a) (concrete-multi? c))
         (error "abstract and concrete conjunction are out of sync")]
@@ -599,10 +614,15 @@
        [body-atoms
         (append
          (deconstruction-atoms compound-replacements)
-         (aliasing-constraints aliasing)
-         (groundness-atoms arg1 compound-replacements)
-         (append-atoms appends)
-         (multi-checks parent arg1)
+         (aliasing-constraints aliasing) ; should not produce this if abstract variable only occurs in Last
+         (map (compose (λ (e) (format "ground(~a)" e)) synth-str) (groundness-atoms arg1 compound-replacements))
+         (append-atoms appends) ; introduces new vars TailN but these will never clash with other names
+         (multi-checks
+          parent
+          arg1
+          (append
+            (map cdr aliasing)
+            (extract-variables/duplicates deconstructed)))
          (list "!"))])
     (format
      "generalization([~a],[~a]) :- \n  ~a."
@@ -658,14 +678,92 @@
       "  A3 == A8,\n"
       "  A4 == A9,\n"
       "  A5 == A10,\n"
+      "  ground(G1),\n"
+      "  ground(G2),\n"
+      "  ground(G3),\n"
+      "  ground(G4),\n"
+      "  ground(G6),\n"
+      "  ground(G5),\n"
+      "  !.")))
+  (let ([node-46-parent-conjunction
+         (append
+          (interpret-abstract-conjunction
+           (string-append
+            "integers(γ1,α1),"
+            "filter(γ2,α1,α2)"))
+          (list
+           (multi
+            (list
+             (abstract-atom*
+              'filter
+              (list
+               (g* 1 'i 1)
+               (a* 1 'i 1)
+               (a* 1 'i 2))))
+            #t
+            (init
+             (list
+              (cons (a* 1 1 1)
+                    (a 2))))
+            (consecutive
+             (list
+              (cons (a* 1 'i+1 1)
+                    (a* 1 'i 2))))
+            (final
+             (list
+              (cons (a* 1 'L 2)
+                    (a 3))))))
+          (interpret-abstract-conjunction
+           (string-append
+            "filter(γ3,α3,α4),"
+            "sift(α4,α5),"
+            "alt_length(α5,γ4)")))]
+        [node-46-building-blocks
+         (list
+          (cons
+           (list
+            (index-range 1 2)
+            (index-range 2 3))
+           1))])
+    (check-equal?
+     (generate-generalization-clause
+      node-46-parent-conjunction
+      node-46-building-blocks)
+     (string-append
+      "generalization(["
+      "integers(G1,A6),"
+      "filter(G2,A1,A7),"
+      "multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),"
+      "filter(G3,A3,A9),"
+      "sift(A4,A10),"
+      "alt_length(A5,G4)],"
+      "["
+      "integers(G1,A6),"
+      "multi('[|]'("
+        "building_block('[|]'(filter(G2,A1,A7),[])),"
+        "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),"
+          "Tail1))),"
+      "filter(G3,A3,A9),"
+      "sift(A4,A10),"
+      "alt_length(A5,G4)]) :- \n"
+      "  A1 == A6,\n"
+      "  A2 == A7,\n"
+      "  A4 == A9,\n"
+      "  A5 == A10,\n"
+      "  ground(G1),\n"
+      "  ground(G2),\n"
+      "  ground(G1i1),\n"
+      "  ground(G3),\n"
+      "  ground(G4),\n"
+      "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(_-g,_-a,_-a)])),\n"
+      "  check_init('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),building_block([filter(-(_,a),A2,-(_,a))])),\n"
+      "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G5,A11,A12)]),building_block([filter(G7,A12,A13)])),\n"
+      ; note: A8 should be safe here, because we don't have an aliasing constraint for it
+      ; it is introduced for the aliasing constraints (by untangle)...
+      ; check_last takes care of this, anyway...
+      ; so should untangle always ignore Last...? looks very iffy for the abstract results, though...
+      "  check_last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(d,d,A3)])),\n"
       "  !."))))
-    
-;  (check-equal?
-;   (generate-generalization-clause
-;    node-33-parent-conjunction
-;    (list (cons (index-range 1 2) 1)
-;          (cons (index-range 2 3) 1)))
-;   "")
 
 ;; auxiliary function for untangle
 ;; allows comparison of constructors
