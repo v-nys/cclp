@@ -400,7 +400,7 @@
                 (append current-gen (list node))
                 (add1 (get-multi-id (gen-node-conjunct node)))
                 1 ; dummy ID is irrelevant here
-                (append potential current-gen (list node))))])
+                (append (or potential empty) current-gen (list node))))])
          (strung-together? potential combined))))
 
 (define (can-group? potential current-gen node)
@@ -961,7 +961,51 @@
        (cons (a* 1 'L 2) (a 4)))))
     (abstract-atom 'filter (list (g 5) (a 4) (a 5)))
     (abstract-atom 'sift (list (a 5) (a 6)))
-    (abstract-atom 'len (list (a 6) (g 6))))))
+    (abstract-atom 'len (list (a 6) (g 6)))))
+  (check-equal?
+   (map
+    gen-node-conjunct
+    (generalize-level
+     (list
+      (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
+      (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
+      (gen-node
+       (multi
+        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+        #t
+        (init
+         (list
+          (cons (a* 1 1 1) (a 2))))
+        (consecutive
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+        (final
+         (list
+          (cons (a* 1 'L 2) (a 3)))))
+       4
+       (gen-range 2 'n 1 #t)
+       #f
+       #t)
+      (gen-node (abstract-atom 'filter (list (g 3) (a 3) (a 4))) 5 (gen (symsum 'n 1) 1) #f #t)
+      (gen-node (abstract-atom 'sift (list (a 4) (a 5))) 6 (gen (symsum 'n 1) 1) #f #t)
+      (gen-node (abstract-atom 'len (list (a 5) (g 4))) 7 (gen 0 #f) #f #t))))
+   (list
+    (abstract-atom 'integers (list (g 1) (a 1)))
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (init
+      (list
+       (cons (a* 1 1 1) (a 1))))
+     (consecutive
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2))))
+     (final
+      (list
+       (cons (a* 1 'L 2) (a 3)))))
+    (abstract-atom 'filter (list (g 3) (a 3) (a 4)))
+    (abstract-atom 'sift (list (a 4) (a 5)))
+    (abstract-atom 'len (list (a 5) (g 4))))))
 
 (provide
  (proc-doc/names

@@ -123,14 +123,15 @@
                          new-tree edge-history step-acc prior)))
           new-tree))]
      ["save analysis"
-      (save-analysis filename tree edge-history step-acc prior)
-      tree]
+      (begin
+        (save-analysis filename tree edge-history step-acc prior)
+        tree)]
      ["show top level tree"
       (begin
         (newline)
         (tree-display tree print-tree-label)
-        (newline))
-      tree]
+        (newline)
+        tree)]
      ["show debugging variables"
       (begin
         (displayln "precedence pairs:")
@@ -154,9 +155,9 @@
                gr)))
             (displayln "There is no active branch."))
         tree)]
-     ["generate meta-interpreter map"
+     ["generate meta-interpreter map" ; this has the crash
       (display-mi-map tree)]
-     ["generate generalization/2 clauses"
+     ["generate generalization/2 clauses" ; so does this
       (display-generalization-clauses tree)]
      ["end analysis"
       (set! analyzing? #f)]))))

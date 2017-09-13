@@ -48,7 +48,13 @@
    (let ([choices (list label ...)]
          [actions (list (λ () body ...) ...)])
      (displayln prompt)
-     (foldl (λ (el acc) (begin (printf "~a: ~a\n" acc el) (+ acc 1))) 1 choices)
+     (foldl
+      (λ (el acc)
+        (begin
+          (printf "~a: ~a\n" acc el)
+          (+ acc 1)))
+      1
+      choices)
      (define int (prompt-for-integer))
      (until (between? int 1 (length choices))
             (displayln "Not a valid choice!")

@@ -83,14 +83,15 @@
     [_ (displayln (format "don't know how to visit ~a yet" n))]))
 
 (define (display-mi-map tree)
-  (visit mi-map-visitor tree)
-  tree)
+  (begin
+    (visit mi-map-visitor tree)
+    tree))
 (provide
  (proc-doc/names
   display-mi-map
   (->
    node?
-   void?)
+   node?)
   (tree)
   @{Summarizes the transitions between nodes in an abstract tree @racket[tree] in terms of the node numbers involved and the transition type (generalization, cycle, standard transition i.e. unfolding).}))
 
@@ -594,7 +595,7 @@
      (synth-str template-bb))))
 
 ;; TODO merge with previous function
-(define (new-last-check a-multi c-multi acon con)
+(define (new-last-check a-multi c-multi acon con last-cntr)
   (define (erase-or-substitute constraints e)
     (match e
       [(? list?)
@@ -622,7 +623,7 @@
         (erase-or-substitute
          (make-hash localized-constraints)
          localized-pattern)])
-    (let ([last-bb (symbol->string (gensym "Last"))])
+    (let ([last-bb (format "Last~a" last-cntr)])
       (format
        "last(~a,~a),unchanged_under_substitution([~a],~a,[building_block([~a])])"
        (synth-str (concrete-multi-lst c-multi))
@@ -632,21 +633,28 @@
        (synth-str template-bb)))))
 
 (define (multi-checks acon con additional-vars)
-  (foldl
-   (λ (a c acc)
-     (cond
-       [(and (multi? a) (concrete-multi? c))
-        (list
-         (pattern-check a c)
-         (new-init-check a c acon con)
-         (consecutive-check a c acon additional-vars)
-         (new-last-check a c acon con))]
-       [(xor (multi? a) (concrete-multi? c))
-        (error "abstract and concrete conjunction are out of sync")]
-       [else acc]))
-   empty
-   acon
-   con))
+  (car
+   (foldl
+    (λ (a c acc)
+      (match acc
+        [(cons strs last-cntr)
+         (cond
+           [(and (multi? a) (concrete-multi? c))
+            (cons
+             (append
+              (list
+               (pattern-check a c)
+               (new-init-check a c acon con)
+               (consecutive-check a c acon additional-vars)
+               (new-last-check a c acon con last-cntr))
+              strs)
+             (add1 last-cntr))]
+           [(xor (multi? a) (concrete-multi? c))
+            (error "abstract and concrete conjunction are out of sync")]
+           [else acc])]))
+    (cons empty 1)
+    acon
+    con)))
 
 (define (generate-generalization-clause parent blocks)
   (match-let*
@@ -788,19 +796,22 @@
       "filter(G3,A3,A7),"
       "sift(A4,A8),"
       "alt_length(A5,G4)],"
-      "["
-      "integers(G1,A6),"
-      "multi('[|]'("
-      "building_block('[|]'(filter(G2,A1,A2),[])),"
-      "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),"
-      "Tail1))),"
+      "[integers(G1,A6),"
+      "multi('[|]'(building_block('[|]'(filter(G2,A1,A2),[])),'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1))),"
       "filter(G3,A3,A7),"
       "sift(A4,A8),"
       "alt_length(A5,G4)]) :- \n"
       "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(_-g,_-a,_-a)])),\n"
-      "  check_init('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),building_block([filter(-(_,a),-(A2,a),-(_,a))])),\n"
+      "  unchanged_under_substitution(["
+      "integers(G1,A6),filter(G2,A1,A2),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),filter(G3,A3,A7),sift(A4,A8),alt_length(A5,G4)],"
+      "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),"
+      "[building_block([filter(_,A2,_)])]),\n"
       "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G5,A9,A10)]),building_block([filter(G7,A10,A11)])),\n"
-      "  check_last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(d,d,A3)])),\n"
+      "  last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),Last1),"
+      "unchanged_under_substitution(["
+      "integers(G1,A6),filter(G2,A1,A2),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),filter(G3,A3,A7),sift(A4,A8),alt_length(A5,G4)],"
+      "Last1,"
+      "[building_block([filter(_,_,A3)])]),\n"
       "  A1 == A6,\n"
       "  A4 == A7,\n"
       "  A5 == A8,\n"
@@ -865,19 +876,25 @@
       "filter(G3,A3,A7),"
       "sift(A4,A8),"
       "alt_length(A9,G6)],"
-      "["
-      "integers(G1,A1),"
+      "[integers(G1,A1),"
       "multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail2)),"
       "filter(G3,A3,A7),"
       "sift(A4,A8),"
-      "alt_length(A9,G6)]) :- \n  "
-      "nonvar(A9),\n"
+      "alt_length(A9,G6)]) :- \n"
+      "  nonvar(A9),\n"
       "  A9 =.. ['[|]',G4,A5],\n"
       "  append(Tail1,'[|]'(building_block('[|]'(filter(G2,A2,A6),[])),[]),Tail2),\n"
       "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(_-g,_-a,_-a)])),\n"
-      "  check_init('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),building_block([filter(-(_,a),-(A1,a),-(_,a))])),\n"
+      "  unchanged_under_substitution(["
+      "integers(G1,A1),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),filter(G2,A2,A6),filter(G3,A3,A7),sift(A4,A8),alt_length(A9,G6)],"
+      "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),"
+      "[building_block([filter(_,A1,_)])]),\n"
       "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G7,A10,A11)]),building_block([filter(G9,A11,A12)])),\n"
-      "  check_last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(d,d,A2)])),\n"
+      "  last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),Last1),"
+      "unchanged_under_substitution(["
+      "integers(G1,A1),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),filter(G2,A2,A6),filter(G3,A3,A7),sift(A4,A8),alt_length(A9,G6)],"
+      "Last1,"
+      "[building_block([filter(_,_,A2)])]),\n"
       "  A3 == A6,\n"
       "  A4 == A7,\n"
       "  A5 == A8,\n"
@@ -906,11 +923,10 @@
 
 (define (generalization-clause-visit-from conjunction1 n)
   (match n
-    [(node (generalization conjunction2 _ _ _ _ building-blocks) _)
+    [(node (generalization _ _ _ _ _ building-blocks) _)
      (display
       (generate-generalization-clause
        conjunction1
-       conjunction2
        building-blocks))]
     [_ (void)]))
 
@@ -923,14 +939,15 @@
     [_ (displayln (format "don't know how to visit ~a yet" n))]))
 
 (define (display-generalization-clauses tree)
-  (visit generalization-clause-visitor tree)
-  tree)
+  (begin
+    (visit generalization-clause-visitor tree)
+    tree))
 (provide
  (proc-doc/names
   display-generalization-clauses
   (->
    node?
-   void?)
+   node?)
   (tree)
   @{Prints out the @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
 
