@@ -330,12 +330,13 @@
       (abstract-function _ args)
       (abstract-function* _ args))
      (cons (cons v top?) (append-map (λ (a) (extract-abstract-compounds a #:top #f)) args))]
-    [(multi patt _ (init ic) _ _)
-     (let ([multi-id (get-multi-id v)])
-       (append
-        (map (λ (e) (cons (cons (car e) multi-id) (cdr e)))
-            (append-map extract-abstract-compounds patt))
-        (append-map extract-abstract-compounds (map cdr ic))))]
+    [(multi _ _ _ _ _) (list)]
+;    [(multi patt _ (init ic) _ _)
+;     (let ([multi-id (get-multi-id v)])
+;       (append
+;        (map (λ (e) (cons (cons (car e) multi-id) (cdr e)))
+;            (append-map extract-abstract-compounds patt))
+;        (append-map extract-abstract-compounds (map cdr ic))))]
     [_ (list)]))
 (module+ test
   (check-equal?

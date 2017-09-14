@@ -471,7 +471,7 @@
   (match* (a-multi c-multi)
     [((multi patt _ _ _ _) (concrete-multi c-lst))
      (format
-      "check_pattern(~a,building_block([~a]))"
+      "check_pattern(~a,[building_block([~a])])"
       (synth-str c-lst)
       (concrete-patternize patt))]))
 
@@ -529,32 +529,6 @@
      (synth-str (concrete-multi-lst c-multi))
      (synth-str (take masked (length localized-pattern)))
      (synth-str (drop masked (length localized-pattern))))))
-
-(define (last-check a-multi c-multi)
-  ;; note: this is different from the erase-or-substitute used for init check!
-  ;; it is similar, though, so maybe consolidating is possible...
-  (define (erase-or-substitute constraints e)
-    (match e
-      [(? list?)
-       (map (curry erase-or-substitute constraints) e)]
-      [(abstract-atom sym args)
-       (abstract-atom sym (map (curry erase-or-substitute constraints) args))]
-      [(abstract-function sym args)
-       (abstract-function sym (map (curry erase-or-substitute constraints) args))]
-      [(? abstract-variable?)
-       (aif
-        (hash-ref constraints e #f)
-        it
-        (abstract-function 'd empty))]))
-  (let* ([localized-pattern
-          (localize (multi-conjunction a-multi))]
-         [localized-constraints
-          (map (match-lambda [(cons k v) (cons (localize k) v)]) (final-constraints (multi-final a-multi)))]
-         [aarg2
-          (erase-or-substitute
-           (make-hash localized-constraints)
-           localized-pattern)])
-    (format "check_last(~a,building_block([~a]))" (synth-str (concrete-multi-lst c-multi)) (synth-str (concrete-synth-counterpart aarg2)))))
 
 (define (new-init-check a-multi c-multi acon con)
   (define (first-elem-lst lst-func)
@@ -625,7 +599,7 @@
          localized-pattern)])
     (let ([last-bb (format "Last~a" last-cntr)])
       (format
-       "last(~a,~a),unchanged_under_substitution([~a],~a,[building_block([~a])])"
+       "last(~a,~a),unchanged_under_substitution([~a],[~a],[building_block([~a])])"
        (synth-str (concrete-multi-lst c-multi))
        last-bb
        (synth-str con)
