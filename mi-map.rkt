@@ -878,7 +878,29 @@
       "  ground(G3),\n"
       "  ground(G6),\n"
       "  ground(G4),\n"
-      "  !."))))
+      "  !.")))
+  (let ([graphcol-36-conjunction
+         (interpret-abstract-conjunction
+          (string-append
+           "coloring(cons(α71,α72)),"
+           "allsafe(γ193,γ194,cons(γ476,γ477),cons(α71,α72)),"
+           "allsafe(γ197,γ198,cons(γ476,γ477),cons(α71,α72)),"
+           "allsafe(γ201,γ202,cons(γ476,γ477),cons(α71,α72)),"
+           "allsafe(γ203,γ204,cons(γ476,γ477),cons(α71,α72)),"
+           "safe(cons(γ476,γ477),cons(α71,α72))"))]
+        [graphcol-36-building-blocks
+         (list
+          (cons
+           (list
+            (index-range 2 3)
+            (index-range 3 4)
+            (index-range 4 5))
+           2))])
+    (check-equal?
+     (generate-generalization-clause
+      graphcol-36-conjunction
+      graphcol-36-building-blocks)
+     "")))
 
 ;; auxiliary function for untangle
 ;; allows comparison of constructors
@@ -960,16 +982,16 @@
     (hash 'a-3-i (a* 3 'i 11)))))
 
 ; NAME IS TERRIBLE!
-(define (apply-subst e acc)
+(define (apply-compound-subst e acc)
   (if (cdr acc)
       acc
       (match (car acc) ; reusing this a few times...
         [(list-rest h t)
          (match-let
              ([(cons h-after success-1?)
-               (apply-subst e (cons h #f))]
+               (apply-compound-subst e (cons h #f))]
               [(cons t-after success-2?)
-               (apply-subst e (cons t #f))])
+               (apply-compound-subst e (cons t #f))])
            (cond
              [success-1?
               (cons (cons h-after t) success-1?)]
@@ -982,7 +1004,7 @@
             #:when (equal? m-id (get-multi-id (car acc)))
             (match-let
                 ([(cons pattern-after success?)
-                  (apply-subst e (cons patt #f))])
+                  (apply-compound-subst e (cons patt #f))])
               (cons
                (multi pattern-after asc? (init ic) (consecutive cc) (final fc))
                success?))]
@@ -990,7 +1012,7 @@
            [(cons (? abstract-function?) _)
             (match-let
                 ([(cons init-after success?)
-                  (apply-subst e (cons (map cdr ic) #f))])
+                  (apply-compound-subst e (cons (map cdr ic) #f))])
               (if success?
                   (cons
                    (multi
@@ -1007,9 +1029,9 @@
           (abstract-atom* sym (list-rest h t)))
          (match-let
              ([(cons h-after success-1?)
-               (apply-subst e (cons h #f))]
+               (apply-compound-subst e (cons h #f))]
               [(cons t-after success-2?)
-               (apply-subst e (cons t #f))])
+               (apply-compound-subst e (cons t #f))])
            (cond
              [success-1?
               (cons ((compound-constructor (car acc)) sym (cons h-after t)) success-1?)]
@@ -1032,9 +1054,9 @@
              (cons (cdr e) #t)
              (match-let
                  ([(cons h-after success-1?)
-                   (apply-subst e (cons h #f))]
+                   (apply-compound-subst e (cons h #f))]
                   [(cons t-after success-2?)
-                   (apply-subst e (cons t #f))])
+                   (apply-compound-subst e (cons t #f))])
                (cond
                  [success-1?
                   (cons ((compound-constructor (car acc)) sym (cons h-after t)) success-1?)]
@@ -1044,7 +1066,7 @@
         [_ acc])))
 (module+ test
   (check-equal?
-   (apply-subst
+   (apply-compound-subst
     (cons (abstract-function 'nil empty) (a 1000))
     (cons (interpret-abstract-conjunction "foo(bar(α1,nil)),baz(nil)") #f))
    (cons (interpret-abstract-conjunction "foo(bar(α1,α1000)),baz(nil)") #t)))
@@ -1057,7 +1079,7 @@
     (cons
      (car
       (foldr
-       apply-subst
+       apply-compound-subst
        (cons ac #f)
        (filter-map
         (λ (s)
