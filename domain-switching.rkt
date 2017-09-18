@@ -363,7 +363,7 @@
  (proc-doc/names
   concrete-synth-counterpart
   (->
-   (or/c abstract-domain-elem*? abstract-variable*?)
+   (or/c abstract-domain-elem*? abstract-atom*? abstract-function*? abstract-variable*?)
    (or/c
     concrete-domain-elem?
     concrete-multi?

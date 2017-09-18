@@ -489,7 +489,7 @@
 
 (define (consecutive-check a-multi c-multi acon additional-vars)
   (define (correct-aliasing local-pattern consec fresh)
-    (define (replacement-proc e acc)
+    (define (replacement-proc e fresh)
       (match e
         [(abstract-atom sym args)
          (match-let
@@ -520,7 +520,11 @@
       local-pattern)))
   (let* ([localized-pattern (localize (multi-conjunction a-multi))]
          [fresh (add1 (some-v (maximum-var-index localized-pattern (λ (_) #t))))]
-         [correctly-aliased (correct-aliasing localized-pattern (consecutive-constraints (multi-consecutive a-multi)) fresh)]
+         [correctly-aliased
+          (correct-aliasing
+           localized-pattern
+           (consecutive-constraints (multi-consecutive a-multi))
+           fresh)]
          [joined-and-renamed
           (rename-apart
            (append localized-pattern correctly-aliased)
@@ -777,16 +781,16 @@
       "filter(G3,A3,A7),"
       "sift(A4,A8),"
       "alt_length(A5,G4)]) :- \n"
-      "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(_-g,_-a,_-a)])),\n"
+      "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),[building_block([filter(_-g,_-a,_-a)])]),\n"
       "  unchanged_under_substitution(["
       "integers(G1,A6),filter(G2,A1,A2),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),filter(G3,A3,A7),sift(A4,A8),alt_length(A5,G4)],"
       "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),"
       "[building_block([filter(_,A2,_)])]),\n"
-      "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G5,A9,A10)]),building_block([filter(G7,A10,A11)])),\n"
+      "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G5,A9,A10)]),building_block([filter(G7,A10,A12)])),\n"
       "  last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),Last1),"
       "unchanged_under_substitution(["
       "integers(G1,A6),filter(G2,A1,A2),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),filter(G3,A3,A7),sift(A4,A8),alt_length(A5,G4)],"
-      "Last1,"
+      "[Last1],"
       "[building_block([filter(_,_,A3)])]),\n"
       "  A1 == A6,\n"
       "  A4 == A7,\n"
@@ -860,16 +864,16 @@
       "  nonvar(A9),\n"
       "  A9 =.. ['[|]',G4,A5],\n"
       "  append(Tail1,'[|]'(building_block('[|]'(filter(G2,A2,A6),[])),[]),Tail2),\n"
-      "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(_-g,_-a,_-a)])),\n"
+      "  check_pattern('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),[building_block([filter(_-g,_-a,_-a)])]),\n"
       "  unchanged_under_substitution(["
       "integers(G1,A1),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),filter(G2,A2,A6),filter(G3,A3,A7),sift(A4,A8),alt_length(A9,G6)],"
       "'[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),[]),"
       "[building_block([filter(_,A1,_)])]),\n"
-      "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G7,A10,A11)]),building_block([filter(G9,A11,A12)])),\n"
+      "  check_consecutive('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),building_block([filter(G7,A10,A11)]),building_block([filter(G9,A11,A13)])),\n"
       "  last('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1),Last1),"
       "unchanged_under_substitution(["
       "integers(G1,A1),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i2),[])),Tail1)),filter(G2,A2,A6),filter(G3,A3,A7),sift(A4,A8),alt_length(A9,G6)],"
-      "Last1,"
+      "[Last1],"
       "[building_block([filter(_,_,A2)])]),\n"
       "  A3 == A6,\n"
       "  A4 == A7,\n"
@@ -902,6 +906,53 @@
      (generate-generalization-clause
       graphcol-36-conjunction
       graphcol-36-building-blocks)
+     "generalization([coloring(A486),allsafe(G193,G194,A487,A488),allsafe(G197,G198,A489,A490),allsafe(G201,G202,A491,A492),allsafe(G203,G204,A493,A494),safe(A495,A496)],[coloring(A486),allsafe(G193,G194,A487,A488),multi('[|]'(building_block('[|]'(allsafe(G197,G198,A489,A490),[])),'[|]'(building_block('[|]'(allsafe(G201,G202,A491,A492),[])),'[|]'(building_block('[|]'(allsafe(G203,G204,A493,A494),[])),[])))),safe(A495,A496)]) :- \n  nonvar(A486),\n  A486 =.. [cons,A73,A74],\n  nonvar(A487),\n  A487 =.. [cons,G478,G479],\n  nonvar(A488),\n  A488 =.. [cons,A75,A76],\n  nonvar(A489),\n  A489 =.. [cons,G480,G481],\n  nonvar(A490),\n  A490 =.. [cons,A77,A78],\n  nonvar(A491),\n  A491 =.. [cons,G482,G483],\n  nonvar(A492),\n  A492 =.. [cons,A79,A80],\n  nonvar(A493),\n  A493 =.. [cons,G484,G485],\n  nonvar(A494),\n  A494 =.. [cons,A81,A82],\n  nonvar(A495),\n  A495 =.. [cons,G476,G477],\n  nonvar(A496),\n  A496 =.. [cons,A71,A72],\n  A71 == A73,\n  A72 == A74,\n  G476 == G478,\n  G477 == G479,\n  A71 == A75,\n  A72 == A76,\n  G476 == G480,\n  G477 == G481,\n  A71 == A77,\n  A72 == A78,\n  G476 == G482,\n  G477 == G483,\n  A71 == A79,\n  A72 == A80,\n  G476 == G484,\n  G477 == G485,\n  A71 == A81,\n  A72 == A82,\n  ground(G193),\n  ground(G194),\n  ground(G197),\n  ground(G198),\n  ground(G201),\n  ground(G202),\n  ground(G203),\n  ground(G204),\n  ground(G478),\n  ground(G479),\n  ground(G480),\n  ground(G481),\n  ground(G482),\n  ground(G483),\n  ground(G484),\n  ground(G485),\n  ground(G476),\n  ground(G477),\n  !."))
+  (let ([graphcol-57-conjunction
+         (append
+          (interpret-abstract-conjunction
+           "coloring([α103|α104]),allsafe(γ479,γ480,[γ1880|γ1881],[α103|α104])")
+          (list
+           (multi
+            (list
+             (abstract-atom*
+              'allsafe
+              (list
+               (g* 1 'i 1)
+               (g* 1 'i 2)
+               (g* 1 'i 3)
+               (a* 1 'i 1))))
+            #t
+            (init
+             (list
+              (cons (g* 1 1 3)
+                    (abstract-function 'cons (list (g 1880) (g 1881))))
+              (cons (a* 1 1 1)
+                    (abstract-function 'cons (list (a 103) (a 104))))))
+            (consecutive
+             (list
+              (cons (g* 1 'i+1 3)
+                    (g* 1 'i 3))
+              (cons (a* 1 'i+1 1)
+                    (a* 1 'i 1))))
+            (final
+             (list
+              (cons (g* 1 'L 3)
+                    (abstract-function 'cons (list (g 1880) (g 1881))))
+              (cons (a* 1 'L 1)
+                    (abstract-function 'cons (list (a 103) (a 104))))))))
+          (interpret-abstract-conjunction
+           "allsafe(γ887,γ888,[γ1880|γ1881],[α103|α104]),allsafe(γ889,γ890,[γ1880|γ1881],[α103|α104]),safe([γ1880|γ1881],[α103|α104])"))]
+        [graphcol-57-building-blocks
+         (list
+          (cons
+           (list
+            (index-range 2 3)
+            (index-range 3 4))
+           2))])
+    (check-equal?
+     (generate-generalization-clause
+      graphcol-57-conjunction
+      graphcol-57-building-blocks)
      "")))
 
 ;; auxiliary function for untangle
@@ -980,9 +1031,8 @@
     (cons (abstract-function* 'nil empty) (a* 1 'i 10))
     11)))
 
-;; TODO
-;; e is now just a compound consed with a replacement abstract-variable, abstract-variable* or a*-no-id
-;; acc no longer tracks whether substitution was successful => should be possible to simplify quite a bit
+;; note: if every instance of the compound is replaced, aliasing can be encoded in the head of a rule
+;; therefore, we should only apply it to the *first* instance
 (define (apply-compound-subst e acc)
   (define rec
     (curry apply-compound-subst e))
@@ -1004,14 +1054,14 @@
      (if
       (equal? (car e) acc)
       (cdr e)
-      (abstract-function sym (map rec args)))]
+      (abstract-function* sym (map rec args)))]
     [_ acc]))
 (module+ test
   (check-equal?
    (apply-compound-subst
     (cons (abstract-function 'nil empty) (a 1000))
     (interpret-abstract-conjunction "foo(bar(α1,nil)),baz(nil)"))
-   (interpret-abstract-conjunction "foo(bar(α1,α1000)),baz(α1000)")))
+   (interpret-abstract-conjunction "foo(bar(α1,α1000)),baz(nil)")))
 
 (define (deconstruct ac)
   (let* ([compounds (extract-abstract-compounds ac)]
@@ -1048,7 +1098,7 @@
      "sift(α40,α39),alt_length(α391,γ20)")
     (list
      (cons
-      (cons (abstract-function 'cons (list (g 28) (a 390))) #t)
+      (abstract-function 'cons (list (g 28) (a 390)))
       (a 391)))))
   (check-equal?
    (deconstruct
@@ -1090,7 +1140,9 @@
       (init
        (list
         (cons (a* 1 1 34)
-              (a 1221))))
+              ;; this doesn't need to be replaced
+              ;; check-first takes care of it
+              (abstract-function 'cons (list (g 90) (a 1220))))))
       (consecutive
        (list
         (cons (a* 1 'i+1 34)
@@ -1099,12 +1151,7 @@
        (list
         (cons (a* 1 'L 35)
               (a 124))))))
-    (list
-     (cons
-      (cons
-       (abstract-function 'cons (list (g 90) (a 1220)))
-       #t)
-      (a 1221))))))
+    (list))))
 (provide
  (proc-doc/names
   deconstruct
