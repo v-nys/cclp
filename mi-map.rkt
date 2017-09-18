@@ -389,7 +389,9 @@
 (define (deconstruction-atoms replacements)
   (append-map
    (match-lambda
-     [(cons (cons (abstract-function sym args) top?) repl-avar)
+     [(or
+       (cons (abstract-function sym args) repl-avar)
+       (cons (abstract-function* sym args) repl-avar))
       (list
        (format "nonvar(~a)" (synth-str (concrete-synth-counterpart repl-avar)))
        (format
@@ -421,7 +423,7 @@
      (extract-all-concrete-variables/duplicates
       (map
        (match-lambda
-         [(cons (cons afunc _) _)
+         [(cons afunc _)
           (concrete-synth-counterpart afunc)])
        repl))))))
 
@@ -947,147 +949,94 @@
   (tree)
   @{Prints out the @code{generalization/2} clauses required by the Prolog meta-interpreter.}))
 
-; note: compound can be an abstract-function or a pair (abstract-function*, multi id)
-; also note: this is a map-accumulated function, not a folded one!
-(define (compute-subst comp occs)
-  (match comp
-    [(cons c top?)
-     (let* ([corresponding-maximum
-             (if (abstract-function? c)
-                 (hash-ref occs 'a (a 1))
-                 (hash-ref
-                  occs
-                  (format-symbol "a-~a-i" (cdr c))
-                  (a* (cdr c) 'i 1)))]
-            [new-maximum
-             ((extract-avar-constructor corresponding-maximum)
-              (add1 (local-index corresponding-maximum)))])
-       (cons
-        (cons (cons c top?) new-maximum)
-        (hash-set occs (symbolize-avar-constructor new-maximum) new-maximum)))]))
+(define (compute-subst c fresh)
+  (cons
+   (cons
+    c
+    (cond
+      [(abstract-function? c)
+       (a fresh)]
+      [(abstract-function*? c)
+       ;; README:
+       ;; strictly speaking, 1 is incorrect
+       ;; but we can't get the multi ID if there are no variables in the terms (which does happen)
+       ;; however, we only use these substitutions for synthesis
+       ;; there, always using 1 does not impact the resulting program as long as the index is fresh
+       (a* 1 'i fresh)]))
+   (add1 fresh)))
 (module+ test
   (check-equal?
    (compute-subst
-    (cons (interpret-abstract-term "foo(bar(baz))") #t)
-    (hash 'a (a 7)))
+    (interpret-abstract-term "foo(bar(baz))")
+    7)
    (cons
-    (cons (cons (interpret-abstract-term "foo(bar(baz))") #t) (a 8))
-    (hash 'a (a 8))))
+    (cons (interpret-abstract-term "foo(bar(baz))") (a 7))
+    8))
   (check-equal?
    (compute-subst
-    (cons (cons (abstract-function* 'nil empty) 3) #t)
-    (hash 'a-3-i (a* 3 'i 10)))
+    (abstract-function* 'nil empty)
+    10)
    (cons
-    (cons (cons (cons (abstract-function* 'nil empty) 3) #t) (a* 3 'i 11))
-    (hash 'a-3-i (a* 3 'i 11)))))
+    (cons (abstract-function* 'nil empty) (a* 1 'i 10))
+    11)))
 
-; NAME IS TERRIBLE!
+;; TODO
+;; e is now just a compound consed with a replacement abstract-variable, abstract-variable* or a*-no-id
+;; acc no longer tracks whether substitution was successful => should be possible to simplify quite a bit
 (define (apply-compound-subst e acc)
-  (if (cdr acc)
-      acc
-      (match (car acc) ; reusing this a few times...
-        [(list-rest h t)
-         (match-let
-             ([(cons h-after success-1?)
-               (apply-compound-subst e (cons h #f))]
-              [(cons t-after success-2?)
-               (apply-compound-subst e (cons t #f))])
-           (cond
-             [success-1?
-              (cons (cons h-after t) success-1?)]
-             [success-2?
-              (cons (cons h t-after) success-2?)]
-             [else acc]))]
-        [(multi patt asc? (init ic) (consecutive cc) (final fc))
-         (match e
-           [(cons (cons (? abstract-function*?) m-id) _)
-            #:when (equal? m-id (get-multi-id (car acc)))
-            (match-let
-                ([(cons pattern-after success?)
-                  (apply-compound-subst e (cons patt #f))])
-              (cons
-               (multi pattern-after asc? (init ic) (consecutive cc) (final fc))
-               success?))]
-           [(cons (cons (? abstract-function*?) m-id) _) acc]
-           [(cons (? abstract-function?) _)
-            (match-let
-                ([(cons init-after success?)
-                  (apply-compound-subst e (cons (map cdr ic) #f))])
-              (if success?
-                  (cons
-                   (multi
-                    patt
-                    asc?
-                    (init
-                     (map cons (map car ic) init-after))
-                    (consecutive cc)
-                    (final fc))
-                   success?)
-                  acc))])]
-        [(or
-          (abstract-atom  sym (list-rest h t))
-          (abstract-atom* sym (list-rest h t)))
-         (match-let
-             ([(cons h-after success-1?)
-               (apply-compound-subst e (cons h #f))]
-              [(cons t-after success-2?)
-               (apply-compound-subst e (cons t #f))])
-           (cond
-             [success-1?
-              (cons ((compound-constructor (car acc)) sym (cons h-after t)) success-1?)]
-             [success-2?
-              (cons ((compound-constructor (car acc)) sym (cons h t-after)) success-2?)]
-             [else acc]))]
-        [(or
-          (abstract-function  sym (list))
-          (abstract-function* sym (list)))
-         (if
-          (equal?
-           (car acc)
-           (car e))
-          (cons (cdr e) #t)
-          acc)]
-        [(or
-          (abstract-function  sym (list-rest h t))
-          (abstract-function* sym (list-rest h t)))
-         (if (equal? (car acc) (car e))
-             (cons (cdr e) #t)
-             (match-let
-                 ([(cons h-after success-1?)
-                   (apply-compound-subst e (cons h #f))]
-                  [(cons t-after success-2?)
-                   (apply-compound-subst e (cons t #f))])
-               (cond
-                 [success-1?
-                  (cons ((compound-constructor (car acc)) sym (cons h-after t)) success-1?)]
-                 [success-2?
-                  (cons ((compound-constructor (car acc)) sym (cons h t-after)) success-2?)]
-                 [else acc])))]
-        [_ acc])))
+  (define rec
+    (curry apply-compound-subst e))
+  (match acc
+    [(list-rest h t)
+     (map rec acc)]
+    [(multi patt asc? ic cc fc)
+     (multi (rec patt) asc? ic cc fc)]
+    [(abstract-atom sym args)
+     (abstract-atom sym (map rec args))]
+    [(abstract-atom* sym args)
+     (abstract-atom* sym (map rec args))]
+    [(abstract-function sym args)
+     (if
+      (equal? (car e) acc)
+      (cdr e)
+      (abstract-function sym (map rec args)))]
+    [(abstract-function* sym args)
+     (if
+      (equal? (car e) acc)
+      (cdr e)
+      (abstract-function sym (map rec args)))]
+    [_ acc]))
 (module+ test
   (check-equal?
    (apply-compound-subst
     (cons (abstract-function 'nil empty) (a 1000))
-    (cons (interpret-abstract-conjunction "foo(bar(α1,nil)),baz(nil)") #f))
-   (cons (interpret-abstract-conjunction "foo(bar(α1,α1000)),baz(nil)") #t)))
+    (interpret-abstract-conjunction "foo(bar(α1,nil)),baz(nil)"))
+   (interpret-abstract-conjunction "foo(bar(α1,α1000)),baz(α1000)")))
 
 (define (deconstruct ac)
   (let* ([compounds (extract-abstract-compounds ac)]
          [var-occurrences (extract-all-variables/duplicates ac)]
-         [max-var-indices (foldl find-max-vars (hash) var-occurrences)]
-         [substs (car (map-accumulatel compute-subst max-var-indices compounds))])
+         [max-var-index
+          (let ([indices
+                 (map
+                  (match-lambda
+                    [(a i) i]
+                    [(g i) i]
+                    [(a* _ _ i) i]
+                    [(g* _ _ i) i])
+                  var-occurrences)])
+            (apply max (cons 0 indices)))]
+         [substs
+          (car
+           (map-accumulatel
+            compute-subst
+            (add1 max-var-index)
+            compounds))])
     (cons
-     (car
-      (foldr
-       apply-compound-subst
-       (cons ac #f)
-       (filter-map
-        (λ (s)
-          (and
-           (cdr (car s))
-           (cons (car (car s)) (cdr s))))
-        substs)))
-     ;; TODO: can remove info about top-level or not here
+     (foldr
+      apply-compound-subst
+      ac
+      substs)
      substs)))
 (module+ test
   (check-equal?

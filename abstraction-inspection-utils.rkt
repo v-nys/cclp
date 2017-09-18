@@ -306,7 +306,12 @@
     [(or
       (abstract-atom* _ args)
       (abstract-function* _ args))
+     #:when (not (null? args))
      (get-multi-id args)]
+    [(or
+      (abstract-atom* _ args)
+      (abstract-function* _ args))
+     #f]
     [(or
       (a* id _ _)
       (g* id _ _))
@@ -314,7 +319,7 @@
 (provide
  (proc-doc/names
   get-multi-id
-  (-> multi? exact-positive-integer?)
+  (-> multi? (or/c exact-positive-integer? #f))
   (m)
   @{Extracts the unique identifier from any @racket[abstract-variable*?] in @racket[m]}))
 
@@ -329,25 +334,18 @@
     [(or
       (abstract-function _ args)
       (abstract-function* _ args))
-     (cons (cons v top?) (append-map (λ (a) (extract-abstract-compounds a #:top #f)) args))]
-    [(multi _ _ _ _ _) (list)]
-;    [(multi patt _ (init ic) _ _)
-;     (let ([multi-id (get-multi-id v)])
-;       (append
-;        (map (λ (e) (cons (cons (car e) multi-id) (cdr e)))
-;            (append-map extract-abstract-compounds patt))
-;        (append-map extract-abstract-compounds (map cdr ic))))]
+     (list v)]
+    [(multi patt _ _ _ _)
+     (append-map extract-abstract-compounds patt)]
     [_ (list)]))
 (module+ test
   (check-equal?
    (extract-abstract-compounds
     (interpret-abstract-conjunction "foo(bar(baz(nil)),quux),poit,narf(zorp(α1,γ1))"))
    (list
-    (cons (interpret-abstract-term "bar(baz(nil))") #t)
-    (cons (interpret-abstract-term "baz(nil)") #f)
-    (cons (abstract-function 'nil empty) #f)
-    (cons (abstract-function 'quux empty) #t)
-    (cons (abstract-function 'zorp (list (a 1) (g 1))) #t)))
+    (interpret-abstract-term "bar(baz(nil))")
+    (abstract-function 'quux empty)
+    (abstract-function 'zorp (list (a 1) (g 1)))))
   (check-equal?
    (extract-abstract-compounds
     (list
@@ -374,9 +372,7 @@
       (consecutive (list))
       (final (list)))))
    (list
-    (cons
-     (cons
-      (abstract-function*
+    (abstract-function*
        'bar
        (list
         (abstract-function*
@@ -385,38 +381,14 @@
           (abstract-function*
            'quux
            empty)))
-        (g* 1 'i 1)))
-      1)
-     #t)
-    (cons
-     (cons
-      (abstract-function*
-       'baz
-       (list
-        (abstract-function*
-         'quux
-         empty)))
-      1)
-     #f)
-    (cons
-     (cons
-      (abstract-function*
-       'quux
-       empty)
-      1)
-     #f)
-    (cons
-     (abstract-function
-      'nil
-      empty)
-     #t))))
+        (g* 1 'i 1))))))
 (provide
  (proc-doc/names
   extract-abstract-compounds
   (->
    (listof abstract-conjunct?)
-   (listof (cons/c (or/c abstract-function? (cons/c abstract-function*? exact-positive-integer?)) boolean?)))
+   (listof (or/c abstract-function? abstract-function*?)))
   (ac)
-  @{Collects all @racket[abstract-function?] and @racket[abstract-function*?] terms in @racket[ac]. It also includes nested terms.
- This function can contain duplicates and the compounds are in order of occurrence (with nested terms immediately following the containing term, unless the preceding term also had more nested terms).
- The optional positive integer indicates which @racket[multi?] the term belongs in. The boolean part of the result indicates whether the term is a top-level term or whether it is nested inside another term.}))
+  @{Collects the top-level @racket[abstract-function?] and @racket[abstract-function*?] terms in @racket[ac].
+ This function can contain duplicates and the compounds are in order of occurrence.
+ Note that compounds which only occur in the constraint collections of a multi abstraction are not extracted.}))
