@@ -1031,31 +1031,80 @@
     (cons (abstract-function* 'nil empty) (a* 1 'i 10))
     11)))
 
+
+
+
 ;; note: if every instance of the compound is replaced, aliasing can be encoded in the head of a rule
 ;; therefore, we should only apply it to the *first* instance
-(define (apply-compound-subst e acc)
-  (define rec
-    (curry apply-compound-subst e))
-  (match acc
-    [(list-rest h t)
-     (map rec acc)]
-    [(multi patt asc? ic cc fc)
-     (multi (rec patt) asc? ic cc fc)]
-    [(abstract-atom sym args)
-     (abstract-atom sym (map rec args))]
-    [(abstract-atom* sym args)
-     (abstract-atom* sym (map rec args))]
-    [(abstract-function sym args)
-     (if
-      (equal? (car e) acc)
-      (cdr e)
-      (abstract-function sym (map rec args)))]
-    [(abstract-function* sym args)
-     (if
-      (equal? (car e) acc)
-      (cdr e)
-      (abstract-function* sym (map rec args)))]
-    [_ acc]))
+(define (apply-compound-subst s acc)
+  (define (aux s obj/success?)
+    (define rec (curry aux s))
+    (match obj/success?
+      [(cons _ #t) obj/success?]
+      [(cons (list-rest h t) #f)
+       (match-let
+           ([(cons h-after success-1?)
+             (rec (cons h #f))]
+            [(cons t-after success-2?)
+             (rec (cons t #f))])
+         (cond
+           [success-1?
+            (cons (cons h-after t) success-1?)]
+           [success-2?
+            (cons (cons h t-after) success-2?)]
+           [else obj/success?]))]
+      [(cons (multi patt asc? (init ic) (consecutive cc) (final fc)) #f)
+       (match s
+         [(cons (? abstract-function*?) _)
+          (match-let
+              ([(cons pattern-after success?)
+                (rec (cons patt #f))])
+            (cons
+             (multi pattern-after asc? (init ic) (consecutive cc) (final fc))
+             success?))]
+         [(cons (? abstract-function?) _)
+          ;; we don't replace these in a multi (they can only occur inside constraints)
+          obj/success?])]
+      [(cons
+        (and
+         subst-context
+         (or
+          (abstract-atom sym (list-rest h t))
+          (abstract-atom* sym (list-rest h t))))
+        #f)
+       (match-let
+           ([(cons h-after success-1?)
+             (rec (cons h #f))]
+            [(cons t-after success-2?)
+             (rec (cons t #f))])
+         (cond
+           [success-1?
+            (cons ((compound-constructor subst-context) sym (cons h-after t)) success-1?)]
+           [success-2?
+            (cons ((compound-constructor subst-context) sym (cons h t-after)) success-2?)]
+           [else obj/success?]))]
+      [(cons
+        (and
+         subst-context
+         (or
+          (abstract-function  sym (list-rest h t))
+          (abstract-function* sym (list-rest h t))))
+        #f)
+       (if (equal? subst-context (car s))
+           (cons (cdr s) #t)
+           (match-let
+               ([(cons h-after success-1?)
+                 (rec (cons h #f))]
+                [(cons t-after success-2?)
+                 (rec (cons t #f))])
+             (cond
+               [success-1?
+                (cons ((compound-constructor subst-context) sym (cons h-after t)) success-1?)]
+               [success-2?
+                (cons ((compound-constructor subst-context) sym (cons h t-after)) success-2?)]
+               [else obj/success?])))]
+      [else obj/success?]))
+  (car (aux s (cons acc #f))))
 (module+ test
   (check-equal?
    (apply-compound-subst
