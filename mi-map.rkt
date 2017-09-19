@@ -126,17 +126,9 @@
      (match-let
          ([(cons after-1 success-1?)
            (rename patt)]
-          [(cons after-2 success-2?)
-           (rename (map cdr ic))]
-          [(cons after-3 success-3?)
-           (rename (map cdr fc))]
           [zip (λ (l1 l2) (map (λ (e1 e2) (cons e1 e2)) l1 l2))])
        (cond [success-1?
               (cons (multi after-1 asc? (init ic) consec (final fc)) success-1?)]
-             [success-2?
-              (cons (multi patt asc? (init (zip (map car ic) after-2)) consec (final fc)) success-2?)]
-             [success-3?
-              (cons (multi patt asc? (init ic) consec (final (zip (map car fc) after-3))) success-3?)]
              [else (cons locus #f)]))]
     [(list)
      (cons locus #f)]
@@ -953,7 +945,7 @@
      (generate-generalization-clause
       graphcol-57-conjunction
       graphcol-57-building-blocks)
-     "")))
+     "generalization([coloring(A1888),allsafe(G479,G480,A1889,A1890),multi('[|]'(building_block('[|]'(allsafe(G1i1,G1i2,G1i3,A1i1),[])),Tail1)),allsafe(G887,G888,A1891,A1892),allsafe(G889,G890,A1893,A1894),safe(A1895,A1896)],[coloring(A1888),allsafe(G479,G480,A1889,A1890),multi('[|]'(building_block('[|]'(allsafe(G1i1,G1i2,G1i3,A1i1),[])),Tail2)),allsafe(G889,G890,A1893,A1894),safe(A1895,A1896)]) :- \n  nonvar(A1888),\n  A1888 =.. [cons,A105,A106],\n  nonvar(A1889),\n  A1889 =.. [cons,G1882,G1883],\n  nonvar(A1890),\n  A1890 =.. [cons,A107,A108],\n  nonvar(A1891),\n  A1891 =.. [cons,G1884,G1885],\n  nonvar(A1892),\n  A1892 =.. [cons,A109,A110],\n  nonvar(A1893),\n  A1893 =.. [cons,G1886,G1887],\n  nonvar(A1894),\n  A1894 =.. [cons,A111,A112],\n  nonvar(A1895),\n  A1895 =.. [cons,G1880,G1881],\n  nonvar(A1896),\n  A1896 =.. [cons,A103,A104],\n  append(Tail1,'[|]'(building_block('[|]'(allsafe(G887,G888,A1891,A1892),[])),[]),Tail2),\n  check_pattern('[|]'(building_block('[|]'(allsafe(G1i1,G1i2,G1i3,A1i1),[])),Tail1),[building_block([allsafe(_-g,_-g,_-g,_-a)])]),\n  unchanged_under_substitution([coloring(A1888),allsafe(G479,G480,A1889,A1890),multi('[|]'(building_block('[|]'(allsafe(G1i1,G1i2,G1i3,A1i1),[])),Tail1)),allsafe(G887,G888,A1891,A1892),allsafe(G889,G890,A1893,A1894),safe(A1895,A1896)],'[|]'(building_block('[|]'(allsafe(G1i1,G1i2,G1i3,A1i1),[])),[]),[building_block([allsafe(_,_,cons(G1880,G1881),cons(A103,A104))])]),\n  check_consecutive('[|]'(building_block('[|]'(allsafe(G1i1,G1i2,G1i3,A1i1),[])),Tail1),building_block([allsafe(G1888,G1889,G1890,A1897)]),building_block([allsafe(G1891,G1892,G1890,A1897)])),\n  last('[|]'(building_block('[|]'(allsafe(G1i1,G1i2,G1i3,A1i1),[])),Tail1),Last1),unchanged_under_substitution([coloring(A1888),allsafe(G479,G480,A1889,A1890),multi('[|]'(building_block('[|]'(allsafe(G1i1,G1i2,G1i3,A1i1),[])),Tail1)),allsafe(G887,G888,A1891,A1892),allsafe(G889,G890,A1893,A1894),safe(A1895,A1896)],[Last1],[building_block([allsafe(_,_,cons(G1880,G1881),cons(A103,A104))])]),\n  A103 == A105,\n  A104 == A106,\n  G1880 == G1882,\n  G1881 == G1883,\n  A103 == A107,\n  A104 == A108,\n  G1880 == G1884,\n  G1881 == G1885,\n  A103 == A109,\n  A104 == A110,\n  G1880 == G1886,\n  G1881 == G1887,\n  A103 == A111,\n  A104 == A112,\n  ground(G479),\n  ground(G480),\n  ground(G1i1),\n  ground(G1i2),\n  ground(G1i3),\n  ground(G887),\n  ground(G888),\n  ground(G889),\n  ground(G890),\n  ground(G1882),\n  ground(G1883),\n  ground(G1884),\n  ground(G1885),\n  ground(G1886),\n  ground(G1887),\n  ground(G1880),\n  ground(G1881),\n  !.")))
 
 ;; auxiliary function for untangle
 ;; allows comparison of constructors
@@ -1103,6 +1095,16 @@
                [success-2?
                 (cons ((compound-constructor subst-context) sym (cons h t-after)) success-2?)]
                [else obj/success?])))]
+      [(cons
+        (and
+         subst-context
+         (or
+          (abstract-function  sym (list))
+          (abstract-function* sym (list))))
+        #f)
+       (if (equal? subst-context (car s))
+           (cons (cdr s) #t)
+           obj/success?)]
       [else obj/success?]))
   (car (aux s (cons acc #f))))
 (module+ test
