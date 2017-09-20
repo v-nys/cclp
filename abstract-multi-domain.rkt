@@ -488,4 +488,9 @@
   (match v
     [(a* _ _ i) i]
     [(g* _ _ i) i]))
-(provide avar*-local-index)
+(provide
+ (proc-doc/names
+  avar*-local-index
+  (-> abstract-variable*? exact-positive-integer?)
+  (v)
+  @{Extract the final subscript from a parameterized abstract variable.}))
