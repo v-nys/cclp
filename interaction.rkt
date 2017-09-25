@@ -43,7 +43,7 @@
 (require "abstract-renaming.rkt")
 (require (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))
 (require "gen-graph-structs.rkt")
-(require "generational-graph.rkt"
+(require "genealogical-graph.rkt"
          "mi-map.rkt")
 (require graph)
 (require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
@@ -141,7 +141,7 @@
         tree)]
      ["show genealogical graph"
       (let* ([active-branch (active-branch tree)]
-             [gr (if active-branch (generational-graph-skeleton active-branch) #f)]
+             [gr (if active-branch (genealogical-graph-skeleton active-branch) #f)]
              [root (if active-branch (gen-node (car (tree-label-conjunction (car active-branch))) 1 #f #t #t) #f)]
              [annotated-root (if active-branch (struct-copy gen-node root [range (gen 0 #f)]) #f)]
              [depth (if active-branch (length active-branch) #f)]

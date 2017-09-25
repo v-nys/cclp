@@ -1,12 +1,12 @@
 #lang racket
 (require graph rackunit)
-(require "abstract-multi-domain.rkt" "gen-graph-structs.rkt" "generational-graph.rkt")
+(require "abstract-multi-domain.rkt" "gen-graph-structs.rkt" "genealogical-graph.rkt")
 
 (require (prefix-in o-primes-branch-tree: "analysis-trees/optimus-primes-branch.rkt")
          (prefix-in o-primes-branch-skeleton: "analysis-trees/optimus-primes-branch-gen-graph-skeleton.rkt"))
 (define o-primes-branch (active-branch o-primes-branch-tree:val))
 (define o-primes-graph-skeleton o-primes-branch-skeleton:val)
-;(check-equal? (generational-graph-skeleton o-primes-branch) o-primes-graph-skeleton)
+;(check-equal? (genealogical-graph-skeleton o-primes-branch) o-primes-graph-skeleton)
 
 (define o-primes-skeleton-root (gen-node (abstract-atom 'oprimes (list (g 1) (a 1))) 1 #f #t))
 (define o-primes-candidate-targets

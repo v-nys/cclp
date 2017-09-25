@@ -19,7 +19,7 @@
   "data-utils.rkt"
   (only-in "execution.rkt" selected-index)
   (only-in "generalize.rkt" generalize)
-  (only-in "generational-graph.rkt" active-branch)
+  (only-in "genealogical-graph.rkt" active-branch)
   "preprior-graph.rkt"
   (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*)
   (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))

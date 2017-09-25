@@ -58,11 +58,11 @@
   (and (>= idx (index-range-start range))
        (< idx (index-range-end-before range))))
 
-;; computes the skeleton for a generational graph, i.e. the data structure without any generations
-;; uid-acc is the unique identifier used for an abstract conjunct in the generational graph
-;; graph is the (mutable) generational graph
+;; computes the skeleton for a genealogical graph, i.e. the data structure without any generations
+;; uid-acc is the unique identifier used for an abstract conjunct in the genealogical graph
+;; graph is the (mutable) genealogical graph
 ;; edges is a list of edges from conjuncts at the previous level to a range of indices at the current level
-(define (generational-graph-skeleton branch [uid-acc 1] [graph (unweighted-graph/directed (list))] [edges (list)])
+(define (genealogical-graph-skeleton branch [uid-acc 1] [graph (unweighted-graph/directed (list))] [edges (list)])
   (match branch
     [(list label) ; same for tree label and generalization
      (foldl
@@ -105,7 +105,7 @@
                   (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
             (list uid-acc 0 0 (list))
             tl-con1)])
-       (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]
+       (genealogical-graph-skeleton (cdr branch) next-uid graph add-edges))]
     ; if there are unfoldings but no selection
     [(list-rest
       ;; generalization followed by generalization is possible on paper, but implementation never does this
@@ -135,7 +135,7 @@
                   (list (add1 uid) (add1 idx) new-range-start (cons vertex-edges introduced-edges))))])
             (list uid-acc 0 0 (list))
             tl-con1)])
-       (generational-graph-skeleton (cdr branch) next-uid graph add-edges))]))
+       (genealogical-graph-skeleton (cdr branch) next-uid graph add-edges))]))
 (module+ test
   (require
     rackunit
@@ -143,13 +143,13 @@
     (prefix-in sl-branch-skeleton: "analysis-trees/sameleaves-no-multi-branch-gen-tree-skeleton.rkt"))
   (define sl-branch (active-branch sl-branch-tree:val))
   (define sl-graph-skeleton sl-branch-skeleton:val)
-  (check-equal? (generational-graph-skeleton sl-branch) sl-graph-skeleton)
+  (check-equal? (genealogical-graph-skeleton sl-branch) sl-graph-skeleton)
   (require (prefix-in o-primes-branch-tree: "analysis-trees/optimus-primes-branch.rkt")
            (prefix-in o-primes-branch-skeleton: "analysis-trees/optimus-primes-branch-gen-graph-skeleton.rkt"))
   (define o-primes-branch (active-branch o-primes-branch-tree:val))
   (define o-primes-graph-skeleton o-primes-branch-skeleton:val)
-  (check-equal? (generational-graph-skeleton o-primes-branch) o-primes-graph-skeleton))
-(provide generational-graph-skeleton) ; just for test
+  (check-equal? (genealogical-graph-skeleton o-primes-branch) o-primes-graph-skeleton))
+(provide genealogical-graph-skeleton) ; just for test
 
 (define (active-branch t)
   (match t
@@ -606,7 +606,7 @@
    (rdag-level almost-annotated-with-multi sl-annotated-root 6))
   (check-equal? almost-annotated almost-annotated-with-multi))
 
-;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full generational graph
+;; note: this takes a skeleton as an input, but it modifies it so that it becomes a full genealogical graph
 (define (annotate-general! skeleton root relevant-targets rdag-depth)
   (define postfix-box (box 1))
   (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
@@ -682,7 +682,7 @@
     (gen-node (abstract-atom 'eq (list (a 1) (a 2))) 4 #f #f))))
 (provide rdag-level) ; for testing
 
-;; replace sequences with the same origin with multi abstractions at a given level of the generational tree
+;; replace sequences with the same origin with multi abstractions at a given level of the genealogical graph
 ;(define (gen-tree-level->generalized-conjunction lvl)
 ;  (map (compose1 identified-atom-atom identified-atom-with-generation-id-atom) lvl)) ; TODO
 (module+ test

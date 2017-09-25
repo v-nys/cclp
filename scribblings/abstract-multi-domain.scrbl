@@ -22,11 +22,10 @@ The abstract-multi domain module encodes the elements described in Definition 20
 Note that @racket[abstract-atom*], @racket[abstract-function*], @racket[a*] and @racket[g*] are separate constructors here. That is, parameterized namings (see Definition 18 in @citet["nys2017abstract"]) of domain elements are encoded using different struct types than their non-parameterized counterparts.
 
 @subsection{Extra information in the @racket[multi] struct type}
-At the time of writing, the @racket[multi] struct type contains an accessor which is not mentioned in @citet["nys2017abstract"], i.e. @racket[multi-ascending?]. The field accessed by this function indicates whether the represented abstract conjunction consists of conjunctions which, roughly, increase in length on the right (if @racket[multi-ascending?] returns @racket[#t]) or on the left (if @racket[multi-ascending?] returns @racket[#f]). For more details, see the description of the genealogical tree data structure. @note{This description has not actually been written yet.}. The field may still be removed in the future, as it is not actually a property of the abstraction itself, but an extra piece of information which helps to correctly apply the abstraction and which could be inferred.
+At the time of writing, the @racket[multi] struct type contains an accessor which is not mentioned in @citet["nys2017abstract"], i.e. @racket[multi-ascending?]. The field accessed by this function indicates whether the represented abstract conjunction consists of conjunctions which, roughly, increase in length on the right (if @racket[multi-ascending?] returns @racket[#t]) or on the left (if @racket[multi-ascending?] returns @racket[#f]). For more details, see the description of the genealogical graph. @note{This description has not actually been written yet.} The field may still be removed in the future, as it is not actually a property of the abstraction itself, but an extra piece of information which helps to correctly apply the abstraction and which could be inferred.
 
 Also, the @racket[init], @racket[consecutive] and @racket[final] structs may appear redundant. This is, in fact, true. They will be removed in a future version of the code.
 
 @section{API}
 @(include-extracted cclp/abstract-multi-domain)
-
 @(generate-bibliography)

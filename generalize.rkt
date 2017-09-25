@@ -12,7 +12,7 @@
   (only-in "abstract-substitution.rkt" abstract-equality apply-substitution)
   (only-in "data-utils.rkt" some-v)
   "gen-graph-structs.rkt"
-  "generational-graph.rkt"
+  "genealogical-graph.rkt"
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
   (only-in racket-list-utils/utils replace-sublist map-accumulatel)
@@ -1086,7 +1086,7 @@
    (list (cons (list (index-range 1 2) (index-range 2 3)) 1) (cons (list (index-range 4 5) (index-range 5 6)) 3))))
 
 (define (generalize br)
-  (define gr (generational-graph-skeleton br))
+  (define gr (genealogical-graph-skeleton br))
   (define root (gen-node (car (tree-label-conjunction (car br))) 1 #f #t #t))
   (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
   (define depth (length br))

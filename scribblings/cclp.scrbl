@@ -38,9 +38,9 @@ sort(γ1,α1)
 @;include-section["interaction.scrbl"]
 @;include-section["abstract-substitution.scrbl"]
 @;include-section["abstract-domain-ordering.scrbl"]
-@;include-section["generational-tree.scrbl"]
-@;include-section["abstract-analysis.scrbl"]
 @include-section["abstract-multi-domain.scrbl"]
+@include-section["genealogical-graph.scrbl"]
+@;include-section["abstract-analysis.scrbl"]
 
 @section{Limitations}
 
