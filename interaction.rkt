@@ -45,7 +45,12 @@
 (require "gen-graph-structs.rkt")
 (require "generational-graph.rkt"
          "mi-map.rkt")
-(require graph)
+(require
+  file/convertible
+  graph
+  pict
+  pretty-graphs
+  cclp/generational-graph-visualization)
 (require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
 
 (require (only-in br/cond while))
@@ -146,13 +151,16 @@
              [annotated-root (if active-branch (struct-copy gen-node root [range (gen 0 #f)]) #f)]
              [depth (if active-branch (length active-branch) #f)]
              [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth)) #f)]
-             [_ (if active-branch (annotate-general! gr root targets depth) #f)])
+             [_ (if active-branch (annotate-general! gr root targets depth) #f)]
+             [vert->pict (λ (v) (rectangle 40 40))])
         (if active-branch
-            (displayln
-             (graphviz
-              (graph-map
-               (λ (v) (format "\"~v\"" v))
-               gr)))
+            (begin
+              (with-output-to-file
+                "genealogical-graph.svg"
+              (λ () (display (convert (dag->pict gr gen-node->pict) 'svg-bytes)))
+              #:mode 'binary
+              #:exists 'replace)
+              (displayln "Genealogical graph visualization was written to file."))
             (displayln "There is no active branch."))
         tree)]
      ["generate meta-interpreter map" ; this has the crash
