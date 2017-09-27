@@ -72,9 +72,10 @@
 (define-syntax (cclp-module-begin stx)
   (syntax-parse stx
     [(_ _PARSE-TREE ...)
-     (syntax/loc stx (#%module-begin
-                      (cclp-top current-contract-region _PARSE-TREE ...)))]))
-(provide (rename-out [cclp-module-begin #%module-begin]) #%top-interaction)
+     (syntax/loc stx
+       (#%module-begin
+        (cclp-top current-contract-region _PARSE-TREE ...)))]))
+(provide (rename-out [cclp-module-begin #%module-begin]))
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
 (define-for-syntax (inject-rule-id-stx rule-stx id)
