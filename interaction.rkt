@@ -140,7 +140,8 @@
      ["show debugging variables"
       (begin
         (displayln "precedence pairs:")
-        (for ([precedence (in-edges prior)]) (displayln precedence))
+        (for ([precedence (in-edges prior)])
+          (displayln (format "~v > ~v" (first precedence) (second precedence))))
         (displayln "step:")
         (displayln step-acc)
         tree)]
