@@ -153,7 +153,7 @@
   (make-serialize-info
    (λ (s) (make-vector 1 (adj-list (preprior-graph-prior s))))
    ; FIXME assumes fixed directory structure :-S
-   ; may be fixed simply by installing cclp package and using cclp/...
+   ; may be fixed simply by using cclp/...
    (cons 'ds-info (module-path-index-join "../cclp/preprior-graph.rkt" #f))
    #f
    (or (current-load-relative-directory) (current-directory))))

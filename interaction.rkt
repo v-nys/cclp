@@ -50,7 +50,7 @@
   graph
   pict
   pretty-graphs
-  cclp/generational-graph-visualization)
+  cclp/genealogical-graph-visualization)
 (require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
 
 (require (only-in br/cond while))
@@ -60,7 +60,7 @@
 
 ; full-ai-rules is tricky
 ; these are converted to full-evaluations pretty fast...
-(struct cclp (clauses full-ai-rules concrete-constants query))
+(struct cclp (clauses full-ai-rules concrete-constants partial-order query))
 (provide (struct-out cclp))
 
 (define (save-analysis filename tree edge-history step-acc prior)
@@ -172,14 +172,14 @@
 
 (define (begin-analysis program-data filename)
   (match program-data
-    [(cclp clauses full-evaluations concrete-constants initial-query)
+    [(cclp clauses full-evaluations concrete-constants preprior initial-query)
      ; using none for selection because no selection will occur more often
      ; using list for substitution because it is not wrong and is consistent
      ; using #f for rule because this is the only case where there is no associated clause
      (begin (define initial-tree-label
               (tree-label (list initial-query) (none) (list) #f #f (list)))
             (define initial-tree (node initial-tree-label (list)))
-            (interactive-analysis initial-tree clauses full-evaluations filename concrete-constants (mk-preprior-graph)))]))
+            (interactive-analysis initial-tree clauses full-evaluations filename concrete-constants preprior))]))
 
 (define (cclp-top filename program-data)
   (define logger (make-logger 'cc #f))
@@ -216,8 +216,9 @@
   (interactive-dispatch
    "What do you want to do?"
    ("analyze this program"
-    (begin (begin-analysis program-data-aux serialized-filename)
-           (cclp-run filename program-data)))
+    (let ([preprior-copy (graph-copy (cclp-partial-order program-data))]) ; due to mutability of graphs
+      (begin-analysis program-data-aux serialized-filename)
+           (cclp-run filename (struct-copy cclp program-data [partial-order graph-copy]))))
    ("load existing analysis"
     (begin (load-analysis (cclp-clauses program-data) full-evaluations serialized-filename (cclp-concrete-constants program-data))
            (cclp-run filename program-data)))

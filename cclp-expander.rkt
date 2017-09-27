@@ -34,7 +34,7 @@
 (require (only-in "interaction.rkt" cclp-top cclp))
 (require racket/contract)
 (require "abstract-domain-ordering.rkt")
-(require "preprior-graph.rkt")
+(require "preprior-graph.rkt" (only-in graph add-directed-edge!))
 (require (only-in sugar/coerce ->symbol))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 
@@ -44,16 +44,28 @@
 (define-syntax (cclp-program stx)
   (syntax-parse stx
     ; no full ai rules, no concrete constants
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION (list) (list) _QUERY-SECTION))]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
-        _FULL-EVALUATION-SECTION "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) _QUERY-SECTION))]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION (list) _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION))]
-    [(_ "{PROGRAM}" _PROGRAM-SECTION "{FULL EVALUATION}"
-        _FULL-EVALUATION-SECTION "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _QUERY-SECTION))]))
+    [(_ "{PROGRAM}" _PROGRAM-SECTION
+        "{QUERY}" _QUERY-SECTION)
+     (syntax/loc stx (cclp _PROGRAM-SECTION (list) (list) (mk-preprior-graph) _QUERY-SECTION))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION
+        "{FULL EVALUATION}" _FULL-EVALUATION-SECTION
+        "{QUERY}" _QUERY-SECTION)
+     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) (mk-preprior-graph) _QUERY-SECTION))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION
+        "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION
+        "{QUERY}" _QUERY-SECTION)
+     (syntax/loc stx (cclp _PROGRAM-SECTION (list) _CONCRETE-CONSTANTS-SECTION (mk-preprior-graph) _QUERY-SECTION))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION
+        "{FULL EVALUATION}" _FULL-EVALUATION-SECTION
+        "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION
+        "{QUERY}" _QUERY-SECTION)
+     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION (mk-preprior-graph) _QUERY-SECTION))]
+    [(_ "{PROGRAM}" _PROGRAM-SECTION
+        "{FULL EVALUATION}" _FULL-EVALUATION-SECTION
+        "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION
+        "{PARTIAL ORDER}" _PARTIAL-ORDER-SECTION
+        "{QUERY}" _QUERY-SECTION)
+     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _QUERY-SECTION))]))
 (provide cclp-program)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
@@ -253,6 +265,23 @@
   (syntax-parse stx
     [(_ _CONCRETE-CONSTANT ...) (syntax/loc stx (list _CONCRETE-CONSTANT ...))]))
 (provide concrete-constants-section)
+
+(define-syntax (partial-order-section stx)
+  (syntax-parse stx
+    [(_ PAIR ...)
+     (syntax/loc stx
+       (let ([g (mk-preprior-graph)])
+         (for ([p (list PAIR ...)])
+           (add-directed-edge! g (car p) (cdr p)))
+         g))]))
+(provide partial-order-section)
+
+(define-syntax (partial-ordering-pair stx)
+  (syntax-parse stx
+    [(_ A _ B)
+     (syntax/loc stx
+       (cons A B))]))
+(provide partial-ordering-pair)
 
 (module+ test
   (require rackunit)
