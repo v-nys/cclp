@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang br/quicklang
+#lang br
 ; for abstract variables, functions, atoms,...
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
 ; because output patterns can be obtained by applying a subsitution
@@ -76,6 +76,13 @@
        (#%module-begin
         (cclp-top current-contract-region _PARSE-TREE ...)))]))
 (provide (rename-out [cclp-module-begin #%module-begin]))
+
+;(define-syntax (cclp-top-interaction stx)
+;  (syntax-parse stx
+;    [(_ FORM)
+;     (print stx)
+;     (syntax/loc stx FORM)]))
+;(provide (rename-out [cclp-top-interaction #%top-interaction]))
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
 (define-for-syntax (inject-rule-id-stx rule-stx id)
