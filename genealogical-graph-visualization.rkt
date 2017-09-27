@@ -31,7 +31,7 @@
        (hc-append
         (text (symbol->string sym))
         (text "(")
-        (hbl-append
+        (apply hbl-append
          (for/list ([a (add-between args 'comma)])
            (abstract-term->pict a)))
         (text ")"))]))
