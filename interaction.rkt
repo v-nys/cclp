@@ -60,7 +60,7 @@
 
 ; full-ai-rules is tricky
 ; these are converted to full-evaluations pretty fast...
-(struct cclp (clauses full-ai-rules concrete-constants partial-order query))
+(struct cclp (clauses full-ai-rules concrete-constants partial-order query filename))
 (provide (struct-out cclp))
 
 (define (save-analysis filename tree edge-history step-acc prior)
@@ -73,7 +73,7 @@
       (write (serialize prior) out)
       (close-output-port out))))
 
-(define (interactive-analysis tree clauses full-evaluations filename concrete-constants prior #:step [step-acc 1] #:history [edge-history (make-hash)])
+(define (interactive-analysis tree clauses full-evaluations serialized-filename concrete-constants prior #:step [step-acc 1] #:history [edge-history (make-hash)])
   (log-debug "performing interactive analysis")
   (define analyzing? #t)
   (define (proceed)
@@ -124,12 +124,12 @@
                            (begin (set! continue? c?)
                                   (set! new-tree nt?))])
                         (save-analysis
-                         (format "~a.~a" filename (size new-tree))
+                         (format "~a.~a" serialized-filename (size new-tree))
                          new-tree edge-history step-acc prior)))
           new-tree))]
      ["save analysis"
       (begin
-        (save-analysis filename tree edge-history step-acc prior)
+        (save-analysis serialized-filename tree edge-history step-acc prior)
         tree)]
      ["show top level tree"
       (begin
@@ -157,10 +157,10 @@
         (if active-branch
             (begin
               (with-output-to-file
-                "genealogical-graph.svg"
-              (λ () (display (convert (dag->pict gr gen-node->pict) 'svg-bytes)))
-              #:mode 'binary
-              #:exists 'replace)
+                  "genealogical-graph.svg"
+                (λ () (display (convert (dag->pict gr gen-node->pict) 'svg-bytes)))
+                #:mode 'binary
+                #:exists 'replace)
               (displayln "Genealogical graph visualization was written to file."))
             (displayln "There is no active branch."))
         tree)]
@@ -171,58 +171,70 @@
      ["end analysis"
       (set! analyzing? #f)]))))
 
-(define (begin-analysis program-data filename)
+(define (begin-analysis program-data)
   (match program-data
-    [(cclp clauses full-evaluations concrete-constants preprior initial-query)
+    [(cclp clauses full-evaluations concrete-constants preprior initial-query filename)
      ; using none for selection because no selection will occur more often
      ; using list for substitution because it is not wrong and is consistent
      ; using #f for rule because this is the only case where there is no associated clause
      (begin (define initial-tree-label
               (tree-label (list initial-query) (none) (list) #f #f (list)))
             (define initial-tree (node initial-tree-label (list)))
-            (interactive-analysis initial-tree clauses full-evaluations filename concrete-constants preprior))]))
+            (interactive-analysis initial-tree clauses full-evaluations (serialized-filename program-data) concrete-constants preprior))]))
 
-(define (cclp-top filename program-data)
+(define (cclp-top program-data)
   (define logger (make-logger 'cc #f))
   (current-logger logger)
   (with-logging-to-port (current-error-port)
     (λ ()
       (begin
         (log-debug "logger is active")
-        (cclp-run filename program-data)))
+        (cclp-run program-data)))
     'warning))
 (provide
  (proc-doc/names
   cclp-top
-  (-> path?
-      cclp?
+  (-> cclp?
       void?)
-  (filename program-data)
+  (program-data)
   @{Top-level function used to run a compiling control logic program.}))
 
-(define (load-analysis clauses full-evaluations filename concrete-constants)
-  (let* ([in (open-input-file filename)]
+(define (load-analysis program-data)
+  (let* ([in (open-input-file (serialized-filename program-data))]
          [loaded-tree (deserialize (read in))]
          [edge-history (deserialize (read in))]
          [step-acc (deserialize (read in))]
          [prior (deserialize (read in))])
     (close-input-port in)
-    (interactive-analysis loaded-tree clauses full-evaluations filename concrete-constants prior #:step step-acc #:history edge-history)))
+    (interactive-analysis
+     loaded-tree
+     (cclp-clauses program-data)
+     (cclp-full-ai-rules program-data) ; confusing as these are actually full-evaluations!
+     (serialized-filename program-data)
+     (cclp-concrete-constants program-data)
+     prior
+     #:step step-acc
+     #:history edge-history)))
 
-(define (cclp-run filename program-data)
-  (define serialized-filename
-    (path-replace-extension (last (explode-path filename)) ".serializedcclp"))
+(define (serialized-filename program-data)
+  (path-replace-extension
+   (last
+    (explode-path
+     (cclp-filename program-data)))
+   ".serializedcclp"))
+
+(define (cclp-run program-data)
   (define full-evaluations (map full-ai-rule->full-evaluation (cclp-full-ai-rules program-data)))
   (define program-data-aux (struct-copy cclp program-data [full-ai-rules full-evaluations]))
   (interactive-dispatch
    "What do you want to do?"
    ("analyze this program"
     (let ([preprior-copy (graph-copy (cclp-partial-order program-data))]) ; due to mutability of graphs
-      (begin-analysis program-data-aux serialized-filename)
-           (cclp-run filename (struct-copy cclp program-data [partial-order graph-copy]))))
+      (begin-analysis program-data-aux)
+      (cclp-run (struct-copy cclp program-data [partial-order preprior-copy]))))
    ("load existing analysis"
-    (begin (load-analysis (cclp-clauses program-data) full-evaluations serialized-filename (cclp-concrete-constants program-data))
-           (cclp-run filename program-data)))
+    (begin (load-analysis program-data-aux)
+           (cclp-run program-data)))
    ("quit" (void))))
 
 ;                                                                          

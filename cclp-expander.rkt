@@ -31,7 +31,7 @@
 (require (prefix-in cd: "concrete-domain.rkt"))
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (for-syntax syntax/parse))
-(require (only-in "interaction.rkt" cclp-top cclp))
+(require "interaction.rkt")
 (require racket/contract)
 (require "abstract-domain-ordering.rkt")
 (require "preprior-graph.rkt" (only-in graph add-directed-edge!))
@@ -46,26 +46,26 @@
     ; no full ai rules, no concrete constants
     [(_ "{PROGRAM}" _PROGRAM-SECTION
         "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION (list) (list) (mk-preprior-graph) _QUERY-SECTION))]
+     (syntax/loc stx (cclp _PROGRAM-SECTION (list) (list) (mk-preprior-graph) _QUERY-SECTION "dummy"))]
     [(_ "{PROGRAM}" _PROGRAM-SECTION
         "{FULL EVALUATION}" _FULL-EVALUATION-SECTION
         "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) (mk-preprior-graph) _QUERY-SECTION))]
+     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (list) (mk-preprior-graph) _QUERY-SECTION "dummy"))]
     [(_ "{PROGRAM}" _PROGRAM-SECTION
         "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION
         "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION (list) _CONCRETE-CONSTANTS-SECTION (mk-preprior-graph) _QUERY-SECTION))]
+     (syntax/loc stx (cclp _PROGRAM-SECTION (list) _CONCRETE-CONSTANTS-SECTION (mk-preprior-graph) _QUERY-SECTION "dummy"))]
     [(_ "{PROGRAM}" _PROGRAM-SECTION
         "{FULL EVALUATION}" _FULL-EVALUATION-SECTION
         "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION
         "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION (mk-preprior-graph) _QUERY-SECTION))]
+     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION (mk-preprior-graph) _QUERY-SECTION "dummy"))]
     [(_ "{PROGRAM}" _PROGRAM-SECTION
         "{FULL EVALUATION}" _FULL-EVALUATION-SECTION
         "{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION
         "{PARTIAL ORDER}" _PARTIAL-ORDER-SECTION
         "{QUERY}" _QUERY-SECTION)
-     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _QUERY-SECTION))]))
+     (syntax/loc stx (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _QUERY-SECTION "dummy"))]))
 (provide cclp-program)
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
@@ -74,11 +74,15 @@
     [(_ _PARSE-TREE ...)
      (syntax/loc stx
        (#%module-begin
-        (define program-data _PARSE-TREE ...)
+        (define fn (current-contract-region)) ; inside submodule this is not a string but a list!
+        (define program-data
+          (let ([initial _PARSE-TREE ...])
+            (struct-copy cclp initial [filename fn])))
+        ;; avoiding struct-copy because it does not seem to play nice with this
         (provide program-data)
         (module+ main
-          ;; inside module+ main, current-contract-region becomes a list
-          (cclp-top (first current-contract-region) _PARSE-TREE ...))))]))
+          (cclp-top
+           program-data))))]))
 (provide (rename-out [cclp-module-begin #%module-begin]))
 
 (define-syntax (cclp-top-interaction stx)
