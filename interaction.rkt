@@ -63,6 +63,12 @@
 (struct cclp (clauses full-ai-rules concrete-constants partial-order query filename))
 (provide (struct-out cclp))
 
+;; roughly a combination of the constant and computed parts of an analysis, really
+;; note that cclp isn't entirely constant, as partial-order is actually mutated along the way
+;; worth considering to keep the partial order immutable and extend the graph, but doing so naively could be expensive
+(struct analysis (cclp tree step edge-history))
+(provide (struct-out analysis))
+
 (define (save-analysis filename tree edge-history step-acc prior)
   (let* ([out (open-output-file filename #:exists 'truncate/replace)]
          [serialized-tree (serialize tree)])
@@ -73,114 +79,114 @@
       (write (serialize prior) out)
       (close-output-port out))))
 
-(define (interactive-analysis tree clauses full-evaluations serialized-filename concrete-constants prior #:step [step-acc 1] #:history [edge-history (make-hash)])
-  (log-debug "performing interactive analysis")
-  (define analyzing? #t)
-  (define (proceed)
-    (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
-      (match outcome
-        [(cons 'underspecified-order candidate)
-         (displayln "Partial order is underspecified.")
-         (displayln "Please select the atom which takes precedence from the following list.")
-         (let* ([multis (filter multi? (label-conjunction (node-label candidate)))]
-                [multi-conjuncts (apply append (map (λ (m) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) m)))]) (car (unfold-multi-bounded 1 m offset offset)))) multis))]
-                [options (remove-duplicates (map normalize-abstract-atom (append multi-conjuncts (filter abstract-atom? (label-conjunction (node-label candidate))))))]
-                [user-selection (prompt-for-selection options)]
-                [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])
-           (begin
-             (for ([precedence new-precedences])
-               (add-directed-edge! prior (car precedence) (cdr precedence)))
-             (hash-set! edge-history step-acc new-precedences)
-             (set! step-acc (add1 step-acc)) ; assuming step will be successful
-             (with-handlers
-                 ([exn:fail?
-                   (λ (e)
-                     (begin (display (format "Error: ~a" e))
-                            (set! step-acc (sub1 step-acc))
-                            (cons #f tree)))])
-               (match-let ([(cons cand top) (advance-analysis tree clauses full-evaluations concrete-constants prior #:new-edges new-precedences)])
-                 (begin (newline) (tree-display cand print-tree-label) (newline) (cons #f top))))))]
-        [(cons cand top) (begin (set! step-acc (add1 step-acc)) (newline) (tree-display cand print-tree-label) (newline) (cons #t top))]
-        ['no-candidate (cons #f tree)])))
-  (while
-   analyzing?
-   (set!
-    tree
-    (interactive-dispatch
-     "What do you want to do?"
-     ["proceed"
-      (cdr (proceed))]
-     ["fast-forward"
-      (begin
-        (displayln "Maximum number of steps? (0 to keep going indefinitely)")
-        (match-let* ([steps (prompt-for-integer)]
-                     [indefinitely? (equal? steps 0)]
-                     [(cons continue? new-tree) (proceed)])
-          (while (and continue? (or indefinitely? (> steps 0)))
-                 (begin (set! tree new-tree)
-                        (set! steps (sub1 steps))
-                        (match (proceed)
-                          [(cons c? nt?)
-                           (begin (set! continue? c?)
-                                  (set! new-tree nt?))])
-                        (save-analysis
-                         (format "~a.~a" serialized-filename (size new-tree))
-                         new-tree edge-history step-acc prior)))
-          new-tree))]
-     ["save analysis"
-      (begin
-        (save-analysis serialized-filename tree edge-history step-acc prior)
-        tree)]
-     ["show top level tree"
-      (begin
-        (newline)
-        (tree-display tree print-tree-label)
-        (newline)
-        tree)]
-     ["show debugging variables"
-      (begin
-        (displayln "precedence pairs:")
-        (for ([precedence (in-edges prior)])
-          (displayln (format "~v > ~v" (first precedence) (second precedence))))
-        (displayln "step:")
-        (displayln step-acc)
-        tree)]
-     ["show genealogical graph"
-      (let* ([active-branch (active-branch tree)]
-             [gr (if active-branch (genealogical-graph-skeleton active-branch) #f)]
-             [root (if active-branch (gen-node (car (tree-label-conjunction (car active-branch))) 1 #f #t #t) #f)]
-             [annotated-root (if active-branch (struct-copy gen-node root [range (gen 0 #f)]) #f)]
-             [depth (if active-branch (length active-branch) #f)]
-             [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth)) #f)]
-             [_ (if active-branch (annotate-general! gr root targets depth) #f)]
-             [vert->pict (λ (v) (rectangle 40 40))])
-        (if active-branch
-            (begin
-              (with-output-to-file
-                  "genealogical-graph.svg"
-                (λ () (display (convert (dag->pict gr gen-node->pict) 'svg-bytes)))
-                #:mode 'binary
-                #:exists 'replace)
-              (displayln "Genealogical graph visualization was written to file."))
-            (displayln "There is no active branch."))
-        tree)]
-     ["generate meta-interpreter map" ; this has the crash
-      (display-mi-map tree)]
-     ["generate generalization/2 clauses" ; so does this
-      (display-generalization-clauses tree)]
-     ["end analysis"
-      (set! analyzing? #f)]))))
+(define (interactive-analysis prog-analysis)
+  (match prog-analysis
+    [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants prior _query _filename)) tree step-acc edge-history)
+     (log-debug "performing interactive analysis")
+     (define analyzing? #t)
+     (define (proceed)
+       (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
+         (match outcome
+           [(cons 'underspecified-order candidate)
+            (displayln "Partial order is underspecified.")
+            (displayln "Please select the atom which takes precedence from the following list.")
+            (let* ([multis (filter multi? (label-conjunction (node-label candidate)))]
+                   [multi-conjuncts (apply append (map (λ (m) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) m)))]) (car (unfold-multi-bounded 1 m offset offset)))) multis))]
+                   [options (remove-duplicates (map normalize-abstract-atom (append multi-conjuncts (filter abstract-atom? (label-conjunction (node-label candidate))))))]
+                   [user-selection (prompt-for-selection options)]
+                   [new-precedences (filter (λ (p) (not (has-edge? prior (car p) (cdr p)))) (map (λ (c) (cons user-selection c)) (remove user-selection options)))])
+              (begin
+                (for ([precedence new-precedences])
+                  (add-directed-edge! prior (car precedence) (cdr precedence)))
+                (hash-set! edge-history step-acc new-precedences)
+                (set! step-acc (add1 step-acc)) ; assuming step will be successful
+                (with-handlers
+                    ([exn:fail?
+                      (λ (e)
+                        (begin (display (format "Error: ~a" e))
+                               (set! step-acc (sub1 step-acc))
+                               (cons #f tree)))])
+                  (match-let ([(cons cand top) (advance-analysis tree clauses full-evaluations concrete-constants prior #:new-edges new-precedences)])
+                    (begin (newline) (tree-display cand print-tree-label) (newline) (cons #f top))))))]
+           [(cons cand top) (begin (set! step-acc (add1 step-acc)) (newline) (tree-display cand print-tree-label) (newline) (cons #t top))]
+           ['no-candidate (cons #f tree)])))
+     (while
+      analyzing?
+      (set!
+       tree
+       (interactive-dispatch
+        "What do you want to do?"
+        ["proceed"
+         (cdr (proceed))]
+        ["fast-forward"
+         (begin
+           (displayln "Maximum number of steps? (0 to keep going indefinitely)")
+           (match-let* ([steps (prompt-for-integer)]
+                        [indefinitely? (equal? steps 0)]
+                        [(cons continue? new-tree) (proceed)])
+             (while (and continue? (or indefinitely? (> steps 0)))
+                    (begin (set! tree new-tree)
+                           (set! steps (sub1 steps))
+                           (match (proceed)
+                             [(cons c? nt?)
+                              (begin (set! continue? c?)
+                                     (set! new-tree nt?))])
+                           (save-analysis
+                            (format "~a.~a" (serialized-filename source-prog) (size new-tree))
+                            new-tree edge-history step-acc prior)))
+             new-tree))]
+        ["save analysis"
+         (begin
+           (save-analysis (serialized-filename source-prog) tree edge-history step-acc prior)
+           tree)]
+        ["show top level tree"
+         (begin
+           (newline)
+           (tree-display tree print-tree-label)
+           (newline)
+           tree)]
+        ["show debugging variables"
+         (begin
+           (displayln "precedence pairs:")
+           (for ([precedence (in-edges prior)])
+             (displayln (format "~v > ~v" (first precedence) (second precedence))))
+           (displayln "step:")
+           (displayln step-acc)
+           tree)]
+        ["show genealogical graph"
+         (let* ([active-branch (active-branch tree)]
+                [gr (if active-branch (genealogical-graph-skeleton active-branch) #f)]
+                [root (if active-branch (gen-node (car (tree-label-conjunction (car active-branch))) 1 #f #t #t) #f)]
+                [annotated-root (if active-branch (struct-copy gen-node root [range (gen 0 #f)]) #f)]
+                [depth (if active-branch (length active-branch) #f)]
+                [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth)) #f)]
+                [_ (if active-branch (annotate-general! gr root targets depth) #f)]
+                [vert->pict (λ (v) (rectangle 40 40))])
+           (if active-branch
+               (begin
+                 (with-output-to-file
+                     "genealogical-graph.svg"
+                   (λ () (display (convert (dag->pict gr gen-node->pict) 'svg-bytes)))
+                   #:mode 'binary
+                   #:exists 'replace)
+                 (displayln "Genealogical graph visualization was written to file."))
+               (displayln "There is no active branch."))
+           tree)]
+        ["generate meta-interpreter map"
+         (display-mi-map tree)]
+        ["generate generalization/2 clauses"
+         (display-generalization-clauses tree)]
+        ["end analysis"
+         (set! analyzing? #f)])))]))
+
+(define (cclp->initial-analysis program-data)
+  (define initial-tree-label
+    (tree-label (list (cclp-query program-data)) (none) (list) #f #f (list)))
+  (define initial-tree (node initial-tree-label (list)))
+  (analysis cclp initial-tree 1 (make-hash)))
 
 (define (begin-analysis program-data)
-  (match program-data
-    [(cclp clauses full-evaluations concrete-constants preprior initial-query filename)
-     ; using none for selection because no selection will occur more often
-     ; using list for substitution because it is not wrong and is consistent
-     ; using #f for rule because this is the only case where there is no associated clause
-     (begin (define initial-tree-label
-              (tree-label (list initial-query) (none) (list) #f #f (list)))
-            (define initial-tree (node initial-tree-label (list)))
-            (interactive-analysis initial-tree clauses full-evaluations (serialized-filename program-data) concrete-constants preprior))]))
+  (interactive-analysis (cclp->initial-analysis program-data)))
 
 (define (cclp-top program-data)
   (define logger (make-logger 'cc #f))
@@ -207,14 +213,11 @@
          [prior (deserialize (read in))])
     (close-input-port in)
     (interactive-analysis
-     loaded-tree
-     (cclp-clauses program-data)
-     (cclp-full-ai-rules program-data) ; confusing as these are actually full-evaluations!
-     (serialized-filename program-data)
-     (cclp-concrete-constants program-data)
-     prior
-     #:step step-acc
-     #:history edge-history)))
+     (analysis
+      (struct-copy cclp program-data [partial-order prior])
+      loaded-tree
+      step-acc
+      edge-history))))
 
 (define (serialized-filename program-data)
   (path-replace-extension

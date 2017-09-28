@@ -85,13 +85,6 @@
            program-data))))]))
 (provide (rename-out [cclp-module-begin #%module-begin]))
 
-(define-syntax (cclp-top-interaction stx)
-  (syntax-parse stx
-    [_
-     (print stx)
-     #'(void)]))
-(provide (rename-out [cclp-top-interaction #%top-interaction]))
-
 ; PART FOR THE LOGIC PROGRAM ITSELF
 (define-for-syntax (inject-rule-id-stx rule-stx id)
   (syntax-parse rule-stx #:literals (rule)
