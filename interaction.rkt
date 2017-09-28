@@ -66,7 +66,7 @@
 ;; roughly a combination of the constant and computed parts of an analysis, really
 ;; note that cclp isn't entirely constant, as partial-order is actually mutated along the way
 ;; worth considering to keep the partial order immutable and extend the graph, but doing so naively could be expensive
-(struct analysis (cclp tree step edge-history))
+(struct analysis (cclp tree step edge-history) #:transparent)
 (provide (struct-out analysis))
 
 (define (save-analysis filename tree edge-history step-acc prior)
@@ -79,12 +79,30 @@
       (write (serialize prior) out)
       (close-output-port out))))
 
+(define (proceed/batch prog-analysis)
+  (match prog-analysis
+    [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants prior _query _filename)) tree step-acc edge-history)
+     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
+       (match outcome
+         [(cons 'underspecified-order candidate) ; for proceed/batch, an underspecified order should trigger an exception
+          (raise-user-error 'proceed/batch "partial order is underspecified")]
+         [(cons cand top) ; simple update to the analysis
+          (analysis source-prog top (add1 step-acc) edge-history)]
+         ['no-candidate prog-analysis]))]))
+(provide
+ (proc-doc/names
+  proceed/batch
+  (-> analysis? analysis?)
+  (prog-analysis)
+  @{Advances the analysis of @racket[prog-analysis] without side-effects.
+ The only exception is a user error which may be raised if the partial order in the analysis does not dictate which atom should be selected.}))
+
 (define (interactive-analysis prog-analysis)
   (match prog-analysis
     [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants prior _query _filename)) tree step-acc edge-history)
      (log-debug "performing interactive analysis")
      (define analyzing? #t)
-     (define (proceed)
+     (define (proceed/interactive)
        (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants prior)])
          (match outcome
            [(cons 'underspecified-order candidate)
@@ -117,17 +135,17 @@
        (interactive-dispatch
         "What do you want to do?"
         ["proceed"
-         (cdr (proceed))]
+         (cdr (proceed/interactive))]
         ["fast-forward"
          (begin
            (displayln "Maximum number of steps? (0 to keep going indefinitely)")
            (match-let* ([steps (prompt-for-integer)]
                         [indefinitely? (equal? steps 0)]
-                        [(cons continue? new-tree) (proceed)])
+                        [(cons continue? new-tree) (proceed/interactive)])
              (while (and continue? (or indefinitely? (> steps 0)))
                     (begin (set! tree new-tree)
                            (set! steps (sub1 steps))
-                           (match (proceed)
+                           (match (proceed/interactive)
                              [(cons c? nt?)
                               (begin (set! continue? c?)
                                      (set! new-tree nt?))])
@@ -183,10 +201,12 @@
   (define initial-tree-label
     (tree-label (list (cclp-query program-data)) (none) (list) #f #f (list)))
   (define initial-tree (node initial-tree-label (list)))
-  (analysis cclp initial-tree 1 (make-hash)))
+  (analysis program-data initial-tree 1 (make-hash)))
+(provide cclp->initial-analysis)
 
 (define (begin-analysis program-data)
-  (interactive-analysis (cclp->initial-analysis program-data)))
+  (interactive-analysis
+   (cclp->initial-analysis program-data)))
 
 (define (cclp-top program-data)
   (define logger (make-logger 'cc #f))
@@ -227,16 +247,14 @@
    ".serializedcclp"))
 
 (define (cclp-run program-data)
-  (define full-evaluations (map full-ai-rule->full-evaluation (cclp-full-ai-rules program-data)))
-  (define program-data-aux (struct-copy cclp program-data [full-ai-rules full-evaluations]))
   (interactive-dispatch
    "What do you want to do?"
    ("analyze this program"
     (let ([preprior-copy (graph-copy (cclp-partial-order program-data))]) ; due to mutability of graphs
-      (begin-analysis program-data-aux)
+      (begin-analysis program-data)
       (cclp-run (struct-copy cclp program-data [partial-order preprior-copy]))))
    ("load existing analysis"
-    (begin (load-analysis program-data-aux)
+    (begin (load-analysis program-data)
            (cclp-run program-data)))
    ("quit" (void))))
 

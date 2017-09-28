@@ -24,7 +24,8 @@
 ; for abstract variables, functions, atoms,...
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
 ; because output patterns can be obtained by applying a subsitution
-(require (prefix-in as: "abstract-substitution.rkt"))
+(require (prefix-in as: "abstract-substitution.rkt")
+         (only-in cclp/abstract-analysis full-ai-rule->full-evaluation))
 ; for rules on how to fully evaluate
 (require (prefix-in fai: "fullai-domain.rkt"))
 (require (only-in "syntax-utils.rkt" odd-elems-as-list))
@@ -77,7 +78,14 @@
         (define fn (current-contract-region)) ; inside submodule this is not a string but a list!
         (define program-data
           (let ([initial _PARSE-TREE ...])
-            (struct-copy cclp initial [filename fn])))
+            (struct-copy
+             cclp
+             initial
+             [filename fn]
+             [full-ai-rules
+              (map
+               full-ai-rule->full-evaluation
+               (cclp-full-ai-rules initial))])))
         ;; avoiding struct-copy because it does not seem to play nice with this
         (provide program-data)
         (module+ main
