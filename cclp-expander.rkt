@@ -74,15 +74,17 @@
     [(_ _PARSE-TREE ...)
      (syntax/loc stx
        (#%module-begin
-        (cclp-top current-contract-region _PARSE-TREE ...)))]))
+        (module+ main
+          ;; inside module+ main, current-contract-region becomes a list
+          (cclp-top (first current-contract-region) _PARSE-TREE ...))))]))
 (provide (rename-out [cclp-module-begin #%module-begin]))
 
-;(define-syntax (cclp-top-interaction stx)
-;  (syntax-parse stx
-;    [(_ FORM)
-;     (print stx)
-;     (syntax/loc stx FORM)]))
-;(provide (rename-out [cclp-top-interaction #%top-interaction]))
+(define-syntax (cclp-top-interaction stx)
+  (syntax-parse stx
+    [_
+     (print stx)
+     #'(void)]))
+(provide (rename-out [cclp-top-interaction #%top-interaction]))
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
 (define-for-syntax (inject-rule-id-stx rule-stx id)
