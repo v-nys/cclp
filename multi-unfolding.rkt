@@ -6,7 +6,7 @@
   "abstract-substitution.rkt"
   (only-in "abstract-unify.rkt" abstract-unify)
   (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables assemble-var-indices)
-  (only-in "data-utils.rkt" some-v))apply 
+  (only-in "data-utils.rkt" some-v))
 (require (for-doc scribble/manual))
 
 (define (single-subscript-end-equalities constraints subscript-mapping)

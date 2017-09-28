@@ -74,27 +74,3 @@
   (-> gen-node? pict?)
   (gn)
   @{Produces a human-readable representation of the contents of a @racket[gen-node?].}))
-
-(gen-node->pict
- (gen-node
-  (abstract-atom 'filter (list (a 1) (g 1)))
-  1
-  (gen 0 #f)
-  #t
-  #f))
-
-(gen-node->pict
- (gen-node
-  (abstract-atom 'filter (list (a 1) (g 1)))
-  1
-  (gen-range 1 10 1 #t)
-  #t
-  #f))
-
-(gen-node->pict
- (gen-node
-  (abstract-atom 'filter (list (a 1) (g 1)))
-  1
-  (gen-range 1 10 1 #t)
-  #f
-  #f))

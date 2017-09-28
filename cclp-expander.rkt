@@ -74,6 +74,8 @@
     [(_ _PARSE-TREE ...)
      (syntax/loc stx
        (#%module-begin
+        (define program-data _PARSE-TREE ...)
+        (provide program-data)
         (module+ main
           ;; inside module+ main, current-contract-region becomes a list
           (cclp-top (first current-contract-region) _PARSE-TREE ...))))]))
