@@ -76,22 +76,21 @@
      (syntax/loc stx
        (#%module-begin
         (define fn (current-contract-region)) ; inside submodule this is not a string but a list!
-        (define program-data
+        (define initial-program-analysis
           (let ([initial _PARSE-TREE ...])
-            (struct-copy
-             cclp
-             initial
-             [filename fn]
-             [full-ai-rules
-              (map
-               full-ai-rule->full-evaluation
-               (cclp-full-ai-rules initial))])))
-        ;; avoiding struct-copy because it does not seem to play nice with this
-        (provide program-data)
-        (module+ main
-          (cclp-top
-           program-data))))]))
-(provide (rename-out [cclp-module-begin #%module-begin]))
+            (cclp->initial-analysis
+             (struct-copy
+              cclp
+              initial
+              [filename fn]
+              [full-ai-rules
+               (map
+                full-ai-rule->full-evaluation
+                (cclp-full-ai-rules initial))]))))
+        (provide initial-program-analysis)))]))
+(provide
+ (rename-out
+  [cclp-module-begin #%module-begin]))
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
 (define-for-syntax (inject-rule-id-stx rule-stx id)
