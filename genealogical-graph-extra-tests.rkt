@@ -15,9 +15,7 @@
    (gen-node (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13 #f #t)))
 ;(check-equal?
 ; (candidate-targets
-;  o-primes-graph-skeleton
-;  o-primes-skeleton-root
-;  (length o-primes-branch))
+;  o-primes-graph-skeleton)
 ; o-primes-candidate-targets)
 
 (require

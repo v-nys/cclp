@@ -97,6 +97,19 @@
   @{Advances the analysis of @racket[prog-analysis] without side-effects.
  The only exception is a user error which may be raised if the partial order in the analysis does not dictate which atom should be selected.}))
 
+(define (analysis->current-genealogical-graph prog-analysis)
+  (match prog-analysis
+    [(analysis _ tree _ _)
+     (let* ([active-branch (active-branch tree)]
+            [gr (if active-branch (genealogical-graph-skeleton active-branch) #f)]
+            [root (if active-branch (gen-node (car (tree-label-conjunction (car active-branch))) 1 #f #t #t) #f)]
+            [depth (if active-branch (length active-branch) #f)]
+            [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr)) #f)])
+       (when active-branch
+         (annotate-general! gr root targets depth))
+       gr)]))
+(provide analysis->current-genealogical-graph)
+
 (define (interactive-analysis prog-analysis)
   (match prog-analysis
     [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants prior _query _filename)) tree step-acc edge-history)
@@ -172,19 +185,16 @@
            (displayln step-acc)
            tree)]
         ["show genealogical graph"
-         (let* ([active-branch (active-branch tree)]
-                [gr (if active-branch (genealogical-graph-skeleton active-branch) #f)]
-                [root (if active-branch (gen-node (car (tree-label-conjunction (car active-branch))) 1 #f #t #t) #f)]
-                [annotated-root (if active-branch (struct-copy gen-node root [range (gen 0 #f)]) #f)]
-                [depth (if active-branch (length active-branch) #f)]
-                [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr root depth)) #f)]
-                [_ (if active-branch (annotate-general! gr root targets depth) #f)]
-                [vert->pict (λ (v) (rectangle 40 40))])
-           (if active-branch
+         (let ([gen-graph (analysis->current-genealogical-graph prog-analysis)])
+           (if gen-graph
                (begin
                  (with-output-to-file
                      "genealogical-graph.svg"
-                   (λ () (display (convert (dag->pict gr gen-node->pict) 'svg-bytes)))
+                   (λ ()
+                     (display
+                      (convert
+                       (dag->pict gen-graph gen-node->pict)
+                       'svg-bytes)))
                    #:mode 'binary
                    #:exists 'replace)
                  (displayln "Genealogical graph visualization was written to file."))
@@ -196,6 +206,7 @@
          (display-generalization-clauses tree)]
         ["end analysis"
          (set! analyzing? #f)])))]))
+(provide interactive-analysis)
 
 (define (cclp->initial-analysis program-data)
   (define initial-tree-label

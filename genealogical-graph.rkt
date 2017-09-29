@@ -210,7 +210,13 @@
 (define (descendant-renames-with-corresponding-args? graph root [target root])
   (define tc (transitive-closure graph))
   (hash-set! tc (list root root) #f)
-  (define reached (map second (filter (λ (p) (and (hash-ref tc p) (equal? (first p) target))) (hash-keys tc))))
+  (define reached
+    (map
+     second
+     (filter
+      ;; hash-ref is safe by definition because we are going over hash keys
+      (λ (p) (and (hash-ref tc p) (equal? (first p) target)))
+      (hash-keys tc))))
   (define just-atoms (map gen-node-conjunct reached))
   (define root-atom (gen-node-conjunct root))
   (ormap (λ (a) (and (abstract-atom? root-atom) (abstract-atom? a) (renames-with-corresponding-args? root-atom a))) just-atoms))
@@ -222,7 +228,7 @@
 
 ;; Finds potential target atoms for recursion analysis.
 ; REFACTOR: live-depth is probably redundant, as is root, because the skeleton is a DAG
-(define (candidate-targets skeleton [root #f] [live-depth #f]) ; "OPTIONAL" ARGS ARE IGNORED! remove in calls.
+(define (candidate-targets skeleton) ; "OPTIONAL" ARGS ARE IGNORED! remove in calls.
   (define dists (floyd-warshall skeleton))
   (define (max-dist el acc)
     (define dist (hash-ref dists el))
@@ -262,9 +268,7 @@
     (gen-node (abstract-atom 'sameleaves (list (g 1) (g 2))) 1 #f #t #t))
   (check-equal?
    (candidate-targets
-    sl-graph-skeleton
-    sl-skeleton-root
-    3)
+    sl-graph-skeleton)
    (list (gen-node (abstract-atom 'collect (list (g 1) (a 1))) 2 #f #t #t)))
   (define o-primes-skeleton-root (gen-node (abstract-atom 'oprimes (list (g 1) (a 1))) 1 #f #t #t))
   (define o-primes-candidate-targets
@@ -273,9 +277,7 @@
      (gen-node (abstract-atom 'siftB (list (abstract-function 'cons (list (g 2) (a 6))) (a 1))) 13 #f #t #t)))
   (check-equal?
    (candidate-targets
-    o-primes-graph-skeleton
-    o-primes-skeleton-root
-    5)
+    o-primes-graph-skeleton)
    o-primes-candidate-targets))
 (provide candidate-targets) ; just for test
 
