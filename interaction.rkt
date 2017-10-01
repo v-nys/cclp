@@ -116,6 +116,35 @@
        gr)]))
 (provide analysis->current-genealogical-graph)
 
+(define (save-genealogical-graph! prog-analysis #:fn [fn #f])
+  (let* ([gg (analysis->current-genealogical-graph prog-analysis)]
+         [serialized (serialize (get-edges gg))])
+    (when gg
+      (let ([out
+             (open-output-file
+              (or
+               fn
+               (path-replace-extension
+                (last
+                 (explode-path
+                  (cclp-filename
+                   (analysis-cclp prog-analysis))))
+                (format
+                 ".serializedgg.~a"
+                 (size
+                  (analysis-tree prog-analysis)))))
+              #:exists 'truncate/replace)])
+        (write serialized out)
+        (close-output-port out)))))
+(provide save-genealogical-graph!)
+
+(define (load-genealogical-graph fn)
+  (let* ([in (open-input-file fn)]
+         [loaded (deserialize (read in))])
+    (close-input-port in)
+    (unweighted-graph/directed loaded)))
+(provide load-genealogical-graph)
+
 (define (show-analysis prog-analysis)
   (tree-display
    (analysis-tree prog-analysis print-tree-label)))

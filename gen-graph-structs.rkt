@@ -29,30 +29,30 @@
   "abstract-multi-domain.rkt")
 (require (for-doc scribble/manual))
 
-(struct gen (number origin)
-  #:methods
-  gen:custom-write
-  [(define (write-proc obj out mode)
-     (if (boolean? mode)
-         ((make-constructor-style-printer
-           (λ (obj) 'gen)
-           (λ (obj) (list (gen-number obj)
-                          (gen-origin obj)))) obj out mode)
-         ;; print-as-expression is not relevant in this application
-         (display (format "[~a->~a]" (let ([num (gen-number obj)]) (if (symsum? num) (format "~v" num) num)) (gen-origin obj)) out)))]
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc g1 g2 equal?-recur)
-     (and (equal?-recur (gen-number g1)
-                        (gen-number g2))
-          (equal?-recur (gen-origin g1)
-                        (gen-origin g2))))
-   (define (hash-proc my-gen hash-recur)
-     (+ (hash-recur (gen-number my-gen))
-        (hash-recur (gen-origin my-gen))))
-   (define (hash2-proc my-gen hash-recur)
-     (+ (hash-recur (gen-number my-gen))
-        (hash-recur (gen-origin my-gen))))])
+(serializable-struct gen (number origin)
+                     #:methods
+                     gen:custom-write
+                     [(define (write-proc obj out mode)
+                        (if (boolean? mode)
+                            ((make-constructor-style-printer
+                              (λ (obj) 'gen)
+                              (λ (obj) (list (gen-number obj)
+                                             (gen-origin obj)))) obj out mode)
+                            ;; print-as-expression is not relevant in this application
+                            (display (format "[~a->~a]" (let ([num (gen-number obj)]) (if (symsum? num) (format "~v" num) num)) (gen-origin obj)) out)))]
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc g1 g2 equal?-recur)
+                        (and (equal?-recur (gen-number g1)
+                                           (gen-number g2))
+                             (equal?-recur (gen-origin g1)
+                                           (gen-origin g2))))
+                      (define (hash-proc my-gen hash-recur)
+                        (+ (hash-recur (gen-number my-gen))
+                           (hash-recur (gen-origin my-gen))))
+                      (define (hash2-proc my-gen hash-recur)
+                        (+ (hash-recur (gen-number my-gen))
+                           (hash-recur (gen-origin my-gen))))])
 (provide
  (struct*-doc
   gen
@@ -60,40 +60,40 @@
    [origin (or/c #f exact-positive-integer?)])
   @{Used to track the recursion depth of an atom with respect to a uniquely identified target atom.}))
 
-(struct gen-range (first last origin ascending?)
-  #:methods
-  gen:custom-write
-  [(define (write-proc obj out mode)
-     (if (boolean? mode)
-         ((make-constructor-style-printer
-           (λ (obj) 'gen-range)
-           (λ (obj) (list (gen-range-first obj)
-                          (gen-range-last obj)
-                          (gen-range-origin obj)
-                          (gen-range-ascending? obj)))) obj out mode)
-         ;; print-as-expression is not relevant in this application
-         (display (format "[~a:~a:~a->~a]" (let ([fst (gen-range-first obj)]) (if (symsum? fst) (format "~v" fst) fst)) (let ([lst (gen-range-last obj)]) (if (symsum? lst) (format "~v" lst) lst)) (gen-range-ascending? obj) (gen-range-origin obj)) out)))]
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc g1 g2 equal?-recur)
-     (and (equal?-recur (gen-range-first g1)
-                        (gen-range-first g2))
-          (equal?-recur (gen-range-last g1)
-                        (gen-range-last g2))
-          (equal?-recur (gen-range-origin g1)
-                        (gen-range-origin g2))
-          (equal?-recur (gen-range-ascending? g1)
-                        (gen-range-ascending? g2))))
-   (define (hash-proc gen hash-recur)
-     (+ (hash-recur (gen-range-first gen))
-        (hash-recur (gen-range-last gen))
-        (hash-recur (gen-range-origin gen))
-        (hash-recur (gen-range-ascending? gen))))
-   (define (hash2-proc gen hash-recur)
-     (+ (hash-recur (gen-range-first gen))
-        (hash-recur (gen-range-last gen))
-        (hash-recur (gen-range-origin gen))
-        (hash-recur (gen-range-ascending? gen))))])
+(serializable-struct gen-range (first last origin ascending?)
+                     #:methods
+                     gen:custom-write
+                     [(define (write-proc obj out mode)
+                        (if (boolean? mode)
+                            ((make-constructor-style-printer
+                              (λ (obj) 'gen-range)
+                              (λ (obj) (list (gen-range-first obj)
+                                             (gen-range-last obj)
+                                             (gen-range-origin obj)
+                                             (gen-range-ascending? obj)))) obj out mode)
+                            ;; print-as-expression is not relevant in this application
+                            (display (format "[~a:~a:~a->~a]" (let ([fst (gen-range-first obj)]) (if (symsum? fst) (format "~v" fst) fst)) (let ([lst (gen-range-last obj)]) (if (symsum? lst) (format "~v" lst) lst)) (gen-range-ascending? obj) (gen-range-origin obj)) out)))]
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc g1 g2 equal?-recur)
+                        (and (equal?-recur (gen-range-first g1)
+                                           (gen-range-first g2))
+                             (equal?-recur (gen-range-last g1)
+                                           (gen-range-last g2))
+                             (equal?-recur (gen-range-origin g1)
+                                           (gen-range-origin g2))
+                             (equal?-recur (gen-range-ascending? g1)
+                                           (gen-range-ascending? g2))))
+                      (define (hash-proc gen hash-recur)
+                        (+ (hash-recur (gen-range-first gen))
+                           (hash-recur (gen-range-last gen))
+                           (hash-recur (gen-range-origin gen))
+                           (hash-recur (gen-range-ascending? gen))))
+                      (define (hash2-proc gen hash-recur)
+                        (+ (hash-recur (gen-range-first gen))
+                           (hash-recur (gen-range-last gen))
+                           (hash-recur (gen-range-origin gen))
+                           (hash-recur (gen-range-ascending? gen))))])
 (provide
  (struct*-doc
   gen-range
@@ -107,52 +107,52 @@
      The value @racket[origin] is the identifier of the abstract atom which first gave rise to the recursion stack.
      Whether the abstracted conjunctions have an ascending or descending sequence of conjunctions is indicated by @racket[ascending?].}))
 
-(struct gen-node (conjunct id range unfolded? foldable?)
-  #:methods
-  gen:custom-write
-  [(define (write-proc obj out mode)
-     (if (boolean? mode)
-         ((make-constructor-style-printer
-           (λ (obj) 'gen-node)
-           (λ (obj) (list (gen-node-conjunct obj)
-                          (gen-node-id obj)
-                          (gen-node-range obj)
-                          (gen-node-unfolded? obj)
-                          (gen-node-foldable? obj)))) obj out mode)
-         ;; print-as-expression is not relevant in this application
-         (display
-          (format "~a~a.~v~v~a"
-                  (if (gen-node-unfolded? obj) "*" "")
-                  (gen-node-id obj)
-                  (gen-node-conjunct obj)
-                  (gen-node-range obj)
-                  (if (gen-node-unfolded? obj) "*" ""))
-          out)))]
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc g1 g2 equal?-recur)
-     (and (equal?-recur (gen-node-conjunct g1)
-                        (gen-node-conjunct g2))
-          (equal?-recur (gen-node-id g1)
-                        (gen-node-id g2))
-          (equal?-recur (gen-node-range g1)
-                        (gen-node-range g2))
-          (equal?-recur (gen-node-unfolded? g1)
-                        (gen-node-unfolded? g2))
-          (equal?-recur (gen-node-foldable? g1)
-                        (gen-node-foldable? g2))))
-   (define (hash-proc gen hash-recur)
-     (+ (hash-recur (gen-node-conjunct gen))
-        (hash-recur (gen-node-id gen))
-        (hash-recur (gen-node-range gen))
-        (hash-recur (gen-node-unfolded? gen))
-        (hash-recur (gen-node-foldable? gen))))
-   (define (hash2-proc gen hash-recur)
-     (+ (hash-recur (gen-node-conjunct gen))
-        (hash-recur (gen-node-id gen))
-        (hash-recur (gen-node-range gen))
-        (hash-recur (gen-node-unfolded? gen))
-        (hash-recur (gen-node-foldable? gen))))])
+(serializable-struct gen-node (conjunct id range unfolded? foldable?)
+                     #:methods
+                     gen:custom-write
+                     [(define (write-proc obj out mode)
+                        (if (boolean? mode)
+                            ((make-constructor-style-printer
+                              (λ (obj) 'gen-node)
+                              (λ (obj) (list (gen-node-conjunct obj)
+                                             (gen-node-id obj)
+                                             (gen-node-range obj)
+                                             (gen-node-unfolded? obj)
+                                             (gen-node-foldable? obj)))) obj out mode)
+                            ;; print-as-expression is not relevant in this application
+                            (display
+                             (format "~a~a.~v~v~a"
+                                     (if (gen-node-unfolded? obj) "*" "")
+                                     (gen-node-id obj)
+                                     (gen-node-conjunct obj)
+                                     (gen-node-range obj)
+                                     (if (gen-node-unfolded? obj) "*" ""))
+                             out)))]
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc g1 g2 equal?-recur)
+                        (and (equal?-recur (gen-node-conjunct g1)
+                                           (gen-node-conjunct g2))
+                             (equal?-recur (gen-node-id g1)
+                                           (gen-node-id g2))
+                             (equal?-recur (gen-node-range g1)
+                                           (gen-node-range g2))
+                             (equal?-recur (gen-node-unfolded? g1)
+                                           (gen-node-unfolded? g2))
+                             (equal?-recur (gen-node-foldable? g1)
+                                           (gen-node-foldable? g2))))
+                      (define (hash-proc gen hash-recur)
+                        (+ (hash-recur (gen-node-conjunct gen))
+                           (hash-recur (gen-node-id gen))
+                           (hash-recur (gen-node-range gen))
+                           (hash-recur (gen-node-unfolded? gen))
+                           (hash-recur (gen-node-foldable? gen))))
+                      (define (hash2-proc gen hash-recur)
+                        (+ (hash-recur (gen-node-conjunct gen))
+                           (hash-recur (gen-node-id gen))
+                           (hash-recur (gen-node-range gen))
+                           (hash-recur (gen-node-unfolded? gen))
+                           (hash-recur (gen-node-foldable? gen))))])
 (provide
  (struct*-doc
   gen-node
@@ -182,19 +182,19 @@
          (display
           (format "~a~a~a" (symsum-sym obj) (if (>= (symsum-num obj) 0) "+" "") (symsum-num obj))
           out)))]
-#:methods
-gen:equal+hash
-[(define (equal-proc s1 s2 equal?-recur)
-   (and (equal?-recur (symsum-sym s1)
-                      (symsum-sym s2))
-        (equal?-recur (symsum-num s1)
-                      (symsum-num s2))))
- (define (hash-proc s hash-recur)
-   (+ (hash-recur (symsum-sym s))
-      (hash-recur (symsum-num s))))
- (define (hash2-proc s hash-recur)
-   (+ (hash-recur (symsum-sym s))
-      (hash-recur (symsum-num s))))])
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc s1 s2 equal?-recur)
+     (and (equal?-recur (symsum-sym s1)
+                        (symsum-sym s2))
+          (equal?-recur (symsum-num s1)
+                        (symsum-num s2))))
+   (define (hash-proc s hash-recur)
+     (+ (hash-recur (symsum-sym s))
+        (hash-recur (symsum-num s))))
+   (define (hash2-proc s hash-recur)
+     (+ (hash-recur (symsum-sym s))
+        (hash-recur (symsum-num s))))])
 (provide
  (struct*-doc
   symsum
