@@ -4,11 +4,12 @@
     racket
     cclp/genealogical-graph
     cclp/genealogical-graph-visualization)
+   (only-in racket/file file->string)
    scribble/example
    scribble/extract)
 
 @(define gen-graph-illustration-eval (make-base-eval))
-@(gen-graph-illustration-eval '(require graph pict pretty-graphs cclp/genealogical-graph-visualization cclp/analysis-trees/optimus-primes-branch-gen-graph))
+@(gen-graph-illustration-eval '(require graph pict pretty-graphs cclp/genealogical-graph-visualization cclp/interaction repeated-application (prefix-in primes: cclp-programs/primes)))
 
 @title{Recursion analysis using a genealogical graph}
 @defmodule[cclp/genealogical-graph]
@@ -21,39 +22,9 @@ The genealogical graph not represent the path from one conjunction to another (a
 
 @section{Top-down perspective}
 Consider the following abstract analysis of the sieve of Eratosthenes, in which we try to move integers through the filters as soon as possible using a non-standard selection rule.
-@codeblock|{
-#lang cclp
-{PROGRAM}
-primes(N,Primes) :- integers(2,I),sift(I,Primes),length(Primes,N).
+@codeblock{@file->string["example-programs/primes.rkt"]}
 
-integers(N,[]).
-integers(N,[N|I]) :- plus(N,1,M),integers(M,I).
-            
-sift([N|Ints],[N|Primes]) :- filter(N,Ints,F),sift(F,Primes).
-sift([],[]).
-               
-filter(N,[M|I],F) :- divides(N,M), filter(N,I,F).
-filter(N,[M|I],[M|F]) :- does_not_divide(N,M), filter(N,I,F).
-filter(N,[],[]).
-
-length([],0).
-length([H|T],N) :- minus(N,1,M),length(T,M).
-
-{FULL EVALUATION}
-plus(γ1,γ2,α1) -> α1/γ3.
-minus(γ1,γ2,α1) -> α1/γ3.
-divides(γ1,γ2).
-does_not_divide(γ1,γ2).
-
-{CONCRETE CONSTANTS}
-nil
-
-{QUERY}
-primes(γ1,α1)
-}|
-
-@margin-note{Optionally include the partial order in the file.}
-Consider a tree branch on which we find the abstract conjunctions (modulo variable renaming): @itemlist{
+Consider the tree branch on which we find the abstract conjunctions (modulo variable renaming): @itemlist{
  @item{integers(g1,a1), filter(g2,a1,a2), sift(a2,a3), length(a3,g3)}@item{integers(g1,a1), filter(g2,a1,a2), filter(g3,a2,a3), sift(a3,a4), length(a4,g4)}@item{integers(g1,a1), filter(g2,a1,a2), filter(g3,a2,a3), filter(g4,a3,a4), sift(a4,a5), length(a5,g5)}
 }
 
@@ -64,7 +35,8 @@ By construction of our abstract domain, as well as our use of depth-k abstractio
 @examples[#:eval gen-graph-illustration-eval
           #:result-only
           (dag->pict
-           val
+           (analysis->current-genealogical-graph
+            (apply↑ 5 proceed primes:initial-program-analysis))
            gen-node->pict)]
 
 @section{Bottom-up computation}

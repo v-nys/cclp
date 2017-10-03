@@ -147,7 +147,9 @@
 
 (define (show-analysis prog-analysis)
   (tree-display
-   (analysis-tree prog-analysis print-tree-label)))
+   (analysis-tree
+    prog-analysis)
+   print-tree-label))
 (provide show-analysis)
 
 (define (visualize-partial-order analysis)
@@ -161,17 +163,17 @@
       (second precedence)))))
 (provide visualize-partial-order)
 
-(define (write-genealogical-graph! prog-analysis #:fn [fn "genealogical-graph.svg"])
+(define (write-svg! pict fn)
   (with-output-to-file
       fn
     (λ ()
       (display
        (convert
-        (dag->pict (analysis->current-genealogical-graph prog-analysis) gen-node->pict)
+        pict
         'svg-bytes)))
     #:mode 'binary
     #:exists 'replace))
-(provide write-genealogical-graph!)
+(provide write-svg!)
 
 (define (cclp->initial-analysis program-data)
   (define initial-tree-label

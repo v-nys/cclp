@@ -169,7 +169,7 @@
      If and only if the @racket[gen-node] represents an unfolded conjunct (i.e. one whose children are unfoldings), @racket[unfolded?] is @racket[#t].
      If it should prohibited to generalize the node into a multi abstraction (as is the case if it has just been unfolded from said abstraction), @racket[foldable?] is @racket[#f].}))
 
-(struct symsum (sym num)
+(serializable-struct symsum (sym num)
   #:methods
   gen:custom-write
   [(define (write-proc obj out mode)
