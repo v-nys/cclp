@@ -18,7 +18,7 @@
   (only-in "control-flow.rkt" aif it)
   "data-utils.rkt"
   (only-in "execution.rkt" selected-index)
-  (only-in "generalize.rkt" generalize)
+  (only-in "generalize.rkt" generalize/td)
   (only-in "genealogical-graph.rkt" active-branch)
   "preprior-graph.rkt"
   (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*)
@@ -171,12 +171,11 @@
                        (λ (p-and-i) (renames? (car p-and-i) conjunction))
                        predecessors)]
                      [fully-evaluated-atom? (ormap full-eval-covers (cartesian-product full-evaluations conjunction))]
-                     ;; TODO actually use building blocks
                      [(list gen-conjunction gen-rngs bb)
                       (if
                        (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?)
                        (list conjunction (list) (list))
-                       (generalize (active-branch top)))])
+                       (generalize/td (active-branch top)))])
           (begin
             (cond [equivalent-predecessor
                    (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]

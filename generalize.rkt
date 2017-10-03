@@ -1085,7 +1085,7 @@
      (gen-node (abstract-atom 'length (list (a 6) (g 6))) 10 (gen 0 #f) #f #t)))
    (list (cons (list (index-range 1 2) (index-range 2 3)) 1) (cons (list (index-range 4 5) (index-range 5 6)) 3))))
 
-(define (generalize br)
+(define (generalize/td br)
   (define gr (genealogical-graph-skeleton br))
   (define root (gen-node (car (tree-label-conjunction (car br))) 1 #f #t #t))
   (define annotated-root (struct-copy gen-node root [range (gen 0 #f)]))
@@ -1095,16 +1095,43 @@
   (define lvl
     (sort (rdag-level gr annotated-root depth) < #:key gen-node-id))
   (define gen-lvl (generalize-level lvl))
-  (log-debug "outcome of generalization is ~a" (map gen-node-conjunct gen-lvl))
   (list
    (map gen-node-conjunct gen-lvl)
    (generalized-ranges lvl gen-lvl)
    (infer-bb lvl gen-lvl)))
 (provide
  (proc-doc/names
-  generalize
+  generalize/td
   (-> (listof (or/c tree-label? generalization?)) list?)
   (candidate-branch)
-  @{Applies generalization to the bottom level of @racket[candidate-branch].
+  @{Applies generalization to the bottom level of @racket[candidate-branch] using a top-down recursion analysis.
  Returns a triple consisting of the generalized conjunction, the generalized index ranges and the assignment of building blocks to introduced multis.
  If generalization has no effect, the generalized conjunction is identical to the initial conjunction and the list of ranges is empty.}))
+
+(define (generalize/bu br)
+  (define gr (genealogical-graph-skeleton br)) ; OK
+  (define gr/prime-ids #f) ; TODO: modify existing script to compute this -> take into account multi as well and make sure sorting retains order (skip some primes if necessary)
+  (define depth (length br))
+  (define root
+    (gen-node
+     (car (tree-label-conjunction (car br))) 2 #f #t #t)) ; 2 = first prime
+  (define lvl
+    (sort
+     (rdag-level gr/prime-ids root depth)
+     <
+     #:key gen-node-id))
+  (define annotated-lvl #f) ; TODO: implement!
+  (define gen-lvl (generalize-level annotated-lvl))
+  (list
+   (map gen-node-conjunct gen-lvl)
+   (generalized-ranges lvl gen-lvl)
+   (infer-bb lvl gen-lvl)))
+(provide
+ (proc-doc/names
+  generalize/bu
+  (-> (listof (or/c tree-label? generalization?)) list)
+  (candidate-branch)
+  @{Applies generalization to the bottom level of @racket[candidate-branch] using a bottom-up recursion analysis.
+ Returns a triple consisting of the generalized conjunction, the generalized index ranges and the assignment of building blocks to introduced multis.
+ If generalization has no effect, the generalized conjunction is identical to the initial conjunction and the list of ranges is empty.
+ This function is experimental, but will hopefully run much faster than the top-down approach.}))
