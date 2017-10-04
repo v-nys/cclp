@@ -1139,41 +1139,70 @@
  This function is experimental, but will hopefully run much faster than the top-down approach.}))
 
 (define (assign-prime-factor-ids g)
-  (let ([root (first (tsort g))])
-    (do-bfs
-     g
-     root
-     #:init (cons #hasheq((1 . 2)) 2)
-     #:init-queue (get-neighbors g root)
-     #:visit?: #t
-     #:visit:
-     (if ($visited? $v)
-         (cons
-          (hash-set
-           (car $acc)
-           (gen-node-id $v)
-           (*
-            (hash-ref
-             (car $acc)
-             (gen-node-id $v))
-            (hash-ref
-             (car $acc)
-             (gen-node-id $from)))) ; $from is not available from #:visit: -> use #:discover as well?
-          (cdr $acc))
-         (cons
-          (hash-set
-           (car $acc)
-           (gen-node-id $v)
-           (*
-            (next-prime
-             (cdr $acc))
-            (hash-ref
-             (car $acc)
-             (gen-node-id $from))))))
-     #:return (acc) (car acc))))
+  (define root (first (tsort g)))
+  ;; this is a custom BFS procedure
+  ;; graph has BFS, but doesn't support sorting neighbors
+  (define (aux g q acc)
+    (match acc
+      [(list mapping previous-prime ->parents)
+       (if
+        (null? q)
+        mapping
+        (let ([gn (first q)])
+          (if (hash-has-key? mapping (gen-node-id gn)) ; skip already processed multis that are child of several nodes
+              (aux g (cdr q) acc)
+              (let* ([ch
+                      (sort
+                       (get-neighbors g gn)
+                       (λ (gn1 gn2)
+                         (< (gen-node-id gn1) (gen-node-id gn2))))]
+                     [new-prime (next-prime previous-prime)]
+                     [encoding
+                      (apply *
+                             new-prime
+                             (map
+                              (curry hash-ref mapping)
+                              (hash-ref ->parents (gen-node-id gn) (list))))])
+                (aux g
+                     (append (cdr q) ch)
+                     (list
+                      (hash-set mapping (gen-node-id gn) encoding)
+                      new-prime
+                      (foldl
+                       (λ (c h)
+                         (hash-update h (gen-node-id c) (curry cons (gen-node-id gn)) (list)))
+                       (hash-remove ->parents (gen-node-id gn))
+                       ch)))))))]))
+  (aux g (list root) (list #hasheq() 1 #hasheqv())))
+(module+ test
+  (let*-values
+      ([(node-constructor) (λ (id) (gen-node (abstract-atom 'foo empty) id (gen 0 #f) #f #t))]
+       [(node1 node2 node3 node4 node5 node6 node8)
+        (apply values (map node-constructor '(1 2 3 4 5 6 8)))]
+       [(node7) (gen-node (multi (list) #t (init empty) (consecutive empty) (final empty)) 7 (gen-range 1 2 1 #t) #f #t)]
+       [(graph)
+        (unweighted-graph/directed
+         `((,node1 ,node2)
+           (,node1 ,node3)
+           (,node1 ,node4)
+           (,node1 ,node5)
+           (,node2 ,node6)
+           (,node3 ,node7)
+           (,node4 ,node7)
+           (,node5 ,node8)))])
+    (check-equal?
+     (assign-prime-factor-ids graph)
+     #hasheq((1 . 2)
+             (2 . 6)
+             (3 . 10)
+             (4 . 14)
+             (5 . 22)
+             (6 . 78)
+             (7 . 2380)
+             (8 . 418)))))
 (provide
  (proc-doc/names
-  assign-prime-factor-ids!
+  assign-prime-factor-ids
   (-> graph? hash?)
   (g)
-  @{Maps the identifiers in @racket[g] to prime encoded identifiers so that a prime encoded identifier immediately provides useful information on a node's ancestry.}))
+  @{Maps the identifiers in @racket[g] to prime encoded identifiers so that a prime encoded identifier immediately provides useful information on a node's relevant ancestry.}))
