@@ -24,6 +24,7 @@
 (require
   scribble/srcdoc
   graph
+  (only-in math/number-theory next-prime)
   racket-list-utils/utils
   racket/logging
   racket-tree-utils/src/tree
@@ -684,27 +685,3 @@
     (gen-node (abstract-atom 'eq (list (a 1) (a 2))) 4 #f #f))))
 (provide rdag-level) ; for testing
 
-;; replace sequences with the same origin with multi abstractions at a given level of the genealogical graph
-;(define (gen-tree-level->generalized-conjunction lvl)
-;  (map (compose1 identified-atom-atom identified-atom-with-generation-id-atom) lvl)) ; TODO
-(module+ test
-  ;  (define sl-graph-annotated (graph-copy sl-graph-skeleton))
-  ;  (annotate-general! sl-graph-annotated sl-root (list (identified-atom (abstract-atom 'collect (list (g 1) (a 1))) 2)) (length sl-branch))
-  ;  (check-equal?
-  ;   (gen-tree-level->generalized-conjunction (rdag-level sl-graph-annotated (identified-atom-with-generation sl-root (generation 0 #f)) 5))
-  ;   (list)) ; TODO: introduce a multi abstraction
-  ;  (check-equal?
-  ;   (gen-tree-level->generalized-conjunction
-  ;    (list
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'integers (list (g 1) (a 1))) 3) (generation 0 #f))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'filterA (list (g 2) (a 1) (a 2))) 4) (generation 1 1))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'filterA (list (g 3) (a 2) (a 3))) 5) (generation 2 1))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'filterA (list (g 4) (a 3) (a 4))) 6) (generation 3 1))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'siftA (list (a 4) (a 5))) 7) (generation 3 1))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'filterB (list (g 5) (a 5) (a 6))) 8) (generation 1 2))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'filterB (list (g 6) (a 6) (a 7))) 9) (generation 2 2))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'filterB (list (g 7) (a 7) (a 8))) 10) (generation 3 2))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'siftB (list (a 8) (a 9))) 11) (generation 3 2))
-  ;     (identified-atom-with-generation (identified-atom (abstract-atom 'length (list (a 9) (a 10))) 12) (generation 0 #f))))
-  ;   (list))
-  ) ; TODO: introduce two multi abstractions

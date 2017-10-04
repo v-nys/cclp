@@ -16,7 +16,9 @@
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
   (only-in racket-list-utils/utils replace-sublist map-accumulatel)
-  racket/logging)
+  racket/logging
+  math/number-theory
+  graph)
 (require (for-doc scribble/manual))
 
 (define gen-range-descending? (compose not gen-range-ascending?))
@@ -1135,3 +1137,101 @@
  Returns a triple consisting of the generalized conjunction, the generalized index ranges and the assignment of building blocks to introduced multis.
  If generalization has no effect, the generalized conjunction is identical to the initial conjunction and the list of ranges is empty.
  This function is experimental, but will hopefully run much faster than the top-down approach.}))
+
+(define (assign-prime-factor-ids! g)
+  ;; id-lb is lower bound for ID's: need to increase left to right, top to bottom
+  ;; p-lb is lower bound for primes: need to be unique, so use an increasing sequence
+  ;; ignored-children avoids adding children of multiple nodes (ie multis) to the queue twice
+  (define (aux g q id-lb p-lb ignored-children)
+    (unless (null? q)
+      (let* ([h (first q)]
+             [ch (sort
+                  (filter
+                        (λ (c) (not (set-member? ignored-children (gen-node-id c))))
+                        (get-neighbors g (car h)))
+                  (λ (gn1 gn2)
+                    (< (gen-node-id gn1) (gen-node-id gn2))))]
+             ;; TODO: if h is a multi and has multiple parents, don't use cdr h but use product of all parent ids
+             ;; this is annoying, though
+             [chosen-prime
+              (next-prime
+               (max
+                (ceiling
+                 (/ id-lb
+                    (cdr h)))
+                p-lb))]
+             [new-id (* (cdr h) chosen-prime)]
+             
+             [ch/parent-id
+              (map
+               (λ (c)
+                 (cons c new-id))
+               ch)])
+        (rename-vertex!
+         g
+         (car h)
+         (struct-copy
+          gen-node
+          (car h)
+          [id new-id]))
+        (aux
+         g
+         (append (cdr q) ch/parent-id)
+         new-id
+         chosen-prime
+         (set-union
+          ignored-children
+          (list->set
+           (map
+            gen-node-id
+            ch)))))))
+  ;; set lower bound to avoid renaming to existing vertex (could happen!)
+  (define largest-id (apply max (map gen-node-id (get-vertices g))))
+  (aux g (list (cons (first (tsort g)) 1)) largest-id 1 (set)))
+(module+ test
+  (let* ([node1a (gen-node (abstract-atom 'foo empty) 1 (gen 0 #f) #f #t)]
+         [node2a (gen-node (abstract-atom 'foo empty) 2 (gen 0 #f) #f #t)]
+         [node3a (gen-node (abstract-atom 'foo empty) 3 (gen 0 #f) #f #t)]
+         [node4a (gen-node (abstract-atom 'foo empty) 4 (gen 0 #f) #f #t)]
+         [node5a (gen-node (abstract-atom 'foo empty) 5 (gen 0 #f) #f #t)]
+         [node6a (gen-node (abstract-atom 'foo empty) 6 (gen 0 #f) #f #t)]
+         [node7a (gen-node (multi (list) #t (init empty) (consecutive empty) (final empty)) 7 (gen-range 1 2 1 #t) #f #t)]
+         [node8a (gen-node (abstract-atom 'foo empty) 8 (gen 0 #f) #f #t)]
+         [node1b (struct-copy gen-node node1a [id 11])]
+         [node2b (struct-copy gen-node node2a [id 143])]
+         [node3b (struct-copy gen-node node3a [id 187])]
+         [node4b (struct-copy gen-node node4a [id 209])]
+         [node5b (struct-copy gen-node node5a [id 253])]
+         [node6b (struct-copy gen-node node6a [id 4147])]
+         [node7b (struct-copy gen-node node7a [id 1211573])]
+         [node8b (struct-copy gen-node node8a [id 1212629])]
+         [g1 (unweighted-graph/directed
+              `((,node1a ,node2a)
+                (,node1a ,node3a)
+                (,node1a ,node4a)
+                (,node1a ,node5a)
+                (,node2a ,node6a)
+                (,node3a ,node7a)
+                (,node4a ,node7a)
+                (,node5a ,node8a)))]
+         [g2 (unweighted-graph/directed
+              `((,node1b ,node2b)
+                (,node1b ,node3b)
+                (,node1b ,node4b)
+                (,node1b ,node5b)
+                (,node2b ,node6b)
+                (,node3b ,node7b)
+                (,node4b ,node7b)
+                (,node5b ,node8b)))])
+    (assign-prime-factor-ids! g1)
+    ; get edges for easier inspection
+    (check-equal?
+     (get-edges g1)
+     (get-edges g2))))
+(provide
+ (proc-doc/names
+  assign-prime-factor-ids!
+  (-> graph? void?)
+  (g)
+  @{Assigns ID's to the @racket[gen-node?] elements in @racket[g], so that the ID of each node is sufficient to determine the logical ancestors of that node.
+ ID's are assigned in a breadth-first manner and the eventual ID of a conjunct is always lower than those of its right siblings as well as of conjuncts at a deeper level.}))
