@@ -51,7 +51,7 @@
 
 (define (write-full-eval obj port mode)
   (if (boolean? mode)
-      (fprintf port "#(struct:full-evaluation ~s ~s)" (full-evaluation-input-pattern obj) (full-evaluation-output-pattern obj) (full-evaluation-idx obj))
+      (fprintf port "#(struct:full-evaluation ~s ~s)" (full-evaluation-input-pattern obj) (full-evaluation-output-pattern obj))
       (begin (fprintf port "~v" (full-evaluation-input-pattern obj))
              (fprintf port " -> ")
              (fprintf port "~v" (full-evaluation-output-pattern obj))

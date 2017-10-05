@@ -18,7 +18,7 @@
   (only-in "control-flow.rkt" aif it)
   "data-utils.rkt"
   (only-in "execution.rkt" selected-index)
-  (only-in "generalize.rkt" generalize/td)
+  (only-in "generalize.rkt" generalize/td generalize/bu)
   (only-in "genealogical-graph.rkt" active-branch)
   "preprior-graph.rkt"
   (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*)
@@ -124,7 +124,7 @@
   (tree accumulator)
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
-(define (advance-analysis top clauses full-evaluations concrete-constants prior #:new-edges [new-edges (list)])
+(define (advance-analysis top clauses full-evaluations concrete-constants prior #:new-edges [new-edges (list)] #:generalize-fn [generalize-fn generalize/td])
   (log-debug "advancing analysis")
   (define (update-candidate candidate idx sel new-edges children)
     (match candidate
@@ -175,7 +175,7 @@
                       (if
                        (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?)
                        (list conjunction (list) (list))
-                       (generalize/td (active-branch top)))])
+                       (generalize-fn (active-branch top)))])
           (begin
             (cond [equivalent-predecessor
                    (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
@@ -213,9 +213,10 @@
  (proc-doc/names
   advance-analysis
   (->* (node? (listof ck:rule?) (listof full-evaluation?) (listof function?) preprior-graph?)
-       (#:new-edges (listof (cons/c abstract-atom? abstract-atom?)))
+       (#:new-edges (listof (cons/c abstract-atom? abstract-atom?))
+        #:generalize-fn procedure?)
        (or/c 'no-candidate (cons/c 'underspecified-order node?) (cons/c node? node?)))
-  ((top clauses full-evaluations concrete-constants prior) ((new-edges (list))))
+  ((top clauses full-evaluations concrete-constants prior) ((new-edges (list)) (generalize-fn generalize/td)))
   @{Advances the analysis in @racket[top], when the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
  Functions supplied in @racket[concrete-constants] are considered to be in the abstract domain.
  The strict partial order used for atom selection is specified in @racket[prior].

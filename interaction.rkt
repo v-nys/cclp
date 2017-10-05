@@ -44,7 +44,8 @@
 (require (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))
 (require "gen-graph-structs.rkt")
 (require "genealogical-graph.rkt"
-         "mi-map.rkt")
+         "mi-map.rkt"
+         (only-in "generalize.rkt" generalize/td generalize/bu))
 (require
   file/convertible
   graph
@@ -85,10 +86,10 @@
     loaded))
 (provide load-analysis)
 
-(define (proceed prog-analysis)
+(define (proceed prog-analysis #:generalize-fn [generalize-fn generalize/td])
   (match prog-analysis
     [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants _ipo _q _fn)) tree po)
-     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants po)])
+     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants po #:generalize-fn generalize-fn)])
        (match outcome
          [(cons 'underspecified-order candidate) ; for proceed, an underspecified order should trigger an exception
           (raise-user-error 'proceed "partial order is underspecified")]
@@ -98,8 +99,10 @@
 (provide
  (proc-doc/names
   proceed
-  (-> analysis? analysis?)
-  (prog-analysis)
+  (->* (analysis?)
+       (#:generalize-fn procedure?)
+       analysis?)
+  ((prog-analysis) ((generalize-fn generalize/td)))
   @{Advances the analysis of @racket[prog-analysis] without side-effects.
  The only exception is a user error which may be raised if the partial order in the analysis does not dictate which atom should be selected.}))
 
