@@ -1142,6 +1142,7 @@
   (define root (first (tsort g)))
   ;; this is a custom BFS procedure
   ;; graph has BFS, but doesn't support sorting neighbors
+  ;; note mapping and ->parents both just map between ID's
   (define (aux g q acc)
     (match acc
       [(list mapping previous-prime ->parents)
@@ -1206,3 +1207,49 @@
   (-> graph? hash?)
   (g)
   @{Maps the identifiers in @racket[g] to prime encoded identifiers so that a prime encoded identifier immediately provides useful information on a node's relevant ancestry.}))
+
+(define (cluster gen-nodes id->encoding)
+  (define rec (λ (gns) (cluster gns id->encoding)))
+  (define (same-gcd-for-all? gn other-nodes)
+    (let* ([gn-encoding (hash-ref id->encoding (gen-node-id gn))]
+           [gcds (map (λ (on) (gcd gn-encoding (hash-ref id->encoding (gen-node-id on)))) other-nodes)])
+      (<= (length (remove-duplicates gcds)) 1)))
+  (define-values
+    (outer-elements subcluster-elements)
+    (partition (λ (gn) (same-gcd-for-all? gn (remove gn gen-nodes))) gen-nodes))
+  (if (not (null? subcluster-elements))
+      (apply set (rec subcluster-elements) outer-elements)
+      (apply set outer-elements)))
+(module+ test
+  (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
+         [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
+         [gn3 (gen-node (abstract-atom 'filter (list (g 3) (a 2) (a 3))) 3 #f #f #t)]
+         [gn4 (gen-node (abstract-atom 'filter (list (g 4) (a 3) (a 4))) 4 #f #f #t)]
+         [gn5 (gen-node (abstract-atom 'sift (list (a 4) (a 5))) 5 #f #f #t)]
+         [gn6 (gen-node (abstract-atom 'length (list (a 5) (abstract-function 'cons (list (g 5) (a 5))))) 6 #f #f #t)]
+         [gns (list gn1 gn2 gn3 gn4 gn5 gn6)]
+         [->encodings
+          #hasheq((1 . 22)
+                  (2 . 102)
+                  (3 . 570)
+                  (4 . 4830)
+                  (5 . 6090)
+                  (6 . 26))])
+    (check-equal?
+     (cluster gns ->encodings)
+     (set
+      gn1
+      gn6
+      (set
+       gn2
+       (set
+        gn3
+        (set
+         gn4
+         gn5)))))))
+(provide
+ (proc-doc/names
+  cluster
+  (-> (listof gen-node?) hash? set?)
+  (gen-nodes id->encoding)
+  @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
