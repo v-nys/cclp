@@ -1111,18 +1111,31 @@
  If generalization has no effect, the generalized conjunction is identical to the initial conjunction and the list of ranges is empty.}))
 
 (define (generalize/bu br)
-  (define gr (genealogical-graph-skeleton br)) ; OK
-  (define gr/prime-ids #f) ; TODO: modify existing script to compute this -> take into account multi as well and make sure sorting retains order (skip some primes if necessary)
+  (define gr (genealogical-graph-skeleton br))
+  (define id->encoding (assign-prime-factor-ids gr))
   (define depth (length br))
   (define root
     (gen-node
-     (car (tree-label-conjunction (car br))) 2 #f #t #t)) ; 2 = first prime
+     (first (tree-label-conjunction (car br))) 1 #f #t #t))
   (define lvl
     (sort
-     (rdag-level gr/prime-ids root depth)
+     (rdag-level gr root depth)
      <
      #:key gen-node-id))
-  (define annotated-lvl #f) ; TODO: implement!
+  (define clustered-lvl (cluster lvl id->encoding))
+  (define encoding->id
+    (for/hash ([pair (hash->list id->encoding)])
+      (values (cdr pair) (car pair))))
+  (define id->conjunct
+    (for/hash ([v (in-vertices gr)])
+      (values (gen-node-id v) (gen-node-conjunct v))))
+  (define annotated-cluster (annotate-cluster encoding->id id->conjunct clustered-lvl))
+  (define annotated-lvl
+    (sort
+     (set->list annotated-cluster)
+     (λ (gn1 gn2)
+       (< (gen-node-id gn1)
+          (gen-node-id gn2)))))
   (define gen-lvl (generalize-level annotated-lvl))
   (list
    (map gen-node-conjunct gen-lvl)
@@ -1268,17 +1281,16 @@
   (gen-nodes id->encoding)
   @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings and associates each set with the gcd. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
 
-(define (cluster->gcd-ids cluster)
+(define (cluster->gcds cluster)
   (if (pair? cluster)
       (set-add
        (apply
         set-union
         (set-map
          (car cluster)
-         cluster->gcd-ids))
+         cluster->gcds))
        (cdr cluster))
       (set)))
-
 (define (annotate-cluster encoding->id id->conjunct clusters #:established [established #f])
   (match clusters
     [(cons cluster-set cluster-gcd)
@@ -1287,7 +1299,7 @@
              (renames-with-corresponding-args?
               (hash-ref id->conjunct (hash-ref encoding->id cluster-gcd))
               (hash-ref id->conjunct (gen-origin established))))
-            (let-values ([(next-established) (gen-add1 established)]
+            (let-values ([(next-established) (gen (gen-add1 (gen-number established)) (gen-origin established))]
                          [(subclusters elements) (partition pair? (set->list cluster-set))])
               (set-union
                (list->set (map (λ (e) (struct-copy gen-node e [range next-established])) elements))
@@ -1304,18 +1316,18 @@
                           [(subcluster-gcd-conjuncts)
                            (set->list
                             (set-map
-                            (apply set-union (map cluster->gcd-ids subclusters))
-                            (λ (subcluster-gcd-id) (hash-ref id->conjunct subcluster-gcd-id))))]
+                             (apply set-union (map cluster->gcds subclusters))
+                             (λ (subcluster-gcd) (hash-ref id->conjunct (hash-ref encoding->id subcluster-gcd)))))]
                           [(has-renaming-with-corresponding-args?)
                            (ormap
                             (curry renames-with-corresponding-args? gcd-conjunct)
                             subcluster-gcd-conjuncts)])
               (if has-renaming-with-corresponding-args?
                   (set-union
-                   (list->set (map (map (λ (e) (struct-copy gen-node e [range (gen 1 gcd-id)])) elements) elements))
+                   (list->set (map (λ (e) (struct-copy gen-node e [range (gen 1 gcd-id)])) elements))
                    (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established (gen 1 gcd-id))) subclusters)))
                   (set-union
-                   (list->set (map (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) elements) elements))
+                   (list->set (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) elements))
                    (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established #f)) subclusters)))))])]))
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
