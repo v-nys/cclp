@@ -1253,3 +1253,56 @@
   (-> (listof gen-node?) hash? set?)
   (gen-nodes id->encoding)
   @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
+
+(define (annotate-clusters encoding->id id->conjunct clusters #:established [established #f])
+  (foldl (λ (e acc) (if (set? e) (set-union acc e) (set-add acc e))) (set) (set->list clusters)))
+(module+ test
+  (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
+         [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
+         [gn3 (gen-node (abstract-atom 'filter (list (g 3) (a 2) (a 3))) 3 #f #f #t)]
+         [gn4 (gen-node (abstract-atom 'filter (list (g 4) (a 3) (a 4))) 4 #f #f #t)]
+         [gn5 (gen-node (abstract-atom 'sift (list (a 4) (a 5))) 5 #f #f #t)]
+         [gn6 (gen-node (abstract-atom 'length (list (a 5) (abstract-function 'cons (list (g 5) (a 5))))) 6 #f #f #t)]
+         [ann-gn1 (struct-copy gen-node gn1 [range (gen 0 #f)])]
+         [ann-gn2 (struct-copy gen-node gn2 [range (gen 1 7)])]
+         [ann-gn3 (struct-copy gen-node gn3 [range (gen 2 7)])]
+         [ann-gn4 (struct-copy gen-node gn4 [range (gen 3 7)])]
+         [ann-gn5 (struct-copy gen-node gn5 [range (gen 3 7)])]
+         [ann-gn6 (struct-copy gen-node gn6 [range (gen 0 #f)])]
+         [gns (list gn1 gn2 gn3 gn4 gn5 gn6)]
+         [encoding->id
+          #hasheq((22 . 1)
+                  (102 . 2)
+                  (570 . 3)
+                  (4830 . 4)
+                  (6090 . 5)
+                  (26 . 6)
+                  ;; these are the encodings of the three ancestor sifts
+                  (6 . 7)     ; sift @ 0 filters
+                  (30 . 8)    ; sift @ 1 filter
+                  (210 . 9))] ; sift @ 2 filters
+         [id->conjunct
+          (hasheq
+           1 (gen-node-conjunct gn1)
+           2 (gen-node-conjunct gn2)
+           3 (gen-node-conjunct gn3)
+           4 (gen-node-conjunct gn4)
+           5 (gen-node-conjunct gn5)
+           6 (gen-node-conjunct gn6)
+           7 (abstract-atom 'sift (list (abstract-function 'cons (list (g 6) (a 6))) (a 7)))
+           8 (abstract-atom 'sift (list (abstract-function 'cons (list (g 7) (a 8))) (a 9)))
+           9 (abstract-atom 'sift (list (abstract-function 'cons (list (g 8) (a 10))) (a 11))))]
+         [clusters
+          (set
+           gn1
+           gn6
+           (set
+            gn2
+            (set
+             gn3
+             (set
+              gn4
+              gn5))))])
+    (check-equal?
+     (annotate-clusters encoding->id id->conjunct clusters)
+     (set ann-gn1 ann-gn2 ann-gn3 ann-gn4 ann-gn5 ann-gn6))))
