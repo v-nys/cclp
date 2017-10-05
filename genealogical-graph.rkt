@@ -205,6 +205,7 @@
    (renames-with-corresponding-args?
     (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
     (interpret-abstract-atom "atom(γ5,γ6,α7,α8)"))))
+(provide renames-with-corresponding-args?)
 
 ;; checks whether any descendant of root in graph is a renaming of root and whether shared vars are in the same position
 ;; target is assumed to be either equal to root, or descendant of root which renames it with corresponding args

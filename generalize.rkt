@@ -1268,8 +1268,21 @@
   (gen-nodes id->encoding)
   @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings and associates each set with the gcd. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
 
+; established is both RTA and generation so far? generation alone is enough -> includes RTA ID
 (define (annotate-clusters encoding->id id->conjunct clusters #:established [established #f])
-  clusters)
+  (match clusters
+    [(cons cluster-set cluster-gcd)
+     (if (and
+          established
+          (renames-with-corresponding-args?
+           (hash-ref id->conjunct (hash-ref encoding->id cluster-gcd))
+           (hash-ref id->conjunct (gen-origin established))))
+         (let-values ([(next-established) (gen-add1 established)]
+                      [(elements subclusters) (partition set? (set->list cluster-set))])
+           (set-union
+            (list->set (map (λ (e) (struct-copy gen-node e [range established])) elements))
+            (foldl set-union (set) (map (λ (sc) (annotate-clusters encoding->id id->conjunct sc #:established next-established)) subclusters))))
+         (set))]))
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
          [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
@@ -1321,7 +1334,7 @@
                  (set
                   gn4
                   gn5)
-                 20))
+                 210))
                30))
              6))
            2)])
