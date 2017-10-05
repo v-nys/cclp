@@ -1218,8 +1218,14 @@
     (outer-elements subcluster-elements)
     (partition (λ (gn) (same-gcd-for-all? gn (remove gn gen-nodes))) gen-nodes))
   (if (not (null? subcluster-elements))
-      (apply set (rec subcluster-elements) outer-elements)
-      (apply set outer-elements)))
+      (cons
+       (apply set (rec subcluster-elements) outer-elements)
+       (gcd (hash-ref id->encoding (gen-node-id (first outer-elements)))
+            (hash-ref id->encoding (gen-node-id (first subcluster-elements)))))
+      (cons
+       (apply set outer-elements)
+       (gcd (hash-ref id->encoding (gen-node-id (first outer-elements)))
+            (hash-ref id->encoding (gen-node-id (second outer-elements)))))))
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
          [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
@@ -1237,25 +1243,33 @@
                   (6 . 26))])
     (check-equal?
      (cluster gns ->encodings)
-     (set
-      gn1
-      gn6
+     (cons
       (set
-       gn2
-       (set
-        gn3
+       gn1
+       gn6
+       (cons
         (set
-         gn4
-         gn5)))))))
+         gn2
+         (cons
+          (set
+           gn3
+           (cons
+            (set
+             gn4
+             gn5)
+            210))
+          30))
+        6))
+      2))))
 (provide
  (proc-doc/names
   cluster
-  (-> (listof gen-node?) hash? set?)
+  (-> (non-empty-listof gen-node?) hash? (cons/c set? exact-positive-integer?))
   (gen-nodes id->encoding)
-  @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
+  @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings and associates each set with the gcd. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
 
 (define (annotate-clusters encoding->id id->conjunct clusters #:established [established #f])
-  (foldl (λ (e acc) (if (set? e) (set-union acc e) (set-add acc e))) (set) (set->list clusters)))
+  clusters)
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
          [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
@@ -1293,16 +1307,24 @@
            8 (abstract-atom 'sift (list (abstract-function 'cons (list (g 7) (a 8))) (a 9)))
            9 (abstract-atom 'sift (list (abstract-function 'cons (list (g 8) (a 10))) (a 11))))]
          [clusters
-          (set
-           gn1
-           gn6
+          (cons
            (set
-            gn2
-            (set
-             gn3
+            gn1
+            gn6
+            (cons
              (set
-              gn4
-              gn5))))])
+              gn2
+              (cons
+               (set
+                gn3
+                (cons
+                 (set
+                  gn4
+                  gn5)
+                 20))
+               30))
+             6))
+           2)])
     (check-equal?
      (annotate-clusters encoding->id id->conjunct clusters)
      (set ann-gn1 ann-gn2 ann-gn3 ann-gn4 ann-gn5 ann-gn6))))
