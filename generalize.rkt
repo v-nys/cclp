@@ -1268,21 +1268,55 @@
   (gen-nodes id->encoding)
   @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings and associates each set with the gcd. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
 
-; established is both RTA and generation so far? generation alone is enough -> includes RTA ID
-(define (annotate-clusters encoding->id id->conjunct clusters #:established [established #f])
+(define (cluster->gcd-ids cluster)
+  (if (pair? cluster)
+      (set-add
+       (apply
+        set-union
+        (set-map
+         (car cluster)
+         cluster->gcd-ids))
+       (cdr cluster))
+      (set)))
+
+(define (annotate-cluster encoding->id id->conjunct clusters #:established [established #f])
   (match clusters
     [(cons cluster-set cluster-gcd)
-     (if (and
-          established
-          (renames-with-corresponding-args?
-           (hash-ref id->conjunct (hash-ref encoding->id cluster-gcd))
-           (hash-ref id->conjunct (gen-origin established))))
-         (let-values ([(next-established) (gen-add1 established)]
-                      [(elements subclusters) (partition set? (set->list cluster-set))])
-           (set-union
-            (list->set (map (λ (e) (struct-copy gen-node e [range established])) elements))
-            (foldl set-union (set) (map (λ (sc) (annotate-clusters encoding->id id->conjunct sc #:established next-established)) subclusters))))
-         (set))]))
+     (cond [(and
+             established
+             (renames-with-corresponding-args?
+              (hash-ref id->conjunct (hash-ref encoding->id cluster-gcd))
+              (hash-ref id->conjunct (gen-origin established))))
+            (let-values ([(next-established) (gen-add1 established)]
+                         [(subclusters elements) (partition pair? (set->list cluster-set))])
+              (set-union
+               (list->set (map (λ (e) (struct-copy gen-node e [range next-established])) elements))
+               (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established next-established)) subclusters))))]
+           [established
+            (let-values ([(subclusters elements) (partition pair? (set->list cluster-set))])
+              (set-union
+               (list->set (map (λ (e) (struct-copy gen-node e [range established])) elements))
+               (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established established)) subclusters))))]
+           [else
+            (let*-values ([(gcd-id) (hash-ref encoding->id cluster-gcd)]
+                          [(gcd-conjunct) (hash-ref id->conjunct gcd-id)]
+                          [(subclusters elements) (partition pair? (set->list cluster-set))]
+                          [(subcluster-gcd-conjuncts)
+                           (set->list
+                            (set-map
+                            (apply set-union (map cluster->gcd-ids subclusters))
+                            (λ (subcluster-gcd-id) (hash-ref id->conjunct subcluster-gcd-id))))]
+                          [(has-renaming-with-corresponding-args?)
+                           (ormap
+                            (curry renames-with-corresponding-args? gcd-conjunct)
+                            subcluster-gcd-conjuncts)])
+              (if has-renaming-with-corresponding-args?
+                  (set-union
+                   (list->set (map (map (λ (e) (struct-copy gen-node e [range (gen 1 gcd-id)])) elements) elements))
+                   (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established (gen 1 gcd-id))) subclusters)))
+                  (set-union
+                   (list->set (map (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) elements) elements))
+                   (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established #f)) subclusters)))))])]))
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
          [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
@@ -1307,7 +1341,8 @@
                   ;; these are the encodings of the three ancestor sifts
                   (6 . 7)     ; sift @ 0 filters
                   (30 . 8)    ; sift @ 1 filter
-                  (210 . 9))] ; sift @ 2 filters
+                  (210 . 9)   ; sift @ 2 filters
+                  (2 . 10))]
          [id->conjunct
           (hasheq
            1 (gen-node-conjunct gn1)
@@ -1318,7 +1353,8 @@
            6 (gen-node-conjunct gn6)
            7 (abstract-atom 'sift (list (abstract-function 'cons (list (g 6) (a 6))) (a 7)))
            8 (abstract-atom 'sift (list (abstract-function 'cons (list (g 7) (a 8))) (a 9)))
-           9 (abstract-atom 'sift (list (abstract-function 'cons (list (g 8) (a 10))) (a 11))))]
+           9 (abstract-atom 'sift (list (abstract-function 'cons (list (g 8) (a 10))) (a 11)))
+           10 (abstract-atom 'primes (list (g 9) (a 12))))]
          [clusters
           (cons
            (set
@@ -1339,5 +1375,5 @@
              6))
            2)])
     (check-equal?
-     (annotate-clusters encoding->id id->conjunct clusters)
+     (annotate-cluster encoding->id id->conjunct clusters)
      (set ann-gn1 ann-gn2 ann-gn3 ann-gn4 ann-gn5 ann-gn6))))
