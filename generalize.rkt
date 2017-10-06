@@ -1287,56 +1287,77 @@
   (gen-nodes id->encoding)
   @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings and associates each set with the gcd. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
 
-(define (annotate-cluster encoding->id id->conjunct clusters #:established [established #f])
-  (define (non-flattened-cardinality st)
-    (length (set->list st)))
-  (match clusters
+; produces a single set of annotated gen nodes
+(define (annotate-cluster encoding->id id->conjunct cluster #:established [established #f])
+  ;; can't curry due to kw
+  (define rec
+    (λ (c #:established [established #f])
+      (annotate-cluster encoding->id id->conjunct c #:established established)))
+  (match cluster
     [(cons cluster-set cluster-gcd)
-     ;; RTA has been established and generation increment is appropriate (will require changes in the presence of multi: multi can start at generation 2,...)
-     (cond [(and
-             established
-             (renames-with-corresponding-args?
-              (hash-ref id->conjunct (hash-ref encoding->id cluster-gcd))
-              (hash-ref id->conjunct (gen-origin established)))
-             (> (non-flattened-cardinality cluster-set) 1))
-            (let-values ([(next-established) (gen (gen-add1 (gen-number established)) (gen-origin established))]
-                         [(subclusters elements) (partition pair? (set->list cluster-set))])
-              (set-union 
-               (list->set (map (λ (e) (struct-copy gen-node e [range next-established])) elements))
-               (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established next-established)) subclusters))))]
-           ;; RTA has been established, but next cluster does not get a generation increment (should not require changes when multi is introduced)
-           [established
-            (let-values ([(subclusters elements) (partition pair? (set->list cluster-set))])
-              (set-union 
-               (list->set (map (λ (e) (struct-copy gen-node e [range established])) elements))
-               (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established established)) subclusters))))]
-           ;; no RTA has been established yet
-           [else
-            (let* ([gcd-id (hash-ref encoding->id cluster-gcd)]
-                   [gcd-conjunct (hash-ref id->conjunct gcd-id)]
-                   [contains-nesting?
-                    (ormap pair? (set->list cluster-set))]
-                   [subcluster-gcd-conjuncts/cardinalities
-                    (if (not contains-nesting?)
-                        empty
-                        (set->list
-                         (map
-                          (λ (subcluster-gcd/cardinality)
-                            (cons
-                             (hash-ref id->conjunct (hash-ref encoding->id (car subcluster-gcd/cardinality)))
-                             (cdr subcluster-gcd/cardinality)))
-                          (map (λ (sc) (cons (cdr sc) (non-flattened-cardinality (car sc)))) (set->list cluster-set)))))]
-                   [has-expanded-renaming-with-corresponding-args?
-                    (ormap
-                     (λ (c/c) (and (renames-with-corresponding-args? gcd-conjunct (car c/c)) (> (cdr c/c) 1)))
-                     subcluster-gcd-conjuncts/cardinalities)])
-              ;; TODO: only give elements generation 1 if they are not multis
-              ;; if there is a subcluster consisting of only a multi, set established to range for that cluster and for end of range for the other clusters
-              (if has-expanded-renaming-with-corresponding-args? ; implies subclusters, no elements
-                  (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established (gen 1 gcd-id))) (set->list cluster-set)))
-                  (if (not contains-nesting?) 
-                      (list->set (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (set->list cluster-set)))
-                      (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established #f)) (set->list cluster-set))))))])]))
+     #:when (eq? (set-count cluster-set) 1)
+     (set (struct-copy gen-node (set-first cluster-set) [range (or established (gen 0 #f))]))]
+    ;; can always assume cluster is nested from here on
+    [(cons cluster-set cluster-gcd)
+     (cond
+       [(and
+         established
+         (renames-with-corresponding-args?
+          (hash-ref id->conjunct (hash-ref encoding->id cluster-gcd))
+          (hash-ref id->conjunct (gen-origin established)))
+         (> (set-count cluster-set) 1))
+        (let ([next-established (gen (gen-add1 (gen-number established)) (gen-origin established))])
+          (foldl
+           set-union
+           (set)
+           (set->list (set-map cluster-set (λ (sc) (rec sc #:established next-established))))))]
+       [established
+        (foldl set-union (set) (set->list (set-map cluster-set (λ (sc) (rec sc #:established established)))))]
+       [else
+        (let* ([gcd-id (hash-ref encoding->id cluster-gcd)]
+               [subcluster-gcd-conjuncts/cardinalities
+                (set-map
+                 cluster-set
+                 (match-lambda
+                   [(cons sc gcd)
+                    (cons (hash-ref id->conjunct (hash-ref encoding->id gcd)) (set-count sc))]))]
+               [is-rta?
+                (ormap
+                 (match-lambda
+                   [(cons conjunct cardinality)
+                    (and
+                     (renames-with-corresponding-args?
+                      (hash-ref id->conjunct gcd-id)
+                      conjunct)
+                     (> cardinality 1))])
+                 subcluster-gcd-conjuncts/cardinalities)])
+          (if is-rta?
+              (let-values ([(multi-clusters non-multi-clusters)
+                            (partition
+                             (λ (sc) (let ([c-or-gn (set-first (car sc))]) (and (gen-node? c-or-gn) (multi? (gen-node-conjunct c-or-gn)))))
+                             (set->list cluster-set))])
+                (match multi-clusters
+                  [(list)
+                   (foldl
+                    set-union
+                    (set)
+                    (map
+                     (λ (nmc)
+                       (rec nmc #:established (gen 1 gcd-id)))
+                     non-multi-clusters))]
+                  [(list mc)
+                   (let ([last-symbol (gensym)])
+                     (foldl
+                      set-union
+                      (set)
+                      (cons
+                       (rec mc #:established (gen-range 1 last-symbol gcd-id ((compose multi-ascending? gen-node-conjunct set-first car) mc)))
+                       (map
+                        (λ (nmc)
+                          (rec nmc #:established (gen last-symbol gcd-id)))
+                        non-multi-clusters))))]))
+              (foldl set-union (set) (set->list (set-map cluster-set rec)))))])]))
+
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
          [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
