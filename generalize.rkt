@@ -1292,6 +1292,7 @@
     (length (set->list st)))
   (match clusters
     [(cons cluster-set cluster-gcd)
+     ;; RTA has been established and generation increment is appropriate (will require changes in the presence of multi: multi can start at generation 2,...)
      (cond [(and
              established
              (renames-with-corresponding-args?
@@ -1303,34 +1304,39 @@
               (set-union 
                (list->set (map (λ (e) (struct-copy gen-node e [range next-established])) elements))
                (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established next-established)) subclusters))))]
+           ;; RTA has been established, but next cluster does not get a generation increment (should not require changes when multi is introduced)
            [established
             (let-values ([(subclusters elements) (partition pair? (set->list cluster-set))])
               (set-union 
                (list->set (map (λ (e) (struct-copy gen-node e [range established])) elements))
                (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established established)) subclusters))))]
+           ;; no RTA has been established yet
            [else
-            (let*-values ([(gcd-id) (hash-ref encoding->id cluster-gcd)]
-                          [(gcd-conjunct) (hash-ref id->conjunct gcd-id)]
-                          [(subclusters elements) (partition pair? (set->list cluster-set))]
-                          [(subcluster-gcd-conjuncts/cardinalities)
-                           (set->list
-                            (map
-                             (λ (subcluster-gcd/cardinality)
-                               (cons
-                                (hash-ref id->conjunct (hash-ref encoding->id (car subcluster-gcd/cardinality)))
-                                (cdr subcluster-gcd/cardinality)))
-                             (map (λ (sc) (cons (cdr sc) (non-flattened-cardinality (car sc)))) subclusters)))]
-                          [(has-expanded-renaming-with-corresponding-args?)
-                           (ormap
-                            (λ (c/c) (and (renames-with-corresponding-args? gcd-conjunct (car c/c)) (> (cdr c/c) 1)))
-                            subcluster-gcd-conjuncts/cardinalities)])
-              (if has-expanded-renaming-with-corresponding-args?
-                  (set-union 
-                   (list->set (map (λ (e) (struct-copy gen-node e [range (gen 1 gcd-id)])) elements))
-                   (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established (gen 1 gcd-id))) subclusters))) 
-                  (set-union 
-                   (list->set (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) elements))
-                   (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established #f)) subclusters)))))])]))
+            (let* ([gcd-id (hash-ref encoding->id cluster-gcd)]
+                   [gcd-conjunct (hash-ref id->conjunct gcd-id)]
+                   [contains-nesting?
+                    (ormap pair? (set->list cluster-set))]
+                   [subcluster-gcd-conjuncts/cardinalities
+                    (if (not contains-nesting?)
+                        empty
+                        (set->list
+                         (map
+                          (λ (subcluster-gcd/cardinality)
+                            (cons
+                             (hash-ref id->conjunct (hash-ref encoding->id (car subcluster-gcd/cardinality)))
+                             (cdr subcluster-gcd/cardinality)))
+                          (map (λ (sc) (cons (cdr sc) (non-flattened-cardinality (car sc)))) (set->list cluster-set)))))]
+                   [has-expanded-renaming-with-corresponding-args?
+                    (ormap
+                     (λ (c/c) (and (renames-with-corresponding-args? gcd-conjunct (car c/c)) (> (cdr c/c) 1)))
+                     subcluster-gcd-conjuncts/cardinalities)])
+              ;; TODO: only give elements generation 1 if they are not multis
+              ;; if there is a subcluster consisting of only a multi, set established to range for that cluster and for end of range for the other clusters
+              (if has-expanded-renaming-with-corresponding-args? ; implies subclusters, no elements
+                  (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established (gen 1 gcd-id))) (set->list cluster-set)))
+                  (if (not contains-nesting?) 
+                      (list->set (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (set->list cluster-set)))
+                      (foldl set-union (set) (map (λ (sc) (annotate-cluster encoding->id id->conjunct sc #:established #f)) (set->list cluster-set))))))])]))
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
          [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
