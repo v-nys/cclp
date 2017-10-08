@@ -1302,18 +1302,35 @@
      (cond
        [(and
          established
-         (renames-with-corresponding-args? ; so not a multi
+         (renames-with-corresponding-args?
           (hash-ref id->conjunct (hash-ref encoding->id cluster-gcd))
           (hash-ref id->conjunct (gen-origin established)))
          (> (set-count cluster-set) 1))
-        ;; TODO: partition as with is-rta?
-        ;; if there is a multi cluster, introduce a symbolic generation
-        ;; otherwise, just use gen-add1 as here
-        (let ([next-established (gen (gen-add1 (gen-number established)) (gen-origin established))])
-          (foldl
-           set-union
-           (set)
-           (set->list (set-map cluster-set (λ (sc) (rec sc #:established next-established))))))]
+        (let-values ([(multi-clusters non-multi-clusters)
+                      (partition
+                       (λ (sc)
+                         (let ([c-or-gn (set-first (car sc))])
+                           (and (gen-node? c-or-gn)
+                                (multi? (gen-node-conjunct c-or-gn)))))
+                       (set->list cluster-set))])
+          (match multi-clusters
+            [(list)
+             (let ([next-established (gen (gen-add1 (gen-number established)) (gen-origin established))])
+               (foldl
+                set-union
+                (set)
+                (set->list (set-map cluster-set (λ (sc) (rec sc #:established next-established))))))]
+            [(list mc)
+             (let ([last-symbol (gensym)])
+               (foldl
+                set-union
+                (set)
+                (cons
+                 (rec mc #:established (gen-range (add1 (gen-number established)) last-symbol (gen-origin established) ((compose multi-ascending? gen-node-conjunct set-first car) mc)))
+                 (map
+                  (λ (nmc)
+                    (rec nmc #:established (gen last-symbol (gen-origin established))))
+                  non-multi-clusters))))]))]
        [established
         (foldl
          set-union
