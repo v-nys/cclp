@@ -1297,22 +1297,32 @@
     [(cons cluster-set cluster-gcd)
      #:when (eq? (set-count cluster-set) 1)
      (set (struct-copy gen-node (set-first cluster-set) [range (or established (gen 0 #f))]))]
-    ;; can always assume cluster is nested from here on
     [(cons cluster-set cluster-gcd)
+     #:when (> (set-count cluster-set) 1)
      (cond
        [(and
          established
-         (renames-with-corresponding-args?
+         (renames-with-corresponding-args? ; so not a multi
           (hash-ref id->conjunct (hash-ref encoding->id cluster-gcd))
           (hash-ref id->conjunct (gen-origin established)))
          (> (set-count cluster-set) 1))
+        ;; TODO: partition as with is-rta?
+        ;; if there is a multi cluster, introduce a symbolic generation
+        ;; otherwise, just use gen-add1 as here
         (let ([next-established (gen (gen-add1 (gen-number established)) (gen-origin established))])
           (foldl
            set-union
            (set)
            (set->list (set-map cluster-set (λ (sc) (rec sc #:established next-established))))))]
        [established
-        (foldl set-union (set) (set->list (set-map cluster-set (λ (sc) (rec sc #:established established)))))]
+        (foldl
+         set-union
+         (set)
+         (set->list
+          (set-map
+           cluster-set
+           (λ (sc)
+             (rec sc #:established established)))))]
        [else
         (let* ([gcd-id (hash-ref encoding->id cluster-gcd)]
                [subcluster-gcd-conjuncts/cardinalities
@@ -1418,3 +1428,4 @@
     (check-equal?
      (annotate-cluster encoding->id id->conjunct clusters)
      (set ann-gn1 ann-gn2 ann-gn3 ann-gn4 ann-gn5 ann-gn6))))
+(provide annotate-cluster)
