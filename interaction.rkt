@@ -45,7 +45,7 @@
 (require "gen-graph-structs.rkt")
 (require "genealogical-graph.rkt"
          "mi-map.rkt"
-         (only-in "generalize.rkt" generalize/td generalize/bu assign-prime-factor-ids cluster annotate-cluster))
+         (only-in "generalize.rkt" generalize/td generalize/bu assign-prime-factor-ids cluster))
 (require
   file/convertible
   graph
