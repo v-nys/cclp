@@ -15,7 +15,7 @@
   "genealogical-graph.rkt"
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
-  (only-in racket-list-utils/utils replace-sublist map-accumulatel)
+  (only-in racket-list-utils/utils replace-sublist map-accumulatel group-by)
   racket/logging
   math/number-theory
   graph)
@@ -1127,22 +1127,31 @@
      (rdag-level gr root depth)
      <
      #:key gen-node-id))
-  (displayln (format "level: ~a" lvl))
   (define clustered-lvl (cluster lvl id->encoding))
   (displayln (format "clustered level: ~a" clustered-lvl))
   (define encoding->id
     (for/hash ([pair (hash->list id->encoding)])
       (values (cdr pair) (car pair))))
+  (displayln (format "encoding->id: ~a" encoding->id))
   (define id->conjunct
     (for/hash ([v (in-vertices gr)])
       (values (gen-node-id v) (gen-node-conjunct v))))
-  (define annotated-cluster (flatten (sets->lists (car (annotate-cluster encoding->id id->conjunct clustered-lvl)))))
+  (displayln (format "id->conjunct: ~a" id->conjunct))
+  (define annotated-cluster
+    (flatten
+     (sets->lists
+      (car
+       (annotate-cluster
+        encoding->id
+        id->conjunct
+        clustered-lvl)))))
   (define annotated-lvl
     (sort
      annotated-cluster
      (λ (gn1 gn2)
        (< (gen-node-id gn1)
           (gen-node-id gn2)))))
+  (displayln (format "annotated level: ~a" annotated-lvl))
   (define gen-lvl (generalize-level annotated-lvl))
   (list
    (map gen-node-conjunct gen-lvl)
@@ -1231,27 +1240,71 @@
 ;; modifications required for single-element clusters?
 ;; gen-nodes with length 1
 ;; uses of rec: not just for subcluster-elements
+;(define (cluster gen-nodes id->encoding)
+;  (define rec (λ (gns) (cluster gns id->encoding)))
+;  (define (same-gcd-for-all? gn other-nodes)
+;    (let* ([gn-encoding (hash-ref id->encoding (gen-node-id gn))]
+;           [gcds (map (λ (on) (gcd gn-encoding (hash-ref id->encoding (gen-node-id on)))) other-nodes)])
+;      (<= (length (remove-duplicates gcds)) 1)))
+;  (define-values
+;    (outer-elements subcluster-elements)
+;    (partition (λ (gn) (same-gcd-for-all? gn (remove gn gen-nodes))) gen-nodes))
+;  (if
+;   (equal? (length gen-nodes) 1)
+;   (cons (set (first gen-nodes)) (hash-ref id->encoding (gen-node-id (first gen-nodes))))
+;   (if (not (null? subcluster-elements))
+;       (cons
+;        (apply set (rec subcluster-elements) (map (compose rec list) outer-elements))
+;        (gcd (hash-ref id->encoding (gen-node-id (first outer-elements)))
+;             (hash-ref id->encoding (gen-node-id (first subcluster-elements)))))
+;       (cons
+;        (apply set (map (compose rec list) outer-elements))
+;        (gcd (hash-ref id->encoding (gen-node-id (first outer-elements)))
+;             (hash-ref id->encoding (gen-node-id (second outer-elements))))))))
 (define (cluster gen-nodes id->encoding)
-  (define rec (λ (gns) (cluster gns id->encoding)))
-  (define (same-gcd-for-all? gn other-nodes)
-    (let* ([gn-encoding (hash-ref id->encoding (gen-node-id gn))]
-           [gcds (map (λ (on) (gcd gn-encoding (hash-ref id->encoding (gen-node-id on)))) other-nodes)])
-      (<= (length (remove-duplicates gcds)) 1)))
-  (define-values
-    (outer-elements subcluster-elements)
-    (partition (λ (gn) (same-gcd-for-all? gn (remove gn gen-nodes))) gen-nodes))
-  (if
-   (equal? (length gen-nodes) 1)
-   (cons (set (first gen-nodes)) (hash-ref id->encoding (gen-node-id (first gen-nodes))))
-   (if (not (null? subcluster-elements))
-       (cons
-        (apply set (rec subcluster-elements) (map (compose rec list) outer-elements))
-        (gcd (hash-ref id->encoding (gen-node-id (first outer-elements)))
-             (hash-ref id->encoding (gen-node-id (first subcluster-elements)))))
-       (cons
-        (apply set (map (compose rec list) outer-elements))
-        (gcd (hash-ref id->encoding (gen-node-id (first outer-elements)))
-             (hash-ref id->encoding (gen-node-id (second outer-elements))))))))
+  (define gcd-all
+    (apply
+     gcd
+     (map
+      (λ (gn)
+        (hash-ref id->encoding (gen-node-id gn)))
+      gen-nodes)))
+  (define
+    greater-pairwise-gcds
+    (remove
+     gcd-all
+     (sort
+      (set->list
+       (for*/set
+           ([gn1 gen-nodes]
+            [gn2 gen-nodes]) ; purposefully including gn1!
+         (gcd
+          (hash-ref id->encoding (gen-node-id gn1))
+          (hash-ref id->encoding (gen-node-id gn2)))))
+      <)))
+  (define partitions
+    (group-by
+     (λ (gn)
+       (findf
+        (λ (d)
+          (divides?
+           d
+           (hash-ref
+            id->encoding
+            (gen-node-id gn))))
+        greater-pairwise-gcds))
+     gen-nodes))
+  (match partitions
+    [(list (list single-gn))
+     (cons
+      (set single-gn)
+      (hash-ref id->encoding (gen-node-id single-gn)))]
+    [_
+     (cons
+      (for/set ([p partitions])
+        (cluster p id->encoding))
+      gcd-all)]))
+
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
          [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
@@ -1286,6 +1339,110 @@
             210))
           30))
         6))
+      2)))
+  (let ([gn1
+         (gen-node (abstract-atom 'filter (list (g 57) (abstract-function 'nil (list)) (a 77))) 118 #f #f #f)]
+        [gn2
+         ; don't need the actual contents, just writing out more or less accurately to see where this occurs in prog
+         (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 119 #f #f #f)]
+        [gn3
+         (gen-node (abstract-atom 'filter (list (g 28) (a 38) (a 40))) 120 #f #f #f)]
+        [gn4
+         (gen-node (abstract-atom 'sift (list (a 40) (a 42))) 121 #f #f #f)]
+        [gn5
+         (gen-node (abstract-atom 'length (list (a 42) (g 32))) 122 #f #f #f)]
+        [id->encoding
+         #hasheq((1 . 2)
+                 (2 . 6)
+                 (3 . 10)
+                 (4 . 14)
+                 (5 . 66)
+                 (6 . 78)
+                 (7 . 170)
+                 (8 . 266)
+                 (9 . 1794)
+                 (10 . 4930)
+                 (11 . 8246)
+                 (12 . 66378)
+                 (13 . 202130)
+                 (14 . 211990)
+                 (15 . 387562)
+                 (16 . 3518034)
+                 (17 . 11925670)
+                 (18 . 12931390)
+                 (19 . 25966654)
+                 (20 . 27516902)
+                 (21 . 256816482)
+                 (22 . 942127930)
+                 (23 . 1073305370)
+                 (24 . 2449004278)
+                 (25 . 24911198754)
+                 (26 . 25938464682)
+                 (27 . 97039176790)
+                 (28 . 114843674590)
+                 (29 . 266941466302)
+                 (30 . 2931046509066)
+                 (31 . 12323975452330)
+                 (32 . 15044521371290)
+                 (33 . 36570980883374)
+                 (34 . 407415464760174)
+                 (35 . 1836272342397170)
+                 (36 . 1860920293301830)
+                 (37 . 2361989855292530)
+                 (38 . 5961069883989962)
+                 (39 . 68038382614949058)
+                 (40 . 321939210741216590)
+                 (41 . 422796184097362870)
+                 (42 . 1078953649002183122)
+                 (43 . 12995331079455270078)
+                 (44 . 62134267673054801870)
+                 (45 . 83290848267180485390)
+                 (46 . 84136440635375211130)
+                 (47 . 227659219939460638742) (48 . 2897958830718525227394) (49 . 14104478761783440024490) (50 . 19073604253184331154310) (51 . 19603790668042424193290) (52 . 54410553565531092659338) (53 . 54865872005410013936822) (54 . 727387666510349832075894) (55 . 3624851041778344086293930) (56 . 5016357918587479093583530) (57 . 5273419689703412107995010) (58 . 14868651313466113776878762) (59 . 201486383623366903485022638) (60 . 204395934289408302813326214) (61 . 1025832844823271376421182190) (62 . 1469792870146131374419974290) (63 . 1618939844738947517154468070) (64 . 4624150558487961384609294982) (65 . 63975927432584798780571104982) (66 . 325189011808977026325514754230) (67 . 486501440018369484933011489990) (68 . 545582727677025313281055739590) (69 . 1604580243795322600459425358754) (70 . 22327598673972094774419315638718) (71 . 114791721168568890292906708243190) (72 . 116742855239422752450859796768570) (73 . 178546028486741600970415216826330) (74 . 203502357423530441853833790867070) (75 . 608135912398427265574122210967766) (76 . 8551470292131312298602597889628994) (77 . 45412970688135450703384460942973730) (78 . 70882773309236415585254841080053010) (79 . 81604445326835707183387350137695070) (80 . 248727588170956751619815984285816294) (81 . 3583066052403019853114488515754548486) (82 . 19118860659705024746124858056991940330) (83 . 30550475296280895117244836505502847310) (84 . 30692240842899367948415346187662953330) (85 . 35824351498480875453507046710448135730) (86 . 110186321559733840967578481038616618242) (87 . 1608796657528955914048405343573792270214) (88 . 8737319321485196308979060132045316730810) (89 . 14149123028576608624219474592512621485130) (90 . 16586674743796645334973762626937486842990) (91 . 51457012168395703731859150645033960719014) (92 . 770613598956369882829186159571846497432506) (93 . 4255074509563290602472802284306069247904470) (94 . 6947219407031114834491762024923697149198830) (95 . 8276750697154526022151907550841805934652010) (96 . 8343097396129712603491802601349555882023970) (97 . 26191619193713413199516307678322286005978126) (98 . 401489685056268708954005989136932025162335626) (99 . 15460369638458382150367559621853236780858903987069650655182322154530495600932526027762300) (100 . 4477722127160598577984181985005417010646737410) (101 . 4563674275682952794110016022938207067467111590) (102 . 14588731890898371152130583376825513305329816182) (103 . 226038692686679283141105371884092730166394957438) (104 . 8796950324282819443559141424834491728308716368642631222798741305927851996930607309796748700) (105 . 2556779334608701788028967913438093113079287061110) (106 . 2633240057069063762201479245235345477928523387430)
+                 (107 . 8563585619957343866300652442196576310228602098834)
+                 (108 . 8651118011302734093213435942457529390060580995926)
+                 (109 . 135397176919320890601522117758571545369670579505362)
+                 (110 . 5286967144893974485579043996325529528713538537554221364902043524862639050155294993187845968700)
+                 (111 . 1551965056107481985333583523456922519639127246093770)
+                 (112 . 1614176154983336086229506777329266777970184836494590)
+                 (113 . 5337739812973786935512689976496295633667378474486342)
+                 (114 . 3272632662689370206573428233725502778273680354746063024874364941889973572046127600783276654625300)
+                 (115 . 979289950403821132745491203301318109892289292285168870)
+                 (116 . 1034686915344318431273113844268060004678888480193032190)
+                 (117 . 3432166699742144999534659654887118092448124359094717906)
+                 (118 . 2117393332760022523653008067220400297543071189520702777093714117402812901113844557706779995542569100)
+                 (119 . 2137029128736158744892448636622753314212713271649179155242960307054152742546121323311479655470320900)
+                 (120 . 645352077316118126479278702975568634419018643615926285330)
+                 (121 . 683928051042594483071528251061187663092745285407594277590)
+                 (122 . 2309848188926463584686825947739030476217587693670745150738))])
+    (check-equal?
+     (cluster (list gn1 gn2 gn3 gn4 gn5) id->encoding)
+     (cons
+      (set
+       (cons
+        (set gn5)
+        2309848188926463584686825947739030476217587693670745150738)
+       (cons
+        (set
+         (cons
+          (set
+           (cons
+            (set gn4)
+            683928051042594483071528251061187663092745285407594277590)
+           (cons
+            (set gn3)
+            645352077316118126479278702975568634419018643615926285330))
+          16586674743796645334973762626937486842990)
+         (cons
+          (set
+           (cons
+            (set gn1)
+            2117393332760022523653008067220400297543071189520702777093714117402812901113844557706779995542569100)
+           (cons
+            (set gn2)
+            2137029128736158744892448636622753314212713271649179155242960307054152742546121323311479655470320900))
+          3272632662689370206573428233725502778273680354746063024874364941889973572046127600783276654625300))
+        422796184097362870))
       2))))
 (provide
  (proc-doc/names

@@ -71,7 +71,9 @@
             [unf-1 (car (unfold-multi-bounded 2 domain-elem1 offset offset))]
             [unf-2 (car (unfold-multi-bounded 2 domain-elem2 offset offset))])
        (>=-extension unf-1 unf-2))]
-    [((? abstract-domain-elem?) (? multi?)) #f]))
+    [((? abstract-domain-elem?) (? multi?)) #f]
+    [((? multi?) (? abstract-atom?))
+     (>=-extension domain-elem1 (list domain-elem2))]))
 (module+ test
   (check-true (>=-extension (interpret-abstract-term "α1") (interpret-abstract-term "γ1")))
   (check-true (>=-extension (interpret-abstract-term "α1") (interpret-abstract-term "α2")))
