@@ -468,7 +468,6 @@
           (can-group?/pcgn potential current-gen node))
      (let ([first-grouping (group current-gen (list node) lvl)])
        (cons (group potential first-grouping (replace-sublist lvl (append current-gen (list node)) first-grouping)) 'extended))]
-    ;; FIXME: the issue is here? can't group pcgn, but n is a multi, so that should immediately become the next potential
     [(and (not (can-append-to-current-gen? current-gen node))
           (not (null? current-gen))
           (strung-together? potential current-gen)
@@ -1127,16 +1126,14 @@
      (rdag-level gr root depth)
      <
      #:key gen-node-id))
-  (define clustered-lvl (cluster lvl id->encoding))
-  (displayln (format "clustered level: ~a" clustered-lvl))
+  (define multi-encodings (sort (filter-map (λ (v) (and (gen-node-unfolded? v) (multi? (gen-node-conjunct v)) (hash-ref id->encoding (gen-node-id v)))) (get-vertices gr)) <))
+  (define clustered-lvl (cluster lvl id->encoding multi-encodings))
   (define encoding->id
     (for/hash ([pair (hash->list id->encoding)])
       (values (cdr pair) (car pair))))
-  (displayln (format "encoding->id: ~a" encoding->id))
   (define id->conjunct
     (for/hash ([v (in-vertices gr)])
       (values (gen-node-id v) (gen-node-conjunct v))))
-  (displayln (format "id->conjunct: ~a" id->conjunct))
   (define annotated-cluster
     (flatten
      (sets->lists
@@ -1151,7 +1148,6 @@
      (λ (gn1 gn2)
        (< (gen-node-id gn1)
           (gen-node-id gn2)))))
-  (displayln (format "annotated level: ~a" annotated-lvl))
   (define gen-lvl (generalize-level annotated-lvl))
   (list
    (map gen-node-conjunct gen-lvl)
@@ -1237,31 +1233,7 @@
   (g)
   @{Maps the identifiers in @racket[g] to prime encoded identifiers so that a prime encoded identifier immediately provides useful information on a node's relevant ancestry.}))
 
-;; modifications required for single-element clusters?
-;; gen-nodes with length 1
-;; uses of rec: not just for subcluster-elements
-;(define (cluster gen-nodes id->encoding)
-;  (define rec (λ (gns) (cluster gns id->encoding)))
-;  (define (same-gcd-for-all? gn other-nodes)
-;    (let* ([gn-encoding (hash-ref id->encoding (gen-node-id gn))]
-;           [gcds (map (λ (on) (gcd gn-encoding (hash-ref id->encoding (gen-node-id on)))) other-nodes)])
-;      (<= (length (remove-duplicates gcds)) 1)))
-;  (define-values
-;    (outer-elements subcluster-elements)
-;    (partition (λ (gn) (same-gcd-for-all? gn (remove gn gen-nodes))) gen-nodes))
-;  (if
-;   (equal? (length gen-nodes) 1)
-;   (cons (set (first gen-nodes)) (hash-ref id->encoding (gen-node-id (first gen-nodes))))
-;   (if (not (null? subcluster-elements))
-;       (cons
-;        (apply set (rec subcluster-elements) (map (compose rec list) outer-elements))
-;        (gcd (hash-ref id->encoding (gen-node-id (first outer-elements)))
-;             (hash-ref id->encoding (gen-node-id (first subcluster-elements)))))
-;       (cons
-;        (apply set (map (compose rec list) outer-elements))
-;        (gcd (hash-ref id->encoding (gen-node-id (first outer-elements)))
-;             (hash-ref id->encoding (gen-node-id (second outer-elements))))))))
-(define (cluster gen-nodes id->encoding)
+(define (cluster gen-nodes id->encoding unfolded-multi-encodings)
   (define gcd-all
     (apply
      gcd
@@ -1296,13 +1268,20 @@
      gen-nodes))
   (match partitions
     [(list (list single-gn))
-     (cons
-      (set single-gn)
-      (hash-ref id->encoding (gen-node-id single-gn)))]
+     (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))]
+            [first-multi-denom
+             (findf (λ (me) (and (< me gn-encoding) (divides? me gn-encoding))) unfolded-multi-encodings)])
+       (if first-multi-denom
+           (cons
+            (set (cluster gen-nodes id->encoding (remove first-multi-denom unfolded-multi-encodings)))
+            first-multi-denom)
+           (cons
+            (set single-gn)
+            gn-encoding)))]
     [_
      (cons
       (for/set ([p partitions])
-        (cluster p id->encoding))
+        (cluster p id->encoding (remove gcd-all unfolded-multi-encodings)))
       gcd-all)]))
 
 (module+ test
@@ -1321,7 +1300,7 @@
                   (5 . 6090)
                   (6 . 26))])
     (check-equal?
-     (cluster gns ->encodings)
+     (cluster gns ->encodings (list))
      (cons
       (set
        (cons (set gn1) 22)
@@ -1416,7 +1395,7 @@
                  (121 . 683928051042594483071528251061187663092745285407594277590)
                  (122 . 2309848188926463584686825947739030476217587693670745150738))])
     (check-equal?
-     (cluster (list gn1 gn2 gn3 gn4 gn5) id->encoding)
+     (cluster (list gn1 gn2 gn3 gn4 gn5) id->encoding (list))
      (cons
       (set
        (cons
@@ -1447,9 +1426,9 @@
 (provide
  (proc-doc/names
   cluster
-  (-> (non-empty-listof gen-node?) hash? (or/c gen-node? (cons/c set? exact-positive-integer?)))
-  (gen-nodes id->encoding)
-  @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings and associates each set with the gcd. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
+  (-> (non-empty-listof gen-node?) hash? (listof exact-positive-integer?) (or/c gen-node? (cons/c set? exact-positive-integer?)))
+  (gen-nodes id->encoding multi-encodings)
+  @{Clusters elements in a list of @racket[gen-node?] structures into sets based on the greatest common divisors of their encodings and associates each set with the gcd. Multi ancestors are always indicated in the clustering, provided that their encoding is in @racket[multi-encodings]. The more deeply nested a cluster, the more recent the common ancestor of the nodes in that cluster is.}))
 
 ; produces a single set of annotated gen nodes, paired with the generation that should be threaded to sibling clusters
 (define (annotate-cluster encoding->id id->conjunct cluster #:established [established #f])
@@ -1459,7 +1438,8 @@
       (annotate-cluster encoding->id id->conjunct c #:established established)))
   (match cluster
     [(cons cluster-set cluster-gcd)
-     #:when (eq? (set-count cluster-set) 1)
+     #:when (and (eq? (set-count cluster-set) 1)
+                 (gen-node? (set-first cluster-set))) ; have to check this because of
      (let* ([single-elem (set-first cluster-set)]
             [gnc (gen-node-conjunct single-elem)]
             [last (if (abstract-atom? gnc) (if established (gen-number established) 0) (gensym))])
@@ -1474,7 +1454,6 @@
                (gen-range (gen-number established) last (gen-origin established) (multi-ascending? gnc)))]))
         last))]
     [(cons cluster-set cluster-gcd)
-     #:when (> (set-count cluster-set) 1)
      (cond
        [(and
          established
@@ -1516,16 +1495,40 @@
                   non-multi-clusters))
                 last-symbol))]))]
        [established
-        (cons
-         (foldl
-          set-union
-          (set)
-          (set->list
-           (set-map
-            cluster-set
-            (λ (sc)
-              (car (rec sc #:established established))))))
-         (gen-number established))]
+        (let-values
+            ([(multi-clusters non-multi-clusters)
+              (partition
+               (λ (sc)
+                 (let ([gn-or-c (set-first (car sc))])
+                   (and (pair? gn-or-c)
+                        (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr gn-or-c)))))))
+               (set->list cluster-set))])
+          (match multi-clusters
+            [(list)
+             (cons
+              (foldl
+               set-union
+               (set)
+               (set->list
+                (set-map
+                 cluster-set
+                 (λ (sc)
+                   (car (rec sc #:established established))))))
+              (gen-number established))]
+            [(list mc)
+             ;; assuming ascending for now, will need to add support for descending
+             (match-let
+                 ([annotated-nmcs
+                   (foldl
+                    set-union
+                    (set)
+                    (map
+                     (λ (nmc)
+                       (car (rec nmc #:established established)))
+                     non-multi-clusters))] ; yields a set of sets
+                  [(cons annotated-mc last-sym-or-number)
+                   (annotate-cluster encoding->id id->conjunct mc (gen-add1 established))])
+               (cons (set-add annotated-nmcs annotated-mc) last-sym-or-number))]))]
        [else
         (let* ([gcd-id (hash-ref encoding->id cluster-gcd)]
                [subcluster-gcd-conjuncts/cardinalities
