@@ -1281,7 +1281,7 @@
     [_
      (cons
       (for/set ([p partitions])
-        (cluster p id->encoding (remove gcd-all unfolded-multi-encodings)))
+        (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) unfolded-multi-encodings)))
       gcd-all)]))
 
 (module+ test
@@ -1432,6 +1432,12 @@
 
 ; produces a single set of annotated gen nodes, paired with the generation that should be threaded to sibling clusters
 (define (annotate-cluster encoding->id id->conjunct cluster #:established [established #f])
+  (define (some-gen-node c)
+    (match c
+      [(? gen-node?) c]
+      [(? set?) (some-gen-node (set-first c))]
+      [(? pair?)
+       (some-gen-node (car c))]))
   ;; can't curry due to kw
   (define rec
     (λ (c #:established [established #f])
@@ -1504,7 +1510,7 @@
                     (and (gen-node? gn-or-c)
                          (multi? (gen-node-conjunct gn-or-c)))
                     (and (pair? gn-or-c)
-                        (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr sc))))))))
+                         (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr sc))))))))
                (set->list cluster-set))])
           (match multi-clusters
             [(list)
@@ -1531,7 +1537,23 @@
                      non-multi-clusters))] ; yields a set of sets
                   [(cons annotated-mc last-sym-or-number)
                    (annotate-cluster encoding->id id->conjunct mc #:established (gen (gen-add1 (gen-number established)) (gen-origin established)))])
-               (cons (set-add annotated-nmcs annotated-mc) last-sym-or-number))]))]
+               (cons (set-add annotated-nmcs annotated-mc) last-sym-or-number))]
+            [(list mc1 mc2)
+             ;; relying on syntax here
+             ;; could also check which contains the smaller (greater than the greatest prime factor in the parent) but would be slower
+             (let* ([gcd-id (hash-ref encoding->id cluster-gcd)]
+                    [sorted-mcs (sort multi-clusters (λ (c1 c2) (< (gen-node-id (some-gen-node c1)) (gen-node-id (some-gen-node c2)))))])
+               (cond
+                 [(multi-ascending? (hash-ref id->conjunct gcd-id))
+                  (match-let
+                      ([(cons amc1 last1)
+                       (rec (first sorted-mcs) #:established established)])
+                    (match-let
+                        ([(cons amc2 last2)
+                          (rec (second sorted-mcs) #:established (gen (gen-add1 last1) (gen-origin established)))])
+                      (cons (set amc1 amc2)
+                            last2)))]
+                 [else (error "deal with this later")]))]))]
        [else
         (let* ([gcd-id (hash-ref encoding->id cluster-gcd)]
                [subcluster-gcd-conjuncts/cardinalities
