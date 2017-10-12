@@ -1500,8 +1500,11 @@
               (partition
                (λ (sc)
                  (let ([gn-or-c (set-first (car sc))])
-                   (and (pair? gn-or-c)
-                        (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr gn-or-c)))))))
+                   (or
+                    (and (gen-node? gn-or-c)
+                         (multi? (gen-node-conjunct gn-or-c)))
+                    (and (pair? gn-or-c)
+                        (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr sc))))))))
                (set->list cluster-set))])
           (match multi-clusters
             [(list)
@@ -1527,7 +1530,7 @@
                        (car (rec nmc #:established established)))
                      non-multi-clusters))] ; yields a set of sets
                   [(cons annotated-mc last-sym-or-number)
-                   (annotate-cluster encoding->id id->conjunct mc (gen-add1 established))])
+                   (annotate-cluster encoding->id id->conjunct mc #:established (gen (gen-add1 (gen-number established)) (gen-origin established)))])
                (cons (set-add annotated-nmcs annotated-mc) last-sym-or-number))]))]
        [else
         (let* ([gcd-id (hash-ref encoding->id cluster-gcd)]
