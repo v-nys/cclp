@@ -86,13 +86,41 @@
     loaded))
 (provide load-analysis)
 
-(define (proceed prog-analysis #:generalize-fn [generalize-fn generalize/td])
+(define (proceed prog-analysis #:generalize-fn [generalize-fn generalize/bu])
   (match prog-analysis
     [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants _ipo _q _fn)) tree po)
-     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants po #:generalize-fn generalize-fn)])
+     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants po #:generalize-fn generalize/bu)])
        (match outcome
-         [(cons 'underspecified-order candidate) ; for proceed, an underspecified order should trigger an exception
-          (raise-user-error 'proceed "partial order is underspecified")]
+         [(cons 'underspecified-order candidate)
+          (begin
+            (displayln "Partial order is underspecified.")
+            (displayln "Please select the atom which takes precedence.")
+            (let* ([current-conjunction (label-conjunction (node-label candidate))]
+                   [multis (filter multi? current-conjunction)]
+                   [multi-conjuncts ; unfold case: one for maximum specificity
+                    (append-map
+                     (λ (m)
+                       (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) m)))])
+                         (car (unfold-multi-bounded 1 m offset offset))))
+                     multis)]
+                   [options
+                    (remove-duplicates
+                     (map normalize-abstract-atom
+                          (append
+                           multi-conjuncts
+                           (filter abstract-atom? current-conjunction))))]
+                   [user-selection (prompt-for-selection options)]
+                   [new-precedences
+                    (filter-map
+                     (λ (c)
+                       (and (not (has-edge? po user-selection c))
+                            (cons user-selection c)))
+                     (remove user-selection options))]
+                   [updated-po (graph-copy po)])
+              (begin
+                (for ([precedence new-precedences])
+                  (add-directed-edge! updated-po (car precedence) (cdr precedence)))
+                (proceed (analysis source-prog tree updated-po) #:generalize-fn generalize-fn))))]
          [(cons cand top) ; simple update to the analysis
           (analysis source-prog top po)]
          ['no-candidate prog-analysis]))]))
