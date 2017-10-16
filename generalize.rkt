@@ -1438,27 +1438,40 @@
       [(? set?) (some-gen-node (set-first c))]
       [(? pair?)
        (some-gen-node (car c))]))
-  ;; can't curry due to kw
+  ;; can't just curry due to kw
   (define rec
     (λ (c #:established [established #f])
       (annotate-cluster encoding->id id->conjunct c #:established established)))
+  (define (multi-cluster? c-or-gn)
+    (or
+     (and (gen-node? c-or-gn)
+          (multi? (gen-node-conjunct c-or-gn)))
+     (and (pair? c-or-gn)
+          (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr c-or-gn)))))))
   (match cluster
     [(cons cluster-set cluster-gcd)
      #:when (and (eq? (set-count cluster-set) 1)
-                 (gen-node? (set-first cluster-set))) ; have to check this because of
+                 (gen-node? (set-first cluster-set))) ; not guaranteed: multi clusters can have single nested cluster
      (let* ([single-elem (set-first cluster-set)]
             [gnc (gen-node-conjunct single-elem)]
-            [last (if (abstract-atom? gnc) (if established (gen-number established) 0) (gensym))])
+            [last (if (abstract-atom? gnc) ; note: not necessarily syntactically last!
+                      (if established
+                          (gen-number established)
+                          0)
+                      (gensym))]
+            [asc? (and (multi? gnc) (multi-ascending? gnc))])
        (cons
         (set
          (struct-copy
           gen-node
           single-elem
+          ;; TODO: how can we get a multi without established?
           [range
            (if (abstract-atom? gnc)
                (or established (gen 0 #f))
-               (gen-range (gen-number established) last (gen-origin established) (multi-ascending? gnc)))]))
+               (gen-range (if asc? (gen-number established) last) (if asc? last (gen-number established)) (gen-origin established) asc?))]))
         last))]
+
     [(cons cluster-set cluster-gcd)
      (cond
        [(and
@@ -1471,11 +1484,7 @@
                       (partition
                        (λ (sc)
                          (let ([c-or-gn (set-first (car sc))])
-                           (or
-                            (and (gen-node? c-or-gn)
-                                 (multi? (gen-node-conjunct c-or-gn)))
-                            (and (pair? c-or-gn)
-                                 (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr c-or-gn))))))))
+                           (multi-cluster? c-or-gn)))
                        (set->list cluster-set))])
           ;; may be able to consolidate these two cases with something like map-accumulate
           (match multi-clusters
@@ -1506,6 +1515,8 @@
               (partition
                (λ (sc)
                  (let ([gn-or-c (set-first (car sc))])
+                   ;; !!! this is slightly different from using `multi-cluster?`
+                   ;; note (cdr sc) instead of (cdr c-or-gn)
                    (or
                     (and (gen-node? gn-or-c)
                          (multi? (gen-node-conjunct gn-or-c)))
@@ -1525,7 +1536,14 @@
                    (car (rec sc #:established established))))))
               (gen-number established))]
             [(list mc)
-             ;; assuming ascending for now, will need to add support for descending
+             ;; TODO will need to add support for descending multis from here on out
+             ;; this includes case:many
+             ;; for ascending multis, we first take the sibling clusters and give them established - multi jumps from 1:l to 2:l, for instance
+             ;; for descending multis, we go from l:1 to l-1:1, for instance
+             ;; so the sibling clusters get gen l
+             ;; established tells us where multi *ends*
+             ;; that means we don't have to modify that?
+             ;; 
              (match-let
                  ([annotated-nmcs
                    (foldl
@@ -1536,7 +1554,7 @@
                        (car (rec nmc #:established established)))
                      non-multi-clusters))] ; yields a set of sets
                   [(cons annotated-mc last-sym-or-number)
-                   (annotate-cluster encoding->id id->conjunct mc #:established (gen (gen-add1 (gen-number established)) (gen-origin established)))])
+                   (rec mc #:established (gen (gen-add1 (gen-number established)) (gen-origin established)))])
                (cons (set-add annotated-nmcs annotated-mc) last-sym-or-number))]
             [(list mc1 mc2)
              ;; relying on syntax here
@@ -1547,7 +1565,7 @@
                  [(multi-ascending? (hash-ref id->conjunct gcd-id))
                   (match-let
                       ([(cons amc1 last1)
-                       (rec (first sorted-mcs) #:established established)])
+                        (rec (first sorted-mcs) #:established established)])
                     (match-let
                         ([(cons amc2 last2)
                           (rec (second sorted-mcs) #:established (gen (gen-add1 last1) (gen-origin established)))])
@@ -1563,7 +1581,8 @@
                    [(cons sc gcd)
                     (cons (hash-ref id->conjunct (hash-ref encoding->id gcd)) (set-count sc))]))]
                [is-rta?
-                (ormap
+                (or
+                 (ormap
                  (match-lambda
                    [(cons conjunct cardinality)
                     (and
@@ -1571,17 +1590,15 @@
                       (hash-ref id->conjunct gcd-id)
                       conjunct)
                      (> cardinality 1))])
-                 subcluster-gcd-conjuncts/cardinalities)])
+                 subcluster-gcd-conjuncts/cardinalities)
+                 (and (abstract-atom? (hash-ref id->conjunct gcd-id))
+                      (ormap multi-cluster? (set->list cluster-set))))])
           (if is-rta?
               (let-values ([(multi-clusters non-multi-clusters)
                             (partition
                              (λ (sc)
                                (let ([c-or-gn (set-first (car sc))])
-                                 (or
-                                  (and (gen-node? c-or-gn)
-                                       (multi? (gen-node-conjunct c-or-gn)))
-                                  (and (pair? c-or-gn)
-                                       (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr c-or-gn))))))))
+                                 (multi-cluster? c-or-gn)))
                              (set->list cluster-set))])
                 (match multi-clusters
                   [(list)

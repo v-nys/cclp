@@ -183,10 +183,11 @@
    print-tree-label))
 (provide show-analysis)
 
-(define (visualize-partial-order analysis)
+(define (visualize-partial-order my-analysis)
   (for ([precedence
          (in-edges
-          (analysis-partial-order))])
+          (analysis-partial-order
+           my-analysis))])
     (displayln
      (format
       "~v > ~v"
