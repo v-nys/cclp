@@ -438,7 +438,8 @@
            (not (can-append-to-current-gen? current-gen node))
            (not (subsequent-gens?
                  (gen-node-range (first current-gen))
-                 (gen-node-range node))))
+                 (gen-node-range node)))
+           (not (multi? (gen-node-conjunct node))))
       (and potential
            (null? current-gen) ; implies potential is multi
            (not (subsequent-gens?
