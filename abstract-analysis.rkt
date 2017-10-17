@@ -266,7 +266,7 @@
    [index (or/c #f exact-positive-integer?)]
    [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))]
    [abstracted-ranges (listof index-range?)]
-   [groupings (listof (cons/c (listof index-range?) exact-positive-integer?))])
+   [groupings (listof (cons/c (listof index-range?) exact-nonnegative-integer?))])
   @{The contents of a node in the abstract analysis tree which was obtained by grouping conjuncts into a multi abstraction.
      The @racket[groupings] field is a list of pairs consisting of a list of index ranges and a single positive integer.
      The former indicate subconjunctions which make up building blocks in a resulting multi (or refer to an existing multi).
