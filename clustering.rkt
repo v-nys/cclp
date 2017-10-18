@@ -9,6 +9,20 @@
   cclp/gen-graph-structs
   cclp/genealogical-graph)
 
+(define (partition-set proc st)
+  (for/fold ([true-set (set)]
+             [false-set (set)])
+            ([elem st])
+    (if (proc elem)
+        (values (set-add true-set elem) false-set)
+        (values true-set (set-add false-set elem)))))
+(module+ test
+  (require rackunit)
+  (let-values ([(odd-set even-set)
+                (partition-set odd? (set 1 2 3 4 5 6 7))])
+    (check-equal? odd-set (set 1 3 5 7))
+    (check-equal? even-set (set 2 4 6))))
+
 (define (assign-prime-factor-ids g)
   (define root (first (tsort g)))
   ;; this is a custom BFS procedure
@@ -47,7 +61,6 @@
                        ch)))))))]))
   (aux g (list root) (list #hasheq() 1 #hasheqv())))
 (module+ test
-  (require rackunit)
   (let*-values
       ([(node-constructor) (λ (id) (gen-node (abstract-atom 'foo empty) id (gen 0 #f) #f #t))]
        [(node1 node2 node3 node4 node5 node6 node8)
@@ -276,7 +289,47 @@
   (gen-nodes id->encoding multi-encodings)
   @{Clusters elements in a list of @racket[gen-node?] structures. Multi ancestors are always indicated in the clustering, provided that their encoding is in @racket[multi-encodings].}))
 
-; produces a single set of annotated gen nodes, paired with the generation that should be threaded to sibling clusters
+(define (flatten-clustering c)
+  (match c
+    [(clustering (and (? gen-node?) gn) gcd)
+     (set gn)]
+    [(clustering subclusters gcd)
+     (for/fold ([acc (set)])
+               ([sc (list->set (set-map subclusters flatten-clustering))])
+       (set-union acc sc))]))
+(module+ test
+  (let ([gn1 (gen-node (abstract-atom 'foo (list)) 1 (gen 0 #f) #f #f)]
+        [gn2 (gen-node (abstract-atom 'bar (list)) 2 (gen 0 #f) #f #f)]
+        [gn3 (gen-node (abstract-atom 'baz (list)) 3 (gen 0 #f) #f #f)]
+        [gn4 (gen-node (abstract-atom 'quux (list)) 4 (gen 0 #f) #f #f)])
+    (check-equal?
+     (flatten-clustering
+      (clustering
+       (set
+        (clustering
+         (set
+          (clustering
+           gn1
+           1)
+          (clustering
+           gn2
+           2))
+         5)
+        (clustering
+         gn3
+         3)
+        (clustering
+         gn4
+         4))
+       6))
+     (set gn1 gn2 gn3 gn4))))
+(provide
+ (proc-doc/names
+  flatten-clustering
+  (-> clustering? (set/c gen-node?))
+  (c)
+  @{Transforms a hierarchical @racket[clustering?] into a flat @racket[set?] of @racket[gen-node?]s.}))
+
 (define (annotate-cluster encoding->id id->conjunct cluster #:established [established #f])
   (define (some-gen-node c)
     (match c
@@ -302,14 +355,15 @@
                      (gensym))]
            [asc? (and (multi? gnc) (multi-ascending? gnc))])
        (cons
-        (set
+        (clustering
          (struct-copy
           gen-node
           gn
           [range
            (if (abstract-atom? gnc)
                (or established (gen 0 #f))
-               (gen-range (if asc? (gen-number established) last) (if asc? last (gen-number established)) (gen-origin established) asc?))]))
+               (gen-range (if asc? (gen-number established) last) (if asc? last (gen-number established)) (gen-origin established) asc?))])
+         gcd)
         last))]
     [(clustering subclusters gcd)
      (cond
@@ -329,22 +383,21 @@
              (let* ([next-gen-number (gen-add1 (gen-number established))]
                     [next-established (gen next-gen-number (gen-origin established))])
                (cons
-                (foldl
-                 set-union
-                 (set)
-                 (set->list (set-map subclusters (λ (sc) (car (rec sc #:established next-established))))))
+                (clustering
+                 (list->set (set-map subclusters (λ (sc) (car (rec sc #:established next-established)))))
+                 gcd)
                 next-gen-number))]
             [(list mc)
              (match-let ([(cons annotated-mc last-symbol)
                           (rec mc #:established (gen (add1 (gen-number established)) (gen-origin established)))])
                (cons
-                (foldl
-                 set-union
-                 (set annotated-mc)
-                 (map
-                  (λ (nmc)
-                    (car (rec nmc #:established (gen last-symbol (gen-origin established)))))
-                  non-multi-clusters))
+                (clustering
+                 (foldl
+                  (λ (nmc acc)
+                    (set-add acc (car (rec nmc #:established (gen last-symbol (gen-origin established))))))
+                  (set annotated-mc)
+                  non-multi-clusters)
+                 gcd)
                 last-symbol))]))]
        [established
         (let-values
@@ -355,34 +408,32 @@
           (match multi-clusters
             [(list)
              (cons
-              (foldl
-               set-union
-               (set)
-               (set->list
+              (clustering
+               (list->set
                 (set-map
                  subclusters
                  (λ (sc)
-                   (car (rec sc #:established established))))))
+                   (car (rec sc #:established established)))))
+               gcd)
               (gen-number established))]
             [(list mc)
              (match-let
                  ([annotated-nmcs
-                   (foldl
-                    set-union
-                    (set)
+                   (list->set
                     (map
                      (λ (nmc)
                        (car (rec nmc #:established established)))
-                     non-multi-clusters))] ; yields a set of sets
+                     non-multi-clusters))]
                   [(cons annotated-mc last-sym-or-number)
                    (rec mc #:established (gen (gen-add1 (gen-number established)) (gen-origin established)))])
-               (cons (set-add annotated-nmcs annotated-mc) last-sym-or-number))]
+               (cons (clustering (set-add annotated-nmcs annotated-mc) gcd) last-sym-or-number))]
             [(list _ _)
              ;; relying on syntax here
              ;; could also check which contains the smaller (greater than the greatest prime factor in the parent) but would be slower
              (let* ([gcd-id (hash-ref encoding->id gcd)]
                     [sorted-mcs (sort multi-clusters (λ (c1 c2) (< (gen-node-id (some-gen-node c1)) (gen-node-id (some-gen-node c2)))))])
                (cond
+                 ;; no non-multi clusters here
                  [(multi-ascending? (hash-ref id->conjunct gcd-id))
                   (match-let
                       ([(cons amc1 last1)
@@ -390,8 +441,11 @@
                     (match-let
                         ([(cons amc2 last2)
                           (rec (second sorted-mcs) #:established (gen (gen-add1 last1) (gen-origin established)))])
-                      (cons (set amc1 amc2)
-                            last2)))]
+                      (cons
+                       (clustering
+                        (set amc1 amc2)
+                        gcd)
+                       last2)))]
                  [else (error "deal with this later")]))]))]
        [else
         (let* ([gcd-id (hash-ref encoding->id gcd)]
@@ -426,28 +480,35 @@
                 (match multi-clusters
                   [(list)
                    (cons
-                    (foldl
-                     set-union
-                     (set)
-                     (map
-                      (λ (nmc)
-                        (car (rec nmc #:established (gen 1 gcd-id))))
-                      non-multi-clusters))
+                    (clustering
+                     (list->set
+                      (map
+                       (λ (nmc)
+                         (car (rec nmc #:established (gen 1 gcd-id))))
+                       non-multi-clusters))
+                     gcd)
                     1)]
                   [(list mc)
                    (match-let ([(cons annotated-mc last-symbol)
                                 (rec mc #:established (gen 1 gcd-id))])
                      (cons
-                      (foldl
-                       set-union
-                       (set annotated-mc)
-                       (map
-                        (λ (nmc)
-                          (car (rec nmc #:established (gen last-symbol gcd-id))))
-                        non-multi-clusters))
+                      (clustering
+                       (set-add
+                        (list->set
+                         (map
+                          (λ (nmc)
+                            (car (rec nmc #:established (gen last-symbol gcd-id))))
+                          non-multi-clusters))
+                        annotated-mc)
+                       gcd)
                       last-symbol))]))
-              (cons (foldl set-union (set) (set->list (set-map subclusters (compose car rec)))) 0)))])]))
-(provide annotate-cluster)
+              (cons (clustering (list->set (set-map subclusters (compose car rec))) gcd) 0)))])]))
+(provide
+ (proc-doc/names
+  annotate-cluster
+  (->* (hash? hash? clustering?) (#:established (or/c #f gen?)) (cons/c clustering? (or/c exact-nonnegative-integer? symbol?)))
+  ((encoding->id id->conjunct cluster ) ((established #f)))
+  @{Transforms a hierarchical @racket[clustering?] containing @racket[gen-node?] structs without generations into a @racket[clustering?] where the @racket[(set/c gen-node?)] have been assigned generations and pairs the result with the generation number that should be used for sibling clusters.}))
 
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
@@ -507,5 +568,5 @@
              6))
            2)])
     (check-equal?
-     (car (annotate-cluster encoding->id id->conjunct clusters))
+     (flatten-clustering (car (annotate-cluster encoding->id id->conjunct clusters)))
      (set ann-gn1 ann-gn2 ann-gn3 ann-gn4 ann-gn5 ann-gn6))))

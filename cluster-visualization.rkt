@@ -1,11 +1,11 @@
 #lang racket
-(require pict cclp/gen-graph-structs cclp/genealogical-graph-visualization)
+(require pict cclp/clustering-structs cclp/gen-graph-structs cclp/genealogical-graph-visualization)
 (define (cluster->pict cluster encoding->id id->conjunct)
   (define (rec c) (cluster->pict c encoding->id id->conjunct))
   (match cluster
-    [(? gen-node?)
-     (gen-node->pict cluster)]
-    [(cons st gcd-encoding)
+    [(clustering (and (? gen-node?) gn) gcd)
+     (gen-node->pict gn)]
+    [(clustering subclusters gcd)
       (vr-append
       5
       (rectangle 0 5)
@@ -14,16 +14,16 @@
        (id->pict
         (hash-ref
          encoding->id
-         gcd-encoding))
+         gcd))
        (abstract-conjunct->pict
         (hash-ref
          id->conjunct
          (hash-ref
           encoding->id
-          gcd-encoding))))
+          gcd))))
       (frame
        (apply
        hc-append
        10
-       (map rec (set->list st)))))]))
+       (map rec (set->list subclusters)))))]))
 (provide cluster->pict)

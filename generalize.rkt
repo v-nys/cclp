@@ -1149,17 +1149,15 @@
   (define-values
     (clustered-lvl gr id->encoding depth root lvl encoding->id id->conjunct)
     (clustered-lvl/info br))
-  (define annotated-cluster
-    (flatten
-     (sets->lists
-      (car
+  (define annotated-lvl
+    (sort
+     (set->list
+      (flatten-clustering
+       (car
        (annotate-cluster
         encoding->id
         id->conjunct
-        clustered-lvl)))))
-  (define annotated-lvl
-    (sort
-     annotated-cluster
+        clustered-lvl))))
      (λ (gn1 gn2)
        (< (gen-node-id gn1)
           (gen-node-id gn2)))))

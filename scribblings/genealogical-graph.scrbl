@@ -84,3 +84,4 @@ For the previous example, this yields the following clustering:
 
 @section{API}
 @(include-extracted cclp/genealogical-graph)
+@(include-extracted cclp/clustering)
