@@ -65,6 +65,8 @@
 (serializable-struct analysis (cclp tree partial-order))
 (provide (struct-out analysis))
 
+(require anaphoric)
+
 (define (save-analysis prog-analysis #:fn [fn #f])
   (let* ([out
           (open-output-file
@@ -134,18 +136,25 @@
   @{Advances the analysis of @racket[prog-analysis] without side-effects.
  The only exception is a user error which may be raised if the partial order in the analysis does not dictate which atom should be selected.}))
 
+(define (analysis->current-genealogical-graph-skeleton prog-analysis)
+  (match prog-analysis
+    [(analysis _ tree _)
+     (aif (active-branch tree)
+          (genealogical-graph-skeleton it)
+          #f)]))
+(provide analysis->current-genealogical-graph-skeleton)
+
 (define (analysis->current-genealogical-graph prog-analysis)
   (match prog-analysis
     [(analysis _ tree _)
      (let* ([active-branch (active-branch tree)]
-            [gr (if active-branch (genealogical-graph-skeleton active-branch) #f)]
-            [root (if active-branch (gen-node (car (tree-label-conjunction (car active-branch))) 1 #f #t #t) #f)]
-            [depth (if active-branch (length active-branch) #f)]
-            [targets (if active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr)) #f)])
+            [gr (aif active-branch (genealogical-graph-skeleton it) #f)]
+            [root (aif active-branch (gen-node (car (tree-label-conjunction (car it))) 1 #f #t #t) #f)]
+            [depth (aif active-branch (length it) #f)]
+            [targets (aif active-branch (map (λ (e) (struct-copy gen-node e [range (gen 0 #f)])) (candidate-targets gr)) #f)])
        (when active-branch
          (annotate-general! gr root targets depth))
        gr)]))
-(provide analysis->current-genealogical-graph)
 
 (define (save-genealogical-graph! prog-analysis #:fn [fn #f])
   (let* ([gg (analysis->current-genealogical-graph prog-analysis)]

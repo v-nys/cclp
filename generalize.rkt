@@ -1110,12 +1110,8 @@
  Returns a triple consisting of the generalized conjunction, the generalized index ranges and the assignment of building blocks to introduced multis.
  If generalization has no effect, the generalized conjunction is identical to the initial conjunction and the list of ranges is empty.}))
 
-(define (generalize/bu br)
-  (define (sets->lists st)
-    (for/list ([sst st])
-      (if (set? sst)
-          (sets->lists sst)
-          sst)))
+;; split this out into a function so I can more easily document it
+(define (clustered-lvl/info br)
   (define gr (genealogical-graph-skeleton br))
   (define id->encoding (assign-prime-factor-ids gr))
   (define depth (length br))
@@ -1128,13 +1124,32 @@
      <
      #:key gen-node-id))
   (define multi-encodings (sort (filter-map (λ (v) (and (gen-node-unfolded? v) (multi? (gen-node-conjunct v)) (hash-ref id->encoding (gen-node-id v)))) (get-vertices gr)) <))
-  (define clustered-lvl (cluster lvl id->encoding multi-encodings))
   (define encoding->id
     (for/hash ([pair (hash->list id->encoding)])
       (values (cdr pair) (car pair))))
   (define id->conjunct
     (for/hash ([v (in-vertices gr)])
       (values (gen-node-id v) (gen-node-conjunct v))))
+  (values
+   (cluster lvl id->encoding multi-encodings)
+   gr
+   id->encoding
+   depth
+   root
+   lvl
+   encoding->id
+   id->conjunct))
+(provide clustered-lvl/info)
+
+(define (generalize/bu br)
+  (define (sets->lists st)
+    (for/list ([sst st])
+      (if (set? sst)
+          (sets->lists sst)
+          sst)))
+  (define-values
+    (clustered-lvl gr id->encoding depth root lvl encoding->id id->conjunct)
+    (clustered-lvl/info br))
   (define annotated-cluster
     (flatten
      (sets->lists
@@ -1448,7 +1463,7 @@
      (and (gen-node? c-or-gn)
           (multi? (gen-node-conjunct c-or-gn)))
      (and (pair? c-or-gn)
-          (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr c-or-gn)))))))
+          (multi? (hash-ref id->conjunct (hash-ref encoding->id (cdr c-or-gn))))))) ; the outer hash-ref is the issue, so id->conjunct is incomplete?
   (match cluster
     [(cons cluster-set cluster-gcd)
      #:when (and (eq? (set-count cluster-set) 1)
@@ -1466,7 +1481,6 @@
          (struct-copy
           gen-node
           single-elem
-          ;; TODO: how can we get a multi without established?
           [range
            (if (abstract-atom? gnc)
                (or established (gen 0 #f))
@@ -1625,6 +1639,7 @@
                         non-multi-clusters))
                       last-symbol))]))
               (cons (foldl set-union (set) (set->list (set-map cluster-set (compose car rec)))) 0)))])]))
+(provide annotate-cluster)
 
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]

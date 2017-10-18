@@ -7,14 +7,32 @@
 (require
   (for-doc scribble/manual))
 
-(define (gen-node->pict gn)
-  (define empty-pict (rectangle 0 0))
-  (define (id->pict id)
+(define (id->pict id)
     (text
      (string-append
       (number->string id)
       ".")))
-  (define (abstract-term->pict t)
+(provide id->pict)
+
+(define (abstract-conjunct->pict c)
+    (match c
+      ['comma (text ",")]
+      [(abstract-atom sym (list))
+       (text (symbol->string sym))]
+      [(abstract-atom sym args)
+       (hc-append
+        (text (symbol->string sym))
+        (text "(")
+        (apply
+         hbl-append
+         (for/list ([a (add-between args 'comma)])
+           (abstract-term->pict a)))
+        (text ")"))]
+      [(multi patt asc? ic cc fc)
+       (text "multi")]))
+(provide abstract-conjunct->pict)
+
+(define (abstract-term->pict t)
     (match t
       ['comma (text ",")]
       [(a i)
@@ -35,22 +53,9 @@
          (for/list ([a (add-between args 'comma)])
            (abstract-term->pict a)))
         (text ")"))]))
-  (define (abstract-conjunct->pict c)
-    (match c
-      ['comma (text ",")]
-      [(abstract-atom sym (list))
-       (text (symbol->string sym))]
-      [(abstract-atom sym args)
-       (hc-append
-        (text (symbol->string sym))
-        (text "(")
-        (apply
-         hbl-append
-         (for/list ([a (add-between args 'comma)])
-           (abstract-term->pict a)))
-        (text ")"))]
-      [(multi patt asc? ic cc fc)
-       (text "multi")]))
+
+(define (gen-node->pict gn)
+  (define empty-pict (rectangle 0 0))
   (define (gen-or-range->pict rng)
     (match rng
       [(gen nb origin)
@@ -58,7 +63,8 @@
            (text (format "generation ~a of family ~a" nb origin))
            empty-pict)]
       [(gen-range fst lst origin asc?)
-       (text (format "generations ~a through ~a of family ~a, ~a" fst lst origin (if asc? "ascending" "descending")))]))
+       (text (format "generations ~a through ~a of family ~a, ~a" fst lst origin (if asc? "ascending" "descending")))]
+      [#f empty-pict]))
   (match gn
     [(gen-node conjunct id rng unf? foldable?)
      (vc-append
@@ -66,7 +72,7 @@
       (id->pict id)
       (abstract-conjunct->pict conjunct))
       (gen-or-range->pict rng)
-      (if unf? (text "just unfolded") empty-pict)
+      (if unf? (text "unfolded") empty-pict)
       (if foldable? empty-pict (text "cannot fold")))]))
 (provide
  (proc-doc/names
