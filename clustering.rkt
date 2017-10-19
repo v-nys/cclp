@@ -449,27 +449,17 @@
                  [else (error "deal with this later")]))]))]
        [else
         (let* ([gcd-id (hash-ref encoding->id gcd)]
-               [subcluster-gcd-conjuncts/cardinalities
-                (set-map
-                 subclusters
-                 (match-lambda
-                   [(clustering (gen-node conjunct _ _ _ _) gcd)
-                    (cons conjunct 1)]
-                   [(clustering sc gcd)
-                    (cons
-                     (hash-ref id->conjunct (hash-ref encoding->id gcd))
-                     (set-count sc))]))]
                [is-rta?
                 (or
-                 (ormap
-                  (match-lambda
-                    [(cons conjunct cardinality)
-                     (and
+                 (and
+                  (> (set-count subclusters) 1)
+                  (ormap
+                   (match-lambda
+                     [(clustering ssc sc-gcd)
                       (renames-with-corresponding-args?
                        (hash-ref id->conjunct gcd-id)
-                       conjunct)
-                      (> cardinality 1))])
-                  subcluster-gcd-conjuncts/cardinalities)
+                       (hash-ref id->conjunct (hash-ref encoding->id sc-gcd)))])
+                   (set->list subclusters)))
                  (and (abstract-atom? (hash-ref id->conjunct gcd-id))
                       (ormap multi-cluster? (set->list subclusters))))])
           (if is-rta?
