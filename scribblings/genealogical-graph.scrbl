@@ -5,11 +5,37 @@
     cclp/genealogical-graph
     cclp/genealogical-graph-visualization)
    (only-in racket/file file->string)
+   cclp/interaction
    scribble/example
    scribble/extract)
 
 @(define gen-graph-illustration-eval (make-base-eval))
-@(gen-graph-illustration-eval '(require graph pict pretty-graphs cclp/genealogical-graph cclp/genealogical-graph-visualization cclp/generalize cclp/cluster-visualization cclp/interaction repeated-application (prefix-in primes: cclp-programs/primes)))
+@(gen-graph-illustration-eval
+  '(require graph pict pretty-graphs cclp/genealogical-graph cclp/genealogical-graph-visualization cclp/generalize cclp/cluster-visualization cclp/clustering cclp/interaction repeated-application (prefix-in primes: cclp-programs/primes) (prefix-in graph-coloring: cclp-programs/graph-coloring) (prefix-in sameleaves: cclp-programs/sameleaves)))
+@(gen-graph-illustration-eval
+  '(define primes-15-applications (apply↑ 15 proceed primes:initial-program-analysis)))
+@(gen-graph-illustration-eval
+  '(define primes-17-applications (apply↑ 2 proceed primes-15-applications)))
+@(gen-graph-illustration-eval
+  '(define primes-32-applications (apply↑ 15 proceed primes-17-applications)))
+@(gen-graph-illustration-eval
+  '(define primes-37-applications (apply↑ 5 proceed primes-32-applications)))
+@(gen-graph-illustration-eval
+  '(define primes-68-applications (apply↑ 31 proceed primes-37-applications)))
+@(gen-graph-illustration-eval
+  '(define graphcol-25-applications (apply↑ 25 proceed graph-coloring:initial-program-analysis)))
+@(gen-graph-illustration-eval
+  '(define graphcol-29-applications (apply↑ 4 proceed graphcol-25-applications)))
+@(gen-graph-illustration-eval
+  '(define graphcol-35-applications (apply↑ 6 proceed graphcol-29-applications)))
+@(gen-graph-illustration-eval
+  '(define graphcol-43-applications (apply↑ 8 proceed graphcol-35-applications)))
+@(gen-graph-illustration-eval
+  '(define graphcol-44-applications (proceed graphcol-43-applications)))
+@(gen-graph-illustration-eval
+  '(define sameleaves-48-applications (apply↑ 48 proceed sameleaves:initial-program-analysis)))
+@(gen-graph-illustration-eval
+  '(define sameleaves-49-applications (proceed sameleaves-48-applications)))
 
 @title{Recursion analysis using a genealogical graph}
 @defmodule[cclp/genealogical-graph]
@@ -45,7 +71,7 @@ A purely top-down procedure for assigning generations is extremely slow. A much 
           #:result-only
           (dag->pict
            (analysis->current-genealogical-graph-skeleton
-            (apply↑ 15 proceed primes:initial-program-analysis))
+            primes-15-applications)
            gen-node->pict)]
 
 Consider node 34. Its only shared ancestor with nodes 35 through 38 is the top-level atom, which is entirely non-recursive. Therefore, we can conclude that the generation assigned to node 34 should be @racket[(gen 0 #f)]. The same reasoning applies to node 38, which has no shared ancestors (other than the top-level atom) with nodes 34 through 37.
@@ -58,7 +84,7 @@ Next, consider the following skeleton, obtained by further unfolding:
           #:result-only
           (dag->pict
            (analysis->current-genealogical-graph-skeleton
-            (apply↑ 17 proceed primes:initial-program-analysis))
+            primes-17-applications)
            gen-node->pict)]
 
 Here, nodes 44 through 46 share an ancestor. However, they belong to different generations: node 44 belongs to the first generation, as it was obtained by unfolding node 10. Nodes 45 and 46 were obtained by unfolding a descendant of node 10, equivalent with node 10 and with shared arguments in the same position.
@@ -76,11 +102,135 @@ For the previous example, this yields the following clustering:
                         (clustered-lvl/info
                          (active-branch
                           (analysis-tree
-                           (apply↑
-                            17
-                            proceed
-                            primes:initial-program-analysis))))])
+                           primes-17-applications)))])
             (cluster->pict clustered encoding->id id->conjunct))]
+
+These clusterings make it possible to define a notion of depth in the aforementiond "similar, but not equivalent" abstract conjunctions. The rules for establishing this depth are as follows:
+
+@emph{If an abstract atom, which is the shared ancestor of at least two subclusters, is renamed by the shared ancestor of one of its subclusters, it is a "target atom". Its unfoldings have a generation number which is one higher.}
+The following example shows how a non-zero generation is assigned for the first time in the graph coloring example.
+The generation increment is due to the fact that node 64 is a renaming of node 37, such that all common abstract variables occur in the exact same position.
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            graphcol-25-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+Note that the next generation increment occurs as soon as said renaming is unfolded. It does not immediately need to produce another renaming. That is, in the following example, node 82 does not rename node 77.
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            graphcol-29-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            graphcol-35-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+Once there are at least two sequential generations which are identical (modulo renaming), these generations can be grouped using the multi abstraction.
+Thus, the following clustering can be used to apply generalization:
+
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            graphcol-43-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+The same applies here:
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            primes-32-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+It also applies to the sameleaves problem. Note, however, that the syntactic order is reversed with respect to the "age" of the atoms.
+
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            sameleaves-48-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+@subsection{With multi}
+The introduction of the multi abstraction raises several new issues. A multi abstraction represents conjunctions of different generations. Hence, it cannot be assigned a single generation. It can, however, be assigned a range of generations representing the generations of the abstracted conjunctions, say @racket[g1] through @racket[g2], where @racket[g1] may be either higher or lower than @racket[g1]. Whichever generation is greater must be represented symbolically.
+
+This also entails the introduction of "symbolic sums". If, say, generations 1 through 2 are generalized to a range from 1 through l, atoms corresponding to those in generation 3 should have corresponding atoms of generation l+1.
+
+For the grap coloring problem, @racket[g1] is lower than @racket[g2].
+
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            graphcol-44-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+For sameleaves, @racket[g1] is higher than @racket[g2].
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            sameleaves-49-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+Ranges become single generations again when the "case:one" unfold of multi is applied.
+Note that multi occurs as a GCD even when it has only one descendant.
+This is intentional, to avoid ambiguity when annotating the result of one or more case:many unfoldings followed by a case:one unfolding. (notes: 11/10)
+
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            primes-37-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+TODO: point out sibling multis
+@examples[#:eval gen-graph-illustration-eval
+          #:result-only
+          (let*-values ([(clustered _2 _3 _4 _5 _6 encoding->id id->conjunct)
+                         (clustered-lvl/info
+                          (active-branch
+                           (analysis-tree
+                            primes-68-applications)))]
+                        [(annotated-clustering) (car (annotate-cluster encoding->id id->conjunct clustered))])
+            (cluster->pict annotated-clustering encoding->id id->conjunct))]
+
+
 
 @section{API}
 @(include-extracted cclp/genealogical-graph)

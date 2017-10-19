@@ -131,7 +131,7 @@
      (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))]
             [first-multi-denom
              (findf (λ (me) (and (< me gn-encoding) (divides? me gn-encoding))) unfolded-multi-encodings)])
-       (if first-multi-denom
+       (if (and first-multi-denom (not (multi? (gen-node-conjunct single-gn))))
            (clustering
             (set (cluster gen-nodes id->encoding (remove first-multi-denom unfolded-multi-encodings)))
             first-multi-denom)
