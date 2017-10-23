@@ -127,6 +127,12 @@
         greater-pairwise-gcds))
      gen-nodes))
   (match partitions
+    [(list (list single-gn))
+     #:when (multi? (gen-node-conjunct single-gn))
+     (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))])
+       (clustering
+        single-gn
+        gn-encoding))]
     [_
      #:when
      (and
