@@ -127,17 +127,20 @@
         greater-pairwise-gcds))
      gen-nodes))
   (match partitions
+    [_
+     #:when
+     (and
+      (not (member gcd-all unfolded-multi-encodings))
+      (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings))
+     (clustering
+      (for/set ([p partitions])
+        (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) (remove (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings) unfolded-multi-encodings))))
+      (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings))]
     [(list (list single-gn))
-     (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))]
-            [first-multi-denom
-             (findf (λ (me) (and (< me gn-encoding) (divides? me gn-encoding))) unfolded-multi-encodings)])
-       (if (and first-multi-denom (not (multi? (gen-node-conjunct single-gn))))
-           (clustering
-            (set (cluster gen-nodes id->encoding (remove first-multi-denom unfolded-multi-encodings)))
-            first-multi-denom)
-           (clustering
-            single-gn
-            gn-encoding)))]
+     (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))])
+       (clustering
+        single-gn
+        gn-encoding))]
     [_
      (clustering
       (for/set ([p partitions])
@@ -287,7 +290,7 @@
   cluster
   (-> (non-empty-listof gen-node?) hash? (listof exact-positive-integer?) clustering?)
   (gen-nodes id->encoding multi-encodings)
-  @{Clusters elements in a list of @racket[gen-node?] structures. Multi ancestors are always indicated in the clustering, provided that their encoding is in @racket[multi-encodings].}))
+  @{Clusters elements in a list of @racket[gen-node?] structures. Multi ancestors are always indicated in the clustering, provided that their encoding is in @racket[multi-encodings], unless their only entry is another multi node.}))
 
 (define (flatten-clustering c)
   (match c
