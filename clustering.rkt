@@ -426,6 +426,7 @@
                gcd)
               (gen-number established))]
             [(list mc)
+             #:when (and (multi? (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd cluster)))) (multi-ascending? (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd cluster)))))
              (match-let
                  ([annotated-nmcs
                    (list->set
@@ -436,6 +437,19 @@
                   [(cons annotated-mc last-sym-or-number)
                    (rec mc #:established (gen (gen-add1 (gen-number established)) (gen-origin established)))])
                (cons (clustering (set-add annotated-nmcs annotated-mc) gcd) last-sym-or-number))]
+            
+            [(list mc)
+             #:when (multi? (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd cluster))))
+             (match-let*
+                 ([(cons annotated-mc last-sym-or-number)
+                   (rec mc #:established established)]
+                  [annotated-nmcs
+                   (list->set
+                    (map
+                     (λ (nmc)
+                       (car (rec nmc #:established (gen (gen-add1 last-sym-or-number) (gen-origin established)))))
+                     non-multi-clusters))])
+               (cons (clustering (set-add annotated-nmcs annotated-mc) gcd) (gen-add1 last-sym-or-number)))][(list mc) (error "this should not happen")]
             [(list _ _)
              ;; relying on syntax here
              ;; could also check which contains the smaller (greater than the greatest prime factor in the parent) but would be slower
@@ -468,9 +482,7 @@
                       (renames-with-corresponding-args?
                        (hash-ref id->conjunct gcd-id)
                        (hash-ref id->conjunct (hash-ref encoding->id sc-gcd)))])
-                   (set->list subclusters)))
-                 (and (abstract-atom? (hash-ref id->conjunct gcd-id))
-                      (ormap multi-cluster? (set->list subclusters))))])
+                   (set->list subclusters))))])
           (if is-rta?
               (let-values ([(multi-clusters non-multi-clusters)
                             (partition
@@ -505,7 +517,7 @@
 (provide
  (proc-doc/names
   annotate-cluster
-  (->* (hash? hash? clustering?) (#:established (or/c #f gen?)) (cons/c clustering? (or/c exact-nonnegative-integer? symbol?)))
+  (->* (hash? hash? clustering?) (#:established (or/c #f gen?)) (cons/c clustering? (or/c exact-nonnegative-integer? symbol? symsum?)))
   ((encoding->id id->conjunct cluster ) ((established #f)))
   @{Transforms a hierarchical @racket[clustering?] containing @racket[gen-node?] structs without generations into a @racket[clustering?] where the @racket[(set/c gen-node?)] have been assigned generations and pairs the result with the generation number that should be used for sibling clusters.}))
 
