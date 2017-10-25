@@ -127,32 +127,43 @@
             (gen-node-id gn))))
         greater-pairwise-gcds))
      gen-nodes))
-  (match partitions
-    [(list (list single-gn))
-     #:when (multi? (gen-node-conjunct single-gn))
-     (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))])
-       (clustering
-        single-gn
-        gn-encoding))]
-    [_
-     #:when
-     (and
-      (not (member gcd-all unfolded-multi-encodings))
-      (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings))
-     (clustering
-      (for/set ([p partitions])
-        (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) (remove (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings) unfolded-multi-encodings))))
-      (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings))]
-    [(list (list single-gn))
-     (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))])
-       (clustering
-        single-gn
-        gn-encoding))]
-    [_
-     (clustering
-      (for/set ([p partitions])
-        (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) unfolded-multi-encodings)))
-      gcd-all)]))
+  (if
+   (and
+    (multi? (hash-ref id->conjunct (hash-ref encoding->id gcd-all)))
+    (abstract-atom? (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))
+    (not
+     (renames-with-corresponding-args?
+      (hash-ref id->conjunct (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))
+      (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))))
+   (clustering
+    (set (cluster gen-nodes id->encoding unfolded-multi-encodings #:parent-encoding (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))))
+    (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all)))))
+   (match partitions
+     [(list (list single-gn))
+      #:when (multi? (gen-node-conjunct single-gn))
+      (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))])
+        (clustering
+         single-gn
+         gn-encoding))]
+     [_
+      #:when
+      (and
+       (not (member gcd-all unfolded-multi-encodings))
+       (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings))
+      (clustering
+       (for/set ([p partitions])
+         (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) (remove (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings) unfolded-multi-encodings))))
+       (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings))]
+     [(list (list single-gn))
+      (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))])
+        (clustering
+         single-gn
+         gn-encoding))]
+     [_
+      (clustering
+       (for/set ([p partitions])
+         (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) unfolded-multi-encodings)))
+       gcd-all)])))
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
          [gn2 (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 2 #f #f #t)]
