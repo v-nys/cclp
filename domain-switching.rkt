@@ -259,7 +259,7 @@
         (abstract-atom sym args)
         (abstract-atom* sym args))
        (cons (atom sym (map (λ (a) (car (aux a 'dummy))) args)) tail-no)]
-      [(multi patt _ _ _ _)
+      [(multi patt _ _ _ _ _)
        (cons
         (concrete-multi
          (function

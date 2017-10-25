@@ -122,13 +122,13 @@
           [(cons after success?)
            (rename args)])
        (cons (constructor sym after) success?))]
-    [(multi patt asc? (init ic) consec (final fc))
+    [(multi patt asc? (init ic) consec (final fc) rta)
      (match-let
          ([(cons after-1 success-1?)
            (rename patt)]
           [zip (λ (l1 l2) (map (λ (e1 e2) (cons e1 e2)) l1 l2))])
        (cond [success-1?
-              (cons (multi after-1 asc? (init ic) consec (final fc)) success-1?)]
+              (cons (multi after-1 asc? (init ic) consec (final fc) rta) success-1?)]
              [else (cons locus #f)]))]
     [(list)
      (cons locus #f)]
@@ -463,7 +463,7 @@
       [(a* _ _ _) "_-a"]
       [(g* _ _ _) "_-g"]))
   (match* (a-multi c-multi)
-    [((multi patt _ _ _ _) (concrete-multi c-lst))
+    [((multi patt _ _ _ _ _) (concrete-multi c-lst))
      (format
       "check_pattern(~a,[building_block([~a])])"
       (synth-str c-lst)
@@ -1045,14 +1045,14 @@
            [success-2?
             (cons (cons h t-after) success-2?)]
            [else obj/success?]))]
-      [(cons (multi patt asc? (init ic) (consecutive cc) (final fc)) #f)
+      [(cons (multi patt asc? (init ic) (consecutive cc) (final fc) rta) #f)
        (match s
          [(cons (? abstract-function*?) _)
           (match-let
               ([(cons pattern-after success?)
                 (rec (cons patt #f))])
             (cons
-             (multi pattern-after asc? (init ic) (consecutive cc) (final fc))
+             (multi pattern-after asc? (init ic) (consecutive cc) (final fc) rta)
              success?))]
          [(cons (? abstract-function?) _)
           ;; we don't replace these in a multi (they can only occur inside constraints)

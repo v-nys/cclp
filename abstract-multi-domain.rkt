@@ -304,7 +304,7 @@
   @{A template for abstract atoms occurring inside a multi abstraction.}))
 
 (serializable-struct
- multi (conjunction ascending? init consecutive final)
+ multi (conjunction ascending? init consecutive final rta)
  #:methods
  gen:custom-write
  [(define (write-proc obj out mode)
@@ -315,9 +315,10 @@
                          (multi-ascending? obj)
                          (multi-init obj)
                          (multi-consecutive obj)
-                         (multi-final obj)))) obj out mode)
+                         (multi-final obj)
+                         (multi-rta obj)))) obj out mode)
         ;; print-as-expression is not relevant in this application
-        (display (format "multi(~a,~v,~v,~v,~v)" (string-join (map printed-form (multi-conjunction obj)) "∧") (multi-ascending? obj) (multi-init obj) (multi-consecutive obj) (multi-final obj)) out)))]
+        (display (format "multi(~a,~v,~v,~v,~v,~v)" (string-join (map printed-form (multi-conjunction obj)) "∧") (multi-ascending? obj) (multi-init obj) (multi-consecutive obj) (multi-final obj) (multi-rta obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc m1 m2 equal?-recur)
@@ -325,19 +326,22 @@
          (equal?-recur (multi-ascending? m1) (multi-ascending? m2))
          (equal?-recur (multi-init m1) (multi-init m2))
          (equal?-recur (multi-consecutive m1) (multi-consecutive m2))
-         (equal?-recur (multi-final m1) (multi-final m2))))
+         (equal?-recur (multi-final m1) (multi-final m2))
+         (equal?-recur (multi-rta m1) (multi-rta m2))))
   (define (hash-proc m hash-recur)
     (+ (hash-recur (multi-conjunction m))
        (hash-recur (multi-ascending? m))
        (hash-recur (multi-init m))
        (hash-recur (multi-consecutive m))
-       (hash-recur (multi-final m))))
+       (hash-recur (multi-final m))
+       (hash-recur (multi-rta m))))
   (define (hash2-proc m hash2-recur)
     (+ (hash2-recur (multi-conjunction m))
        (hash2-recur (multi-ascending? m))
        (hash2-recur (multi-init m))
        (hash2-recur (multi-consecutive m))
-       (hash2-recur (multi-final m))))])
+       (hash2-recur (multi-final m))
+       (hash2-recur (multi-rta m))))])
 (provide
  (struct*-doc
   multi
@@ -345,7 +349,8 @@
    [ascending? boolean?]
    [init init?]
    [consecutive consecutive?]
-   [final final?])
+   [final final?]
+   [rta exact-positive-integer?])
   @{The multi abstraction.}))
 
 (define (format-constraints constraints)

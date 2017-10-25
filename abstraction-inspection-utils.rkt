@@ -63,7 +63,7 @@
         (assemble-var-indices
          right-variable-type?
          (full-evaluation-output-pattern abstract-data)))]
-      [(multi _ _ (init ic) _ (final fc))
+      [(multi _ _ (init ic) _ (final fc) _)
        (assemble-var-indices right-variable-type? (map cdr (append ic fc)))]))
   (remove-duplicates (assemble-aux right-variable-type? abstract-data)))
 (provide
@@ -139,7 +139,7 @@
      (maximum-var-index (cons (abstract-rule-head abstraction) (abstract-rule-body abstraction)) right-variable-type?)]
     [(? full-evaluation?)
      (maximum-var-index (list (full-evaluation-input-pattern abstraction) (full-evaluation-output-pattern abstraction)) right-variable-type?)]
-    [(multi _ _ (init ic) _ (final fc))
+    [(multi _ _ (init ic) _ (final fc) _)
      (maximum-var-index (map cdr (append ic fc)) right-variable-type?)]))
 (provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem*? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
 
@@ -187,7 +187,7 @@
      (append
       (rec h)
       (append-map rec t))]
-    [(multi conjunction _ (init ic) (consecutive cc) (final fc))
+    [(multi conjunction _ (init ic) (consecutive cc) (final fc) _)
      (append
       (append-map rec conjunction)
       (if
@@ -298,7 +298,7 @@
 
 (define (get-multi-id m)
   (match m
-    [(multi patt _ _ _ _)
+    [(multi patt _ _ _ _ _)
      (get-multi-id patt)]
     [(list-rest h t)
      (or (get-multi-id h)
@@ -335,7 +335,7 @@
       (abstract-function _ args)
       (abstract-function* _ args))
      (list v)]
-    [(multi patt _ _ _ _)
+    [(multi patt _ _ _ _ _)
      (append-map extract-abstract-compounds patt)]
     [_ (list)]))
 (module+ test
