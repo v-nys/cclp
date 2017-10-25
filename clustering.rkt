@@ -130,11 +130,14 @@
   (if
    (and
     (multi? (hash-ref id->conjunct (hash-ref encoding->id gcd-all)))
-    (abstract-atom? (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))
-    (not
-     (renames-with-corresponding-args?
-      (hash-ref id->conjunct (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))
-      (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))))
+    (or
+     (not parent-encoding)
+     (and
+      (abstract-atom? (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))
+      (not
+       (renames-with-corresponding-args?
+        (hash-ref id->conjunct (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))
+        (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))))))
    (clustering
     (set (cluster gen-nodes id->encoding unfolded-multi-encodings id->conjunct encoding->id #:parent-encoding (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))))
     (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all)))))
