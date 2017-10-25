@@ -94,7 +94,7 @@
   (g)
   @{Maps the identifiers in @racket[g] to prime encoded identifiers so that a prime encoded identifier immediately provides useful information on a node's relevant ancestry.}))
 
-(define (cluster gen-nodes id->encoding unfolded-multi-encodings)
+(define (cluster gen-nodes id->encoding unfolded-multi-encodings id->conjunct encoding->id #:parent-encoding [parent-encoding #f])
   (define gcd-all
     (apply
      gcd
@@ -136,7 +136,7 @@
       (hash-ref id->conjunct (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))
       (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))))
    (clustering
-    (set (cluster gen-nodes id->encoding unfolded-multi-encodings #:parent-encoding (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))))
+    (set (cluster gen-nodes id->encoding unfolded-multi-encodings id->conjunct encoding->id #:parent-encoding (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))))
     (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all)))))
    (match partitions
      [(list (list single-gn))
@@ -152,7 +152,13 @@
        (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings))
       (clustering
        (for/set ([p partitions])
-         (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) (remove (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings) unfolded-multi-encodings))))
+         (cluster
+          p
+          id->encoding
+          (filter (λ (me) (not (divides? me gcd-all))) (remove (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings) unfolded-multi-encodings))
+          id->conjunct
+          encoding->id
+          #:parent-encoding (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings)))
        (findf (λ (me) (and (< me gcd-all) (divides? me gcd-all))) unfolded-multi-encodings))]
      [(list (list single-gn))
       (let* ([gn-encoding (hash-ref id->encoding (gen-node-id single-gn))])
@@ -162,7 +168,7 @@
      [_
       (clustering
        (for/set ([p partitions])
-         (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) unfolded-multi-encodings)))
+         (cluster p id->encoding (filter (λ (me) (not (divides? me gcd-all))) unfolded-multi-encodings) id->conjunct encoding->id #:parent-encoding gcd-all))
        gcd-all)])))
 (module+ test
   (let* ([gn1 (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 1 #f #f #t)]
@@ -306,8 +312,8 @@
 (provide
  (proc-doc/names
   cluster
-  (-> (non-empty-listof gen-node?) hash? (listof exact-positive-integer?) clustering?)
-  (gen-nodes id->encoding multi-encodings)
+  (->* ((non-empty-listof gen-node?) hash? (listof exact-positive-integer?) hash? hash?) (#:parent-encoding (or/c exact-positive-integer? #f)) clustering?)
+  ((gen-nodes id->encoding multi-encodings id->conjunct encoding->id) ((parent-encoding #f)))
   @{Clusters elements in a list of @racket[gen-node?] structures. Multi ancestors are always indicated in the clustering, provided that their encoding is in @racket[multi-encodings], unless their only entry is another multi node.}))
 
 (define (flatten-clustering c)

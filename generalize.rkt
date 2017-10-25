@@ -1150,7 +1150,7 @@
     (for/hash ([v (in-vertices gr)])
       (values (gen-node-id v) (gen-node-conjunct v))))
   (values
-   (cluster lvl id->encoding multi-encodings)
+   (cluster lvl id->encoding multi-encodings id->conjunct encoding->id)
    gr
    id->encoding
    depth
