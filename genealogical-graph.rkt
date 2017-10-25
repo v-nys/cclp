@@ -70,7 +70,7 @@
       (match-lambda**
        [(conjunct (cons uid idx))
         ;; avoid folding if parent was a generalization, otherwise we'll get an infinite cycle
-        (let ([foldable? (andmap (match-lambda [(cons (gen-node (? multi?) _ _ #t _) _) #f] [_ #t]) edges)])
+        (let ([foldable? (andmap (match-lambda [(cons (gen-node (? multi?) _ _ #t _) (and (? exact-nonnegative-integer?) idx2)) (not (equal? idx idx2))] [(cons (gen-node (? multi?) _ _ #t _) (and (? index-range?) rng)) (not (contains rng idx))] [_ #t]) edges)])
           (add-vertex! graph (gen-node conjunct uid #f #f foldable?)) ; end of branch never has selection
           (for ([edge edges])
             (when (contains (cdr edge) idx)

@@ -573,10 +573,17 @@
     (and
      (not (null? current-gen)) ; so (first current-gen) is safe after this
      (and
-      (not ; can't append new node to current-gen
-       (equal?
-        (gen-node-range (first current-gen))
-        (gen-node-range node)))
+      (or ; can't append new node to current-gen
+       (not
+        (equal?
+         (gen-node-range (first current-gen))
+         (gen-node-range node)))
+        (and
+         (equal?
+          (gen-node-range (first current-gen))
+          (gen-node-range node))
+         (not
+          (gen-node-foldable? node))))
       (not ; can't shift current-gen to become next potential
        (and
         (subsequent-gens?
@@ -1174,10 +1181,10 @@
      (set->list
       (flatten-clustering
        (car
-       (annotate-cluster
-        encoding->id
-        id->conjunct
-        clustered-lvl))))
+        (annotate-cluster
+         encoding->id
+         id->conjunct
+         clustered-lvl))))
      (λ (gn1 gn2)
        (< (gen-node-id gn1)
           (gen-node-id gn2)))))
