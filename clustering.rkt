@@ -486,7 +486,7 @@
                    (set->list subclusters)))
                  (and (abstract-atom? (hash-ref id->conjunct gcd-id))
                       (aif (findf multi-cluster? (set->list subclusters))
-                           (equal? (multi-rta (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd it)))) gcd-id)
+                           (renames-with-corresponding-args? (hash-ref id->conjunct (multi-rta (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd it))))) (hash-ref id->conjunct gcd-id))
                            #f)))])
           (if is-rta?
               (let-values ([(multi-clusters non-multi-clusters)
