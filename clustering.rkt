@@ -34,7 +34,7 @@
       [(list mapping previous-prime ->parents)
        (if
         (null? q)
-        mapping
+        mapping ;; from node ID to encoding
         (let ([gn (first q)])
           (if (hash-has-key? mapping (gen-node-id gn)) ; skip already processed multis that are child of several nodes
               (aux g (cdr q) acc)
@@ -44,12 +44,16 @@
                        (λ (gn1 gn2)
                          (< (gen-node-id gn1) (gen-node-id gn2))))]
                      [new-prime (next-prime previous-prime)]
+                     [factor-encodings
+                      (sort
+                       (map
+                        (curry hash-ref mapping)
+                        (hash-ref ->parents (gen-node-id gn) (list)))
+                       <)]
                      [encoding
-                      (apply *
-                             new-prime
-                             (map
-                              (curry hash-ref mapping)
-                              (hash-ref ->parents (gen-node-id gn) (list))))])
+                      (* new-prime
+                         (for/product ([e-i factor-encodings])
+                           (foldl (λ (e-j acc) (/ acc (gcd acc e-j))) e-i (takef factor-encodings (curry >= e-i)))))])
                 (aux g
                      (append (cdr q) ch)
                      (list
@@ -472,12 +476,10 @@
                      non-multi-clusters))])
                (cons (clustering (set-add annotated-nmcs annotated-mc) gcd) (gen-add1 last-sym-or-number)))][(list mc) (error "this should not happen")]
             [(list _ _)
-             ;; relying on syntax here
-             ;; could also check which contains the smaller (greater than the greatest prime factor in the parent) but would be slower
              (let* ([gcd-id (hash-ref encoding->id gcd)]
                     [sorted-mcs (sort multi-clusters (λ (c1 c2) (< (gen-node-id (some-gen-node c1)) (gen-node-id (some-gen-node c2)))))])
                (cond
-                 ;; no non-multi clusters here
+                 ;; no non-multi clusters here -> TODO: document why
                  [(multi-ascending? (hash-ref id->conjunct gcd-id))
                   (match-let
                       ([(cons amc1 last1)
@@ -490,7 +492,19 @@
                         (set amc1 amc2)
                         gcd)
                        last2)))]
-                 [else (error "deal with this later")]))]))]
+                 ;; need to annotate the second cluster first, because the first cluster ends relative to this one...
+                 [else
+                  (match-let
+                      ([(cons amc2 last2)
+                        (rec (second sorted-mcs) #:established established)])
+                    (match-let
+                        ([(cons amc1 last1)
+                          (rec (first sorted-mcs) #:established (gen (gen-add1 last2) (gen-origin established)))])
+                      (cons
+                       (clustering
+                        (set amc1 amc2)
+                        gcd)
+                       last1)))]))]))]
        [else
         (let* ([gcd-id (hash-ref encoding->id gcd)]
                [is-rta?
