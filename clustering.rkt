@@ -53,7 +53,7 @@
                      [encoding
                       (* new-prime
                          (for/product ([e-i factor-encodings])
-                           (foldl (λ (e-j acc) (/ acc (gcd acc e-j))) e-i (takef factor-encodings (curry >= e-i)))))])
+                           (foldl (λ (e-j acc) (/ acc (gcd acc e-j))) e-i (takef factor-encodings (curry > e-i)))))])
                 (aux g
                      (append (cdr q) ch)
                      (list
