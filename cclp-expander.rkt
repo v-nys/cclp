@@ -44,7 +44,7 @@
     [(_ "{PROGRAM}" _PROGRAM-SECTION
         OPTIONAL-SECTION ...
         "{QUERY}" _QUERY-SECTION)
-     (with-syntax ([(_FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION)
+     (with-syntax ([(_FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)
                     (syntax->list (optional-cclp-sections/full-evaluation #'(OPTIONAL-SECTION ...)))])
        (syntax/loc stx
          (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _QUERY-SECTION "dummy")))]))
@@ -53,28 +53,40 @@
 (define-for-syntax (optional-cclp-sections/full-evaluation stx)
   (syntax-parse stx
     [("{FULL EVALUATION}" _FULL-EVALUATION-SECTION REST ...)
-     (with-syntax ([(_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION)
+     (with-syntax ([(_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)
                     (optional-cclp-sections/concrete-constants #'(REST ...))])
-       (syntax/loc stx (_FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION)))]
+       (syntax/loc stx (_FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)))]
     [(REST ...)
-     (with-syntax ([(_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION)
+     (with-syntax ([(_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)
                     (optional-cclp-sections/concrete-constants #'(REST ...))])
-       (syntax/loc stx ((list) _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION)))]))
+       (syntax/loc stx ((list) _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)))]))
 
 (define-for-syntax (optional-cclp-sections/concrete-constants stx)
   (syntax-parse stx
     [("{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION REST ...)
-     (with-syntax ([_PARTIAL-ORDER-SECTION (optional-cclp-sections/partial-order #'(REST ...))])
-       (syntax/loc stx (_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION)))]
+     (with-syntax ([(_PARTIAL-ORDER-SECTION _K-SECTION)
+                    (optional-cclp-sections/partial-order #'(REST ...))])
+       (syntax/loc stx (_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)))]
     [(REST ...)
-     (with-syntax ([_PARTIAL-ORDER-SECTION (optional-cclp-sections/partial-order #'(REST ...))])
-       (syntax/loc stx ((list) _PARTIAL-ORDER-SECTION)))]))
+     (with-syntax ([(_PARTIAL-ORDER-SECTION _K-SECTION)
+                    (optional-cclp-sections/partial-order #'(REST ...))])
+       (syntax/loc stx ((list) _PARTIAL-ORDER-SECTION _K-SECTION)))]))
 
 (define-for-syntax (optional-cclp-sections/partial-order stx)
   (syntax-parse stx
-    [("{PARTIAL ORDER}" _PARTIAL-ORDER-SECTION)
-     (syntax/loc stx _PARTIAL-ORDER-SECTION)]
-    [() (syntax/loc stx (mk-preprior-graph))]))
+    [("{PARTIAL ORDER}" _PARTIAL-ORDER-SECTION REST ...)
+     (with-syntax ([_K-SECTION (optional-cclp-sections/k #'(REST ...))])
+       (syntax/loc stx (_PARTIAL-ORDER-SECTION _K-SECTION)))]
+    [(REST ...)
+     (with-syntax ([_K-SECTION (optional-cclp-sections/k #'(REST ...))])
+       (syntax/loc stx ((mk-preprior-graph) _K-SECTION)))]))
+
+(define-for-syntax (optional-cclp-sections/k stx)
+  (syntax-parse stx
+    [("{K}" K)
+     (syntax/loc stx K)]
+    [()
+     (syntax/loc stx #f)]))
 
 ; AND THE GLUE TO GO TO TOP-LEVEL INTERACTION
 (define-syntax (cclp-module-begin stx)

@@ -35,6 +35,7 @@
        ["{QUERY}" (token 'QUERY-DELIMITER lexeme)]
        ["{CONCRETE CONSTANTS}" (token 'CONCRETE-CONSTANTS-DELIMITER lexeme)]
        ["{PARTIAL ORDER}" (token 'PARTIAL-ORDER-DELIMITER lexeme)]
+       ["{K}" (token 'K-DELIMITER lexeme)]
        ["α" (token 'AVAR-SYMBOL-A lexeme)] ; to avoid conflict with potential constants a and g
        ["γ" (token 'AVAR-SYMBOL-G lexeme)] ; same
        [(re-seq (char-range "A" "Z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'VARIABLE-IDENTIFIER lexeme)]
