@@ -51,7 +51,7 @@
        ["," (token 'COMMA lexeme)]
        [":-" (token 'IMPLIES lexeme)]
        ["." (token 'PERIOD lexeme)]
-       [">" (token 'GT lexeme)]
+       ["<" (token 'LT lexeme)]
        [(eof) eof]))
     (get-token input-port))
   next-token)

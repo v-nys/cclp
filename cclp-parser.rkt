@@ -63,6 +63,6 @@ concrete-constants-section : concrete-constant+
 concrete-constant: SYMBOL
 
 partial-order-section : partial-ordering-pair+
-partial-ordering-pair : abstract-atom GT abstract-atom
+partial-ordering-pair : abstract-atom LT abstract-atom
 
 fail : SYMBOL
