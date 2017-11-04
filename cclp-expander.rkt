@@ -241,10 +241,10 @@
 (provide abstract-variable)
 
 ; M.O.: string is hier overbodig...
-(define-syntax-rule (abstract-variable-a "α" index) (ad:a (quote index)))
+(define-syntax-rule (abstract-variable-a "a" index) (ad:a (quote index)))
 (provide abstract-variable-a)
 
-(define-syntax-rule (abstract-variable-g "γ" index) (ad:g (quote index)))
+(define-syntax-rule (abstract-variable-g "g" index) (ad:g (quote index)))
 (provide abstract-variable-g)
 
 (define-syntax (abstract-function-term stx)
@@ -326,11 +326,11 @@
   (check-equal? (number-term 4) (cd:function (->symbol 4) '()))
   (check-equal? (lplist "[" "]") (cd:function 'nil '()))
 
-  (check-equal? (abstract-variable-a "α" 1) (ad:a 1))
-  (check-equal? (abstract-variable-g "γ" 2) (ad:g 2))
+  (check-equal? (abstract-variable-a "a" 1) (ad:a 1))
+  (check-equal? (abstract-variable-g "g" 2) (ad:g 2))
   (check-equal? (abstract-number 3) (ad:abstract-function (->symbol 3) '()))
-  (check-equal? (abstract-variable (abstract-variable-a "α" 1)) (ad:a 1))
-  (check-equal? (abstract-variable (abstract-variable-g "γ" 2)) (ad:g 2))
+  (check-equal? (abstract-variable (abstract-variable-a "a" 1)) (ad:a 1))
+  (check-equal? (abstract-variable (abstract-variable-g "g" 2)) (ad:g 2))
   (check-equal? (abstract-number-term (abstract-number 3)) (ad:abstract-function (->symbol 3) '()))
   (check-equal? (abstract-function-term "my-func") (ad:abstract-function 'my-func '()))
   (check-equal? (abstract-atom-without-args "my-atom") (ad:abstract-atom 'my-atom '()))
@@ -339,9 +339,9 @@
   (check-equal? (abstract-lplist "[" "]") (ad:abstract-function 'nil '()))
   (check-equal? (abstract-lplist
                  "["
-                 (abstract-variable (abstract-variable-g "γ" 2))
+                 (abstract-variable (abstract-variable-g "g" 2))
                  ","
-                 (abstract-variable (abstract-variable-a "α" 1))
+                 (abstract-variable (abstract-variable-a "a" 1))
                  "]")
                 (ad:abstract-function
                  'cons
@@ -352,11 +352,11 @@
                               (ad:abstract-function 'nil '()))))))
   (check-equal? (abstract-lplist
                  "["
-                 (abstract-variable (abstract-variable-g "γ" 2))
+                 (abstract-variable (abstract-variable-g "g" 2))
                  ","
-                 (abstract-variable (abstract-variable-a "α" 1))
+                 (abstract-variable (abstract-variable-a "a" 1))
                  "|"
-                 (abstract-variable (abstract-variable-a "α" 2))
+                 (abstract-variable (abstract-variable-a "a" 2))
                  "]")
                 (ad:abstract-function
                  'cons
@@ -371,17 +371,17 @@
   (check-equal? (abstract-function-term
                  "my-func"
                  "("
-                 (abstract-term (abstract-variable (abstract-variable-g "γ" 1)))
+                 (abstract-term (abstract-variable (abstract-variable-g "g" 1)))
                  ","
-                 (abstract-term (abstract-variable (abstract-variable-g "γ" 2))) ")")
+                 (abstract-term (abstract-variable (abstract-variable-g "g" 2))) ")")
                 (ad:abstract-function 'my-func (list (ad:g 1) (ad:g 2))))
   (check-equal? (abstract-atom
                  (abstract-atom-with-args
                   "my-atom"
                   "("
-                  (abstract-variable (abstract-variable-g "γ" 1))
+                  (abstract-variable (abstract-variable-g "g" 1))
                   ","
-                  (abstract-variable (abstract-variable-g "γ" 2))
+                  (abstract-variable (abstract-variable-g "g" 2))
                   ")"))
                 (ad:abstract-atom 'my-atom (list (ad:g 1) (ad:g 2))))
 
@@ -397,10 +397,10 @@
      "myatom"
      "("
      (abstract-variable
-      (abstract-variable-g "γ" 1))
+      (abstract-variable-g "g" 1))
      ","
      (abstract-variable
-      (abstract-variable-g "γ" 2))
+      (abstract-variable-g "g" 2))
      ")")
     "."
     1)
@@ -415,29 +415,29 @@
      "del"
      "("
      (abstract-variable
-      (abstract-variable-a "α" 1))
+      (abstract-variable-a "a" 1))
      ","
      (abstract-variable
-      (abstract-variable-g "γ" 1))
+      (abstract-variable-g "g" 1))
      ","
      (abstract-variable
-      (abstract-variable-a "α" 2))
+      (abstract-variable-a "a" 2))
      ")")
     "->"
     (abstract-substitution
      (abstract-substitution-pair
       (abstract-variable
-       (abstract-variable-a "α" 1))
+       (abstract-variable-a "a" 1))
       "/"
       (abstract-variable
-       (abstract-variable-g "γ" 2)))
+       (abstract-variable-g "g" 2)))
      ","
      (abstract-substitution-pair
       (abstract-variable
-       (abstract-variable-a "α" 2))
+       (abstract-variable-a "a" 2))
       "/"
       (abstract-variable
-       (abstract-variable-g "γ" 3))))
+       (abstract-variable-g "g" 3))))
     "."
     1)
    (fai:full-ai-rule

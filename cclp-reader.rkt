@@ -25,6 +25,12 @@
          (prefix-in re- br-parser-tools/lex-sre)
          syntax/strip-context)
 
+;; (tokenize input-port) produces the next-token thunk
+;; each call to next-token defines get-token and then produces the result of calling that with input-port
+;; so creating a new lexer is okay
+;; could we just peek before calling get-token input-port?
+;; 
+
 (define (tokenize input-port)
   (define (next-token)
     (define get-token
@@ -33,13 +39,25 @@
        ["{PROGRAM}" (token 'PROGRAM-DELIMITER lexeme)]
        ["{FULL EVALUATION}" (token 'FULL-EVALUATION-DELIMITER lexeme)]
        ["{QUERY}" (token 'QUERY-DELIMITER lexeme)]
-       ["{CONCRETE CONSTANTS}" (token 'CONCRETE-CONSTANTS-DELIMITER lexeme)]
        ["{PARTIAL ORDER}" (token 'PARTIAL-ORDER-DELIMITER lexeme)]
        ["{K}" (token 'K-DELIMITER lexeme)]
-       ["α" (token 'AVAR-SYMBOL-A lexeme)] ; to avoid conflict with potential constants a and g
-       ["γ" (token 'AVAR-SYMBOL-G lexeme)] ; same
        [(re-seq (char-range "A" "Z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'VARIABLE-IDENTIFIER lexeme)]
-       [(re-seq (char-range "a" "z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'SYMBOL lexeme)]
+       ;; FIXME: this causes a or g to be read as a symbol
+       ;; that is actually possible, so this is tricky
+       ;; a or g is a valid symbol...
+       ;; a123 or g123 is not...
+       ;; a123blah is...
+       ;; solution:
+       ;; exclude a or g as valid, unambigous symbols
+       ;; make a and g ambigous (could be symbol, could be avar symbol)
+       ;; solve inside the grammar
+       [(re--
+         (re-seq (char-range "a" "z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_")))
+         (re-seq "a" (re-* numeric))
+         (re-seq "g" (re-* numeric)))
+        (token 'SYMBOL lexeme)]
+       ["a" (token 'AMB-AVAR-SYMBOL-A lexeme)]
+       ["g" (token 'AMB-AVAR-SYMBOL-G lexeme)]
        [(re-seq numeric (re-* numeric)) (token 'NUMBER (string->number lexeme))]
        [(re-seq "%" (re-* (char-complement "\n"))) (token 'COMMENT lexeme #:skip? #t)]
        ["->" (token 'LEADS-TO lexeme)]
