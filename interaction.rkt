@@ -133,7 +133,7 @@
   (->* (analysis?)
        (#:generalize-fn procedure?)
        analysis?)
-  ((prog-analysis) ((generalize-fn generalize/td)))
+  ((prog-analysis) ((generalize-fn generalize/bu)))
   @{Advances the analysis of @racket[prog-analysis] without side-effects.
  The only exception is a user error which may be raised if the partial order in the analysis does not dictate which atom should be selected.}))
 

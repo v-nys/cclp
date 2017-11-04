@@ -164,13 +164,13 @@
 (define-syntax (lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
-     (syntax/loc stx (cd:function 'nil '()))]
+     (syntax/loc stx (cd:function (string->symbol "[]") '()))]
     [(_ "[" term0 "]")
-     (syntax/loc stx (cd:function 'cons (list term0 (cd:function 'nil '()))))]
+     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (cd:function (string->symbol "[]") '()))))]
     [(_ "[" term0 "," rest ... "]")
-     (syntax/loc stx (cd:function 'cons (list term0 (lplist "[" rest ... "]"))))]
+     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (lplist "[" rest ... "]"))))]
     [(_ "[" term0 "|" rest ... "]")
-     (syntax/loc stx (cd:function 'cons (list term0 rest ...)))]))
+     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 rest ...)))]))
 (provide lplist)
 
 (define-syntax (rule stx)
@@ -269,13 +269,13 @@
 (define-syntax (abstract-lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
-     (syntax/loc stx (ad:abstract-function 'nil '()))]
+     (syntax/loc stx (ad:abstract-function (string->symbol "[]") '()))]
     [(_ "[" term0 "]")
-     (syntax/loc stx (ad:abstract-function 'cons (list term0 (ad:abstract-function 'nil '()))))]
+     (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 (ad:abstract-function (string->symbol "[]") '()))))]
     [(_ "[" term0 "," rest ... "]")
-     (syntax/loc stx (ad:abstract-function 'cons (list term0 (abstract-lplist "[" rest ... "]"))))]
+     (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 (abstract-lplist "[" rest ... "]"))))]
     [(_ "[" term0 "|" rest "]")
-     (syntax/loc stx (ad:abstract-function 'cons (list term0 rest)))]))
+     (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 rest)))]))
 (provide abstract-lplist)
 
 ; empty substitutions make sense if we can just scratch the abstract atom
@@ -324,7 +324,7 @@
 (module+ test
   (require rackunit)
   (check-equal? (number-term 4) (cd:function (->symbol 4) '()))
-  (check-equal? (lplist "[" "]") (cd:function 'nil '()))
+  (check-equal? (lplist "[" "]") (cd:function (string->symbol "[]") '()))
 
   (check-equal? (abstract-variable-a "a" 1) (ad:a 1))
   (check-equal? (abstract-variable-g "g" 2) (ad:g 2))
@@ -336,7 +336,7 @@
   (check-equal? (abstract-atom-without-args "my-atom") (ad:abstract-atom 'my-atom '()))
   (check-equal? (abstract-atom (abstract-atom-without-args "my-atom"))
                 (ad:abstract-atom 'my-atom '()))
-  (check-equal? (abstract-lplist "[" "]") (ad:abstract-function 'nil '()))
+  (check-equal? (abstract-lplist "[" "]") (ad:abstract-function (string->symbol "[]") '()))
   (check-equal? (abstract-lplist
                  "["
                  (abstract-variable (abstract-variable-g "g" 2))
@@ -344,12 +344,12 @@
                  (abstract-variable (abstract-variable-a "a" 1))
                  "]")
                 (ad:abstract-function
-                 'cons
+                 (string->symbol "'[|]'")
                  (list (ad:g 2)
                        (ad:abstract-function
-                        'cons
+                        (string->symbol "'[|]'")
                         (list (ad:a 1)
-                              (ad:abstract-function 'nil '()))))))
+                              (ad:abstract-function (string->symbol "[]") '()))))))
   (check-equal? (abstract-lplist
                  "["
                  (abstract-variable (abstract-variable-g "g" 2))
@@ -359,8 +359,8 @@
                  (abstract-variable (abstract-variable-a "a" 2))
                  "]")
                 (ad:abstract-function
-                 'cons
-                 (list (ad:g 2) (ad:abstract-function 'cons (list (ad:a 1) (ad:a 2))))))
+                 (string->symbol "'[|]'")
+                 (list (ad:g 2) (ad:abstract-function (string->symbol "'[|]'") (list (ad:a 1) (ad:a 2))))))
   (check-equal? (conjunction
                  (abstract-atom (abstract-atom-without-args "my-atom1"))
                  "," (abstract-atom (abstract-atom-without-args "my-atom2"))
