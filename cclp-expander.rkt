@@ -39,34 +39,37 @@
 (require (only-in sugar/coerce ->symbol))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 
+(define (extract-program-constants e)
+  (match e
+    [(? list?)
+     (remove-duplicates
+      (append-map extract-program-constants e))]
+    [(ck:rule h t id)
+     (append-map extract-program-constants (cons h t))]
+    [(cd:function sym (list))
+     (list e)]
+    [(or (cd:atom sym args)
+         (cd:function sym args))
+     (append-map extract-program-constants args)]
+    [_ empty]))
+
 (define-syntax (cclp-program stx)
   (syntax-parse stx
     [(_ "{PROGRAM}" _PROGRAM-SECTION
         OPTIONAL-SECTION ...
         "{QUERY}" _QUERY-SECTION)
-     (with-syntax ([(_FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)
+     (with-syntax ([(_FULL-EVALUATION-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)
                     (syntax->list (optional-cclp-sections/full-evaluation #'(OPTIONAL-SECTION ...)))])
        (syntax/loc stx
-         (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _QUERY-SECTION "dummy")))]))
+         (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (extract-program-constants _PROGRAM-SECTION) _PARTIAL-ORDER-SECTION _QUERY-SECTION "dummy")))]))
 (provide cclp-program)
 
 (define-for-syntax (optional-cclp-sections/full-evaluation stx)
   (syntax-parse stx
     [("{FULL EVALUATION}" _FULL-EVALUATION-SECTION REST ...)
-     (with-syntax ([(_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)
-                    (optional-cclp-sections/concrete-constants #'(REST ...))])
-       (syntax/loc stx (_FULL-EVALUATION-SECTION _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)))]
-    [(REST ...)
-     (with-syntax ([(_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)
-                    (optional-cclp-sections/concrete-constants #'(REST ...))])
-       (syntax/loc stx ((list) _CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)))]))
-
-(define-for-syntax (optional-cclp-sections/concrete-constants stx)
-  (syntax-parse stx
-    [("{CONCRETE CONSTANTS}" _CONCRETE-CONSTANTS-SECTION REST ...)
      (with-syntax ([(_PARTIAL-ORDER-SECTION _K-SECTION)
                     (optional-cclp-sections/partial-order #'(REST ...))])
-       (syntax/loc stx (_CONCRETE-CONSTANTS-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)))]
+       (syntax/loc stx (_FULL-EVALUATION-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)))]
     [(REST ...)
      (with-syntax ([(_PARTIAL-ORDER-SECTION _K-SECTION)
                     (optional-cclp-sections/partial-order #'(REST ...))])
