@@ -80,7 +80,7 @@
      The latter is normally represented as the parent of the @racket[cycle].}))
 
 (serializable-struct
- tree-label (conjunction selection substitution rule index introduced-edges)
+ tree-label (conjunction selection substitution rule index)
  #:methods
  gen:equal+hash
  [(define (equal-proc l1 l2 equal?-recur)
@@ -88,22 +88,19 @@
          (equal?-recur (tree-label-selection l1) (tree-label-selection l2))
          (equal?-recur (tree-label-substitution l1) (tree-label-substitution l2))
          (equal?-recur (tree-label-rule l1) (tree-label-rule l2))
-         (equal?-recur (tree-label-index l1) (tree-label-index l2))
-         (equal?-recur (tree-label-introduced-edges l1) (tree-label-introduced-edges l2))))
+         (equal?-recur (tree-label-index l1) (tree-label-index l2))))
   (define (hash-proc l hash-recur)
     (+ (hash-recur (tree-label-conjunction l))
        (* 3 (hash-recur (tree-label-selection l)))
        (* 7 (hash-recur (tree-label-substitution l)))
        (* 11 (hash-recur (tree-label-rule l)))
-       (* 13 (hash-recur (tree-label-index l)))
-       (* 17 (hash-recur (tree-label-introduced-edges l)))))
+       (* 13 (hash-recur (tree-label-index l)))))
   (define (hash2-proc l hash2-recur)
     (+ (hash2-recur (tree-label-conjunction l))
        (hash2-recur (tree-label-selection l))
        (hash2-recur (tree-label-substitution l))
        (hash2-recur (tree-label-rule l))
-       (hash2-recur (tree-label-index l))
-       (hash2-recur (tree-label-introduced-edges l))))]
+       (hash2-recur (tree-label-index l))))]
  #:methods
  gen:custom-write
  [(define write-proc
@@ -115,8 +112,7 @@
         (tree-label-selection obj)
         (tree-label-substitution obj)
         (tree-label-rule obj)
-        (tree-label-index obj)
-        (tree-label-introduced-edges obj)))))])
+        (tree-label-index obj)))))])
 (provide
  (struct*-doc
   tree-label
@@ -124,8 +120,7 @@
    [selection any/c]
    [substitution abstract-substitution?]
    [rule (or/c #f (or/c full-evaluation? ck:rule? 'one 'many))]
-   [index (or/c #f exact-positive-integer?)]
-   [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))])
+   [index (or/c #f exact-positive-integer?)])
   @{The contents of a node in the abstract analysis tree which has not yet been visited or which was successfully unfolded.
      The field @racket[selection] stands for the index (if any) of the atom selected for unfolding.
      The field @racket[substitution] is the substitution which was applied to the parent and an abstract program clause to obtain @racket[conjunction].
@@ -135,29 +130,25 @@
      It is a @racket[full-evaluation?] if the node is the result of a full evaluation step.
      The field @racket[index] is a unique label, assigned so that cycles can be clearly marked.
      It is an integer if the node has been visited and @racket[#f] if the node has not yet been visited.
-     The field @racket[introduced-edges] tracks the explicit edges which were introduced when selection from @racket[conjunction] took place.
      It does not track implicit edges (those between more/less general abstract atoms).}))
 
 (serializable-struct
- widening (conjunction selection message index introduced-edges)
+ widening (conjunction selection message index)
  ; message has no bearing on the semantics, so ignore that
  #:methods
  gen:equal+hash
  [(define (equal-proc w1 w2 equal?-recur)
     (and (equal?-recur (widening-conjunction w1) (widening-conjunction w2))
          (equal?-recur (widening-selection w1) (widening-selection w2))
-         (equal?-recur (widening-index w1) (widening-index w2))
-         (equal?-recur (widening-introduced-edges w1) (widening-introduced-edges w2))))
+         (equal?-recur (widening-index w1) (widening-index w2))))
   (define (hash-proc w hash-recur)
     (+ (hash-recur (widening-conjunction w))
        (hash-recur (widening-selection w))
-       (hash-recur (widening-index w))
-       (hash-recur (widening-introduced-edges w))))
+       (hash-recur (widening-index w))))
   (define (hash2-proc w hash2-recur)
     (+ (hash2-recur (widening-conjunction w))
        (hash2-recur (widening-selection w))
-       (hash2-recur (widening-index w))
-       (hash2-recur (widening-introduced-edges w))))]
+       (hash2-recur (widening-index w))))]
  #:methods
  gen:custom-write
  [(define write-proc
@@ -168,56 +159,48 @@
         (widening-conjunction obj)
         (widening-selection obj)
         (widening-message obj)
-        (widening-index obj)
-        (widening-introduced-edges obj)))))])
+        (widening-index obj)))))])
 (provide
  (struct*-doc
   widening
   ([conjunction (listof abstract-atom?)]
    [selection any/c]
    [message (or/c #f string?)]
-   [index (or/c #f exact-positive-integer?)]
-   [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))])
+   [index (or/c #f exact-positive-integer?)])
   @{An application of widening during abstract analysis.
      This can be either automatic (due to depth-k abstraction being enabled) or specified by the user.
      The field @racket[conjunction] contains the result of the widening operation.
      The field @racket[selection] works the same way as in a @racket[tree-label].
      The @racket[message] field is optional and is used to explain why widening was applied.
      The @racket[index] field serves the same purpose as that of @racket[tree-label].
-     The field @racket[introduced-edges] tracks the explicit edges which were introduced when selection from @racket[conjunction] took place.
      It does not track implicit edges (those between more/less general abstract atoms).}))
 
 (serializable-struct
- case (conjunction selection index introduced-edges)
+ case (conjunction selection index)
  #:methods
  gen:equal+hash
  [(define (equal-proc c1 c2 equal?-recur)
     (and (equal?-recur (case-conjunction c1) (case-conjunction c2))
          (equal?-recur (case-selection c1) (case-selection c2))
-         (equal?-recur (case-index c1) (case-index c2))
-         (equal?-recur (case-introduced-edges c1) (case-introduced-edges c2))))
+         (equal?-recur (case-index c1) (case-index c2))))
   (define (hash-proc c hash-recur)
     (+ (hash-recur (case-conjunction c))
        (hash-recur (case-selection c))
-       (hash-recur (case-index c))
-       (hash-recur (case-introduced-edges c))))
+       (hash-recur (case-index c))))
   (define (hash2-proc c hash2-recur)
     (+ (hash2-recur (case-conjunction c))
        (hash2-recur (case-selection c))
-       (hash2-recur (case-index c))
-       (hash2-recur (case-introduced-edges c))))])
+       (hash2-recur (case-index c))))])
 (provide
  (struct*-doc
   case
   ([conjunction (listof abstract-atom?)]
    [selection any/c]
-   [index (or/c #f exact-positive-integer?)]
-   [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))])
+   [index (or/c #f exact-positive-integer?)])
   @{A case in a case split applied during abstract analysis.
      The field @racket[conjunction] contains the more specific case of the parent conjunction.
      The field @racket[selection] works the same way as in a @racket[tree-label].
      The @racket[index] field serves the same purpose as that of @racket[tree-label].
-     The field @racket[introduced-edges] tracks the explicit edges which were introduced when selection from @racket[conjunction] took place.
      It does not track implicit edges (those between more/less general abstract atoms).}))
 
 (serializable-struct
@@ -310,19 +293,6 @@
   (-> label-with-conjunction? (maybe exact-nonnegative-integer?))
   (label)
   @{Extracts the index of the selected conjunct from any tree label type which has it.}))
-
-(define (label-introduced-edges l)
-  (cond
-    [(tree-label? l) (tree-label-introduced-edges l)]
-    [(widening? l) (widening-introduced-edges l)]
-    [(case? l) (case-introduced-edges l)]
-    [(generalization? l) (generalization-introduced-edges l)]))
-(provide
- (proc-doc/names
-  label-introduced-edges
-  (-> label-with-conjunction? (listof (cons/c abstract-atom? abstract-atom?)))
-  (label)
-  @{Extracts the list of introduced edges from any tree label type which has it.}))
 
 (define (label-with-conjunction? l)
   (or (tree-label? l) (widening? l) (case? l) (generalization? l)))
