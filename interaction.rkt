@@ -45,7 +45,7 @@
 (require "gen-graph-structs.rkt")
 (require "genealogical-graph.rkt"
          "mi-map.rkt"
-         (only-in "generalize.rkt" generalize/td generalize/bu)
+         (only-in "generalize.rkt" generalize/bu)
          (only-in cclp/clustering assign-prime-factor-ids cluster))
 (require
   file/convertible
@@ -89,10 +89,10 @@
     loaded))
 (provide load-analysis)
 
-(define (proceed prog-analysis #:generalize-fn [generalize-fn generalize/bu])
+(define (proceed prog-analysis)
   (match prog-analysis
     [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants _ipo _q _fn)) tree po)
-     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants po #:generalize-fn generalize/bu)])
+     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants po)])
        (match outcome
          [(cons 'underspecified-order candidate)
           (begin
@@ -123,17 +123,16 @@
               (begin
                 (for ([precedence new-precedences])
                   (add-directed-edge! updated-po (car precedence) (cdr precedence)))
-                (proceed (analysis source-prog tree updated-po) #:generalize-fn generalize-fn))))]
+                (proceed (analysis source-prog tree updated-po)))))]
          [(cons cand top) ; simple update to the analysis
           (analysis source-prog top po)]
          ['no-candidate prog-analysis]))]))
 (provide
  (proc-doc/names
   proceed
-  (->* (analysis?)
-       (#:generalize-fn procedure?)
-       analysis?)
-  ((prog-analysis) ((generalize-fn generalize/bu)))
+  (-> analysis?
+      analysis?)
+  (prog-analysis)
   @{Advances the analysis of @racket[prog-analysis] without side-effects.
  The only exception is a user error which may be raised if the partial order in the analysis does not dictate which atom should be selected.}))
 
