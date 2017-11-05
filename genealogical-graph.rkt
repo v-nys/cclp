@@ -81,9 +81,9 @@
      graph]
     ; if there are unfoldings and there is a selection
     [(list-rest
-      (or (tree-label tl-con1 (some selected1) _ _ _ _)
-          (generalization tl-con1 (some selected1) _ _ _ _))
-      (tree-label _ _ _ tl-rule2 _ _)
+      (or (tree-label tl-con1 (some selected1) _ _ i)
+          (generalization tl-con1 (some selected1) i _ _))
+      (tree-label tl-con2 sel2 sub2 tl-rule2 i2)
       l-rest)
      (match-let
          ;; all these identified values correspond to parameters of the function
@@ -110,11 +110,9 @@
     ; if there are unfoldings but no selection
     [(list-rest
       ;; generalization followed by generalization is possible on paper, but implementation never does this
-      (tree-label tl-con1 (none) _ _ _ _)
-      (generalization _ _ _ _ abstracted-ranges _) ; TODO may be able to utilize last field, which was added later
+      (tree-label tl-con1 (none) sub r i)
+      (generalization g-con g-sel g-i abstracted-ranges b-b) ; TODO may be able to utilize last field, which was added later
       l-rest)
-     (log-debug "first element on branch: ~a" (first branch))
-     (log-debug "second element on branch: ~a" (second branch))
      (match-let
          ([(list next-uid _ _ add-edges)
            (foldl
@@ -154,20 +152,20 @@
 
 (define (active-branch t)
   (match t
-    [(node (tree-label (list) _ _ _ _ _) '()) #f]
+    [(node (tree-label (list) sel sub r i) '()) #f]
     [(node 'fail '()) #f]
     [(node (cycle _) '()) #f]
-    [(node (tree-label c (none) s r #f ie) '())
-     (list (tree-label c (none) s r #f ie))]
-    [(node (generalization c (none) #f ie rngs bb) '())
-     (list (generalization c (none) #f ie rngs bb))]
-    [(node (tree-label c sel s r i ie) ch)
+    [(node (tree-label c (none) s r #f) '())
+     (list (tree-label c (none) s r #f))]
+    [(node (generalization c (none) #f rngs bb) '())
+     (list (generalization c (none) #f rngs bb))]
+    [(node (tree-label c sel s r i) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch c))) #f ch)
-          (cons (tree-label c sel s r i ie) it)
+          (cons (tree-label c sel s r i) it)
           #f)]
-    [(node (generalization c sel i ie rngs bb) ch)
+    [(node (generalization c sel i rngs bb) ch)
      (aif (foldl (λ (c acc) (if acc acc (active-branch c))) #f ch)
-          (cons (generalization c sel i ie rngs bb) it)
+          (cons (generalization c sel i rngs bb) it)
           #f)]))
 (provide
  (proc-doc/names

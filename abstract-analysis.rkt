@@ -204,28 +204,25 @@
      It does not track implicit edges (those between more/less general abstract atoms).}))
 
 (serializable-struct
- generalization (conjunction selection index introduced-edges abstracted-ranges groupings)
+ generalization (conjunction selection index abstracted-ranges groupings)
  #:methods
  gen:equal+hash
  [(define (equal-proc l1 l2 equal?-recur)
     (and (equal?-recur (generalization-conjunction l1) (generalization-conjunction l2))
          (equal?-recur (generalization-selection l1) (generalization-selection l2))
          (equal?-recur (generalization-index l1) (generalization-index l2))
-         (equal?-recur (generalization-introduced-edges l1) (generalization-introduced-edges l2))
          (equal?-recur (generalization-abstracted-ranges l1) (generalization-abstracted-ranges l2))
          (equal?-recur (generalization-groupings l1) (generalization-groupings l2))))
   (define (hash-proc l hash-recur)
     (+ (hash-recur (generalization-conjunction l))
        (* 3 (hash-recur (generalization-selection l)))
        (* 13 (hash-recur (generalization-index l)))
-       (* 17 (hash-recur (generalization-introduced-edges l)))
        (* 23 (hash-recur (generalization-abstracted-ranges l)))
        (* 29 (hash-recur (generalization-groupings l)))))
   (define (hash2-proc l hash2-recur)
     (+ (hash2-recur (generalization-conjunction l))
        (hash2-recur (generalization-selection l))
        (hash2-recur (generalization-index l))
-       (hash2-recur (generalization-introduced-edges l))
        (hash2-recur (generalization-abstracted-ranges l))
        (hash2-recur (generalization-groupings l))))]
  #:methods
@@ -238,7 +235,6 @@
         (generalization-conjunction obj)
         (generalization-selection obj)
         (generalization-index obj)
-        (generalization-introduced-edges obj)
         (generalization-abstracted-ranges obj)
         (generalization-groupings obj)))))])
 (provide
@@ -247,7 +243,6 @@
   ([conjunction (listof abstract-conjunct?)]
    [selection any/c]
    [index (or/c #f exact-positive-integer?)]
-   [introduced-edges (listof (cons/c abstract-atom? abstract-atom?))]
    [abstracted-ranges (listof index-range?)]
    [groupings (listof (cons/c (listof index-range?) exact-nonnegative-integer?))])
   @{The contents of a node in the abstract analysis tree which was obtained by grouping conjuncts into a multi abstraction.
