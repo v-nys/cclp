@@ -199,7 +199,7 @@
            my-analysis))])
     (displayln
      (format
-      "~v > ~v"
+      "~v < ~v"
       (first precedence)
       (second precedence)))))
 (provide visualize-partial-order)
