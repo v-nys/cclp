@@ -281,14 +281,14 @@
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
-    [(or (tree-label con sel _ _ i _)
-         (generalization con sel i _ _ _))
+    [(or (tree-label con sel _ _ i)
+         (generalization con sel i _ _))
      (begin
        (when i (display (format "~v:" i)))
        (print-conjunction con sel out))]
     [(cycle i)
      (display (format "cycle back to node ~a" i) out)]
-    [(widening con sel msg idx edges)
+    [(widening con sel msg idx)
      (begin
        (display "[widening]")
        (when idx (display (format "~v:" idx)))
