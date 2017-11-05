@@ -150,8 +150,7 @@
       (none)
       (list)
       type
-      #f
-      (list))
+      #f)
      (list)))
   (define (full-eval-covers lst)
     (match lst
@@ -180,7 +179,7 @@
                           [updated-top (replace-first-subtree top candidate updated-candidate)])
                      (cons updated-candidate updated-top))]
                   [(not (null? gen-rngs))
-                   (let* ([gen-node (node (generalization gen-conjunction (none) #f '() gen-rngs bb) '())]
+                   (let* ([gen-node (node (generalization gen-conjunction (none) #f gen-rngs bb) '())]
                           [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
                           [updated-top (replace-first-subtree top candidate updated-candidate)])
                      (cons updated-candidate updated-top))]
