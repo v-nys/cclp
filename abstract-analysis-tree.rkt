@@ -61,27 +61,25 @@
   (check-equal? (largest-node-index l4lt:val) 3)
   (check-equal? (largest-node-index primes-five:val) 5))
 
-; TODO reintroduce rewind-related functionality (see VC)
-
 (define (candidate-and-predecessors t acc)
   (match t
-    [(node (tree-label '() _ _ _ _ _) '()) (cons #f acc)]
+    [(node (tree-label '() sel sub r i) '()) (cons #f acc)]
     [(node 'fail '()) (cons #f acc)]
     [(node (cycle _) '()) (cons #f acc)]
-    [(node (widening '() _ _ _ _) '()) (cons #f acc)] ; odd, but not impossible...
-    [(or (node (tree-label c (none) _ _ #f _) '())
-         (node (generalization c (none) #f _ _ _) '()))
+    [(node (widening '() _ _ _) '()) (cons #f acc)] ; odd, but not impossible...
+    [(or (node (tree-label c (none) _ _ #f) '())
+         (node (generalization c (none) #f _ _) '()))
      (cons t acc)]
-    [(node (widening c (none) msg i pp) '())
-     (cons (node (widening c (none) msg i pp) '()) acc)]
+    [(node (widening c (none) msg i) '())
+     (cons (node (widening c (none) msg i) '()) acc)]
     ; children but no selection = widened tree-label (or widened widening) or cycle
-    [(or (node (tree-label c (none) _ _ i _) (list single-child))
-         (node (generalization c (none) i _ _ _) (list single-child))
-         (node (widening c (none) _ i _) (list single-child)))
+    [(or (node (tree-label c (none) _ _ i) (list single-child))
+         (node (generalization c (none) i _ _) (list single-child))
+         (node (widening c (none) _ i) (list single-child)))
      (candidate-and-predecessors single-child (cons (cons c i) acc))]
-    [(or (node (tree-label c (some v) _ _ i _) children)
-         (node (generalization c (some v) i _ _ _) children)
-         (node (widening c (some v) _ i _) children))
+    [(or (node (tree-label c (some v) _ _ i) children)
+         (node (generalization c (some v) i _ _) children)
+         (node (widening c (some v) _ i) children))
      (foldl
       (λ (child acc2)
         (if (car acc2)
@@ -128,14 +126,14 @@
   (log-debug "advancing analysis")
   (define (update-candidate candidate idx sel new-edges children)
     (match candidate
-      [(node (tree-label c _ sub r _ _) _)
-       (node (tree-label c sel sub r idx new-edges) children)]
-      [(node (generalization c _ _ _ a-r bb) _)
-       (node (generalization c sel idx new-edges a-r bb) children)]
-      [(node (widening c _ m _ _) _)
-       (node (widening c sel m idx new-edges) children)]
-      [(node (case c _ _ _) _)
-       (node (case c sel idx new-edges) children)]))
+      [(node (tree-label c _ sub r _) _)
+       (node (tree-label c sel sub r idx) children)]
+      [(node (generalization c _ _ a-r bb) _)
+       (node (generalization c sel idx a-r bb) children)]
+      [(node (widening c _ m _) _)
+       (node (widening c sel m idx) children)]
+      [(node (case c _ _) _)
+       (node (case c sel idx) children)]))
   (define (resolvent->node res)
     (node
      (tree-label
