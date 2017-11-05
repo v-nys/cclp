@@ -22,7 +22,8 @@
   (only-in "genealogical-graph.rkt" active-branch)
   "preprior-graph.rkt"
   (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*)
-  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))
+  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices)
+  (only-in cclp/depth-k-abstraction abstract))
 (require (for-doc scribble/manual))
 
 (module+ test
@@ -122,7 +123,7 @@
   (tree accumulator)
   @{Find the next candidate for unfolding and conjunctions which have already been dealt with.}))
 
-(define (advance-analysis top clauses full-evaluations concrete-constants prior #:new-edges [new-edges (list)])
+(define (advance-analysis top clauses full-evaluations concrete-constants prior #:new-edges [new-edges (list)] #:k [k #f])
   (log-debug "advancing analysis")
   (define (update-candidate candidate idx sel new-edges children)
     (match candidate
@@ -188,8 +189,7 @@
                      (for ([conjunct conjunction])
                        (cond [(abstract-atom? conjunct) (add-vertex! prior conjunct)]
                              [(multi? conjunct)
-                              (let ([one-unf (let* (
-                                                    [offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))]) (car (unfold-multi-bounded 1 conjunct offset offset)))])
+                              (let ([one-unf (let* ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) conjunct)))]) (car (unfold-multi-bounded 1 conjunct offset offset)))])
                                 (for ([multi-conjunct one-unf])
                                   (add-vertex! prior multi-conjunct)))]))
                      (for ([edge new-edges]) (add-directed-edge! prior (car edge) (cdr edge)))
@@ -197,7 +197,9 @@
                           (let* ([selected-conjunct (list-ref conjunction it)]
                                  [resolvents
                                   (if (abstract-atom? selected-conjunct)
-                                      (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants))
+                                      (if k
+                                          (map (λ (r) (abstract r k)) (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants)))
+                                          (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants)))
                                       (unfold-multi* it conjunction))]
                                  [child-nodes (if (abstract-atom? selected-conjunct) (map resolvent->node resolvents) (map m-unf->node resolvents '(one many)))]
                                  [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
@@ -209,9 +211,10 @@
  (proc-doc/names
   advance-analysis
   (->* (node? (listof ck:rule?) (listof full-evaluation?) (listof function?) preprior-graph?)
-       (#:new-edges (listof (cons/c abstract-atom? abstract-atom?)))
+       (#:new-edges (listof (cons/c abstract-atom? abstract-atom?))
+        #:k (or/c #f exact-positive-integer?))
        (or/c 'no-candidate (cons/c 'underspecified-order node?) (cons/c node? node?)))
-  ((top clauses full-evaluations concrete-constants prior) ((new-edges (list))))
+  ((top clauses full-evaluations concrete-constants prior) ((new-edges (list)) (k #f)))
   @{Advances the analysis in @racket[top], when the knowledge base consists of concrete clauses @racket[clauses] and full evaluation rules @racket[full-evaluations].
  Functions supplied in @racket[concrete-constants] are considered to be in the abstract domain.
  The strict partial order used for atom selection is specified in @racket[prior].

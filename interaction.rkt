@@ -60,7 +60,7 @@
 (require racket/logging)
 (require (for-doc scribble/manual))
 
-(serializable-struct cclp (clauses full-ai-rules concrete-constants initial-partial-order query filename))
+(serializable-struct cclp (clauses full-ai-rules concrete-constants initial-partial-order query filename k))
 (provide (struct-out cclp))
 
 (serializable-struct analysis (cclp tree partial-order))
@@ -91,8 +91,8 @@
 
 (define (proceed prog-analysis)
   (match prog-analysis
-    [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants _ipo _q _fn)) tree po)
-     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants po)])
+    [(analysis (and source-prog (cclp clauses full-evaluations concrete-constants _ipo _q _fn k)) tree po)
+     (let ([outcome (advance-analysis tree clauses full-evaluations concrete-constants po #:k k)])
        (match outcome
          [(cons 'underspecified-order candidate)
           (begin
