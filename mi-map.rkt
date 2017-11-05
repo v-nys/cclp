@@ -55,19 +55,19 @@
 
 (define (mi-map-visit-from idx n)
   (match n
-    [(node (tree-label (list) _ _ (ck:rule _ _ rule-idx) #f _) _)
+    [(node (tree-label (list) _ _ (ck:rule _ _ rule-idx) #f) _)
      (displayln (format "transition_from_to_via(~a,empty,rule~a)." idx rule-idx))]
-    [(node (tree-label (list) _ _ (ak:full-evaluation _ _ rule-idx) #f _) _)
+    [(node (tree-label (list) _ _ (ak:full-evaluation _ _ rule-idx) #f) _)
      (displayln (format "transition_from_to_via(~a,empty,fullai~a)." idx rule-idx))]
-    [(node (tree-label _ _ _ (ck:rule _ _ rule-idx) idx2 _) _)
+    [(node (tree-label _ _ _ (ck:rule _ _ rule-idx) idx2) _)
      (displayln (format "transition_from_to_via(~a,~a,rule~a)." idx idx2 rule-idx))]
-    [(node (tree-label _ _ _ (ak:full-evaluation _ _ rule-idx) idx2 _) _)
+    [(node (tree-label _ _ _ (ak:full-evaluation _ _ rule-idx) idx2) _)
      (displayln (format "transition_from_to_via(~a,~a,fullai~a)." idx idx2 rule-idx))]
-    [(node (tree-label _ _ _ 'one idx2 _) _)
+    [(node (tree-label _ _ _ 'one idx2) _)
      (displayln (format "transition_from_to_via(~a,~a,one)." idx idx2))]
-    [(node (tree-label _ _ _ 'many idx2 _) _)
+    [(node (tree-label _ _ _ 'many idx2) _)
      (displayln (format "transition_from_to_via(~a,~a,many)." idx idx2))]
-    [(node (generalization _ _ idx2 _ _ _) _)
+    [(node (generalization _ _ idx2 _ _) _)
      (displayln (format "generalization_from_to(~a,~a)" idx idx2))]
     [(node (cycle cycle-idx) _)
      (displayln (format "cycle_from_to(~a,~a)." idx cycle-idx))]
@@ -964,7 +964,7 @@
 
 (define (generalization-clause-visit-from conjunction1 n)
   (match n
-    [(node (generalization _ _ _ _ _ building-blocks) _)
+    [(node (generalization _ _ _ _ building-blocks) _)
      (display
       (generate-generalization-clause
        conjunction1
