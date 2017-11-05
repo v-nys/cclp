@@ -141,8 +141,7 @@
       (none)
       (resolvent-substitution res)
       (resolvent-knowledge res)
-      #f ; resolvents have not yet been visited, so no index
-      (list))
+      #f)
      (list)))
   (define (m-unf->node m-unf type)
     (node

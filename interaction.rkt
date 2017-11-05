@@ -224,8 +224,7 @@
      (none)
      (list)
      #f
-     #f
-     (list)))
+     #f))
   (define initial-tree
     (node initial-tree-label (list)))
   (analysis
