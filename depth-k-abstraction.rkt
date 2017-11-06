@@ -58,7 +58,7 @@
   (define fresh-a (if (some? (maximum-var-index elem a?)) (+ (some-v (maximum-var-index elem a?)) 1) 1))
   (define init-acc (list fresh-a fresh-g (hash)))
   
-  (define (widen-atom k-aux atom acc)
+  (define (widen-atom atom acc)
     (let ([accumulation-args (map-accumulatel (curry widen-term k) acc (abstract-atom-args atom))])
       (cons (abstract-atom (abstract-atom-symbol atom) (car accumulation-args)) (cdr accumulation-args))))
 
@@ -79,20 +79,21 @@
                  (cons (abstract-function (abstract-function-functor term) (car recursion))
                        (cdr recursion)))))]))
   
-  (cond [(list? elem)
-         ; TODO: update once multi is incorporated
-         (car (map-accumulatel (curry widen-atom k) init-acc elem))]
-        [(abstract-atom? elem)
-         (abstract-atom
-          (abstract-atom-symbol elem)
-          (car (map-accumulatel (curry widen-term k) init-acc (abstract-atom-args elem))))]
-        [(abstract-function? elem)
-         (car (widen-term k elem init-acc))]
-        [(abstract-variable? elem) elem]))
+  (cond
+    [(multi? elem) elem]
+    [(list? elem)
+     (car (map-accumulatel (λ (c acc) (if (multi? c) (cons c acc) (widen-atom c acc))) init-acc elem))]
+    [(abstract-atom? elem)
+     (abstract-atom
+      (abstract-atom-symbol elem)
+      (car (map-accumulatel (curry widen-term k) init-acc (abstract-atom-args elem))))]
+    [(abstract-function? elem)
+     (car (widen-term k elem init-acc))]
+    [(abstract-variable? elem) elem]))
 (provide
  (proc-doc/names
   abstract
-  (-> abstract-domain-elem? exact-positive-integer? abstract-domain-elem?)
+  (-> abstract-domain-elem*? exact-positive-integer? abstract-domain-elem*?)
   (abstract-domain-element k)
   @{Return the most specific abstraction of @racket[abstract-domain-element] whose depth is at most @racket[k].
  Depth is defined as follows: for abstract variables and constants in the abstract domain, it is 1.

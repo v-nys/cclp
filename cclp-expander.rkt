@@ -61,7 +61,7 @@
      (with-syntax ([(_FULL-EVALUATION-SECTION _PARTIAL-ORDER-SECTION _K-SECTION)
                     (syntax->list (optional-cclp-sections/full-evaluation #'(OPTIONAL-SECTION ...)))])
        (syntax/loc stx
-         (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (extract-program-constants _PROGRAM-SECTION) _PARTIAL-ORDER-SECTION _QUERY-SECTION "dummy")))]))
+         (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (extract-program-constants _PROGRAM-SECTION) _PARTIAL-ORDER-SECTION _QUERY-SECTION "dummy" _K-SECTION)))]))
 (provide cclp-program)
 
 (define-for-syntax (optional-cclp-sections/full-evaluation stx)
@@ -87,7 +87,7 @@
 (define-for-syntax (optional-cclp-sections/k stx)
   (syntax-parse stx
     [("{K}" K)
-     (syntax/loc stx K)]
+     (syntax/loc stx (quote K))]
     [()
      (syntax/loc stx #f)]))
 

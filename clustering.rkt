@@ -423,7 +423,7 @@
                 next-gen-number))]
             [(list mc)
              (match-let ([(cons annotated-mc last-symbol)
-                          (rec mc #:established (gen (add1 (gen-number established)) (gen-origin established)))])
+                          (rec mc #:established (gen (gen-add1 (gen-number established)) (gen-origin established)))])
                (cons
                 (clustering
                  (foldl
