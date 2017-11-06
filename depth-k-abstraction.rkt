@@ -93,7 +93,7 @@
 (provide
  (proc-doc/names
   abstract
-  (-> abstract-domain-elem? exact-positive-integer? abstract-domain-elem?)
+  (-> abstract-domain-elem*? exact-positive-integer? abstract-domain-elem*?)
   (abstract-domain-element k)
   @{Return the most specific abstraction of @racket[abstract-domain-element] whose depth is at most @racket[k].
  Depth is defined as follows: for abstract variables and constants in the abstract domain, it is 1.

@@ -198,7 +198,8 @@
                                  [resolvents
                                   (if (abstract-atom? selected-conjunct)
                                       (if k
-                                          (map (λ (r) (abstract r k)) (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants)))
+                                          (map (λ (r) (struct-copy resolvent r [conjunction (abstract (resolvent-conjunction r) k)]))
+                                               (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants)))
                                           (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants)))
                                       (unfold-multi* it conjunction))]
                                  [child-nodes (if (abstract-atom? selected-conjunct) (map resolvent->node resolvents) (map m-unf->node resolvents '(one many)))]
