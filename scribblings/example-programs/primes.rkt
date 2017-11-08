@@ -38,32 +38,28 @@ length([],0).
 length([H|T],N) :- minus(N,1,M),length(T,M).
 
 {FULL EVALUATION}
-plus(γ1,γ2,α1) -> α1/γ3.
-minus(γ1,γ2,α1) -> α1/γ3.
-divides(γ1,γ2).
-does_not_divide(γ1,γ2).
-
-% if this is enabled, full evaluation of integers and length is not needed
-{CONCRETE CONSTANTS}
-nil
+plus(g1,g2,a1) -> a1/g3.
+minus(g1,g2,a1) -> a1/g3.
+divides(g1,g2).
+does_not_divide(g1,g2).
 
 {PARTIAL ORDER}
-filter(γ1,[],α1) > sift(α1,α2)
-filter(γ1,[],α1) > length(α1,γ1)
-filter(γ1,[],α1) > filter(γ1,α1,α2)
-sift([γ1|α1],α2) > integers(γ1,α1)
-sift([γ1|α1],α2) > length(α1,γ1)
-integers(γ1,α1) > sift(α1,α2)
-integers(γ1,α1) > length(α1,γ1)
-integers(γ1,α1) > filter(γ1,α1,α2)
-filter(γ1,[γ2|α1],α2) > sift(α1,α2)
-filter(γ1,[γ2|α1],α2) > integers(γ1,α1)
-filter(γ1,[γ2|α1],α2) > length(α1,γ1)
-filter(γ1,[γ2|α1],α2) > filter(γ1,α1,α2)
-length([γ1|α1],γ2) > sift(α1,α2)
-length([γ1|α1],γ2) > integers(γ1,α1)
-length([γ1|α1],γ2) > filter(γ1,α1,α2)
-sift([],α1) > length(α1,γ1)
+filter(g1,[],a1) > sift(a1,a2)
+filter(g1,[],a1) > length(a1,g1)
+filter(g1,[],a1) > filter(g1,a1,a2)
+sift([g1|a1],a2) > integers(g1,a1)
+sift([g1|a1],a2) > length(a1,g1)
+integers(g1,a1) > sift(a1,a2)
+integers(g1,a1) > length(a1,g1)
+integers(g1,a1) > filter(g1,a1,a2)
+filter(g1,[g2|a1],a2) > sift(a1,a2)
+filter(g1,[g2|a1],a2) > integers(g1,a1)
+filter(g1,[g2|a1],a2) > length(a1,g1)
+filter(g1,[g2|a1],a2) > filter(g1,a1,a2)
+length([g1|a1],g2) > sift(a1,a2)
+length([g1|a1],g2) > integers(g1,a1)
+length([g1|a1],g2) > filter(g1,a1,a2)
+sift([],a1) > length(a1,g1)
 
 {QUERY}
-primes(γ1,α1)
+primes(g1,a1)

@@ -23,16 +23,16 @@ ord([X]).
 ord([X,Y|Z]) :- lte(X,Y),ord([Y|Z]).
 
 {FULL EVALUATION}
-lte(γ1,γ2).
-del(α1,[γ1|γ2],α2) -> α1/γ3,α2/γ4.
+lte(g1,g2).
+del(a1,[g1|g2],a2) -> a1/g3,a2/g4.
 
 {PREPRIOR}
-perm(γ1,α1),ord(α1)
-perm(γ1,α1),ord([γ1|α1])
-ord([γ1,γ2|α1]),perm(γ1,α1)
+perm(g1,a1),ord(a1)
+perm(g1,a1),ord([g1|a1])
+ord([g1,g2|a1]),perm(g1,a1)
 
 {QUERY}
-sort(γ1,α1)
+sort(g1,a1)
 }
 
 @;include-section["interaction.scrbl"]
