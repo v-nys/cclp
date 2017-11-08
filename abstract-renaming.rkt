@@ -91,32 +91,32 @@
   (test-case
    "the right abstract rule should be obtained"
    (let* ([rule (interpret-concrete-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)")]
-          [abstract-conjunction (list (interpret-abstract-atom "collect(γ1,α1)"))]
+          [abstract-conjunction (list (interpret-abstract-atom "collect(g1,a1)"))]
           [abstract-rule (pre-abstract-rule rule (list))]
           [renamed-abstract-rule (rename-apart abstract-rule abstract-conjunction)]
           [expected
-           (ak:abstract-rule (interpret-abstract-atom "collect(tree(α6,α7),α8)")
-                             (list (interpret-abstract-atom "collect(α6,α9)")
-                                   (interpret-abstract-atom "collect(α7,α10)")
-                                   (interpret-abstract-atom "append(α9,α10,α8)")))])
+           (ak:abstract-rule (interpret-abstract-atom "collect(tree(a6,a7),a8)")
+                             (list (interpret-abstract-atom "collect(a6,a9)")
+                                   (interpret-abstract-atom "collect(a7,a10)")
+                                   (interpret-abstract-atom "append(a9,a10,a8)")))])
      (check-equal?
       abstract-rule
-      (ak:abstract-rule (interpret-abstract-atom "collect(tree(α1,α2),α3)")
-                        (list (interpret-abstract-atom "collect(α1,α4)")
-                              (interpret-abstract-atom "collect(α2,α5)")
-                              (interpret-abstract-atom "append(α4,α5,α3)"))))
+      (ak:abstract-rule (interpret-abstract-atom "collect(tree(a1,a2),a3)")
+                        (list (interpret-abstract-atom "collect(a1,a4)")
+                              (interpret-abstract-atom "collect(a2,a5)")
+                              (interpret-abstract-atom "append(a4,a5,a3)"))))
      (check-equal? renamed-abstract-rule expected)))
   (test-case
    "a properly renamed full evaluation should be obtained"
-   (let* ([full-eval (ak:full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                                         (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+   (let* ([full-eval (ak:full-evaluation (interpret-abstract-atom "del(a1,[g1|g2],a2)")
+                                         (interpret-abstract-atom "del(g3,[g1|g2],g4)")
                                          1)]
           [abstract-conjunction
-           (interpret-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")]
+           (interpret-abstract-conjunction "del(a12,[g18|g19],a14),perm(a14,a13),ord([g3,a12|a13])")]
           [renamed-abstract-rule (rename-apart full-eval abstract-conjunction)]
           [expected
-           (ak:full-evaluation (interpret-abstract-atom "del(α15,[γ20|γ21],α16)")
-                               (interpret-abstract-atom "del(γ22,[γ20|γ21],γ23)")
+           (ak:full-evaluation (interpret-abstract-atom "del(a15,[g20|g21],a16)")
+                               (interpret-abstract-atom "del(g22,[g20|g21],g23)")
                                1)])
      (check-equal?
       renamed-abstract-rule

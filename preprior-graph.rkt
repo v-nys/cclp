@@ -198,13 +198,13 @@
             (check-false (has-edge? g u u))))
    (let ([g (mk-preprior-graph)]
          [u (interpret-abstract-atom "foo(nil)")]
-         [v (interpret-abstract-atom "foo(γ1)")])
+         [v (interpret-abstract-atom "foo(g1)")])
      (begin (add-vertex! g u)
             (add-vertex! g v)
             (check-true (has-edge? g u v))))
    (let ([g (mk-preprior-graph)]
          [u (interpret-abstract-atom "foo(nil)")]
-         [v (interpret-abstract-atom "foo(γ1)")])
+         [v (interpret-abstract-atom "foo(g1)")])
      (begin (add-vertex! g v)
             (add-vertex! g u)
             (check-true (has-edge? g u v))))))
@@ -276,9 +276,9 @@
       (add-directed-edge! g w u)
       (check-false (strict-partial-order? g))))
   (let ([g (mk-preprior-graph)]
-        [u (interpret-abstract-atom "foo(α1)")]
+        [u (interpret-abstract-atom "foo(a1)")]
         [v (abstract-atom 'bar '())]
-        [w (interpret-abstract-atom "foo(γ1)")])
+        [w (interpret-abstract-atom "foo(g1)")])
     (begin
       (add-vertex! g u)
       (add-vertex! g v)

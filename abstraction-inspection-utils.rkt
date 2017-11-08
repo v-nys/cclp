@@ -78,46 +78,46 @@
  at any level in @racket[abstract-data] and returns them in left-to-right order of occurrence,
  without any duplicates.}))
 (module+ test
-  (check-equal? (assemble-var-indices g? (interpret-abstract-term "α1")) (list))
-  (check-equal? (assemble-var-indices a? (interpret-abstract-term "γ1")) (list))
+  (check-equal? (assemble-var-indices g? (interpret-abstract-term "a1")) (list))
+  (check-equal? (assemble-var-indices a? (interpret-abstract-term "g1")) (list))
   (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar)")) (list))
   (check-equal? (assemble-var-indices g? (abstract-function 'bar (list))) (list))
   (check-equal?
    (assemble-var-indices g? (abstract-function 'bar (list (abstract-function 'bar'()))))
    (list))
   (check-equal? (assemble-var-indices a? (interpret-abstract-term "foo(bar)")) (list))
-  (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar(γ1,γ2,α3,α4))")) (list 1 2))
-  (check-equal? (assemble-var-indices a? (interpret-abstract-term "foo(bar(γ1,γ2,α3,α4))")) (list 3 4))
-  (check-equal? (assemble-var-indices g? (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")) (list 1 2))
-  (check-equal? (assemble-var-indices a? (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")) (list 3 4))
+  (check-equal? (assemble-var-indices g? (interpret-abstract-term "foo(bar(g1,g2,a3,a4))")) (list 1 2))
+  (check-equal? (assemble-var-indices a? (interpret-abstract-term "foo(bar(g1,g2,a3,a4))")) (list 3 4))
+  (check-equal? (assemble-var-indices g? (interpret-abstract-atom "foo(bar(g1,g2,a3,a4))")) (list 1 2))
+  (check-equal? (assemble-var-indices a? (interpret-abstract-atom "foo(bar(g1,g2,a3,a4))")) (list 3 4))
 
   (check-equal?
    (assemble-var-indices
     g?
     (list
-     (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")
-     (interpret-abstract-atom "foo(bar(γ5,γ6,α7,α8))")))
+     (interpret-abstract-atom "foo(bar(g1,g2,a3,a4))")
+     (interpret-abstract-atom "foo(bar(g5,g6,a7,a8))")))
    (list 1 2 5 6))
   (check-equal?
    (assemble-var-indices
     a?
     (list
-     (interpret-abstract-atom "foo(bar(γ1,γ2,α3,α4))")
-     (interpret-abstract-atom "foo(bar(γ5,γ6,α7,α8))")))
+     (interpret-abstract-atom "foo(bar(g1,g2,a3,a4))")
+     (interpret-abstract-atom "foo(bar(g5,g6,a7,a8))")))
    (list 3 4 7 8))
 
   (check-equal?
    (assemble-var-indices
     a?
-    (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+    (full-evaluation (interpret-abstract-atom "del(a1,[g1|g2],a2)")
+                     (interpret-abstract-atom "del(g3,[g1|g2],g4)")
                      1))
    (list 1 2))
   (check-equal?
    (assemble-var-indices
     g?
-    (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                     (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+    (full-evaluation (interpret-abstract-atom "del(a1,[g1|g2],a2)")
+                     (interpret-abstract-atom "del(g3,[g1|g2],g4)")
                      1))
    (list 1 2 3 4)))
 
@@ -144,20 +144,20 @@
 (provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem*? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
 
 (module+ test
-  (check-equal? (maximum-var-index (interpret-abstract-term "γ1") g?) (some 1))
-  (check-equal? (maximum-var-index (interpret-abstract-term "γ1") a?) (none))
-  (check-equal? (maximum-var-index (interpret-abstract-term "α2") a?) (some 2))
-  (check-equal? (maximum-var-index (interpret-abstract-term "α2") g?) (none))
+  (check-equal? (maximum-var-index (interpret-abstract-term "g1") g?) (some 1))
+  (check-equal? (maximum-var-index (interpret-abstract-term "g1") a?) (none))
+  (check-equal? (maximum-var-index (interpret-abstract-term "a2") a?) (some 2))
+  (check-equal? (maximum-var-index (interpret-abstract-term "a2") g?) (none))
 
-  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,α2)") g?) (some 1))
-  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,α2)") a?) (some 2))
-  (check-equal? (maximum-var-index (interpret-abstract-term "foo(γ1,γ2)") a?) (none))
-  (check-equal? (maximum-var-index (interpret-abstract-term "foo(α1,α2)") g?) (none))
+  (check-equal? (maximum-var-index (interpret-abstract-term "foo(g1,a2)") g?) (some 1))
+  (check-equal? (maximum-var-index (interpret-abstract-term "foo(g1,a2)") a?) (some 2))
+  (check-equal? (maximum-var-index (interpret-abstract-term "foo(g1,g2)") a?) (none))
+  (check-equal? (maximum-var-index (interpret-abstract-term "foo(a1,a2)") g?) (none))
 
-  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,α2)") g?) (some 1))
-  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,α2)") a?) (some 2))
-  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(γ1,γ2)") a?) (none))
-  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(α1,α2)") g?) (none)))
+  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(g1,a2)") g?) (some 1))
+  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(g1,a2)") a?) (some 2))
+  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(g1,g2)") a?) (none))
+  (check-equal? (maximum-var-index (interpret-abstract-atom "foo(a1,a2)") g?) (none)))
 
 (define (contains-subterm? abstraction subterm)
   (match abstraction
@@ -176,9 +176,9 @@
 
 (module+ test
   (check-equal?
-   (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 7)) #t)
+   (contains-subterm? (interpret-abstract-conjunction "bar(a2),foo(q(g7),a1)") (g 7)) #t)
   (check-equal?
-   (contains-subterm? (interpret-abstract-conjunction "bar(α2),foo(q(γ7),α1)") (g 6)) #f))
+   (contains-subterm? (interpret-abstract-conjunction "bar(a2),foo(q(g7),a1)") (g 6)) #f))
 
 (define (extract-all-variables/duplicates/base v exclude-constraints?)
   (define rec (λ (e) (extract-all-variables/duplicates/base e exclude-constraints?)))
@@ -341,7 +341,7 @@
 (module+ test
   (check-equal?
    (extract-abstract-compounds
-    (interpret-abstract-conjunction "foo(bar(baz(nil)),quux),poit,narf(zorp(α1,γ1))"))
+    (interpret-abstract-conjunction "foo(bar(baz(nil)),quux),poit,narf(zorp(a1,g1))"))
    (list
     (interpret-abstract-term "bar(baz(nil))")
     (abstract-function 'quux empty)

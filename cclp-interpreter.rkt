@@ -169,7 +169,7 @@
   @{Interpret an abstract term from a string @racket[str] (in Prolog-style notation, but with abstract variables) to a data structure for the control compiler.}))
 (module+ test
   (check-equal?
-   (interpret-abstract-term "foo(γ1)")
+   (interpret-abstract-term "foo(g1)")
    (ad:abstract-function 'foo (list (ad:g 1))))
   (check-equal?
    (interpret-abstract-term "[]")
@@ -192,12 +192,12 @@
    (interpret-abstract-atom "safe")
    (ad:abstract-atom 'safe (list)))
   (check-equal?
-   (interpret-abstract-atom "safe([γ1])")
+   (interpret-abstract-atom "safe([g1])")
    (ad:abstract-atom
     'safe
     (list (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'nil (list)))))))
   (check-equal?
-   (interpret-abstract-atom "safe([γ1,γ2])")
+   (interpret-abstract-atom "safe([g1,g2])")
    (ad:abstract-atom
     'safe
     (list
@@ -205,12 +205,12 @@
       'cons
       (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:abstract-function 'nil (list)))))))))
   (check-equal?
-   (interpret-abstract-atom "safe([γ1,γ2|α1])")
+   (interpret-abstract-atom "safe([g1,g2|a1])")
    (ad:abstract-atom
     'safe
     (list (ad:abstract-function 'cons (list (ad:g 1) (ad:abstract-function 'cons (list (ad:g 2) (ad:a 1))))))))
   (check-equal?
-   (interpret-abstract-atom "safe([γ1,γ2|α1],γ3)")
+   (interpret-abstract-atom "safe([g1,g2|a1],g3)")
    (ad:abstract-atom
     'safe
     (list
@@ -235,10 +235,10 @@
   (interpret-abstract-conjunction-syntax parsed))
 (module+ test
   (check-equal?
-   (interpret-abstract-conjunction "safe([γ1,γ2|α1]),perm(γ1,α1)")
+   (interpret-abstract-conjunction "safe([g1,g2|a1]),perm(g1,a1)")
    (list
-    (interpret-abstract-atom "safe([γ1,γ2|α1])")
-    (interpret-abstract-atom "perm(γ1,α1)"))))
+    (interpret-abstract-atom "safe([g1,g2|a1])")
+    (interpret-abstract-atom "perm(g1,a1)"))))
 (provide interpret-abstract-conjunction)
   
 (define (interpret-abstract-substitution-syntax sub-stx)
@@ -262,7 +262,7 @@
   (interpret-abstract-substitution-syntax parsed))
 (module+ test
   (check-equal?
-   (interpret-abstract-substitution "α1/γ3,α2/γ4")
+   (interpret-abstract-substitution "a1/g3,a2/g4")
    (list
     (abstract-equality (ad:a 1) (ad:g 3))
     (abstract-equality (ad:a 2) (ad:g 4)))))
@@ -289,15 +289,15 @@
   (check-equal?
    (interpret-full-eval-section
     #<<HERE
-lte(γ1,γ2).
-del(α1,[γ1|γ2],α2) -> α1/γ3,α2/γ4.
+lte(g1,g2).
+del(a1,[g1|g2],a2) -> a1/g3,a2/g4.
 HERE
     )
    (list
-    (faid:full-ai-rule (interpret-abstract-atom "lte(γ1,γ2)") (list))
+    (faid:full-ai-rule (interpret-abstract-atom "lte(g1,g2)") (list))
     (faid:full-ai-rule
-     (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-     (interpret-abstract-substitution "α1/γ3,α2/γ4")))))
+     (interpret-abstract-atom "del(a1,[g1|g2],a2)")
+     (interpret-abstract-substitution "a1/g3,a2/g4")))))
 (provide
  (proc-doc/names
   interpret-full-eval-section

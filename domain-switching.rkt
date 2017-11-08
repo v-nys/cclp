@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 ; functionality for switching between the concrete and abstract domain
-; essentially the abstraction function α and concretization function γconc
+; essentially the abstraction function a and concretization function gconc
 
 #lang at-exp racket
 (require
@@ -225,13 +225,13 @@
   ;  (check-equal?
   ;   (pre-abstract-rule
   ;    (interpret-concrete-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)") (list))
-  ;   (ak:abstract-rule (interpret-abstract-atom "collect(tree(α1,α2),α3)") (list (interpret-abstract-atom "collect(α1,α4)") (interpret-abstract-atom "collect(α2,α5)") (interpret-abstract-atom "append(α4,α5,α3)"))))
+  ;   (ak:abstract-rule (interpret-abstract-atom "collect(tree(a1,a2),a3)") (list (interpret-abstract-atom "collect(a1,a4)") (interpret-abstract-atom "collect(a2,a5)") (interpret-abstract-atom "append(a4,a5,a3)"))))
   ;
   ;  (check-equal?
   ;   (pre-abstract-rule
   ;    (interpret-concrete-rule "append([],L,L)")
   ;    (list (function 'nil '())))
-  ;   (ak:abstract-rule (interpret-abstract-atom "append(nil,α1,α1)") (list)))
+  ;   (ak:abstract-rule (interpret-abstract-atom "append(nil,a1,a1)") (list)))
   )
 
 
@@ -279,7 +279,7 @@
   (check-equal?
    (concrete-synth-counterpart
     (interpret-abstract-conjunction
-     "integers(γ1,α6),filter(γ2,α1,α7),filter(γ3,α2,α8),filter(γ4,α3,α9),sift(α4,α10),alt_length(α11,γ5)"))
+     "integers(g1,a6),filter(g2,a1,a7),filter(g3,a2,a8),filter(g4,a3,a9),sift(a4,a10),alt_length(a11,g5)"))
    (list
     (atom 'integers (list (variable 'G1) (variable 'A6)))
     (atom 'filter (list (variable 'G2) (variable 'A1) (variable 'A7)))

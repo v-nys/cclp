@@ -189,20 +189,20 @@
   (require "cclp-interpreter.rkt") ; note: interpreter will be deprecated at some point
   (check-true
    (renames-with-corresponding-args?
-    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
-    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")))
+    (interpret-abstract-atom "atom(g1,g2,a3,a4)")
+    (interpret-abstract-atom "atom(g1,g2,a3,a4)")))
   (check-true
    (renames-with-corresponding-args?
-    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
-    (interpret-abstract-atom "atom(γ1,γ3,α3,α5)")))
+    (interpret-abstract-atom "atom(g1,g2,a3,a4)")
+    (interpret-abstract-atom "atom(g1,g3,a3,a5)")))
   (check-false
    (renames-with-corresponding-args?
-    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
-    (interpret-abstract-atom "atom(γ2,γ1,α3,α5)")))
+    (interpret-abstract-atom "atom(g1,g2,a3,a4)")
+    (interpret-abstract-atom "atom(g2,g1,a3,a5)")))
   (check-true
    (renames-with-corresponding-args?
-    (interpret-abstract-atom "atom(γ1,γ2,α3,α4)")
-    (interpret-abstract-atom "atom(γ5,γ6,α7,α8)"))))
+    (interpret-abstract-atom "atom(g1,g2,a3,a4)")
+    (interpret-abstract-atom "atom(g5,g6,a7,a8)"))))
 (provide renames-with-corresponding-args?)
 
 ;; checks whether any descendant of root in graph is a renaming of root and whether shared vars are in the same position

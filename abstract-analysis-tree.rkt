@@ -104,15 +104,15 @@
   (check-equal?
    (candidate-and-predecessors primes2:val (list))
    (cons primes2cand:val
-         (list (cons (interpret-abstract-conjunction "integers(γ2,α6),sift(α6,α5),length(α5,γ1)") 2)
-               (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1))))
+         (list (cons (interpret-abstract-conjunction "integers(g2,a6),sift(a6,a5),length(a5,g1)") 2)
+               (cons (interpret-abstract-conjunction "primes(g1,a1)") 1))))
   (check-equal?
    (candidate-and-predecessors primes4:val (list))
    (cons primes4cand:val
-         (list (cons (interpret-abstract-conjunction "length([],γ1)") 4)
-               (cons (interpret-abstract-conjunction "sift([],α5),length(α5,γ1)") 3)
-               (cons (interpret-abstract-conjunction "integers(γ2,α6),sift(α6,α5),length(α5,γ1)") 2)
-               (cons (interpret-abstract-conjunction "primes(γ1,α1)") 1))))
+         (list (cons (interpret-abstract-conjunction "length([],g1)") 4)
+               (cons (interpret-abstract-conjunction "sift([],a5),length(a5,g1)") 3)
+               (cons (interpret-abstract-conjunction "integers(g2,a6),sift(a6,a5),length(a5,g1)") 2)
+               (cons (interpret-abstract-conjunction "primes(g1,a1)") 1))))
   (check-equal?
    (car (candidate-and-predecessors permsort:val (list)))
    #f))
@@ -261,12 +261,12 @@
         (check-equal? (cdr cp-tp) top-post))))
   ; regular steps, without updates to the selection rule
   (test-advance primes0:val primes1:val primes1:val (list))
-  (define edge1 (cons (interpret-abstract-atom "integers(γ1,α1)") (interpret-abstract-atom "sift(α1,α2)")))
-  (define edge2 (cons (interpret-abstract-atom "integers(γ1,α1)") (interpret-abstract-atom "length(α1,γ1)")))
+  (define edge1 (cons (interpret-abstract-atom "integers(g1,a1)") (interpret-abstract-atom "sift(a1,a2)")))
+  (define edge2 (cons (interpret-abstract-atom "integers(g1,a1)") (interpret-abstract-atom "length(a1,g1)")))
   (add-directed-edge! primes-prior (car edge1) (cdr edge1))
   (add-directed-edge! primes-prior (car edge2) (cdr edge2))
   (test-advance primes1:val primes1cp:val primes2:val (list edge1 edge2))
-  (define edge3 (cons (interpret-abstract-atom "sift([],α1)") (interpret-abstract-atom "length(α1,γ1)")))
+  (define edge3 (cons (interpret-abstract-atom "sift([],a1)") (interpret-abstract-atom "length(a1,g1)")))
   (add-directed-edge! primes-prior (car edge3) (cdr edge3))
   (test-advance primes2:val primes2cp:val primes3:val (list edge3))
   (test-advance primes3:val primes3cp:val primes4:val (list))

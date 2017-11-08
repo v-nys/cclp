@@ -46,15 +46,15 @@
     (list)
     conjunction)))
 (module+ test
-  (let* ([original (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")]
+  (let* ([original (interpret-abstract-conjunction "foo(g1,a1),bar(g2,a2)")]
          [filtered (unique-atoms original)])
     (check-equal? filtered original))
-  (let* ([st "foo(γ1,α1),bar(γ2,α2),foo(γ1,α1),bar(γ2,α2)"]
+  (let* ([st "foo(g1,a1),bar(g2,a2),foo(g1,a1),bar(g2,a2)"]
          [original (interpret-abstract-conjunction st)]
          [filtered (unique-atoms original)])
     (check-equal?
      filtered
-     (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)"))))
+     (interpret-abstract-conjunction "foo(g1,a1),bar(g2,a2)"))))
 (provide
  (proc-doc/names
   unique-atoms
@@ -91,43 +91,43 @@
               (findf-index (λ (c) (if (abstract-atom? c) (renames? c first-choice) (ormap (λ (mc) (renames? mc first-choice)) (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) c)))]) (car (unfold-multi-bounded 1 c offset offset)))))) conjunction))))))
 (module+ test
   (let* ([preprior (mk-preprior-graph)]
-         [conjunction (interpret-abstract-conjunction "foo(γ1,α1)")])
+         [conjunction (interpret-abstract-conjunction "foo(g1,a1)")])
     (begin
       (add-vertex! preprior (first conjunction))
       (check-equal? (selected-index conjunction preprior '()) 0)))
   (let* ([preprior (mk-preprior-graph)]
-         [conjunction (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")])
+         [conjunction (interpret-abstract-conjunction "foo(g1,a1),bar(g2,a2)")])
     (begin
       (add-vertex! preprior (first conjunction))
       (add-vertex! preprior (second conjunction))
       (check-equal? (selected-index conjunction preprior '()) #f)))
   (let* ([preprior (mk-preprior-graph)]
-         [conjunction1 (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")]
-         [conjunction2 (interpret-abstract-conjunction "foo(γ3,α3),bar(γ4,α4)")])
+         [conjunction1 (interpret-abstract-conjunction "foo(g1,a1),bar(g2,a2)")]
+         [conjunction2 (interpret-abstract-conjunction "foo(g3,a3),bar(g4,a4)")])
     (begin
       (add-vertex! preprior (first conjunction1))
       (add-vertex! preprior (second conjunction1))
       (add-directed-edge! preprior (first conjunction1) (second conjunction1))
       (check-equal? (selected-index conjunction2 preprior '()) 0)))
   (let* ([preprior (mk-preprior-graph)]
-         [conjunction (interpret-abstract-conjunction "foo(γ1,α1),bar(γ2,α2)")])
+         [conjunction (interpret-abstract-conjunction "foo(g1,a1),bar(g2,a2)")])
     (begin
       (add-vertex! preprior (first conjunction))
       (add-vertex! preprior (second conjunction))
       (add-directed-edge! preprior (second conjunction) (first conjunction))
       (check-equal? (selected-index conjunction preprior '()) 1)))
   (let* ([preprior (mk-preprior-graph)]
-         [conjunction (interpret-abstract-conjunction "foo(α1),foo(γ1),foo(nil)")])
+         [conjunction (interpret-abstract-conjunction "foo(a1),foo(g1),foo(nil)")])
     (begin
       (add-vertex! preprior (first conjunction))
       (add-vertex! preprior (second conjunction))
       (add-vertex! preprior (third conjunction))
       (check-equal? (selected-index conjunction preprior '()) 2)))
-  (let ([conjunction (interpret-abstract-conjunction "foo(α1),bar(γ1)")]
+  (let ([conjunction (interpret-abstract-conjunction "foo(a1),bar(g1)")]
         [full-ai
          (list
           (full-evaluation
-           (interpret-abstract-atom "bar(γ1)")
+           (interpret-abstract-atom "bar(g1)")
            (interpret-abstract-atom "bar(nil)")))])
     (check-equal?
      (selected-index conjunction (mk-preprior-graph) full-ai)

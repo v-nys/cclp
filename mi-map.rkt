@@ -150,10 +150,10 @@
     (a 3)
     (a 101)
     (interpret-abstract-conjunction
-     "foo(γ1,α1),bar(γ2,α2),baz(γ3,α3),quux(γ3,α3),poit(γ4,α4)"))
+     "foo(g1,a1),bar(g2,a2),baz(g3,a3),quux(g3,a3),poit(g4,a4)"))
    (cons
     (interpret-abstract-conjunction
-     "foo(γ1,α1),bar(γ2,α2),baz(γ3,α101),quux(γ3,α3),poit(γ4,α4)")
+     "foo(g1,a1),bar(g2,a2),baz(g3,a101),quux(g3,a3),poit(g4,a4)")
     #t)))
 
 (define (rename-occurrences locus aliases)
@@ -167,12 +167,12 @@
   (check-equal?
    (rename-occurrences
     (interpret-abstract-conjunction
-     "foo(γ1,α1),bar(γ2,α2),baz(γ3,α3),quux(γ3,α3),narf(γ3,α3),poit(γ4,α4)")
+     "foo(g1,a1),bar(g2,a2),baz(g3,a3),quux(g3,a3),narf(g3,a3),poit(g4,a4)")
     (list
      (cons (a 1) (a 5))
      (cons (a 3) (a 6))))
    (interpret-abstract-conjunction
-    "foo(γ1,α5),bar(γ2,α2),baz(γ3,α6),quux(γ3,α3),narf(γ3,α3),poit(γ4,α4)")))
+    "foo(g1,a5),bar(g2,a2),baz(g3,a6),quux(g3,a3),narf(g3,a3),poit(g4,a4)")))
 (provide
  (proc-doc/names
   rename-occurrences
@@ -288,9 +288,9 @@
   (require rackunit)
   (check-equal?
    (untangle
-    (interpret-abstract-conjunction "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),length(α5,γ5)"))
+    (interpret-abstract-conjunction "integers(g1,a1),filter(g2,a1,a2),filter(g3,a2,a3),filter(g4,a3,a4),sift(a4,a5),length(a5,g5)"))
    (list
-    (interpret-abstract-conjunction "integers(γ1,α6),filter(γ2,α1,α7),filter(γ3,α2,α8),filter(γ4,α3,α9),sift(α4,α10),length(α5,γ5)")
+    (interpret-abstract-conjunction "integers(g1,a6),filter(g2,a1,a7),filter(g3,a2,a8),filter(g4,a3,a9),sift(a4,a10),length(a5,g5)")
     (list
      (cons (a 1) (a 6))
      (cons (a 2) (a 7))
@@ -337,7 +337,7 @@
   (check-equal?
    (untangle
     (append
-     (interpret-abstract-conjunction "collect(γ1,α1),collect(γ2,α2),append(α1,α2,α3),collect(γ3,α4),append(α3,α4,α5)")
+     (interpret-abstract-conjunction "collect(g1,a1),collect(g2,a2),append(a1,a2,a3),collect(g3,a4),append(a3,a4,a5)")
      (cons
       (multi
        (list
@@ -347,10 +347,10 @@
        (init (list (cons (a* 1 1 2) (a 5))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
        (final (list (cons (a* 1 'L 3) (a 6)))))
-      (interpret-abstract-conjunction "collect(γ4,α7),eq(α6,α7)"))))
+      (interpret-abstract-conjunction "collect(g4,a7),eq(a6,a7)"))))
    (list
     (append
-     (interpret-abstract-conjunction "collect(γ1,α8),collect(γ2,α9),append(α1,α2,α10),collect(γ3,α11),append(α3,α4,α5)")
+     (interpret-abstract-conjunction "collect(g1,a8),collect(g2,a9),append(a1,a2,a10),collect(g3,a11),append(a3,a4,a5)")
      (cons
       (multi
        (list
@@ -360,7 +360,7 @@
        (init (list (cons (a* 1 1 2) (a 5))))
        (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
        (final (list (cons (a* 1 'L 3) (a 6)))))
-      (interpret-abstract-conjunction "collect(γ4,α12),eq(α6,α7)")))
+      (interpret-abstract-conjunction "collect(g4,a12),eq(a6,a7)")))
     (list
      (cons (a 1) (a 8))
      (cons (a 2) (a 9))
@@ -665,11 +665,11 @@
          (append
           (interpret-abstract-conjunction
            (string-append
-            "integers(γ1,α1),"
-            "filter(γ2,α1,α2),"
-            "filter(γ3,α2,α3),"
-            "filter(γ4,α3,α4),"
-            "sift(α4,α5)"))
+            "integers(g1,a1),"
+            "filter(g2,a1,a2),"
+            "filter(g3,a2,a3),"
+            "filter(g4,a3,a4),"
+            "sift(a4,a5)"))
           (list
            (abstract-atom
             'alt_length
@@ -720,8 +720,8 @@
          (append
           (interpret-abstract-conjunction
            (string-append
-            "integers(γ1,α1),"
-            "filter(γ2,α1,α2)"))
+            "integers(g1,a1),"
+            "filter(g2,a1,a2)"))
           (list
            (multi
             (list
@@ -746,9 +746,9 @@
                     (a 3))))))
           (interpret-abstract-conjunction
            (string-append
-            "filter(γ3,α3,α4),"
-            "sift(α4,α5),"
-            "alt_length(α5,γ4)")))]
+            "filter(g3,a3,a4),"
+            "sift(a4,a5),"
+            "alt_length(a5,g4)")))]
         [node-46-building-blocks
          (list
           (cons
@@ -820,9 +820,9 @@
                     (a 2))))))
           (interpret-abstract-conjunction
            (string-append
-            "filter(γ2,α2,α3),"
-            "filter(γ3,α3,α4),"
-            "sift(α4,α5)"))
+            "filter(g2,a2,a3),"
+            "filter(g3,a3,a4),"
+            "sift(a4,a5)"))
           (list
            (abstract-atom
             'alt_length
@@ -880,12 +880,12 @@
   (let ([graphcol-36-conjunction
          (interpret-abstract-conjunction
           (string-append
-           "coloring(cons(α71,α72)),"
-           "allsafe(γ193,γ194,cons(γ476,γ477),cons(α71,α72)),"
-           "allsafe(γ197,γ198,cons(γ476,γ477),cons(α71,α72)),"
-           "allsafe(γ201,γ202,cons(γ476,γ477),cons(α71,α72)),"
-           "allsafe(γ203,γ204,cons(γ476,γ477),cons(α71,α72)),"
-           "safe(cons(γ476,γ477),cons(α71,α72))"))]
+           "coloring(cons(a71,a72)),"
+           "allsafe(g193,g194,cons(g476,g477),cons(a71,a72)),"
+           "allsafe(g197,g198,cons(g476,g477),cons(a71,a72)),"
+           "allsafe(g201,g202,cons(g476,g477),cons(a71,a72)),"
+           "allsafe(g203,g204,cons(g476,g477),cons(a71,a72)),"
+           "safe(cons(g476,g477),cons(a71,a72))"))]
         [graphcol-36-building-blocks
          (list
           (cons
@@ -902,7 +902,7 @@
   (let ([graphcol-57-conjunction
          (append
           (interpret-abstract-conjunction
-           "coloring([α103|α104]),allsafe(γ479,γ480,[γ1880|γ1881],[α103|α104])")
+           "coloring([a103|a104]),allsafe(g479,g480,[g1880|g1881],[a103|a104])")
           (list
            (multi
             (list
@@ -933,7 +933,7 @@
               (cons (a* 1 'L 1)
                     (abstract-function 'cons (list (a 103) (a 104))))))))
           (interpret-abstract-conjunction
-           "allsafe(γ887,γ888,[γ1880|γ1881],[α103|α104]),allsafe(γ889,γ890,[γ1880|γ1881],[α103|α104]),safe([γ1880|γ1881],[α103|α104])"))]
+           "allsafe(g887,g888,[g1880|g1881],[a103|a104]),allsafe(g889,g890,[g1880|g1881],[a103|a104]),safe([g1880|g1881],[a103|a104])"))]
         [graphcol-57-building-blocks
          (list
           (cons
@@ -1111,8 +1111,8 @@
   (check-equal?
    (apply-compound-subst
     (cons (abstract-function 'nil empty) (a 1000))
-    (interpret-abstract-conjunction "foo(bar(α1,nil)),baz(nil)"))
-   (interpret-abstract-conjunction "foo(bar(α1,α1000)),baz(nil)")))
+    (interpret-abstract-conjunction "foo(bar(a1,nil)),baz(nil)"))
+   (interpret-abstract-conjunction "foo(bar(a1,a1000)),baz(nil)")))
 
 (define (deconstruct ac)
   (let* ([compounds (extract-abstract-compounds ac)]
@@ -1143,10 +1143,10 @@
   (check-equal?
    (deconstruct
     (interpret-abstract-conjunction
-     "sift(α40,α39),alt_length([γ28|α390],γ20)"))
+     "sift(a40,a39),alt_length([g28|a390],g20)"))
    (cons
     (interpret-abstract-conjunction
-     "sift(α40,α39),alt_length(α391,γ20)")
+     "sift(a40,a39),alt_length(a391,g20)")
     (list
      (cons
       (abstract-function 'cons (list (g 28) (a 390)))
@@ -1239,7 +1239,7 @@
      (symbol->string v)]
     [else (error (format "can't print this: ~a" else))]))
 (module+ test
-  ; really shows the need for αγ lang extension...
+  ; really shows the need for ag lang extension...
   (check-equal?
    (synth-str
     (list
@@ -1292,7 +1292,7 @@
     (synth-str
      (generalization/2-head-arg1
       (interpret-abstract-conjunction
-       "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),alt_length([γ5|α5],γ6)"))))
+       "integers(g1,a1),filter(g2,a1,a2),filter(g3,a2,a3),filter(g4,a3,a4),sift(a4,a5),alt_length([g5|a5],g6)"))))
    "[integers(G1,A6),filter(G2,A1,A7),filter(G3,A2,A8),filter(G4,A3,A9),sift(A4,A10),alt_length(A11,G6)]")
   ;; based on node 46
   (check-equal?
@@ -1302,7 +1302,7 @@
      (generalization/2-head-arg1
       (append
        (interpret-abstract-conjunction
-        "integers(γ1,α6),filter(γ2,α1,α7)")
+        "integers(g1,a6),filter(g2,a1,a7)")
        (cons
         (multi
          (list
@@ -1327,7 +1327,7 @@
             (a* 1 'L 2)
             (a 8)))))
         (interpret-abstract-conjunction
-         "filter(γ3,α3,α9),sift(α4,α10),alt_length(α5,γ4)"))))))
+         "filter(g3,a3,a9),sift(a4,a10),alt_length(a5,g4)"))))))
    "[integers(G1,A6),filter(G2,A1,A7),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)]")
   
   ;; based on node 80  
@@ -1389,7 +1389,7 @@
             (a* 2 'L 2)
             (a 10))))))
        (interpret-abstract-conjunction
-        "filter(γ3,α4,α11),sift(α5,α12),alt_length(α6,γ4)")))))
+        "filter(g3,a4,a11),sift(a5,a12),alt_length(a6,g4)")))))
    (string-append
     "[integers(G1,A7),"
     "multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),"
@@ -1612,7 +1612,7 @@
       (generalization/2-head-arg2
        (generalization/2-head-arg1
         (interpret-abstract-conjunction
-         "integers(γ1,α1),filter(γ2,α1,α2),filter(γ3,α2,α3),filter(γ4,α3,α4),sift(α4,α5),alt_length([γ5|α5],γ6)"))
+         "integers(g1,a1),filter(g2,a1,a2),filter(g3,a2,a3),filter(g4,a3,a4),sift(a4,a5),alt_length([g5|a5],g6)"))
        (list
         (cons
          (list

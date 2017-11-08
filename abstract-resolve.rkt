@@ -165,39 +165,39 @@
   (require (for-syntax (only-in "abstract-substitution.rkt" asubst)))
 
   (check-equal?
-   (abstract-resolve (interpret-abstract-conjunction "perm(γ1,α1),ord(α1)")
+   (abstract-resolve (interpret-abstract-conjunction "perm(g1,a1),ord(a1)")
                      0
                      (list (interpret-concrete-rule "perm([],[])")
                            (interpret-concrete-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
                      (list)
                      (list))
-   (list (resolvent (interpret-abstract-conjunction "del(α8,[γ8|γ9],α10),perm(α10,α9),ord([α8|α9])")
+   (list (resolvent (interpret-abstract-conjunction "del(a8,[g8|g9],a10),perm(a10,a9),ord([a8|a9])")
                     (asubst
                      ((a 6) (g 8))
                      ((a 7) (g 9))
                      ((g 1) (cons [(g 8) (g 9)]))
                      ((a 1) (cons [(a 8) (a 9)])))
                     (interpret-concrete-rule "perm([X|Y],[U|V]) :- del(U,[X|Y],W),perm(W,V)"))
-         (resolvent (interpret-abstract-conjunction "ord(γ2)")
+         (resolvent (interpret-abstract-conjunction "ord(g2)")
                     (asubst
                      ((g 1) (g 2))
                      ((a 1) (g 2)))
                     (interpret-concrete-rule "perm([],[])"))))
 
   (let ([full-eval
-         (full-evaluation (interpret-abstract-atom "del(α1,[γ1|γ2],α2)")
-                          (interpret-abstract-atom "del(γ3,[γ1|γ2],γ4)")
+         (full-evaluation (interpret-abstract-atom "del(a1,[g1|g2],a2)")
+                          (interpret-abstract-atom "del(g3,[g1|g2],g4)")
                           1)])
     (check-equal?
      (abstract-resolve
-      (interpret-abstract-conjunction "del(α12,[γ18|γ19],α14),perm(α14,α13),ord([γ3,α12|α13])")
+      (interpret-abstract-conjunction "del(a12,[g18|g19],a14),perm(a14,a13),ord([g3,a12|a13])")
       0
       '()
       (list full-eval)
       (list))
      (list
       (resolvent
-       (interpret-abstract-conjunction "perm(γ23,α13),ord([γ3,γ22|α13])")
+       (interpret-abstract-conjunction "perm(g23,a13),ord([g3,g22|a13])")
        (asubst
         ((a 12) (g 22))
         ((g 18) (g 20))

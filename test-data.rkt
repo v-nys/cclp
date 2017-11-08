@@ -30,10 +30,10 @@ HERE
 (define primes-full-evals
   (interpret-full-eval-section
    #<<HERE
-plus(γ1,γ2,α1) -> α1/γ3.
-minus(γ1,γ2,α1) -> α1/γ3.
-divides(γ1,γ2).
-does_not_divide(γ1,γ2).
+plus(g1,g2,a1) -> a1/g3.
+minus(g1,g2,a1) -> a1/g3.
+divides(g1,g2).
+does_not_divide(g1,g2).
 HERE
    ))
 (provide primes-full-evals)
@@ -58,8 +58,8 @@ HERE
 (define permsort-full-evals
   (interpret-full-eval-section
    #<<HERE
-lte(γ1,γ2).
-del(α1,[γ1|γ2],α2) -> α1/γ3,α2/γ4.
+lte(g1,g2).
+del(a1,[g1|g2],a2) -> a1/g3,a2/g4.
 HERE
    ))
 (provide permsort-full-evals)
