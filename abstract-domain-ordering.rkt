@@ -134,94 +134,82 @@
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init
-      (list
+     (list
        (cons (g* 1 1 1) (g 1))
        (cons (a* 1 1 1) (a 1))
-       (cons (a* 1 1 2) (a 2))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final
-      (list
+       (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
        (cons (g* 1 'L 1) (g 2))
        (cons (a* 1 'L 1) (a 2))
-       (cons (a* 1 'L 2) (a 3)))))
+       (cons (a* 1 'L 2) (a 3))))
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init
-      (list
+     (list
        (cons (g* 1 1 1) (g 1))
        (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 1))))
-       (cons (a* 1 1 2) (a 2))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final
-      (list
+       (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
        (cons (g* 1 'L 1) (g 2))
        (cons (a* 1 'L 1) (a 2))
-       (cons (a* 1 'L 2) (a 3)))))))
+       (cons (a* 1 'L 2) (a 3))))))
   (check-false
    (>=-extension
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init
-      (list
+     (list
        (cons (g* 1 1 1) (g 1))
        (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 1))))
-       (cons (a* 1 1 2) (a 2))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final
-      (list
+       (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
        (cons (g* 1 'L 1) (g 2))
        (cons (a* 1 'L 1) (a 2))
-       (cons (a* 1 'L 2) (a 3)))))
+       (cons (a* 1 'L 2) (a 3))))
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init
-      (list
+     (list
        (cons (g* 1 1 1) (g 1))
        (cons (a* 1 1 1) (a 1))
-       (cons (a* 1 1 2) (a 2))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final
-      (list
+       (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
        (cons (g* 1 'L 1) (g 2))
        (cons (a* 1 'L 1) (a 2))
-       (cons (a* 1 'L 2) (a 3)))))))
+       (cons (a* 1 'L 2) (a 3))))))
   (check-true
    (>=-extension
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init
-      (list
+     (list
        (cons (g* 1 1 1) (g 1))
        (cons (a* 1 1 1) (a 1))
-       (cons (a* 1 1 2) (a 2))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final
-      (list
+       (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
        (cons (g* 1 'L 1) (g 2))
        (cons (a* 1 'L 1) (a 3))
-       (cons (a* 1 'L 2) (a 4)))))
+       (cons (a* 1 'L 2) (a 4))))
     (list (abstract-atom 'filter (list (g 1) (a 1) (a 2))))))
   (check-true
    (>=-extension
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init
-      (list
+     (list
        (cons (g* 1 1 1) (g 1))
        (cons (a* 1 1 1) (a 1))
-       (cons (a* 1 1 2) (a 2))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final
-      (list
+       (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
        (cons (g* 1 'L 1) (g 2))
        (cons (a* 1 'L 1) (a 3))
-       (cons (a* 1 'L 2) (a 4)))))
+       (cons (a* 1 'L 2) (a 4))))
     (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
           (abstract-atom 'filter (list (g 2) (a 2) (a 3))))))
   (check-true
@@ -229,17 +217,15 @@
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init
-      (list
+     (list
        (cons (g* 1 1 1) (g 1))
        (cons (a* 1 1 1) (a 1))
-       (cons (a* 1 1 2) (a 2))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final
-      (list
+       (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
        (cons (g* 1 'L 1) (g 2))
        (cons (a* 1 'L 1) (a 3))
-       (cons (a* 1 'L 2) (a 4)))))
+       (cons (a* 1 'L 2) (a 4))))
     (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
           (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
           (abstract-atom 'filter (list (g 3) (a 3) (a 4))))))
@@ -250,17 +236,15 @@
      (multi
       (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
-      (init
-       (list
+      (list
         (cons (g* 1 1 1) (g 1))
         (cons (a* 1 1 1) (a 1))
-        (cons (a* 1 1 2) (a 2))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final
-       (list
+        (cons (a* 1 1 2) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
         (cons (g* 1 'L 1) (g 2))
         (cons (a* 1 'L 1) (a 3))
-        (cons (a* 1 'L 2) (a 4)))))
+        (cons (a* 1 'L 2) (a 4))))
      (abstract-atom 'sift (list (a 4) (a 5))))
     (list
      (abstract-atom 'integers (list (g 10) (a 1)))
@@ -273,17 +257,15 @@
      (multi
       (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
-      (init
-       (list
+      (list
         (cons (g* 1 1 1) (g 1))
         (cons (a* 1 1 1) (a 1))
-        (cons (a* 1 1 2) (a 2))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final
-       (list
+        (cons (a* 1 1 2) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
         (cons (g* 1 'L 1) (g 2))
         (cons (a* 1 'L 1) (a 3))
-        (cons (a* 1 'L 2) (a 4)))))
+        (cons (a* 1 'L 2) (a 4))))
      (abstract-atom 'sift (list (a 4) (a 5))))
     (list
      (abstract-atom 'integers (list (g 10) (a 1)))
@@ -297,17 +279,15 @@
      (multi
       (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
-      (init
-       (list
+      (list
         (cons (g* 1 1 1) (g 1))
         (cons (a* 1 1 1) (a 1))
-        (cons (a* 1 1 2) (a 2))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final
-       (list
+        (cons (a* 1 1 2) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
         (cons (g* 1 'L 1) (g 2))
         (cons (a* 1 'L 1) (a 3))
-        (cons (a* 1 'L 2) (a 4)))))
+        (cons (a* 1 'L 2) (a 4))))
      (abstract-atom 'sift (list (a 4) (a 5))))
     (list
      (abstract-atom 'integers (list (g 10) (a 1)))
@@ -322,31 +302,27 @@
      (multi
       (list (abstract-atom* 'filterA (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
-      (init
-       (list
+      (list
         (cons (g* 1 1 1) (g 1))
         (cons (a* 1 1 1) (a 1))
-        (cons (a* 1 1 2) (a 2))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final
-       (list
+        (cons (a* 1 1 2) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
         (cons (g* 1 'L 1) (g 2))
         (cons (a* 1 'L 1) (a 3))
-        (cons (a* 1 'L 2) (a 4)))))
+        (cons (a* 1 'L 2) (a 4))))
      (multi
       (list (abstract-atom* 'filterB (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2))))
       #t
-      (init
-       (list
+      (list
         (cons (g* 2 1 1) (g 4))
         (cons (a* 2 1 1) (a 4))
-        (cons (a* 2 1 2) (a 5))))
-      (consecutive (list (cons (a* 2 'i+1 1) (a* 2 'i 2))))
-      (final
-       (list
+        (cons (a* 2 1 2) (a 5)))
+      (list (cons (a* 2 'i+1 1) (a* 2 'i 2)))
+      (list
         (cons (g* 2 'L 1) (g 5))
         (cons (a* 2 'L 1) (a 6))
-        (cons (a* 2 'L 2) (a 7))))))
+        (cons (a* 2 'L 2) (a 7)))))
     (list
      (abstract-atom 'integers (list (g 10) (a 1)))
      (abstract-atom 'filterA (list (g 1) (a 1) (a 2)))
@@ -355,17 +331,15 @@
      (multi
       (list (abstract-atom* 'filterB (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
-      (init
-       (list
+      (list
         (cons (g* 1 1 1) (g 4))
         (cons (a* 1 1 1) (a 4))
-        (cons (a* 1 1 2) (a 5))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final
-       (list
+        (cons (a* 1 1 2) (a 5)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
         (cons (g* 1 'L 1) (g 6))
         (cons (a* 1 'L 1) (a 6))
-        (cons (a* 1 'L 2) (a 7)))))))))
+        (cons (a* 1 'L 2) (a 7))))))))
 (provide
  (proc-doc/names
   >=-extension

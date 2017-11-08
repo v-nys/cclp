@@ -296,31 +296,25 @@
        (abstract-atom* 'filterA (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2)))
        (abstract-atom* 'filterB (list (g* 1 'i 2) (a* 1 'i 2) (a* 1 'i 3))))
       #t
-      (init
-       (list
-        (cons (a* 1 'i 1) (a 1))))
-      (consecutive
-       (list
-        (cons (a* 1 'i+1 1) (a* 1 'i 3))))
-      (final
-       (list
-        (cons (a* 1 'L 3) (a 2)))))
+      (list
+        (cons (a* 1 'i 1) (a 1)))
+      (list
+        (cons (a* 1 'i+1 1) (a* 1 'i 3)))
+      (list
+        (cons (a* 1 'L 3) (a 2))))
      (multi
       (list
        (abstract-atom* 'filterA (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2)))
        (abstract-atom* 'filterB (list (g* 2 'i 2) (a* 2 'i 2) (a* 2 'i 3))))
       #t
-      (init
-       (list
+      (list
         (cons
          (a* 2 'i 1)
-         (abstract-function 'cons (list (g 2) (a 2))))))
-      (consecutive
-       (list
-        (cons (a* 2 'i+1 1) (a* 2 'i 3))))
-      (final
-       (list
-        (cons (a* 2 'L 3) (a 3)))))
+         (abstract-function 'cons (list (g 2) (a 2)))))
+      (list
+        (cons (a* 2 'i+1 1) (a* 2 'i 3)))
+      (list
+        (cons (a* 2 'L 3) (a 3))))
      (abstract-atom 'sift (list (a 3) (a 4)))))
    (list
     (atom 'integers (list (variable 'G1) (variable 'A1)))

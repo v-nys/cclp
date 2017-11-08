@@ -373,10 +373,10 @@
     [else (error (format "conjunct unaccounted for: ~a" c))]))
 (module+ test
   (check-equal?
-   (local-min (gen-node (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 'l1 1 1 #f) #t #t))
+   (local-min (gen-node (multi (list) #f empty empty empty) 2 (gen-range 'l1 1 1 #f) #t #t))
    1)
   (check-equal?
-   (local-min (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f #t))
+   (local-min (gen-node (multi (list) #t empty empty empty) 2 (gen-range 1 'l1 1 #t) #f #t))
    1))
 
 (define (local-max c)
@@ -386,10 +386,10 @@
     [(gen-node _ _ (gen-range fst lst _ #f) _ _) fst]))
 (module+ test
   (check-equal?
-   (local-max (gen-node (multi (list) #f (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 'l1 1 1 #f) #f #t))
+   (local-max (gen-node (multi (list) #f empty empty empty) 2 (gen-range 'l1 1 1 #f) #f #t))
    'l1)
   (check-equal?
-   (local-max (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 2 (gen-range 1 'l1 1 #t) #f #t))
+   (local-max (gen-node (multi (list) #t empty empty empty) 2 (gen-range 1 'l1 1 #t) #f #t))
    'l1))
 
 (define (gen-range-first/gen rng)

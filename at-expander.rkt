@@ -246,19 +246,19 @@
    (ad:abstract-function* 'cons (list (ad:g* 1 1 1) (ad:a* 1 1 1)))))
 (provide parameterized-abstract-list)
 
-(define-syntax-rule (init pair ...) (ad:init (list pair ...)))
+(define-syntax-rule (init pair ...) (list pair ...))
 (provide init)
 
 (define-syntax-rule (init-pair avar* aterm) (cons avar* aterm))
 (provide init-pair)
 
-(define-syntax-rule (consecutive pair ...) (ad:consecutive (list pair ...)))
+(define-syntax-rule (consecutive pair ...) (list pair ...))
 (provide consecutive)
 
 (define-syntax-rule (consecutive-pair avar* aterm*) (cons avar* aterm*))
 (provide consecutive-pair)
 
-(define-syntax-rule (final pair ...) (ad:final (list pair ...)))
+(define-syntax-rule (final pair ...) (list pair ...))
 (provide final)
 
 (define-syntax-rule (final-pair avar* avar) (cons avar* avar))

@@ -122,13 +122,13 @@
           [(cons after success?)
            (rename args)])
        (cons (constructor sym after) success?))]
-    [(multi patt asc? (init ic) consec (final fc) rta)
+    [(multi patt asc? ic consec fc rta)
      (match-let
          ([(cons after-1 success-1?)
            (rename patt)]
           [zip (λ (l1 l2) (map (λ (e1 e2) (cons e1 e2)) l1 l2))])
        (cond [success-1?
-              (cons (multi after-1 asc? (init ic) consec (final fc) rta) success-1?)]
+              (cons (multi after-1 asc? ic consec fc rta) success-1?)]
              [else (cons locus #f)]))]
     [(list)
      (cons locus #f)]
@@ -308,9 +308,9 @@
         'filter
         (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
-      (init (list (cons (a* 1 1 1) (a 2))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-      (final (list (cons (a* 1 'L 2) (a 3)))))
+      (list (cons (a* 1 1 1) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list (cons (a* 1 'L 2) (a 3))))
      (abstract-atom 'filter (list (g 3) (a 3) (a 4)))
      (abstract-atom 'sift (list (a 4) (a 5)))
      (abstract-atom 'length (list (a 5) (g 4)))))
@@ -324,9 +324,9 @@
         'filter
         (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
       #t
-      (init (list (cons (a* 1 1 1) (a 2))))
-      (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))) ; note: use of a variable in consecutive is not considered aliasing!
-      (final (list (cons (a* 1 'L 2) (a 3)))))
+      (list (cons (a* 1 1 1) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2))) ; note: use of a variable in consecutive is not considered aliasing!
+      (list (cons (a* 1 'L 2) (a 3))))
      (abstract-atom 'filter (list (g 3) (a 3) (a 7)))
      (abstract-atom 'sift (list (a 4) (a 8)))
      (abstract-atom 'length (list (a 5) (g 4))))
@@ -344,9 +344,9 @@
         (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
         (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
        #f
-       (init (list (cons (a* 1 1 2) (a 5))))
-       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
-       (final (list (cons (a* 1 'L 3) (a 6)))))
+       (list (cons (a* 1 1 2) (a 5)))
+       (list (cons (a* 1 'i+1 1) (a* 1 'i 3)))
+       (list (cons (a* 1 'L 3) (a 6))))
       (interpret-abstract-conjunction "collect(g4,a7),eq(a6,a7)"))))
    (list
     (append
@@ -357,9 +357,9 @@
         (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 4)))
         (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
        #f
-       (init (list (cons (a* 1 1 2) (a 5))))
-       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 3))))
-       (final (list (cons (a* 1 'L 3) (a 6)))))
+       (list (cons (a* 1 1 2) (a 5)))
+       (list (cons (a* 1 'i+1 1) (a* 1 'i 3)))
+       (list (cons (a* 1 'L 3) (a 6))))
       (interpret-abstract-conjunction "collect(g4,a12),eq(a6,a7)")))
     (list
      (cons (a 1) (a 8))
@@ -515,7 +515,7 @@
          [correctly-aliased
           (correct-aliasing
            localized-pattern
-           (consecutive-constraints (multi-consecutive a-multi))
+           (multi-consecutive a-multi)
            fresh)]
          [joined-and-renamed
           (rename-apart
@@ -555,7 +555,7 @@
        [localized-constraints
         (map
          (match-lambda [(cons k v) (cons (apply-substitution subst (localize k)) v)])
-         (init-constraints (multi-init a-multi)))]
+         (multi-init a-multi))]
        [template-bb
         (erase-or-substitute
          (make-hash localized-constraints)
@@ -590,7 +590,7 @@
        [localized-constraints
         (map
          (match-lambda [(cons k v) (cons (apply-substitution subst (localize k)) v)])
-         (final-constraints (multi-final a-multi)))]
+         (multi-final a-multi))]
        [template-bb
         (erase-or-substitute
          (make-hash localized-constraints)
@@ -732,18 +732,15 @@
                (a* 1 'i 1)
                (a* 1 'i 2))))
             #t
-            (init
-             (list
+            (list
               (cons (a* 1 1 1)
-                    (a 2))))
-            (consecutive
-             (list
+                    (a 2)))
+            (list
               (cons (a* 1 'i+1 1)
-                    (a* 1 'i 2))))
-            (final
-             (list
+                    (a* 1 'i 2)))
+            (list
               (cons (a* 1 'L 2)
-                    (a 3))))))
+                    (a 3)))))
           (interpret-abstract-conjunction
            (string-append
             "filter(g3,a3,a4),"
@@ -806,18 +803,15 @@
                (a* 1 'i 1)
                (a* 1 'i 2))))
             #t
-            (init
-             (list
+            (list
               (cons (a* 1 1 1)
-                    (a 1))))
-            (consecutive
-             (list
+                    (a 1)))
+            (list
               (cons (a* 1 'i+1 1)
-                    (a* 1 'i 2))))
-            (final
-             (list
+                    (a* 1 'i 2)))
+            (list
               (cons (a* 1 'L 2)
-                    (a 2))))))
+                    (a 2)))))
           (interpret-abstract-conjunction
            (string-append
             "filter(g2,a2,a3),"
@@ -914,24 +908,21 @@
                (g* 1 'i 3)
                (a* 1 'i 1))))
             #t
-            (init
-             (list
+            (list
               (cons (g* 1 1 3)
                     (abstract-function 'cons (list (g 1880) (g 1881))))
               (cons (a* 1 1 1)
-                    (abstract-function 'cons (list (a 103) (a 104))))))
-            (consecutive
-             (list
+                    (abstract-function 'cons (list (a 103) (a 104)))))
+            (list
               (cons (g* 1 'i+1 3)
                     (g* 1 'i 3))
               (cons (a* 1 'i+1 1)
-                    (a* 1 'i 1))))
-            (final
-             (list
+                    (a* 1 'i 1)))
+            (list
               (cons (g* 1 'L 3)
                     (abstract-function 'cons (list (g 1880) (g 1881))))
               (cons (a* 1 'L 1)
-                    (abstract-function 'cons (list (a 103) (a 104))))))))
+                    (abstract-function 'cons (list (a 103) (a 104)))))))
           (interpret-abstract-conjunction
            "allsafe(g887,g888,[g1880|g1881],[a103|a104]),allsafe(g889,g890,[g1880|g1881],[a103|a104]),safe([g1880|g1881],[a103|a104])"))]
         [graphcol-57-building-blocks
@@ -1045,14 +1036,14 @@
            [success-2?
             (cons (cons h t-after) success-2?)]
            [else obj/success?]))]
-      [(cons (multi patt asc? (init ic) (consecutive cc) (final fc) rta) #f)
+      [(cons (multi patt asc? ic cc fc rta) #f)
        (match s
          [(cons (? abstract-function*?) _)
           (match-let
               ([(cons pattern-after success?)
                 (rec (cons patt #f))])
             (cons
-             (multi pattern-after asc? (init ic) (consecutive cc) (final fc) rta)
+             (multi pattern-after asc? ic cc fc rta)
              success?))]
          [(cons (? abstract-function?) _)
           ;; we don't replace these in a multi (they can only occur inside constraints)
@@ -1164,18 +1155,15 @@
          (a* 1 'i 34)
          (a* 1 'i 35))))
       #t
-      (init
-       (list
+      (list
         (cons (a* 1 1 34)
-              (abstract-function 'cons (list (g 90) (a 1220))))))
-      (consecutive
-       (list
+              (abstract-function 'cons (list (g 90) (a 1220)))))
+      (list
         (cons (a* 1 'i+1 34)
-              (a* 1 'i 35))))
-      (final
-       (list
+              (a* 1 'i 35)))
+      (list
         (cons (a* 1 'L 35)
-              (a 124)))))))
+              (a 124))))))
    (cons
     (list
      (abstract-atom 'filter (list (g 89) (a 121) (a 122)))
@@ -1188,20 +1176,15 @@
          (a* 1 'i 34)
          (a* 1 'i 35))))
       #t
-      (init
-       (list
+      (list
         (cons (a* 1 1 34)
-              ;; this doesn't need to be replaced
-              ;; check-first takes care of it
-              (abstract-function 'cons (list (g 90) (a 1220))))))
-      (consecutive
-       (list
+              (abstract-function 'cons (list (g 90) (a 1220)))))
+      (list
         (cons (a* 1 'i+1 34)
-              (a* 1 'i 35))))
-      (final
-       (list
+              (a* 1 'i 35)))
+      (list
         (cons (a* 1 'L 35)
-              (a 124))))))
+              (a 124)))))
     (list))))
 (provide
  (proc-doc/names
@@ -1313,19 +1296,16 @@
             (a* 1 'i 1)
             (a* 1 'i 3))))
          #t
-         (init
-          (list
-           (cons (a* 1 1 1) (a 2))))
-         (consecutive
-          (list
+         (list
+           (cons (a* 1 1 1) (a 2)))
+         (list
            (cons
             (a* 1 'i+1 1)
-            (a* 1 'i   2)))) ; unseen aliasing is not an issue for this part of generation
-         (final
-          (list
+            (a* 1 'i   2))) ; unseen aliasing is not an issue for this part of generation
+         (list
            (cons
             (a* 1 'L 2)
-            (a 8)))))
+            (a 8))))
         (interpret-abstract-conjunction
          "filter(g3,a3,a9),sift(a4,a10),alt_length(a5,g4)"))))))
    "[integers(G1,A6),filter(G2,A1,A7),multi('[|]'(building_block('[|]'(filter(G1i1,A1i1,A1i3),[])),Tail1)),filter(G3,A3,A9),sift(A4,A10),alt_length(A5,G4)]")
@@ -1348,21 +1328,18 @@
             (a* 1 'i 1)
             (a* 1 'i 3))))
          #t
-         (init
-          (list
+         (list
            (cons
             (a* 1 1 1)
-            (a 1))))
-         (consecutive
-          (list
+            (a 1)))
+         (list
            (cons
             (a* 1 'i+1 1)
-            (a* 1 'i   2))))
-         (final
-          (list
+            (a* 1 'i   2)))
+         (list
            (cons
             (a* 1 'L 2)
-            (a 8)))))
+            (a 8))))
         (abstract-atom 'filter (list (g 2) (a 2) (a 9)))
         (multi
          (list
@@ -1373,21 +1350,18 @@
             (a* 2 'i 1)
             (a* 2 'i 3))))
          #t
-         (init
-          (list
+         (list
            (cons
             (a* 2 1 1)
-            (a 3))))
-         (consecutive
-          (list
+            (a 3)))
+         (list
            (cons
             (a* 2 'i+1 1)
-            (a* 2 'i   2))))
-         (final
-          (list
+            (a* 2 'i   2)))
+         (list
            (cons
             (a* 2 'L 2)
-            (a 10))))))
+            (a 10)))))
        (interpret-abstract-conjunction
         "filter(g3,a4,a11),sift(a5,a12),alt_length(a6,g4)")))))
    (string-append
@@ -1633,21 +1607,18 @@
                (a* 1 'i 1)
                (a* 1 'i 2))))
             #t
-            (init
-             (list
+            (list
               (cons
                (a* 1 1 1)
-               (a 831))))
-            (consecutive
-             (list
+               (a 831)))
+            (list
               (cons
                (a* 1 'i+1 1)
-               (a* 1 'i   2))))
-            (final
-             (list
+               (a* 1 'i   2)))
+            (list
               (cons
                (a* 1 'L 2)
-               (a 380)))))
+               (a 380))))
            (abstract-atom 'filter (list (g 28) (a 381) (a 400)))
            (abstract-atom 'sift (list (a 401) (a 420)))
            (abstract-atom 'alt_length (list (a 421) (g 32))))]

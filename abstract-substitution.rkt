@@ -55,7 +55,7 @@
   (match input-conjunct
     [(abstract-atom sym args) (abstract-atom sym (map (λ (a) (substitute-in-term substituter substitutee a)) args))]
     [(multi c1 a i c2 f rta)
-     (multi c1 a (init (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) (init-constraints i))) c2 (final (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) (final-constraints f))) rta)]))
+     (multi c1 a (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) i) c2 (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) f) rta)]))
 
 ;(: substitute-in-conjunction (-> AbstractTerm AbstractVariable AbstractConjunction AbstractConjunction))
 (define (substitute-in-conjunction substituter substitutee conjunction) (map (λ (a) (substitute-in-conjunct substituter substitutee a)) conjunction))

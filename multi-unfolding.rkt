@@ -39,8 +39,8 @@
   (if (eqv? num 1)
       (let*-values
           ([(subscript-mapping single-subscript-conjunction) (unfold-multi-* m a-off g-off)]
-           [(single-subscript-init) (single-subscript-end-equalities (init-constraints (multi-init m)) subscript-mapping)]
-           [(single-subscript-final) (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping)]
+           [(single-subscript-init) (single-subscript-end-equalities (multi-init m) subscript-mapping)]
+           [(single-subscript-final) (single-subscript-end-equalities (multi-final m) subscript-mapping)]
            [(combined-substitution) (some-v (abstract-unify (append single-subscript-init single-subscript-final) 0))])
         (cons (apply-substitution-to-conjunction combined-substitution single-subscript-conjunction) combined-substitution))
       (match-let*
@@ -63,7 +63,7 @@
   (define-values
     (subscript-mapping single-subscript-conjunction)
     (unfold-multi-* m a-off g-off))
-  (define single-subscript-init (single-subscript-end-equalities (init-constraints (multi-init m)) subscript-mapping))
+  (define single-subscript-init (single-subscript-end-equalities (multi-init m) subscript-mapping))
   (define initial-conjunction (apply-substitution-to-conjunction single-subscript-init single-subscript-conjunction))
   (define (consecutive-shift pair)
     (match pair
@@ -72,7 +72,7 @@
       [(cons (g* id 'i+1 j) (g* id 'i k))
        (cons (g* id 1 j) (apply-substitution single-subscript-init (hash-ref subscript-mapping (g* id 'i k))))]))
   (append initial-conjunction
-          (list (struct-copy multi m [init (init (map consecutive-shift (consecutive-constraints (multi-consecutive m))))]))))
+          (list (struct-copy multi m [init (map consecutive-shift (multi-consecutive m))]))))
 (provide unfold-multi-many)
 
 (define (unfold-multi-many-bounded num m a-off g-off)
@@ -88,7 +88,7 @@
   (define-values
     (subscript-mapping single-subscript-conjunction)
     (unfold-multi-* m a-off g-off))
-  (define single-subscript-final (single-subscript-end-equalities (final-constraints (multi-final m)) subscript-mapping))
+  (define single-subscript-final (single-subscript-end-equalities (multi-final m) subscript-mapping))
   (define final-conjunction (apply-substitution-to-conjunction single-subscript-final single-subscript-conjunction))
   (define (consecutive-shift pair)
     (match pair
@@ -97,7 +97,7 @@
       [(cons (g* id 'i+1 j) (g* id 'i k))
        (cons (g* id 'L k) (apply-substitution single-subscript-final (hash-ref subscript-mapping (g* id 'i j))))]))
   (append
-   (list (struct-copy multi m [final (final (map consecutive-shift (consecutive-constraints (multi-consecutive m))))]))
+   (list (struct-copy multi m [final (map consecutive-shift (multi-consecutive m))]))
    final-conjunction))
 (module+ test
   (check-equal?
@@ -105,18 +105,18 @@
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init (list (cons (a* 1 1 1) (a 1))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final (list (cons (a* 1 'L 2) (a 2)))))
+     (list (cons (a* 1 1 1) (a 1)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list (cons (a* 1 'L 2) (a 2))))
     100
     100)
    (list
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init (list (cons (a* 1 1 1) (a 1))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final (list (cons (a* 1 'L 2) (a 101)))))
+     (list (cons (a* 1 1 1) (a 1)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list (cons (a* 1 'L 2) (a 101))))
     (abstract-atom 'filter (list (g 101) (a 101) (a 2))))))
 (provide unfold-multi-many-right)
 
@@ -139,9 +139,9 @@
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init (list (cons (a* 1 1 1) (a 1))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final (list (cons (a* 1 'L 2) (a 2)))))
+     (list (cons (a* 1 1 1) (a 1)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list (cons (a* 1 'L 2) (a 2))))
     10
     15)
    (list
@@ -152,18 +152,18 @@
       (multi
        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
        #t
-       (init (list (cons (a* 1 1 1) (a 12))))
-       (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-       (final (list (cons (a* 1 'L 2) (a 2))))))
+       (list (cons (a* 1 1 1) (a 12)))
+       (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+       (list (cons (a* 1 'L 2) (a 2)))))
      (list))))
   (check-equal?
    (unfold-multi
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init (list (cons (a* 1 1 1) (abstract-function 'cons (list (g 1) (a 1))))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final (list (cons (a* 1 'L 2) (a 2)))))
+     (list (cons (a* 1 1 1) (abstract-function 'cons (list (g 1) (a 1)))))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list (cons (a* 1 'L 2) (a 2))))
     10
     15)
    (list
@@ -173,18 +173,18 @@
            (multi
             (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
             #t
-            (init (list (cons (a* 1 1 1) (a 12))))
-            (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-            (final (list (cons (a* 1 'L 2) (a 2)))))) (list))))
+            (list (cons (a* 1 1 1) (a 12)))
+            (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+            (list (cons (a* 1 'L 2) (a 2))))) (list))))
   (check-equal?
    (unfold-multi-bounded
     1
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init (list (cons (g* 1 1 1) (g 1)) (cons (a* 1 1 1) (a 1)) (cons (a* 1 1 2) (a 2))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final (list (cons (a* 1 'L 2) (a 3)))))
+     (list (cons (g* 1 1 1) (g 1)) (cons (a* 1 1 1) (a 1)) (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list (cons (a* 1 'L 2) (a 3))))
     100
     100)
    (cons
@@ -201,9 +201,9 @@
     (multi
      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
      #t
-     (init (list (cons (a* 1 1 1) (a 1))))
-     (consecutive (list (cons (a* 1 'i+1 1) (a* 1 'i 2))))
-     (final (list (cons (a* 1 'L 2) (a 2)))))
+     (list (cons (a* 1 1 1) (a 1)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list (cons (a* 1 'L 2) (a 2))))
     100
     100)
    (cons

@@ -63,7 +63,7 @@
         (assemble-var-indices
          right-variable-type?
          (full-evaluation-output-pattern abstract-data)))]
-      [(multi _ _ (init ic) _ (final fc) _)
+      [(multi _ _ ic _ fc _)
        (assemble-var-indices right-variable-type? (map cdr (append ic fc)))]))
   (remove-duplicates (assemble-aux right-variable-type? abstract-data)))
 (provide
@@ -139,7 +139,7 @@
      (maximum-var-index (cons (abstract-rule-head abstraction) (abstract-rule-body abstraction)) right-variable-type?)]
     [(? full-evaluation?)
      (maximum-var-index (list (full-evaluation-input-pattern abstraction) (full-evaluation-output-pattern abstraction)) right-variable-type?)]
-    [(multi _ _ (init ic) _ (final fc) _)
+    [(multi _ _ ic _ fc _)
      (maximum-var-index (map cdr (append ic fc)) right-variable-type?)]))
 (provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem*? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
 
@@ -187,7 +187,7 @@
      (append
       (rec h)
       (append-map rec t))]
-    [(multi conjunction _ (init ic) (consecutive cc) (final fc) _)
+    [(multi conjunction _ ic cc fc _)
      (append
       (append-map rec conjunction)
       (if
@@ -259,9 +259,9 @@
             (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
             (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
            #t
-           (init (list))
-           (consecutive (list))
-           (final (list))))
+           empty
+           empty
+           empty))
    (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2) (a* 1 'i 3))))
 (provide
  (proc-doc/names
@@ -366,11 +366,10 @@
               empty)))
            (g* 1 'i 1))))))
       #t
-      (init
-       (list
-        (cons (a* 1 'i 1) (abstract-function 'nil empty))))
-      (consecutive (list))
-      (final (list)))))
+      (list
+        (cons (a* 1 'i 1) (abstract-function 'nil empty)))
+      empty
+      empty)))
    (list
     (abstract-function*
        'bar

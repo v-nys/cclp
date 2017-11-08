@@ -70,7 +70,7 @@
       ([(node-constructor) (λ (id) (gen-node (abstract-atom 'foo empty) id (gen 0 #f) #f #t))]
        [(node1 node2 node3 node4 node5 node6 node8)
         (apply values (map node-constructor '(1 2 3 4 5 6 8)))]
-       [(node7) (gen-node (multi (list) #t (init empty) (consecutive empty) (final empty)) 7 (gen-range 1 2 1 #t) #f #t)]
+       [(node7) (gen-node (multi (list) #t empty empty empty) 7 (gen-range 1 2 1 #t) #f #t)]
        [(graph)
         (unweighted-graph/directed
          `((,node1 ,node2)
@@ -216,7 +216,7 @@
          (gen-node (abstract-atom 'filter (list (g 57) (abstract-function 'nil (list)) (a 77))) 118 #f #f #f)]
         [gn2
          ; don't need the actual contents, just writing out more or less accurately to see where this occurs in prog
-         (gen-node (multi (list) #t (init (list)) (consecutive (list)) (final (list))) 119 #f #f #f)]
+         (gen-node (multi (list) #t empty empty empty) 119 #f #f #f)]
         [gn3
          (gen-node (abstract-atom 'filter (list (g 28) (a 38) (a 40))) 120 #f #f #f)]
         [gn4
