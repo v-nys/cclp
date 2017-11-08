@@ -347,97 +347,11 @@
   multi
   ([conjunction (listof abstract-atom*?)]
    [ascending? boolean?]
-   [init init?]
-   [consecutive consecutive?]
-   [final final?]
+   [init (listof (cons/c abstract-variable*? abstract-term?))]
+   [consecutive (listof (cons/c abstract-variable*? abstract-term*?))]
+   [final (listof (cons/c abstract-variable*? abstract-term?))]
    [rta exact-positive-integer?])
   @{The multi abstraction.}))
-
-(define (format-constraints constraints)
-  (format "{~a}"
-          (string-join
-           (map (match-lambda [(cons i o) (format "~v/~v" i o)])
-                constraints)
-           ",")))
-
-(serializable-struct
- init (constraints)
- #:methods
- gen:custom-write
- [(define (write-proc obj out mode)
-    (if (boolean? mode)
-        ((make-constructor-style-printer
-          (λ (obj) 'init)
-          (λ (obj) (list (init-constraints obj)))) obj out mode)
-        ;; print-as-expression is not relevant in this application
-        (display (format-constraints (init-constraints obj)) out)))]
- #:methods
- gen:equal+hash
- [(define (equal-proc i1 i2 equal?-recur)
-    (equal?-recur (init-constraints i1) (init-constraints i2)))
-  (define (hash-proc i hash-recur)
-    (hash-recur (init-constraints i)))
-  (define (hash2-proc i hash2-recur)
-    (hash2-recur (init-constraints i)))])
-(provide
- (struct*-doc
-  init
-  ([constraints (listof (cons/c abstract-variable*? abstract-term?))])
-  @{Constraints pertaining to the first (in terms of recursion depth) abstracted abstract conjunction in a multi.}))
-
-(serializable-struct
- consecutive (constraints)
- #:methods
- gen:custom-write
- [(define (write-proc obj out mode)
-    (if (boolean? mode)
-        ((make-constructor-style-printer
-          (λ (obj) 'consecutive)
-          (λ (obj) (list (consecutive-constraints obj)))) obj out mode)
-        ;; print-as-expression is not relevant in this application
-        (display
-         (format-constraints (consecutive-constraints obj))
-         out)))]
- #:methods
- gen:equal+hash
- [(define (equal-proc c1 c2 equal?-recur)
-    (equal?-recur (consecutive-constraints c1) (consecutive-constraints c2)))
-  (define (hash-proc c hash-recur)
-    (hash-recur (consecutive-constraints c)))
-  (define (hash2-proc c hash2-recur)
-    (hash2-recur (consecutive-constraints c)))])
-(provide
- (struct*-doc
-  consecutive
-  ([constraints (listof (cons/c abstract-variable*? abstract-term*?))])
-  @{Constraints pertaining to consecutive (in terms of recursion depth) abstracted abstract conjunctions in a multi.}))
-
-(serializable-struct
- final (constraints)
- #:methods
- gen:custom-write
- [(define (write-proc obj out mode)
-    (if (boolean? mode)
-        ((make-constructor-style-printer
-          (λ (obj) 'final)
-          (λ (obj) (list (final-constraints obj)))) obj out mode)
-        ;; print-as-expression is not relevant in this application
-        (display
-         (format-constraints (final-constraints obj))
-         out)))]
- #:methods
- gen:equal+hash
- [(define (equal-proc f1 f2 equal?-recur)
-    (equal?-recur (final-constraints f1) (final-constraints f2)))
-  (define (hash-proc f hash-recur)
-    (hash-recur (final-constraints f)))
-  (define (hash2-proc f hash2-recur)
-    (hash2-recur (final-constraints f)))])
-(provide
- (struct*-doc
-  final
-  ([constraints (listof (cons/c abstract-variable*? abstract-term?))])
-  @{Constraints pertaining to the final (in terms of recursion depth) abstracted abstract conjunction in a multi.}))
 
 (define (abstract-term? elem)
   (or (abstract-variable? elem) (abstract-function? elem)))
