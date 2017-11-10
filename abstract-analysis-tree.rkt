@@ -33,7 +33,11 @@
 
 (define (largest-node-index t)
   (match t
-    [(node label (list)) #f]
+    [(node label (list))
+     #:when (not (label-selection label))
+     #f]
+    [(node label (list)) ;; selection and no children = explicit failure
+     (label-index label)]
     [(node label children)
      (or
       (foldr
