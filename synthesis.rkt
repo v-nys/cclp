@@ -48,15 +48,68 @@
     rackunit
     repeated-application
     (prefix-in permsort: cclp-programs/permutation-sort))
-  (let ([ps-tree
-         (analysis-tree
-          (apply↑* proceed permsort:initial-program-analysis))])
-    (check-equal?
-     (A-nodes ps-tree)
-     (set 1 5))))
+  (define ps-tree
+    (analysis-tree
+     (apply↑* proceed permsort:initial-program-analysis)))
+  (check-equal?
+   (A-nodes ps-tree)
+   (set 1 5)))
 (provide
  (proc-doc/names
   A-nodes
   (-> node? set?)
   (tree)
   @{Collects the indices of all nodes in @racket[tree] which can correspond to a synthesized state.}))
+
+(define (synthesizable-branches tree)
+  (define (branches-from from endpoint-indices)
+    (let* ([from-node
+            (first
+             (subtree-filter
+              tree
+              (λ (st)
+                (and
+                 (label-with-conjunction? (node-label st))
+                 (equal?
+                  from
+                  (label-index
+                   (node-label st)))))))]
+           [from-ch (node-children from-node)])
+      (for/fold ([flat-set (set)])
+                ([ch from-ch])
+        (cond
+          [(and (label-with-conjunction? (node-label ch))
+                (null? (label-conjunction (node-label ch))))
+           (set-add flat-set (list (node-label from-node) (node-label ch)))]
+          [(and (label-with-conjunction? (node-label ch))
+                (set-member? endpoint-indices (label-index (node-label ch))))
+           (set-add flat-set (list (node-label from-node) (node-label ch)))]
+          [(label-with-conjunction? (node-label ch))
+           (set-union
+            flat-set
+            (list->set
+             (set-map
+              (branches-from (label-index (node-label ch)) endpoint-indices)
+              (λ (b) (cons (node-label from-node) b)))))]
+          [(cycle? (node-label ch))
+           (set-add flat-set (list (node-label from-node) #f))]
+          [else flat-set]))))
+  (let ([A (A-nodes tree)])
+    (for/fold ([flat-set (set)])
+              ([node-set 
+                (list->set
+                 (set-map
+                  A
+                  (λ (n)
+                    (branches-from n A))))])
+      (set-union flat-set node-set))))
+(module+ test
+  (check-equal?
+   (list->set (set-map (synthesizable-branches ps-tree) (λ (b) (map (λ (e) (and e (label-index e))) b))))
+   (set (list 1 2 3 #f) (list 1 2 4 5) (list 5 6 #f) (list 5 7 8 9 10 #f))))
+(provide
+ (proc-doc/names
+  synthesizable-branches
+  (-> node? set?)
+  (tree)
+  @{Collects the branch segments of the abstract tree to be transformed into concrete clauses.}))
