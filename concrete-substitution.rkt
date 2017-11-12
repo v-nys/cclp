@@ -55,5 +55,29 @@
 (provide
  (struct*-doc
   concrete-equality
-  ([term1 concrete-domain-elem?] [term2 concrete-domain-elem?])
+  ([term1 (or/c concrete-domain-elem? (listof concrete-domain-elem?))]
+   [term2 (or/c concrete-domain-elem? (listof concrete-domain-elem?))])
   @{An equality between two concrete domain elements. A list of these makes up a concrete substitution.}))
+
+(define (substitute substitutee substituter ctxt)
+  (define rec (curry substitute substitutee substituter))
+  (match ctxt
+    [(variable v)
+     #:when (eq? v (variable-name substitutee))
+     substituter]
+    [(function sym args)
+     (function sym (map rec args))]
+    [(atom sym args)
+     (atom sym (map rec args))]
+    [(? list?)
+     (map rec ctxt)]
+    [(concrete-equality t1 t2)
+     (concrete-equality (rec t1) (rec t2))]
+    [else
+     ctxt]))
+(provide
+ (proc-doc/names
+  substitute
+  (-> variable? term? (or/c term? atom? list? concrete-equality?) (or/c term? atom? list? concrete-equality?))
+  (substitutee substituter ctxt)
+  @{Replace @racket[substitutee] with @racket[substituter] inside @racket[ctxt].}))
