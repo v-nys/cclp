@@ -23,7 +23,8 @@
 (require
   racket/struct
   scribble/srcdoc
-  cclp/concrete-domain)
+  cclp/concrete-domain
+  cclp/concrete-knowledge)
 (require (for-doc scribble/manual))
 
 (struct concrete-equality (term1 term2)
@@ -81,3 +82,28 @@
   (-> variable? term? (or/c term? atom? list? concrete-equality?) (or/c term? atom? list? concrete-equality?))
   (substitutee substituter ctxt)
   @{Replace @racket[substitutee] with @racket[substituter] inside @racket[ctxt].}))
+
+(define (apply-variable-substitution subst ctxt)
+  (define rec (curry apply-variable-substitution subst))
+  (match subst
+    [(list) ctxt]
+    [(list-rest sh st)
+     (let ([after-sh
+            (match ctxt
+       [(variable vn)
+        #:when (eq? vn (variable-name (concrete-equality-term1 sh)))
+        (concrete-equality-term2 sh)]
+       [(variable vn) (variable vn)]
+       [(atom sym args)
+        (atom sym (rec args))]
+       [(function sym args)
+        (function sym (rec args))]
+       [(? list?)
+        (map rec ctxt)]
+       [(rule h t idx)
+        (rule (rec h) (rec t) idx)]
+       [(concrete-equality t1 t2)
+        (concrete-equality (rec t1) (rec t2))]
+       [else (error "Don't know how to substitute in this context.")])])
+       (apply-variable-substitution st after-sh))]))
+(provide apply-variable-substitution)

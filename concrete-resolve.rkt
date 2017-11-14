@@ -47,28 +47,6 @@
    [substitution (listof concrete-equality?)])
   @{Summarizes the result of a resolution step.}))
 
-(define (apply-variable-substitution subst ctxt)
-  (define rec (curry apply-variable-substitution subst))
-  (match subst
-    [(list) ctxt]
-    [(list-rest sh st)
-     (match ctxt
-       [(variable vn)
-        #:when (eq? vn (variable-name (concrete-equality-term1 sh)))
-        (concrete-equality-term2 sh)]
-       [(variable vn) (variable vn)]
-       [(atom sym args)
-        (atom sym (rec args))]
-       [(function sym args)
-        (function sym (rec args))]
-       [(? list?)
-        (map rec ctxt)]
-       [(rule h t idx)
-        (rule (rec h) (rec t) idx)]
-       [(concrete-equality t1 t2)
-        (concrete-equality (rec t1) (rec t2))]
-       [else (error "Don't know how to substitute in this context.")])]))
-
 (define (rename-clause c)
   (define (extract-variables el)
     (match el

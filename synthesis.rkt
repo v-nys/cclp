@@ -22,6 +22,7 @@
 #lang at-exp racket
 (require
   (only-in racket/syntax format-symbol)
+  racket/mock
   scribble/srcdoc
   (only-in cclp/interaction analysis-tree proceed)
   cclp/abstract-analysis
@@ -29,6 +30,7 @@
   cclp/concrete-domain
   cclp/concrete-knowledge
   cclp/concrete-resolve
+  (only-in cclp/concrete-substitution apply-variable-substitution)
   (only-in cclp/data-utils some-v)
   (only-in cclp/domain-switching concrete-synth-counterpart)
   racket-tree-utils/src/tree)
@@ -124,39 +126,41 @@
 
 ; b is a list of node labels
 (define (branch->clause b)
-  ; OK
   (define (remove-at-index lst idx)
     (append
      (take lst idx)
      (drop lst (add1 idx))))
-  ; OK
   (define (synth resolvents full-evals last-node)
     (define (atom->function a)
       (match a
         [(atom sym args)
          (function sym args)]))
-    ;; FIXME: for some reason, operated under the assumption that resolvents were labels...?
+    (define collected-bindings
+      (append-map resolvent-substitution resolvents))
     (rule
-     (atom
-      (format-symbol "q~a" (label-index (first b)))
-      (map atom->function (resolvent-conjunction (first resolvents))))
-     (append
-      full-evals
-      (cond
-        [(cycle? last-node)
-         (list
-          (atom
-           (format-symbol "q~a" (cycle-index last-node))
-           (map atom->function (resolvent-conjunction (last resolvents)))))]
-        [(null? (label-conjunction last-node))
-         empty]
-        [else
-         (list
-          (atom
-           (format-symbol "q~a" (label-index last-node))
-           (map atom->function (resolvent-conjunction (last resolvents)))))]))
+     (apply-variable-substitution
+      collected-bindings
+      (atom
+       (format-symbol "q~a" (label-index (first b)))
+       (map atom->function (resolvent-conjunction (first resolvents)))))
+     (apply-variable-substitution
+      collected-bindings
+      (append
+       full-evals
+       (cond
+         [(cycle? last-node)
+          (list
+           (atom
+            (format-symbol "q~a" (cycle-index last-node))
+            (map atom->function (resolvent-conjunction (last resolvents)))))]
+         [(null? (label-conjunction last-node))
+          empty]
+         [else
+          (list
+           (atom
+            (format-symbol "q~a" (label-index last-node))
+            (map atom->function (resolvent-conjunction (last resolvents)))))])))
      #f))
-  
   ;; note: full evals are just atoms
   (define (extend-resolvents n acc)
     (match acc
@@ -206,7 +210,6 @@
      (first resolvents/full-evals)
      (second resolvents/full-evals)
      (last b))))
-
 (module+ test
   (check-equal?
    (branch->clause (set-first ps-segments))
