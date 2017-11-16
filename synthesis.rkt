@@ -22,7 +22,8 @@
 #lang at-exp racket
 (require
   (only-in racket/syntax format-symbol)
-  racket/mock
+  mock
+  racket/generator
   scribble/srcdoc
   (only-in cclp/interaction analysis-tree proceed)
   cclp/abstract-analysis
@@ -30,6 +31,7 @@
   cclp/concrete-domain
   cclp/concrete-knowledge
   cclp/concrete-resolve
+  (only-in cclp/mi-map synth-str)
   (only-in cclp/concrete-substitution apply-variable-substitution)
   (only-in cclp/data-utils some-v)
   (only-in cclp/domain-switching concrete-synth-counterpart)
@@ -100,7 +102,7 @@
               (branches-from (label-index (node-label ch)) endpoint-indices)
               (λ (b) (cons (node-label from-node) b)))))]
           [(cycle? (node-label ch))
-           (set-add flat-set (list (node-label from-node) #f))]
+           (set-add flat-set (list (node-label from-node) (node-label ch)))]
           [else flat-set]))))
   (let ([A (A-nodes tree)])
     (for/fold ([flat-set (set)])
@@ -112,11 +114,10 @@
                     (branches-from n A))))])
       (set-union flat-set node-set))))
 (module+ test
-  (define sort-segments identity) ;; TODO: sort by initial node, tie-break by final numbered node
   (define ps-segments (sort-segments (set-map (synthesizable-segments ps-tree) identity)))
   (check-equal?
-   (list->set (map (λ (b) (map (λ (e) (and e (label-index e))) b)) ps-segments))
-   (set (list 1 2 3 #f) (list 1 2 4 5) (list 5 6 #f) (list 5 7 8 9 10 #f))))
+   (list->set (map (λ (b) (map (λ (e) (and e (if (label-with-conjunction? e) (label-index e) e))) b)) ps-segments))
+   (set (list 1 2 3 #f) (list 1 2 4 5) (list 5 6 #f) (list 5 7 8 9 10 (cycle 5)))))
 (provide
  (proc-doc/names
   synthesizable-segments
@@ -124,8 +125,23 @@
   (tree)
   @{Collects the branch segments of the abstract tree to be transformed into concrete clauses.}))
 
+(define (sort-segments segments)
+  (define (segment-lt s1 s2)
+    (or
+     ;; this never applies to full segments, can only occur in recursive case
+     (and (or (not (label-index (first s1))) (not (label-index (first s2))))
+          (< (rule-idx (first s1)) (rule-idx (first s2))))
+     ;; segments with different roots
+     (< (label-index (first s1)) (label-index (first s2)))
+     ;; segments with identical, non-false roots
+     (and
+      (label-index (first s1))
+      (equal? (label-index (first s1)) (label-index (first s2)))
+      (segment-lt (cdr s1) (cdr s2)))))
+(sort segments segment-lt))
+
 ; b is a list of node labels
-(define (branch->clause b)
+(define (branch->clause b [gensym gensym])
   (define (remove-at-index lst idx)
     (append
      (take lst idx)
@@ -171,7 +187,8 @@
                  (resolve
                   (resolvent-conjunction (last resolvents))
                   (some-v selection)
-                  (tree-label-rule n))])
+                  (tree-label-rule n)
+                  gensym)])
             (and next-resolvent
                  (list
                   (append resolvents (list next-resolvent))
@@ -211,6 +228,59 @@
      (second resolvents/full-evals)
      (last b))))
 (module+ test
-  (check-equal?
-   (branch->clause (set-first ps-segments))
-   (rule (atom 'foo empty) (list (atom 'bar empty)) #f)))
+  (let ([mock-gensym
+         (mock
+          #:behavior
+          (generator (_) (for ([i (in-naturals)]) (yield (format-symbol "Var~a" i)))))]
+        [sorted-segments (sort-segments (set->list ps-segments))])
+    (check-equal?
+     (branch->clause (second sorted-segments) mock-gensym)
+     ;; would be nice if I could write γ(q1(sort([Var2|Var3],[Var4|Var5])) :- del(Var4,[Var2|Var3],Var6), q5(perm(Var6,Var5),ord([Var4|Var5])).)
+     (rule
+      (atom
+       'q1
+       (list
+        (function
+         'sort
+         (list
+          (function (string->symbol "'[|]'") (list (variable 'Var2) (variable 'Var3)))
+          (function (string->symbol "'[|]'") (list (variable 'Var4) (variable 'Var5)))))))
+      (list
+       (atom
+        'del
+        (list
+         (variable 'Var4)
+         (function (string->symbol "'[|]'") (list (variable 'Var2) (variable 'Var3)))
+         (variable 'Var6)))
+       (atom
+        'q5
+        (list
+         (function
+          'perm
+          (list
+           (variable 'Var6)
+           (variable 'Var5)))
+         (function
+          'ord
+          (list
+           (function
+            (string->symbol "'[|]'")
+            (list
+             (variable 'Var4)
+             (variable 'Var5))))))))
+      #f))))
+(provide branch->clause)
+
+(define (pretty-print-rule r)
+  (match r
+    [(rule h t _)
+     (let ([h-synth (synth-str h)]
+           [t-synth (synth-str t)])
+       (if (non-empty-string? t-synth)
+           (format "~a :- ~a." h-synth t-synth)
+           (format "~a." h-synth)))]))
+
+(module+ test
+  (for-each
+   (compose displayln pretty-print-rule branch->clause)
+   (sort-segments (set->list ps-segments))))

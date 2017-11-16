@@ -1258,6 +1258,7 @@
      (atom 'filter (map variable '(G28 A38B A40A)))
      (atom 'sift (map variable '(A40B A39A)))
      (atom 'alt_length (map variable '(G28A39B G20)))))   "integers(G24,A31A),multi('[|]'(building_block('[|]'(filter(G25,A31B,A35A),[])),'[|]'(building_block('[|]'(filter(G27,A35B,A38A),[])),[]))),filter(G28,A38B,A40A),sift(A40B,A39A),alt_length(G28A39B,G20)"))
+(provide synth-str)
 
 (define (generalization/2-head-arg1 ac)
   (match-let*

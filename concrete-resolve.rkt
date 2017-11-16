@@ -47,7 +47,7 @@
    [substitution (listof concrete-equality?)])
   @{Summarizes the result of a resolution step.}))
 
-(define (rename-clause c)
+(define (rename-clause c [gensym gensym])
   (define (extract-variables el)
     (match el
       [(variable v)
@@ -61,9 +61,9 @@
          [subst (map (λ (v) (concrete-equality v (variable (gensym 'Var)))) vars)])
     (apply-variable-substitution subst c)))
 
-(define (resolve conjunction idx clause)
+(define (resolve conjunction idx clause [gensym gensym])
   (let* ([conjunct (list-ref conjunction idx)]
-         [renamed-clause (rename-clause clause)]
+         [renamed-clause (rename-clause clause gensym)]
          [unifier (concrete-unify (list (concrete-equality conjunct (rule-head renamed-clause))))])
     (and
      unifier
@@ -78,8 +78,11 @@
 (provide
  (proc-doc/names
   resolve
-  (-> (listof atom?) exact-nonnegative-integer? rule? (or/c #f resolvent?))
-  (conjunction idx clause)
+  (->*
+   ((listof atom?) exact-nonnegative-integer? rule?)
+   (procedure?)
+   (or/c #f resolvent?))
+  ((conjunction idx clause) ((gensym gensym)))
   @{Resolves the selected conjunct in @racket[conjunction] at index position @racket[idx] using @racket[clause].
  If concrete resolution is not possible, this returns @racket[#f].
- Note that @racket[clause] does not need to be renamed before this function is applied as this is done automatically.}))
+ Note that @racket[clause] does not need to be renamed before this function is applied as this is done automatically using @racket[gensym]. An alternative symbol generation function can optionally be supplied, but this is only for the purpose of using mocks in tests.}))

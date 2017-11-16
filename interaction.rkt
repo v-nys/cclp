@@ -276,14 +276,14 @@
               (display (format "*~v*" atom) out)
               (print atom out))
           (when (< i last-i) (display "," out))))
-      (display "□")))
+      (display "□" out)))
 
 (define (print-tree-label t [out (current-output-port)])
   (match (node-label t)
     [(or (tree-label con sel _ _ i)
          (generalization con sel i _ _))
      (begin
-       (when i (display (format "~v:" i)))
+       (when i (display (format "~v:" i) out))
        (print-conjunction con sel out))]
     [(cycle i)
      (display (format "cycle back to node ~a" i) out)]
@@ -292,3 +292,4 @@
        (display "[widening]")
        (when idx (display (format "~v:" idx)))
        (print-conjunction con sel out))]))
+(provide print-tree-label)
