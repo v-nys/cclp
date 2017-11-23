@@ -43,7 +43,7 @@
 (provide
  (struct*-doc
   resolvent
-  ([conjunction (listof atom?)]
+  ([conjunction (listof conjunct?)]
    [substitution (listof concrete-equality?)])
   @{Summarizes the result of a resolution step.}))
 
@@ -79,7 +79,7 @@
  (proc-doc/names
   resolve
   (->*
-   ((listof atom?) exact-nonnegative-integer? rule?)
+   ((listof conjunct?) exact-nonnegative-integer? rule?)
    (procedure?)
    (or/c #f resolvent?))
   ((conjunction idx clause) ((gensym gensym)))

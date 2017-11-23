@@ -43,8 +43,7 @@
 (define (atom->function a)
   (match a
     [(atom sym args)
-     (function sym args)]
-    [(? concrete-multi?) a]))
+     (function sym args)]))
 
 (define (A-nodes tree)
   (define (A-nodes* tree)
@@ -165,17 +164,23 @@
 ;; TODO: extend so this works with multi
 ; b is a list of node labels
 (define (branch->clause b [gensym gensym])
-  (struct con/sub (con sub))
-  ;; FIXME: naming! resolvents are not all resolvents, in case of multi these are just conjunctions
-  (define (synth resolvents full-evals last-node)
+  (struct con/sub (con sub)) ;; conjunction + substitution
+  (define (make-wrappable e)
+    (match e
+      [(atom sym args) (function sym args)]
+      [(concrete-multi lst) (function 'multi (list lst))]
+      [else (error "Can't wrap this in a Q state." e)]))
+  (define (resolvent->con/sub r)
+    (match r [(resolvent c s) (con/sub c s)]))
+  (define (synth con/subs full-evals last-node)
     (define collected-bindings
-      (append-map (match-lambda [(resolvent c s) s] [_ empty]) resolvents))
+      (append-map con/sub-sub con/subs))
     (rule
      (apply-variable-substitution
       collected-bindings
       (atom
        (format-symbol "q~a" (label-index (first b)))
-       (map atom->function (resolvent-conjunction (first resolvents)))))
+       (map make-wrappable (con/sub-con (first con/subs)))))
      (apply-variable-substitution
       collected-bindings
       (append
@@ -185,17 +190,17 @@
           (list
            (atom
             (format-symbol "q~a" (cycle-index last-node))
-            (map atom->function (resolvent-conjunction (last resolvents)))))]
+            (map make-wrappable (con/sub-con (last con/subs)))))]
          [(null? (label-conjunction last-node))
           empty]
          [else
           (list
            (atom
             (format-symbol "q~a" (label-index last-node))
-            (map atom->function ((match-lambda [(resolvent c s) c] [c c]) (last resolvents)))))])))
+            (map make-wrappable (con/sub-con (last con/subs)))))])))
      #f))
   ;; note: full evals are just atoms
-  (define (extend-resolvents n acc)
+  (define (extend-con/subs n acc) ;; here, acc is a list of con/subs
     (define (append-potential-multi-elems conjunct idx acc)
       (cond
         [(and
@@ -219,42 +224,43 @@
         [else
          (append acc (list conjunct))]))
     (match acc
-      [(list resolvents evals selection)
+      [(list con/subs evals selection)
        (cond
          [(and (tree-label? n) (rule? (tree-label-rule n)))
           (let ([next-resolvent
                  (resolve
-                  (resolvent-conjunction (last resolvents))
+                  (con/sub-con (last con/subs))
                   (some-v selection)
                   (tree-label-rule n)
                   gensym)])
             (and next-resolvent
                  (list
-                  (append resolvents (list next-resolvent))
+                  (append con/subs (list (resolvent->con/sub next-resolvent)))
                   evals
                   (label-selection n))))]
          [(and (tree-label? n) (full-evaluation? (tree-label-rule n)))
           (let ([next-resolvent
                  (resolvent
                   (remove-at-index
-                   (resolvent-conjunction (last resolvents))
+                   (con/sub-con (last con/subs))
                    (some-v selection))
                   empty)]) ;; don't need to track this substitution
             (list
-             (append resolvents (list next-resolvent))
+             (append con/subs (list (resolvent->con/sub next-resolvent)))
              (append
               evals
               (list
                (list-ref
-                (resolvent-conjunction (last resolvents))
+                (con/sub-con (last con/subs))
                 (some-v selection))))
              (label-selection n)))]
          [(generalization? n)
-          ;; not actually a resolvent though!
-          (let* ([next-resolvent
-                  (foldl append-potential-multi-elems empty (resolvent-conjunction (last resolvents)) (range (length (resolvent-conjunction (last resolvents)))))])
+          (let* ([next-con/sub
+                  (con/sub
+                   (foldl append-potential-multi-elems empty (con/sub-con (last con/subs)) (range (length (con/sub-con (last con/subs)))))
+                   empty)])
             (list
-             (append resolvents (list next-resolvent))
+             (append con/subs (list next-con/sub))
              evals
              (label-selection n)))]
          ;; unfold 'one and 'many are still left
@@ -265,7 +271,7 @@
           (filter (λ (n) (and (label-with-conjunction? n) (label-index n))) b)]
          [con/subs/full-evals
           (foldl
-           extend-resolvents
+           extend-con/subs
            (list
             (list initial-con/sub)
             empty

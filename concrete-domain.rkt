@@ -136,3 +136,7 @@
   concrete-multi
   ([lst function?])
   @{A concrete counterpart to multi which can be used for code generation.}))
+
+(define (conjunct? elem)
+  (or (atom? elem) (concrete-multi? elem)))
+(provide conjunct?)
