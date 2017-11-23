@@ -157,13 +157,15 @@
   (sort segments segment-lt))
 (provide sort-segments)
 
-;; TODO: extend so this works with multi
-; b is a list of node labels
-(define (branch->clause b [gensym gensym])
-  (define (remove-at-index lst idx)
+(define (remove-at-index lst idx)
     (append
      (take lst idx)
      (drop lst (add1 idx))))
+
+;; TODO: extend so this works with multi
+; b is a list of node labels
+(define (branch->clause b [gensym gensym])
+  (struct con/sub (con sub))
   ;; FIXME: naming! resolvents are not all resolvents, in case of multi these are just conjunctions
   (define (synth resolvents full-evals last-node)
     (define collected-bindings
@@ -257,22 +259,23 @@
              (label-selection n)))]
          ;; unfold 'one and 'many are still left
          [else (error "Can't deal with this type of node yet." n)])]))
-  (let* ([initial-resolvent
-          (resolvent (concrete-synth-counterpart (label-conjunction (first b))) empty)]
+  (let* ([initial-con/sub
+          (con/sub (concrete-synth-counterpart (label-conjunction (first b))) empty)]
          [numbered-nodes
           (filter (λ (n) (and (label-with-conjunction? n) (label-index n))) b)]
-         [resolvents/full-evals
+         [con/subs/full-evals
           (foldl
            extend-resolvents
            (list
-            (list initial-resolvent)
+            (list initial-con/sub)
             empty
             (label-selection (first b)))
            (cdr numbered-nodes))])
     (synth
-     (first resolvents/full-evals)
-     (second resolvents/full-evals)
+     (first con/subs/full-evals)
+     (second con/subs/full-evals)
      (last b))))
+
 (module+ test
   (let ([mock-gensym
          (mock
