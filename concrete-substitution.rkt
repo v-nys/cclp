@@ -90,20 +90,22 @@
     [(list-rest sh st)
      (let ([after-sh
             (match ctxt
-       [(variable vn)
-        #:when (eq? vn (variable-name (concrete-equality-term1 sh)))
-        (concrete-equality-term2 sh)]
-       [(variable vn) (variable vn)]
-       [(atom sym args)
-        (atom sym (rec args))]
-       [(function sym args)
-        (function sym (rec args))]
-       [(? list?)
-        (map rec ctxt)]
-       [(rule h t idx)
-        (rule (rec h) (rec t) idx)]
-       [(concrete-equality t1 t2)
-        (concrete-equality (rec t1) (rec t2))]
-       [else (error "Don't know how to substitute in this context.")])])
+              [(variable vn)
+               #:when (eq? vn (variable-name (concrete-equality-term1 sh)))
+               (concrete-equality-term2 sh)]
+              [(variable vn) (variable vn)]
+              [(atom sym args)
+               (atom sym (rec args))]
+              [(function sym args)
+               (function sym (rec args))]
+              [(? list?)
+               (map rec ctxt)]
+              [(rule h t idx)
+               (rule (rec h) (rec t) idx)]
+              [(concrete-equality t1 t2)
+               (concrete-equality (rec t1) (rec t2))]
+              [(concrete-multi lst)
+               (concrete-multi (rec lst))]
+              [else (error "Don't know how to substitute in this context.")])])
        (apply-variable-substitution st after-sh))]))
 (provide apply-variable-substitution)

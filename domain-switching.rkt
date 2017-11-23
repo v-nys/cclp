@@ -369,26 +369,10 @@
   @{Converts an abstract domain element to an element which is suitable for synthesis of concrete code.
  Typically, this is a concrete domain element, but for multi this is an auxiliary structure.}))
 
-(struct
-  concrete-multi (lst)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc cm1 cm2 equal?-recur)
-     (equal?-recur
-      (concrete-multi-lst cm1)
-      (concrete-multi-lst cm2)))
-   (define (hash-proc cm hash-recur)
-     (hash-recur (concrete-multi-lst cm)))
-   (define (hash2-proc cm hash2-recur)
-     (hash2-recur (concrete-multi-lst cm)))]
-  #:methods
-  gen:custom-write
-  [(define write-proc
-     (make-constructor-style-printer
-      (λ (obj) 'concrete-multi)
-      (λ (obj) (list (concrete-multi-lst obj)))))])
-(provide
- (struct*-doc
-  concrete-multi
-  ([lst function?])
-  @{A concrete counterpart to multi which can be used for code generation.}))
+(define (racket-listify lst)
+      (match lst
+        [(variable sym) lst] ; can create improper lists!
+        [(function (quote \[\]) (list)) empty]
+        [(function (quote \'\[\|\]\') (list-rest c1 c2))
+         (cons c1 (racket-listify (first c2)))]))
+(provide racket-listify)

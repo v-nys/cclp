@@ -34,9 +34,17 @@
   (only-in cclp/mi-map synth-str)
   (only-in cclp/concrete-substitution apply-variable-substitution)
   (only-in cclp/data-utils some-v)
-  (only-in cclp/domain-switching concrete-synth-counterpart)
+  cclp/domain-switching
+  cclp/gen-graph-structs
   racket-tree-utils/src/tree)
 (require (for-doc scribble/manual))
+
+;; FIXME: bad name, also does concrete multi
+(define (atom->function a)
+  (match a
+    [(atom sym args)
+     (function sym args)]
+    [(? concrete-multi?) a]))
 
 (define (A-nodes tree)
   (define (A-nodes* tree)
@@ -57,13 +65,20 @@
   (require
     rackunit
     repeated-application
-    (prefix-in permsort: cclp-programs/permutation-sort))
+    (prefix-in permsort: cclp-programs/permutation-sort)
+    (prefix-in primes: cclp-programs/primes))
   (define ps-tree
     (analysis-tree
      (apply↑* proceed permsort:initial-program-analysis)))
+  (define primes-tree
+    (analysis-tree
+     (apply↑* proceed primes:initial-program-analysis)))
   (check-equal?
    (A-nodes ps-tree)
-   (set 1 5)))
+   (set 1 5))
+  (check-equal?
+   (A-nodes primes-tree)
+   (set 1 3 9 11 20 27 22 36 43 47 38 59 57 45 66 73 79 55 84 72 82 91 95)))
 (provide
  (proc-doc/names
   A-nodes
@@ -105,7 +120,7 @@
            (set-add flat-set (list (node-label from-node) (node-label ch)))]
           [else flat-set]))))
   (let ([A (A-nodes tree)])
-    (for/fold ([flat-set (set)])
+    (for/fold ([flat-set (set)]) ; the outcome: a set of synthesizable segments
               ([node-set 
                 (list->set
                  (set-map
@@ -117,7 +132,8 @@
   (define ps-segments (sort-segments (set-map (synthesizable-segments ps-tree) identity)))
   (check-equal?
    (list->set (map (λ (b) (map (λ (e) (and e (if (label-with-conjunction? e) (label-index e) e))) b)) ps-segments))
-   (set (list 1 2 3 #f) (list 1 2 4 5) (list 5 6 #f) (list 5 7 8 9 10 (cycle 5)))))
+   (set (list 1 2 3 #f) (list 1 2 4 5) (list 5 6 #f) (list 5 7 8 9 10 (cycle 5))))
+  (define primes-segments (sort-segments (set-map (synthesizable-segments primes-tree) identity))))
 (provide
  (proc-doc/names
   synthesizable-segments
@@ -138,21 +154,20 @@
       (label-index (first s1))
       (equal? (label-index (first s1)) (label-index (first s2)))
       (segment-lt (cdr s1) (cdr s2)))))
-(sort segments segment-lt))
+  (sort segments segment-lt))
+(provide sort-segments)
 
+;; TODO: extend so this works with multi
 ; b is a list of node labels
 (define (branch->clause b [gensym gensym])
   (define (remove-at-index lst idx)
     (append
      (take lst idx)
      (drop lst (add1 idx))))
+  ;; FIXME: naming! resolvents are not all resolvents, in case of multi these are just conjunctions
   (define (synth resolvents full-evals last-node)
-    (define (atom->function a)
-      (match a
-        [(atom sym args)
-         (function sym args)]))
     (define collected-bindings
-      (append-map resolvent-substitution resolvents))
+      (append-map (match-lambda [(resolvent c s) s] [_ empty]) resolvents))
     (rule
      (apply-variable-substitution
       collected-bindings
@@ -175,14 +190,36 @@
           (list
            (atom
             (format-symbol "q~a" (label-index last-node))
-            (map atom->function (resolvent-conjunction (last resolvents)))))])))
+            (map atom->function ((match-lambda [(resolvent c s) c] [c c]) (last resolvents)))))])))
      #f))
   ;; note: full evals are just atoms
   (define (extend-resolvents n acc)
+    (define (append-potential-multi-elems conjunct idx acc)
+      (cond
+        [(and
+          (findf (λ (r) (= idx (index-range-start r))) (generalization-abstracted-ranges n))
+          (atom? conjunct))
+         (append acc (list (concrete-multi (concrete-listify (list (atom->function conjunct))))))]
+        [(and
+          (findf (λ (r) (= idx (index-range-start r))) (generalization-abstracted-ranges n))
+          (concrete-multi? conjunct))
+         (append acc (list conjunct))]
+        [(and
+          (findf (λ (r) (and (> idx (index-range-start r)) (< idx (index-range-end-before r)))) (generalization-abstracted-ranges n))
+          (atom? conjunct))
+         (let ([lst (racket-listify (concrete-multi-lst (last acc)))])
+           (append (drop-right acc 1) (list (concrete-multi (concrete-listify (append lst (list (atom->function conjunct))))))))]
+        [(and
+          (findf (λ (r) (and (> idx (index-range-start r)) (< idx (index-range-end-before r)))) (generalization-abstracted-ranges n))
+          (concrete-multi? conjunct))
+         (let ([lst (racket-listify (concrete-multi-lst (last acc)))])
+           (append (drop-right acc 1) (list (concrete-multi (concrete-listify (append lst (racket-listify (concrete-multi-lst conjunct))))))))]
+        [else
+         (append acc (list conjunct))]))
     (match acc
       [(list resolvents evals selection)
        (cond
-         [(rule? (tree-label-rule n))
+         [(and (tree-label? n) (rule? (tree-label-rule n)))
           (let ([next-resolvent
                  (resolve
                   (resolvent-conjunction (last resolvents))
@@ -194,7 +231,7 @@
                   (append resolvents (list next-resolvent))
                   evals
                   (label-selection n))))]
-         [(full-evaluation? (tree-label-rule n))
+         [(and (tree-label? n) (full-evaluation? (tree-label-rule n)))
           (let ([next-resolvent
                  (resolvent
                   (remove-at-index
@@ -210,7 +247,16 @@
                 (resolvent-conjunction (last resolvents))
                 (some-v selection))))
              (label-selection n)))]
-         [else (error "Can't deal with this type of rule yet.")])]))
+         [(generalization? n)
+          ;; not actually a resolvent though!
+          (let* ([next-resolvent
+                  (foldl append-potential-multi-elems empty (resolvent-conjunction (last resolvents)) (range (length (resolvent-conjunction (last resolvents)))))])
+            (list
+             (append resolvents (list next-resolvent))
+             evals
+             (label-selection n)))]
+         ;; unfold 'one and 'many are still left
+         [else (error "Can't deal with this type of node yet." n)])]))
   (let* ([initial-resolvent
           (resolvent (concrete-synth-counterpart (label-conjunction (first b))) empty)]
          [numbered-nodes
@@ -279,8 +325,33 @@
        (if (non-empty-string? t-synth)
            (format "~a :- ~a." h-synth t-synth)
            (format "~a." h-synth)))]))
+(provide pretty-print-rule)
 
 (module+ test
-  (for-each
-   (compose displayln pretty-print-rule branch->clause)
-   (sort-segments (set->list ps-segments))))
+  (let* ([mock-gensym
+          (mock
+           #:behavior
+           (generator (_) (for ([i (in-naturals)]) (yield (format-symbol "Var~a" i)))))]
+         [sorted-segments (sort-segments (set->list ps-segments))]
+         [outcomes (map (compose pretty-print-rule (λ (b) (branch->clause b mock-gensym))) sorted-segments)]
+         [expected-outcomes
+          '("q1(sort([],[]))."
+            "q1(sort('[|]'(Var4,Var5),'[|]'(Var6,Var7))) :- del(Var6,'[|]'(Var4,Var5),Var8),q5(perm(Var8,Var7),ord('[|]'(Var6,Var7)))."
+            "q5(perm([],[]),ord('[|]'(G12,[])))."
+            "q5(perm('[|]'(Var9,Var10),'[|]'(Var15,Var16)),ord('[|]'(Var14,'[|]'(Var15,Var16)))) :- del(Var15,'[|]'(Var9,Var10),Var13),lte(Var14,Var15),q5(perm(Var13,Var16),ord('[|]'(Var15,Var16))).")])
+    (for-each
+     (λ (o eo) (check-equal? o eo))
+     outcomes
+     expected-outcomes))
+  (let* ([mock-gensym
+          (mock
+           #:behavior
+           (generator (_) (for ([i (in-naturals)]) (yield (format-symbol "Var~a" i)))))]
+         [sorted-segments (sort-segments (set->list primes-segments))]
+         [outcomes (map (compose pretty-print-rule (λ (b) (branch->clause b mock-gensym))) sorted-segments)]
+         [expected-outcomes
+          '()])
+    (for-each
+     (λ (o eo) (check-equal? o eo))
+     outcomes
+     expected-outcomes)))

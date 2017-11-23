@@ -1496,12 +1496,7 @@
 
 (define (group-multi-range conjunction/bbs rng fresh-tail-index)
   (define (contents-as-list e)
-    (define (racket-listify lst)
-      (match lst
-        [(variable sym) lst] ; can create improper lists!
-        [(function (quote \[\]) (list)) empty]
-        [(function (quote \'\[\|\]\') (list-rest c1 c2))
-         (cons c1 (racket-listify (first c2)))]))
+    
     (if (concrete-multi? e)
         (racket-listify
          (concrete-multi-lst e))

@@ -99,7 +99,7 @@
 (provide
  (struct*-doc
   atom
-  ([symbol symbol?] [args (listof term?)])
+  ([symbol symbol?] [args (listof (or/c term? concrete-multi?))])
   @{An atom in the concrete domain.}))
 
 (define (concrete-domain-elem? elem)
@@ -112,3 +112,27 @@
   (-> any/c boolean?)
   (val)
   @{Test whether @racket[val] is an element of the concrete domain.}))
+
+(struct
+  concrete-multi (lst)
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc cm1 cm2 equal?-recur)
+     (equal?-recur
+      (concrete-multi-lst cm1)
+      (concrete-multi-lst cm2)))
+   (define (hash-proc cm hash-recur)
+     (hash-recur (concrete-multi-lst cm)))
+   (define (hash2-proc cm hash2-recur)
+     (hash2-recur (concrete-multi-lst cm)))]
+  #:methods
+  gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (λ (obj) 'concrete-multi)
+      (λ (obj) (list (concrete-multi-lst obj)))))])
+(provide
+ (struct*-doc
+  concrete-multi
+  ([lst function?])
+  @{A concrete counterpart to multi which can be used for code generation.}))

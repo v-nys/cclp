@@ -6,24 +6,25 @@
     [(clustering (and (? gen-node?) gn) gcd)
      (gen-node->pict gn)]
     [(clustering subclusters gcd)
-      (vr-append
+     (vr-append
       5
       (rectangle 0 5)
-      (hc-append
-       (text "gcd: ")
-       (id->pict
-        (hash-ref
-         encoding->id
-         gcd))
-       (abstract-conjunct->pict
-        (hash-ref
-         id->conjunct
+      (colorize
+       (hc-append
+        (id->pict
          (hash-ref
           encoding->id
-          gcd))))
+          gcd))
+        (abstract-conjunct->pict
+         (hash-ref
+          id->conjunct
+          (hash-ref
+           encoding->id
+           gcd))))
+       "orange")
       (frame
        (apply
-       hc-append
-       10
-       (map rec (set->list subclusters)))))]))
+        hc-append
+        10
+        (map rec (set->list subclusters)))))]))
 (provide cluster->pict)

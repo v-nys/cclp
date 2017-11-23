@@ -1,10 +1,6 @@
 #lang at-exp racket
 (require
   "concrete-domain.rkt"
-  (only-in
-   "domain-switching.rkt"
-   concrete-multi
-   concrete-multi?)
   (only-in racket-list-utils/utils frequencies))
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
