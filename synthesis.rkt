@@ -32,7 +32,7 @@
   cclp/concrete-knowledge
   cclp/concrete-resolve
   (only-in cclp/mi-map synth-str)
-  (only-in cclp/concrete-substitution apply-variable-substitution)
+  cclp/concrete-substitution
   (only-in cclp/data-utils some-v)
   cclp/domain-switching
   cclp/gen-graph-structs
@@ -44,6 +44,10 @@
   (match a
     [(atom sym args)
      (function sym args)]))
+(define (function->atom f)
+  (match f
+    [(function sym args)
+     (atom sym args)]))
 
 (define (A-nodes tree)
   (define (A-nodes* tree)
@@ -301,7 +305,23 @@
              (label-selection n)))]
          ;; unfold 'one and 'many are still left
          [(and (tree-label? n) (eq? (tree-label-rule n) 'one))
-          (error "Can't deal with unfold:one yet." n)]
+          (let* ([cm (list-ref (con/sub-con (last con/subs)) (some-v selection))]
+                 [first-bb (car (racket-listify (concrete-multi-lst cm)))]
+                 [atoms (map function->atom (racket-listify (first (function-args first-bb))))]
+                 [tail (cdr (last-pair (racket-listify (concrete-multi-lst cm))))])
+            (list
+             (append
+              con/subs
+              (list
+               (con/sub
+               (append
+                (take (con/sub-con (last con/subs)) (some-v selection))
+                atoms
+                (drop (con/sub-con (last con/subs)) (add1 (some-v selection))))
+               (list
+                (concrete-equality tail concrete-nil))))) ; will be [_|_] for many
+             evals
+             (label-selection n)))]
          [(and (tree-label? n) (eq? (tree-label-rule n) 'many))
           (error "Can't deal with unfold:many yet." n)]
          [else (error "Unexpected label or rule type." n)])]))
