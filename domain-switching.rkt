@@ -36,14 +36,16 @@
 (require (for-doc scribble/manual))
 
 (define cons-symbol (string->symbol "'[|]'"))
+(provide cons-symbol)
 (define concrete-nil (function (string->symbol "[]") (list)))
+(provide concrete-nil)
 (define (concrete-listify lst)
   (let* ([prefix (proper-prefix lst)]
          [proper? (equal? prefix lst)])
-  (foldr
-   (λ (e acc) (function cons-symbol (list e acc)))
-   (if proper? concrete-nil (improper-tail lst))
-   (if proper? lst prefix))))
+    (foldr
+     (λ (e acc) (function cons-symbol (list e acc)))
+     (if proper? concrete-nil (improper-tail lst))
+     (if proper? lst prefix))))
 (provide concrete-listify)
 
 (define (improper-tail imlist)
@@ -297,24 +299,24 @@
        (abstract-atom* 'filterB (list (g* 1 'i 2) (a* 1 'i 2) (a* 1 'i 3))))
       #t
       (list
-        (cons (a* 1 'i 1) (a 1)))
+       (cons (a* 1 'i 1) (a 1)))
       (list
-        (cons (a* 1 'i+1 1) (a* 1 'i 3)))
+       (cons (a* 1 'i+1 1) (a* 1 'i 3)))
       (list
-        (cons (a* 1 'L 3) (a 2))))
+       (cons (a* 1 'L 3) (a 2))))
      (multi
       (list
        (abstract-atom* 'filterA (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2)))
        (abstract-atom* 'filterB (list (g* 2 'i 2) (a* 2 'i 2) (a* 2 'i 3))))
       #t
       (list
-        (cons
-         (a* 2 'i 1)
-         (abstract-function 'cons (list (g 2) (a 2)))))
+       (cons
+        (a* 2 'i 1)
+        (abstract-function 'cons (list (g 2) (a 2)))))
       (list
-        (cons (a* 2 'i+1 1) (a* 2 'i 3)))
+       (cons (a* 2 'i+1 1) (a* 2 'i 3)))
       (list
-        (cons (a* 2 'L 3) (a 3))))
+       (cons (a* 2 'L 3) (a 3))))
      (abstract-atom 'sift (list (a 3) (a 4)))))
    (list
     (atom 'integers (list (variable 'G1) (variable 'A1)))
@@ -370,9 +372,9 @@
  Typically, this is a concrete domain element, but for multi this is an auxiliary structure.}))
 
 (define (racket-listify lst)
-      (match lst
-        [(variable sym) lst] ; can create improper lists!
-        [(function (quote \[\]) (list)) empty]
-        [(function (quote \'\[\|\]\') (list-rest c1 c2))
-         (cons c1 (racket-listify (first c2)))]))
+  (match lst
+    [(variable sym) lst] ; can create improper lists!
+    [(function (quote \[\]) (list)) empty]
+    [(function (quote \'\[\|\]\') (list-rest c1 c2))
+     (cons c1 (racket-listify (first c2)))]))
 (provide racket-listify)

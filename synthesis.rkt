@@ -36,10 +36,10 @@
   (only-in cclp/data-utils some-v)
   cclp/domain-switching
   cclp/gen-graph-structs
-  racket-tree-utils/src/tree)
+  racket-tree-utils/src/tree
+  racket-list-utils/utils)
 (require (for-doc scribble/manual))
 
-;; FIXME: bad name, also does concrete multi
 (define (atom->function a)
   (match a
     [(atom sym args)
@@ -157,9 +157,9 @@
 (provide sort-segments)
 
 (define (remove-at-index lst idx)
-    (append
-     (take lst idx)
-     (drop lst (add1 idx))))
+  (append
+   (take lst idx)
+   (drop lst (add1 idx))))
 
 ;; TODO: extend so this works with multi
 ; b is a list of node labels
@@ -199,30 +199,40 @@
             (format-symbol "q~a" (label-index last-node))
             (map make-wrappable (con/sub-con (last con/subs)))))])))
      #f))
-  ;; note: full evals are just atoms
+
   (define (extend-con/subs n acc) ;; here, acc is a list of con/subs
-    (define (append-potential-multi-elems conjunct idx acc)
+    (define (in-grouping? i g)
+      (ormap
+       (match-lambda [(index-range s eb) (<= s i (sub1 eb))])
+       (car g)))
+    (define (bb-listify rng con)
       (cond
         [(and
-          (findf (λ (r) (= idx (index-range-start r))) (generalization-abstracted-ranges n))
-          (atom? conjunct))
-         (append acc (list (concrete-multi (concrete-listify (list (atom->function conjunct))))))]
-        [(and
-          (findf (λ (r) (= idx (index-range-start r))) (generalization-abstracted-ranges n))
-          (concrete-multi? conjunct))
-         (append acc (list conjunct))]
-        [(and
-          (findf (λ (r) (and (> idx (index-range-start r)) (< idx (index-range-end-before r)))) (generalization-abstracted-ranges n))
-          (atom? conjunct))
-         (let ([lst (racket-listify (concrete-multi-lst (last acc)))])
-           (append (drop-right acc 1) (list (concrete-multi (concrete-listify (append lst (list (atom->function conjunct))))))))]
-        [(and
-          (findf (λ (r) (and (> idx (index-range-start r)) (< idx (index-range-end-before r)))) (generalization-abstracted-ranges n))
-          (concrete-multi? conjunct))
-         (let ([lst (racket-listify (concrete-multi-lst (last acc)))])
-           (append (drop-right acc 1) (list (concrete-multi (concrete-listify (append lst (racket-listify (concrete-multi-lst conjunct))))))))]
+          (= 1 (- (index-range-end-before rng) (index-range-start rng)))
+          (concrete-multi? (list-ref con (index-range-start rng))))
+         (concrete-multi-lst (list-ref con (index-range-start rng)))]
         [else
-         (append acc (list conjunct))]))
+         (function
+          cons-symbol
+          (list
+           (function
+            'building_block
+            (map
+             (compose atom->function (λ (i) (list-ref con i)))
+             (stream->list
+              (in-range
+               (index-range-start rng)
+               (index-range-end-before rng)))))
+           concrete-nil))]))
+    (define (package-grouping rngs con)
+      (concrete-multi
+       (concrete-listify
+        (append-map
+         (compose
+          racket-listify
+          (λ (rng)
+            (bb-listify rng con)))
+         rngs))))
     (match acc
       [(list con/subs evals selection)
        (cond
@@ -257,14 +267,44 @@
          [(generalization? n)
           (let* ([next-con/sub
                   (con/sub
-                   (foldl append-potential-multi-elems empty (con/sub-con (last con/subs)) (range (length (con/sub-con (last con/subs)))))
+                   (let* ([ungeneralized-part
+                           (filter-map
+                            (match-lambda
+                              [(cons c i)
+                               (and
+                                (not
+                                 (ormap
+                                  (curry in-grouping? i)
+                                  (generalization-groupings n)))
+                                c)])
+                            (enumerate (con/sub-con (last con/subs))))]
+                          [packaged-groupings
+                           (map
+                            (match-lambda
+                              [(cons rngs idx)
+                               (cons
+                                (package-grouping
+                                 rngs
+                                 (con/sub-con
+                                  (last con/subs)))
+                                idx)])
+                            (generalization-groupings n))])
+                     (foldl
+                      (λ (pg acc)
+                        (splice-in acc (car pg) (cdr pg)))
+                      ungeneralized-part
+                      packaged-groupings))
                    empty)])
             (list
              (append con/subs (list next-con/sub))
              evals
              (label-selection n)))]
          ;; unfold 'one and 'many are still left
-         [else (error "Can't deal with this type of node yet." n)])]))
+         [(and (tree-label? n) (eq? (tree-label-rule n) 'one))
+          (error "Can't deal with unfold:one yet." n)]
+         [(and (tree-label? n) (eq? (tree-label-rule n) 'many))
+          (error "Can't deal with unfold:many yet." n)]
+         [else (error "Unexpected label or rule type." n)])]))
   (let* ([initial-con/sub
           (con/sub (concrete-synth-counterpart (label-conjunction (first b))) empty)]
          [numbered-nodes
