@@ -134,7 +134,7 @@
 (provide
  (struct*-doc
   concrete-multi
-  ([lst function?])
+  ([lst term?])
   @{A concrete counterpart to multi which can be used for code generation.}))
 
 (define (conjunct? elem)

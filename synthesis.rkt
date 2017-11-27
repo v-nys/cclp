@@ -27,6 +27,7 @@
   scribble/srcdoc
   (only-in cclp/interaction analysis-tree proceed)
   cclp/abstract-analysis
+  cclp/abstract-multi-domain
   (only-in cclp/abstract-knowledge full-evaluation?)
   cclp/concrete-domain
   cclp/concrete-knowledge
@@ -303,7 +304,6 @@
              (append con/subs (list next-con/sub))
              evals
              (label-selection n)))]
-         ;; unfold 'one and 'many are still left
          [(and (tree-label? n) (eq? (tree-label-rule n) 'one))
           (let* ([cm (list-ref (con/sub-con (last con/subs)) (some-v selection))]
                  [first-bb (car (racket-listify (concrete-multi-lst cm)))]
@@ -314,16 +314,46 @@
               con/subs
               (list
                (con/sub
-               (append
-                (take (con/sub-con (last con/subs)) (some-v selection))
-                atoms
-                (drop (con/sub-con (last con/subs)) (add1 (some-v selection))))
-               (list
-                (concrete-equality tail concrete-nil))))) ; will be [_|_] for many
+                (append
+                 (take (con/sub-con (last con/subs)) (some-v selection))
+                 atoms
+                 (drop (con/sub-con (last con/subs)) (add1 (some-v selection))))
+                (list
+                 ;; no need to apply subst if we remove concrete multi entirely
+                 (concrete-equality tail concrete-nil)))))
              evals
              (label-selection n)))]
          [(and (tree-label? n) (eq? (tree-label-rule n) 'many))
-          (error "Can't deal with unfold:many yet." n)]
+          (let* ([cm (list-ref (con/sub-con (last con/subs)) (some-v selection))]
+                 [first-bb (car (racket-listify (concrete-multi-lst cm)))]
+                 [remaining-bbs (cdr (racket-listify (concrete-multi-lst cm)))]
+                 [atoms (map function->atom (racket-listify (first (function-args first-bb))))]
+                 [tail (cdr (last-pair (racket-listify (concrete-multi-lst cm))))]
+                 [nonempty-list-func
+                  (let* ([remaining-abstract-multi (list-ref (label-conjunction n) (+ (some-v selection) (length atoms)))]
+                         [counterpart (concrete-synth-counterpart remaining-abstract-multi)]
+                         [block (car (racket-listify (concrete-multi-lst counterpart)))])
+                    (function
+                     cons-symbol
+                     (list
+                      block
+                      (variable (gensym 'Var)))))]
+                 [subst
+                  (list
+                   (concrete-equality tail nonempty-list-func))])
+            (list
+             (append
+              con/subs
+              (list
+               (con/sub
+                (append
+                 (take (con/sub-con (last con/subs)) (some-v selection))
+                 atoms
+                 (list (concrete-multi (apply-variable-substitution subst (concrete-listify remaining-bbs))))
+                 (drop (con/sub-con (last con/subs)) (add1 (some-v selection))))
+                subst)))
+             evals
+             (label-selection n)))]
          [else (error "Unexpected label or rule type." n)])]))
   (let* ([initial-con/sub
           (con/sub (concrete-synth-counterpart (label-conjunction (first b))) empty)]
