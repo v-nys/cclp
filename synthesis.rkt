@@ -235,11 +235,13 @@
                (λ (rng)
                  (bb-listify rng con)))
               rngs)])
-        (concrete-multi
-         (concrete-listify
-          (apply
-           append/impure
-           mapped)))))
+        (list
+         (concrete-multi
+          (concrete-listify
+           (apply
+            append/impure
+            mapped)))
+         empty)))
     (match acc
       [(list con/subs evals selection)
        (cond
@@ -271,40 +273,41 @@
                 (con/sub-con (last con/subs))
                 (some-v selection))))
              (label-selection n)))]
+         ;; FIXME: need to be able to deal with open-ended concrete multis that are extended
          [(generalization? n)
-          (let* ([next-con/sub
+          (let* ([ungeneralized-part
+                  (filter-map
+                   (match-lambda
+                     [(cons c i)
+                      (and
+                       (not
+                        (ormap
+                         (curry in-grouping? i)
+                         (generalization-groupings n)))
+                       c)])
+                   (enumerate (con/sub-con (last con/subs))))]
+                 [packaged-groupings
+                  (map
+                   (match-lambda
+                     [(cons rngs idx)
+                      (append
+                       (package-grouping
+                         rngs
+                         (con/sub-con
+                          (last con/subs)))
+                       (list idx))])
+                   (generalization-groupings n))]
+                 [next-con/sub
                   (con/sub
-                   (let* ([ungeneralized-part
-                           (filter-map
-                            (match-lambda
-                              [(cons c i)
-                               (and
-                                (not
-                                 (ormap
-                                  (curry in-grouping? i)
-                                  (generalization-groupings n)))
-                                c)])
-                            (enumerate (con/sub-con (last con/subs))))]
-                          [packaged-groupings
-                           (map
-                            (match-lambda
-                              [(cons rngs idx)
-                               (cons
-                                (package-grouping
-                                 rngs
-                                 (con/sub-con
-                                  (last con/subs)))
-                                idx)])
-                            (generalization-groupings n))])
-                     (foldl
-                      (λ (pg acc)
-                        (splice-in acc (car pg) (cdr pg)))
-                      ungeneralized-part
-                      packaged-groupings))
+                   (foldl
+                    (λ (pg acc)
+                      (splice-in acc (first pg) (third pg)))
+                    ungeneralized-part
+                    packaged-groupings)
                    empty)])
             (list
              (append con/subs (list next-con/sub))
-             evals
+             (append evals (append-map second packaged-groupings))
              (label-selection n)))]
          [(and (tree-label? n) (eq? (tree-label-rule n) 'one))
           (let* ([cm (list-ref (con/sub-con (last con/subs)) (some-v selection))]
