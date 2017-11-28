@@ -1109,8 +1109,8 @@
   (define gen-lvl (generalize-level annotated-lvl))
   (list
    (map gen-node-conjunct gen-lvl)
-   (generalized-ranges lvl gen-lvl)
-   (infer-bb lvl gen-lvl)))
+   (generalized-ranges annotated-lvl gen-lvl)
+   (infer-bb annotated-lvl gen-lvl)))
 (provide
  (proc-doc/names
   generalize/bu

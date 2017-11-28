@@ -166,8 +166,6 @@
    (take lst idx)
    (drop lst (add1 idx))))
 
-;; TODO: extend so this works with multi
-; b is a list of node labels
 (define (branch->clause b [gensym gensym])
   (struct con/sub (con sub)) ;; conjunction + substitution
   (define (make-wrappable e)
@@ -230,14 +228,18 @@
                (index-range-end-before rng)))))
            concrete-nil))]))
     (define (package-grouping rngs con)
-      (concrete-multi
-       (concrete-listify
-        (append-map
-         (compose
-          racket-listify
-          (λ (rng)
-            (bb-listify rng con)))
-         rngs))))
+      (let ([mapped
+             (map
+              (compose
+               racket-listify
+               (λ (rng)
+                 (bb-listify rng con)))
+              rngs)])
+        (concrete-multi
+         (concrete-listify
+          (apply
+           append/impure
+           mapped)))))
     (match acc
       [(list con/subs evals selection)
        (cond
