@@ -167,6 +167,13 @@
    (drop lst (add1 idx))))
 
 (define (branch->clause b [gensym gensym])
+  (define (open-ended-multi? m)
+    (and
+     (concrete-multi? m)
+     (not
+      (list?
+       (racket-listify
+        (concrete-multi-lst m))))))
   (struct con/sub (con sub)) ;; conjunction + substitution
   (define (make-wrappable e)
     (match e
@@ -227,21 +234,59 @@
                (index-range-start rng)
                (index-range-end-before rng)))))
            concrete-nil))]))
+    ;; takes a list of ranges that end up forming a single multi, puts them in a concrete multi
+    ;; second part of the result is a list of generated append/3 atoms for full evaluation
+    ;; TODO: step 5: replace the open end of first-oem with the new variable
+    ;; first double check on paper, though!
     (define (package-grouping rngs con)
-      (let ([mapped
-             (map
-              (compose
-               racket-listify
-               (λ (rng)
-                 (bb-listify rng con)))
-              rngs)])
+      (match-let* ([first-oem-rng
+                    (findf
+                     (λ (rng)
+                       (and
+                        (= (index-range-start rng)
+                           (sub1 (index-range-end-before rng)))
+                        (open-ended-multi?
+                         (list-ref con (index-range-start rng)))))
+                     (drop-right rngs 1))] ; only matters if it's not the last one
+                   [first-oem (and first-oem-rng (list-ref con (index-range-start first-oem-rng)))]
+                   [tail-var-pre-extension
+                    (and
+                     first-oem
+                     (cdr (last-pair (racket-listify (concrete-multi-lst first-oem)))))]
+                   [tail-var-post-extension
+                    (and tail-var-pre-extension (variable (gensym (string->symbol (format "Extended~a" (variable-name tail-var-pre-extension))))))]
+                   [(list rec-multi rec-appends)
+                    (if (not first-oem)
+                        '(#f #f)
+                        (package-grouping (cdr (member first-oem-rng rngs)) con))]
+                   [mapped
+                    (cond
+                      [(not first-oem)
+                       (map
+                        (compose
+                         racket-listify
+                         (λ (rng)
+                           (bb-listify rng con)))
+                        rngs)]
+                      [else
+                       (match-let*
+                           ([(list partial-rec-multi _)
+                             (package-grouping (append (takef rngs (λ (rng) (not (equal? rng first-oem-rng)))) (list first-oem-rng)) con)])
+                         (apply-variable-substitution (list (concrete-equality tail-var-pre-extension tail-var-post-extension)) partial-rec-multi))])]
+                   [appends
+                    (if
+                     (not first-oem)
+                     empty
+                     (append rec-appends (list (atom 'append (list tail-var-pre-extension (concrete-multi-lst rec-multi) tail-var-post-extension)))))])
         (list
-         (concrete-multi
-          (concrete-listify
-           (apply
-            append/impure
-            mapped)))
-         empty)))
+         (if (not first-oem)
+             (concrete-multi
+              (concrete-listify
+               (apply
+                append/impure
+                mapped)))
+              mapped)
+         appends)))
     (match acc
       [(list con/subs evals selection)
        (cond
@@ -274,6 +319,10 @@
                 (some-v selection))))
              (label-selection n)))]
          ;; FIXME: need to be able to deal with open-ended concrete multis that are extended
+         ;; package-grouping takes a list of ranges associated with the same eventual index
+         ;; so if any other than the last of these refers to an open-ended multi, an extended tail should be generated
+         ;; what is appended? **the packaged grouping of the rest**
+         ;; this should not require more appends in practice, but may be best to deal with this recursively
          [(generalization? n)
           (let* ([ungeneralized-part
                   (filter-map
@@ -292,9 +341,9 @@
                      [(cons rngs idx)
                       (append
                        (package-grouping
-                         rngs
-                         (con/sub-con
-                          (last con/subs)))
+                        rngs
+                        (con/sub-con
+                         (last con/subs)))
                        (list idx))])
                    (generalization-groupings n))]
                  [next-con/sub
@@ -455,7 +504,4 @@
          [outcomes (map (compose pretty-print-rule (λ (b) (branch->clause b mock-gensym))) sorted-segments)]
          [expected-outcomes
           '()])
-    (for-each
-     (λ (o eo) (check-equal? o eo))
-     outcomes
-     expected-outcomes)))
+    (for-each displayln outcomes)))
