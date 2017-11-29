@@ -47,7 +47,7 @@
    [substitution (listof concrete-equality?)])
   @{Summarizes the result of a resolution step.}))
 
-(define (rename-clause c [gensym gensym])
+(define (rename c [gensym gensym])
   (define (extract-variables el)
     (match el
       [(variable v)
@@ -63,7 +63,7 @@
 
 (define (resolve conjunction idx clause [gensym gensym])
   (let* ([conjunct (list-ref conjunction idx)]
-         [renamed-clause (rename-clause clause gensym)]
+         [renamed-clause (rename clause gensym)]
          [unifier (concrete-unify (list (concrete-equality conjunct (rule-head renamed-clause))))])
     (and
      unifier

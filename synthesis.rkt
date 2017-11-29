@@ -209,7 +209,12 @@
             (format-symbol "q~a" (label-index last-node))
             (map make-wrappable (con/sub-con (last con/subs)))))])))
      #f))
-
+  (define (refresh c)
+    (match c
+      [(? list?) (map refresh c)]
+      [(atom sym args) (atom sym (map refresh args))]
+      [(function sym args) (function sym (map refresh args))]
+      [(variable vn) (variable (gensym))]))
   (define (extend-con/subs n acc) ;; here, acc is a list of con/subs
     (define (in-grouping? i g)
       (ormap
@@ -227,12 +232,14 @@
           (list
            (function
             'building_block
-            (map
-             (compose atom->function (λ (i) (list-ref con i)))
-             (stream->list
-              (in-range
-               (index-range-start rng)
-               (index-range-end-before rng)))))
+            (list
+             (concrete-listify
+              (map
+               (compose atom->function (λ (i) (list-ref con i)))
+               (stream->list
+                (in-range
+                 (index-range-start rng)
+                 (index-range-end-before rng)))))))
            concrete-nil))]))
     (define (package-grouping rngs con)
       (match-let* ([first-oem-rng
@@ -281,7 +288,7 @@
                (apply
                 append/impure
                 mapped)))
-              mapped)
+             mapped)
          appends)))
     (match acc
       [(list con/subs evals selection)
@@ -377,7 +384,7 @@
                  [nonempty-list-func
                   (let* ([remaining-abstract-multi (list-ref (label-conjunction n) (+ (some-v selection) (length atoms)))]
                          [counterpart (concrete-synth-counterpart remaining-abstract-multi)]
-                         [block (car (racket-listify (concrete-multi-lst counterpart)))])
+                         [block (refresh (car (racket-listify (concrete-multi-lst counterpart))))]) ;; FIXME: block needs to be renamed apart
                     (function
                      cons-symbol
                      (list
