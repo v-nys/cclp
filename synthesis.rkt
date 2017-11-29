@@ -493,13 +493,4 @@
     (for-each
      (λ (o eo) (check-equal? o eo))
      outcomes
-     expected-outcomes))
-  (let* ([mock-gensym
-          (mock
-           #:behavior
-           (generator (_) (for ([i (in-naturals)]) (yield (format-symbol "Var~a" i)))))]
-         [sorted-segments (sort-segments (set->list primes-segments))]
-         [outcomes (map (compose pretty-print-rule (λ (b) (branch->clause b mock-gensym))) sorted-segments)]
-         [expected-outcomes
-          '()])
-    (for-each displayln outcomes)))
+     expected-outcomes)))
