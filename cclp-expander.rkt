@@ -109,7 +109,17 @@
                (map
                 full-ai-rule->full-evaluation
                 (cclp-full-ai-rules initial))]))))
-        (provide initial-program-analysis)))]))
+        (provide initial-program-analysis)
+        (module+ main
+          (require (only-in racket/set set->list)
+                   repeated-application
+                   cclp/synthesis)
+          (let* ([complete-analysis (apply↑* proceed initial-program-analysis)]
+                 [segments ((compose sort-segments set->list synthesizable-segments analysis-tree) complete-analysis)]
+                 [resultants (map (compose pretty-print-rule (λ (b) (branch->clause b))) segments)])
+            (for-each
+             displayln
+             resultants)))))]))
 (provide
  (rename-out
   [cclp-module-begin #%module-begin]))

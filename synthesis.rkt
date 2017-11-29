@@ -27,7 +27,6 @@
   scribble/srcdoc
   (only-in cclp/interaction analysis-tree proceed)
   cclp/abstract-analysis
-  cclp/abstract-multi-domain
   (only-in cclp/abstract-knowledge full-evaluation?)
   cclp/concrete-domain
   cclp/concrete-knowledge
@@ -69,20 +68,13 @@
   (require
     rackunit
     repeated-application
-    (prefix-in permsort: cclp-programs/permutation-sort)
-    (prefix-in primes: cclp-programs/primes))
+    (prefix-in permsort: cclp-programs/permutation-sort))
   (define ps-tree
     (analysis-tree
      (apply↑* proceed permsort:initial-program-analysis)))
-  (define primes-tree
-    (analysis-tree
-     (apply↑* proceed primes:initial-program-analysis)))
   (check-equal?
    (A-nodes ps-tree)
-   (set 1 5))
-  (check-equal?
-   (A-nodes primes-tree)
-   (set 1 3 9 11 20 27 22 36 43 47 38 59 57 45 66 73 79 55 84 72 82 91 95)))
+   (set 1 5)))
 (provide
  (proc-doc/names
   A-nodes
@@ -133,11 +125,10 @@
                     (branches-from n A))))])
       (set-union flat-set node-set))))
 (module+ test
-  (define ps-segments (sort-segments (set-map (synthesizable-segments ps-tree) identity)))
+  (define ps-segments ((compose sort-segments set->list synthesizable-segments) ps-tree))
   (check-equal?
    (list->set (map (λ (b) (map (λ (e) (and e (if (label-with-conjunction? e) (label-index e) e))) b)) ps-segments))
-   (set (list 1 2 3 #f) (list 1 2 4 5) (list 5 6 #f) (list 5 7 8 9 10 (cycle 5))))
-  (define primes-segments (sort-segments (set-map (synthesizable-segments primes-tree) identity))))
+   (set (list 1 2 3 #f) (list 1 2 4 5) (list 5 6 #f) (list 5 7 8 9 10 (cycle 5)))))
 (provide
  (proc-doc/names
   synthesizable-segments
