@@ -234,10 +234,6 @@
                (index-range-start rng)
                (index-range-end-before rng)))))
            concrete-nil))]))
-    ;; takes a list of ranges that end up forming a single multi, puts them in a concrete multi
-    ;; second part of the result is a list of generated append/3 atoms for full evaluation
-    ;; TODO: step 5: replace the open end of first-oem with the new variable
-    ;; first double check on paper, though!
     (define (package-grouping rngs con)
       (match-let* ([first-oem-rng
                     (findf
@@ -318,11 +314,6 @@
                 (con/sub-con (last con/subs))
                 (some-v selection))))
              (label-selection n)))]
-         ;; FIXME: need to be able to deal with open-ended concrete multis that are extended
-         ;; package-grouping takes a list of ranges associated with the same eventual index
-         ;; so if any other than the last of these refers to an open-ended multi, an extended tail should be generated
-         ;; what is appended? **the packaged grouping of the rest**
-         ;; this should not require more appends in practice, but may be best to deal with this recursively
          [(generalization? n)
           (let* ([ungeneralized-part
                   (filter-map
@@ -422,8 +413,8 @@
             (label-selection (first b)))
            (cdr numbered-nodes))])
     (synth
-     (first con/subs/full-evals)
-     (second con/subs/full-evals)
+     (first con/subs/full-evals)  ; the conjunctions + substitutions
+     (second con/subs/full-evals) ; the full evals
      (last b))))
 
 (module+ test
