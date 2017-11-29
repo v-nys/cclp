@@ -403,7 +403,7 @@
   (let* ([initial-con/sub
           (con/sub (concrete-synth-counterpart (label-conjunction (first b))) empty)]
          [numbered-nodes
-          (filter (λ (n) (and (label-with-conjunction? n) (label-index n))) b)]
+          (filter (λ (n) (and (label-with-conjunction? n) (or (null? (label-conjunction n)) (label-index n)))) b)]
          [con/subs/full-evals
           (foldl
            extend-con/subs
@@ -481,8 +481,8 @@
          [expected-outcomes
           '("q1(sort([],[]))."
             "q1(sort('[|]'(Var4,Var5),'[|]'(Var6,Var7))) :- del(Var6,'[|]'(Var4,Var5),Var8),q5(perm(Var8,Var7),ord('[|]'(Var6,Var7)))."
-            "q5(perm([],[]),ord('[|]'(G12,[])))."
-            "q5(perm('[|]'(Var9,Var10),'[|]'(Var15,Var16)),ord('[|]'(Var14,'[|]'(Var15,Var16)))) :- del(Var15,'[|]'(Var9,Var10),Var13),lte(Var14,Var15),q5(perm(Var13,Var16),ord('[|]'(Var15,Var16))).")])
+            "q5(perm([],[]),ord('[|]'(Var9,[])))."
+            "q5(perm('[|]'(Var10,Var11),'[|]'(Var16,Var17)),ord('[|]'(Var15,'[|]'(Var16,Var17)))) :- del(Var16,'[|]'(Var10,Var11),Var14),lte(Var15,Var16),q5(perm(Var14,Var17),ord('[|]'(Var16,Var17))).")])
     (for-each
      (λ (o eo) (check-equal? o eo))
      outcomes
