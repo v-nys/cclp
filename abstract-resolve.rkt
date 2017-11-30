@@ -190,14 +190,14 @@
                           1)])
     (check-equal?
      (abstract-resolve
-      α(del(a12,[g18|g19],a14)∧perm(a14,a13)∧ord([g3,a12|a13]))
+      α(del(a12,[g18|g19],a14),perm(a14,a13),ord([g3,a12|a13]))
       0
       '()
       (list full-eval)
       (list))
      (list
       (resolvent
-       α(perm(g23,a13)∧ord([g3,g22|a13]))
+       α(perm(g23,a13),ord([g3,g22|a13]))
        (asubst
         ((ad:a 12) (ad:g 22))
         ((ad:g 18) (ad:g 20))

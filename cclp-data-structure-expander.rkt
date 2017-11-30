@@ -40,3 +40,8 @@
     [(_ "[" term0 "|" rest "]")
      (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 rest)))]))
 (provide abstract-lplist)
+
+(define-syntax (abstract-conjunction stx)
+  (syntax-parse stx
+    [(_ conjunct ...) (syntax/loc stx (odd-elems-as-list conjunct ...))]))
+(provide abstract-conjunction)

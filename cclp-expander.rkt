@@ -197,11 +197,6 @@
     [(_ conjunct ...) (syntax/loc stx (odd-elems-as-list conjunct ...))]))
 (provide conjunction)
 
-(define-syntax (abstract-conjunction stx)
-  (syntax-parse stx
-    [(_ conjunct ...) (syntax/loc stx (odd-elems-as-list conjunct ...))]))
-(provide abstract-conjunction)
-
 ; PART RELATED TO FULL EVALUATION
 
 (define-syntax (fail stx)
