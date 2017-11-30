@@ -38,6 +38,9 @@
 (require "preprior-graph.rkt" (only-in graph add-directed-edge!))
 (require (only-in sugar/coerce ->symbol))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
+(require reprovide/reprovide)
+
+(reprovide cclp/cclp-data-structure-expander)
 
 (define (extract-program-constants e)
   (match e
@@ -232,30 +235,7 @@
   (fai:full-ai-rule atom (list) idx))
 (provide fullai-rule-without-body)
 
-(define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")
-  (ad:abstract-atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))
-(provide abstract-atom-with-args)
 
-(define-syntax-rule (abstract-atom-without-args symbol)
-  (ad:abstract-atom (string->symbol (quote symbol)) (list)))
-(provide abstract-atom-without-args)
-
-(define-syntax (abstract-atom stx)
-  (syntax-parse stx [(_ args-or-nothing) (syntax/loc stx args-or-nothing)]))
-(provide abstract-atom)
-
-(define-syntax-rule (abstract-term specific-term) specific-term)
-(provide abstract-term)
-
-(define-syntax-rule (abstract-variable specific-var) specific-var)
-(provide abstract-variable)
-
-; M.O.: string is hier overbodig...
-(define-syntax-rule (abstract-variable-a "a" index) (ad:a (quote index)))
-(provide abstract-variable-a)
-
-(define-syntax-rule (abstract-variable-g "g" index) (ad:g (quote index)))
-(provide abstract-variable-g)
 
 (define-syntax (abstract-function-term stx)
   (syntax-parse stx
@@ -276,17 +256,7 @@
   (cd:function (->symbol (quote TERM)) '()))
 (provide number-term)
 
-(define-syntax (abstract-lplist stx)
-  (syntax-parse stx
-    [(_ "[" "]")
-     (syntax/loc stx (ad:abstract-function (string->symbol "[]") '()))]
-    [(_ "[" term0 "]")
-     (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 (ad:abstract-function (string->symbol "[]") '()))))]
-    [(_ "[" term0 "," rest ... "]")
-     (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 (abstract-lplist "[" rest ... "]"))))]
-    [(_ "[" term0 "|" rest "]")
-     (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 rest)))]))
-(provide abstract-lplist)
+
 
 ; empty substitutions make sense if we can just scratch the abstract atom
 ; e.g. lte(g1,g2) just disappears and does not need a substitution

@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang at-exp racket
+#lang at-exp alpha-gamma racket
 (require "abstract-knowledge.rkt")
 (require "abstract-substitution.rkt")
 (require "abstract-unify.rkt")
@@ -185,19 +185,19 @@
 ;                    (interpret-concrete-rule "perm([],[])"))))
 
   (let ([full-eval
-         (full-evaluation (interpret-abstract-atom "del(a1,[g1|g2],a2)")
-                          (interpret-abstract-atom "del(g3,[g1|g2],g4)")
+         (full-evaluation α(del(a1,[g1|g2],a2))
+                          α(del(g3,[g1|g2],g4))
                           1)])
     (check-equal?
      (abstract-resolve
-      (interpret-abstract-conjunction "del(a12,[g18|g19],a14),perm(a14,a13),ord([g3,a12|a13])")
+      α(del(a12,[g18|g19],a14)∧perm(a14,a13)∧ord([g3,a12|a13]))
       0
       '()
       (list full-eval)
       (list))
      (list
       (resolvent
-       (interpret-abstract-conjunction "perm(g23,a13),ord([g3,g22|a13])")
+       α(perm(g23,a13)∧ord([g3,g22|a13]))
        (asubst
         ((ad:a 12) (ad:g 22))
         ((ad:g 18) (ad:g 20))
