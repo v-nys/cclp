@@ -10,3 +10,4 @@ doc
 *.2
 
 scribblings/katex
+docker
