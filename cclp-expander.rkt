@@ -39,6 +39,7 @@
 (require (only-in sugar/coerce ->symbol))
 (require (for-syntax (only-in racket-list-utils/utils odd-elems)))
 (require reprovide/reprovide)
+(require cclp/configuration racket/logging)
 
 (reprovide cclp/cclp-data-structure-expander)
 
@@ -116,13 +117,28 @@
         (module+ main
           (require (only-in racket/set set->list)
                    repeated-application
-                   cclp/synthesis)
-          (let* ([complete-analysis (apply↑* proceed initial-program-analysis)]
-                 [segments ((compose sort-segments set->list synthesizable-segments analysis-tree) complete-analysis)]
-                 [resultants (map (compose pretty-print-rule (λ (b) (branch->clause b))) segments)])
-            (for-each
-             displayln
-             resultants)))))]))
+                   cclp/synthesis
+                   racket/cmdline)
+          (command-line
+           #:program fn
+           #:once-any
+           [("-n" "--none") "Disable logging (default)" (log-level 'none)]
+           [("-d" "--debug") "Log debugging output" (log-level 'debug)]
+           [("-i" "--info") "Log all interesting end products" (log-level 'info)]
+           [("-w" "--warning") "Log (potential) issues" (log-level 'warning)]
+           [("-e" "--error") "Log errors" (log-level 'error)]
+           [("-f" "--fatal") "Log critical errors" (log-level 'critical)]
+           #:args ()
+           (with-logging-to-port
+              (current-error-port)
+            (λ ()
+              (let* ([complete-analysis (apply↑* proceed initial-program-analysis)]
+                     [segments ((compose sort-segments set->list synthesizable-segments analysis-tree) complete-analysis)]
+                     [resultants (map (compose pretty-print-rule (λ (b) (branch->clause b))) segments)])
+                (for-each
+                 displayln
+                 resultants)))
+            (log-level))))))]))
 (provide
  (rename-out
   [cclp-module-begin #%module-begin]))

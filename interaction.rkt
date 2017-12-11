@@ -54,6 +54,7 @@
   pretty-graphs
   cclp/genealogical-graph-visualization)
 (require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
+(require racket/logging)
 
 (require (only-in br/cond while))
 
@@ -125,6 +126,9 @@
                   (add-directed-edge! updated-po (car precedence) (cdr precedence)))
                 (proceed (analysis source-prog tree updated-po)))))]
          [(cons cand top) ; simple update to the analysis
+          (let ([out (open-output-string)])
+            (tree-display top print-tree-label out)
+            (log-debug (format "computed analysis tree:\n~a" (get-output-string out))))
           (analysis source-prog top po)]
          ['no-candidate prog-analysis]))]))
 (provide
