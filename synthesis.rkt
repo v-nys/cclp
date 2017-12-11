@@ -64,17 +64,6 @@
       (map A-nodes* (cons c cs)))]
     [(node lbl (list))
      (set)]))
-(module+ test
-  (require
-    rackunit
-    repeated-application
-    (prefix-in permsort: cclp-programs/permutation-sort))
-  (define ps-tree
-    (analysis-tree
-     (apply↑* proceed permsort:initial-program-analysis)))
-  (check-equal?
-   (A-nodes ps-tree)
-   (set 1 5)))
 (provide
  (proc-doc/names
   A-nodes
@@ -124,11 +113,6 @@
                   (λ (n)
                     (branches-from n A))))])
       (set-union flat-set node-set))))
-(module+ test
-  (define ps-segments ((compose sort-segments set->list synthesizable-segments) ps-tree))
-  (check-equal?
-   (list->set (map (λ (b) (map (λ (e) (and e (if (label-with-conjunction? e) (label-index e) e))) b)) ps-segments))
-   (set (list 1 2 3 #f) (list 1 2 4 5) (list 5 6 #f) (list 5 7 8 9 10 (cycle 5)))))
 (provide
  (proc-doc/names
   synthesizable-segments
@@ -415,48 +399,6 @@
      (second con/subs/full-evals) ; the full evals
      (last b))))
 
-(module+ test
-  (let ([mock-gensym
-         (mock
-          #:behavior
-          (generator (_) (for ([i (in-naturals)]) (yield (format-symbol "Var~a" i)))))]
-        [sorted-segments (sort-segments (set->list ps-segments))])
-    (check-equal?
-     (branch->clause (second sorted-segments) mock-gensym)
-     ;; would be nice if I could write γ(q1(sort([Var2|Var3],[Var4|Var5])) :- del(Var4,[Var2|Var3],Var6), q5(perm(Var6,Var5),ord([Var4|Var5])).)
-     (rule
-      (atom
-       'q1
-       (list
-        (function
-         'sort
-         (list
-          (function (string->symbol "'[|]'") (list (variable 'Var2) (variable 'Var3)))
-          (function (string->symbol "'[|]'") (list (variable 'Var4) (variable 'Var5)))))))
-      (list
-       (atom
-        'del
-        (list
-         (variable 'Var4)
-         (function (string->symbol "'[|]'") (list (variable 'Var2) (variable 'Var3)))
-         (variable 'Var6)))
-       (atom
-        'q5
-        (list
-         (function
-          'perm
-          (list
-           (variable 'Var6)
-           (variable 'Var5)))
-         (function
-          'ord
-          (list
-           (function
-            (string->symbol "'[|]'")
-            (list
-             (variable 'Var4)
-             (variable 'Var5))))))))
-      #f))))
 (provide branch->clause)
 
 (define (pretty-print-rule r)
@@ -468,20 +410,3 @@
            (format "~a :- ~a." h-synth t-synth)
            (format "~a." h-synth)))]))
 (provide pretty-print-rule)
-
-(module+ test
-  (let* ([mock-gensym
-          (mock
-           #:behavior
-           (generator (_) (for ([i (in-naturals)]) (yield (format-symbol "Var~a" i)))))]
-         [sorted-segments (sort-segments (set->list ps-segments))]
-         [outcomes (map (compose pretty-print-rule (λ (b) (branch->clause b mock-gensym))) sorted-segments)]
-         [expected-outcomes
-          '("q1(sort([],[]))."
-            "q1(sort('[|]'(Var4,Var5),'[|]'(Var6,Var7))) :- del(Var6,'[|]'(Var4,Var5),Var8),q5(perm(Var8,Var7),ord('[|]'(Var6,Var7)))."
-            "q5(perm([],[]),ord('[|]'(Var9,[])))."
-            "q5(perm('[|]'(Var10,Var11),'[|]'(Var16,Var17)),ord('[|]'(Var15,'[|]'(Var16,Var17)))) :- del(Var16,'[|]'(Var10,Var11),Var14),lte(Var15,Var16),q5(perm(Var14,Var17),ord('[|]'(Var16,Var17))).")])
-    (for-each
-     (λ (o eo) (check-equal? o eo))
-     outcomes
-     expected-outcomes)))
