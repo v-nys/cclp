@@ -26,7 +26,7 @@
          "abstract-substitution.rkt"
          "abstraction-inspection-utils.rkt"
          "abstract-knowledge.rkt")
-(require racket-list-utils/utils)
+(require list-utils)
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 

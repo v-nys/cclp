@@ -6,7 +6,7 @@
   scribble/srcdoc)
 (require
   graph
-  racket-tree-utils/src/tree)
+  positional-tree-utils)
 (require
   "abstract-analysis.rkt"
   (only-in "abstract-domain-ordering.rkt" renames? >=-extension)

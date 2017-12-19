@@ -1,7 +1,7 @@
 #lang at-exp racket
 (require
   "concrete-domain.rkt"
-  (only-in racket-list-utils/utils frequencies))
+  (only-in list-utils frequencies))
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 

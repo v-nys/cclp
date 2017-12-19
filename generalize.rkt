@@ -15,7 +15,7 @@
   cclp/genealogical-graph
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
-  (only-in racket-list-utils/utils replace-sublist map-accumulatel group-by)
+  (only-in list-utils replace-sublist map-accumulatel group-by)
   cclp/clustering
   graph)
 (require (for-doc scribble/manual))

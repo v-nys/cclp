@@ -27,7 +27,7 @@
 (require "abstract-multi-domain.rkt")
 (require (only-in "abstraction-inspection-utils.rkt" maximum-var-index))
 (require (only-in "data-utils.rkt" some-v some?))
-(require (only-in racket-list-utils/utils map-accumulatel))
+(require (only-in list-utils map-accumulatel))
 
 (define max-depth (make-parameter 5))
 (provide max-depth)

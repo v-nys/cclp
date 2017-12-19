@@ -37,7 +37,7 @@
 (require "abstract-domain-ordering.rkt")
 (require "preprior-graph.rkt" (only-in graph add-directed-edge!))
 (require (only-in sugar/coerce ->symbol))
-(require (for-syntax (only-in racket-list-utils/utils odd-elems)))
+(require (for-syntax (only-in list-utils odd-elems)))
 (require reprovide/reprovide)
 
 (reprovide cclp/cclp-data-structure-expander)
@@ -136,7 +136,7 @@
         (rule arg ... #,id))
       (add1 id))]))
 
-(require (for-syntax (only-in racket-list-utils/utils map-accumulatel)))
+(require (for-syntax (only-in list-utils map-accumulatel)))
 (define-syntax (program-section stx)
   (with-syntax ([(RULE-STX ...)
                  (car

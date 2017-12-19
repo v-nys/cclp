@@ -25,8 +25,8 @@
          (for-doc scribble/manual)
          racket/set
          (only-in racket/syntax format-symbol)
-         (only-in racket-list-utils/utils map-accumulatel)
-         racket-tree-utils/src/tree
+         (only-in list-utils map-accumulatel)
+         positional-tree-utils
          sugar/coerce
          "abstract-analysis.rkt"
          (prefix-in ak: "abstract-knowledge.rkt")

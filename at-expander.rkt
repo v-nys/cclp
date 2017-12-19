@@ -9,7 +9,7 @@
 (require (prefix-in ck: "concrete-knowledge.rkt"))
 (require (prefix-in faid: "fullai-domain.rkt"))
 (require (prefix-in aa: "abstract-analysis.rkt"))
-(require racket-tree-utils/src/tree)
+(require positional-tree-utils)
 (require (for-syntax syntax/strip-context))
 (require "data-utils.rkt")
 (require (only-in "gen-graph-structs.rkt" index-range))

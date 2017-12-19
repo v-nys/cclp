@@ -36,8 +36,8 @@
   (only-in cclp/data-utils some-v)
   cclp/domain-switching
   cclp/gen-graph-structs
-  racket-tree-utils/src/tree
-  racket-list-utils/utils)
+  positional-tree-utils
+  list-utils)
 (require (for-doc scribble/manual))
 
 (define (atom->function a)

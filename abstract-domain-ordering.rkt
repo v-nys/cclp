@@ -1,6 +1,6 @@
 #lang at-exp racket
 
-(require (only-in racket-list-utils/utils map-accumulater))
+(require (only-in list-utils map-accumulater))
 
 ; cannot define these functions in the domain module, would cause circular import between domain module and unification module
 (require "abstract-multi-domain.rkt")

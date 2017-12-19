@@ -29,7 +29,7 @@
 (require "abstract-knowledge.rkt")
 (require "preprior-graph.rkt")
 (require "abstract-renaming.rkt")
-(require (only-in racket-list-utils/utils findf-index))
+(require (only-in list-utils findf-index))
 (require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
 (require (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))
 (require graph)

@@ -9,7 +9,7 @@
                "graph"
                "parser-tools-lib"
                "pretty-graphs"
-               "racket-list-utils"
-               "racket-tree-utils"
+               "list-utils"
+               "positional-tree-utils"
                "repeated-application"
                "scribble-lib"))

@@ -25,9 +25,9 @@
   scribble/srcdoc
   graph
   (only-in math/number-theory next-prime)
-  racket-list-utils/utils
+  list-utils
   racket/logging
-  racket-tree-utils/src/tree
+  positional-tree-utils
   "abstract-analysis.rkt"
   "abstract-domain-ordering.rkt"
   "abstract-knowledge.rkt"

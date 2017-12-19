@@ -30,7 +30,7 @@
 (require (prefix-in faid: "fullai-domain.rkt"))
 (require (prefix-in cd: "concrete-domain.rkt")
          (prefix-in ck: "concrete-knowledge.rkt"))
-(require (only-in racket-list-utils/utils odd-elems))
+(require (only-in list-utils odd-elems))
 (require "abstract-substitution.rkt")
 (require (only-in sugar/coerce ->symbol))
 
