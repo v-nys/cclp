@@ -1,5 +1,6 @@
 #lang racket
-(require cclp/concrete-domain)
+(require cclp/concrete-domain
+         (only-in cclp/domain-switching cons-symbol concrete-nil))
 
 (define (synth-str concrete-e)
   (match concrete-e
@@ -23,7 +24,7 @@
      (symbol->string v)]
     [else (error (format "can't print this: ~a" else))]))
 (module+ test
-  ; really shows the need for ag lang extension...
+  (require rackunit)
   (check-equal?
    (synth-str
     (list

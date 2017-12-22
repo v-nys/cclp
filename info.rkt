@@ -10,6 +10,7 @@
                "parser-tools-lib"
                "pretty-graphs"
                "list-utils"
+               "mock"
                "positional-tree-utils"
                "repeated-application"
                "scribble-lib"))

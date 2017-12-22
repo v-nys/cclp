@@ -30,7 +30,7 @@
   "concrete-domain.rkt")
 (require "abstract-multi-domain.rkt")
 (require "data-utils.rkt")
-(require racket-list-utils/utils)
+(require list-utils)
 (require (prefix-in ck: "concrete-knowledge.rkt") (prefix-in ak: "abstract-knowledge.rkt"))
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
