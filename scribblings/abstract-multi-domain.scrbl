@@ -2,7 +2,7 @@
 @(require
    (for-label
     racket/base
-    cclp/abstract-multi-domain)
+    cclp-analysis/abstract-multi-domain)
    scribble/extract
    scriblib/bibtex
    scriblib/footnote)
@@ -11,7 +11,7 @@
 @title{Abstract domain, including multi}
 
 @; this is needed to get hyperlinks for the different struct id's
-@defmodule[cclp/abstract-multi-domain]
+@defmodule[cclp-analysis/abstract-multi-domain]
 
 @(define-bibtex-cite @(path->string (simplify-path (build-path (syntax-source #'here) "../bibliography.bib"))) ~cite citet generate-bibliography)
 
@@ -27,5 +27,5 @@ At the time of writing, the @racket[multi] struct type contains an accessor whic
 Also, the @racket[init], @racket[consecutive] and @racket[final] structs may appear redundant. This is, in fact, true. They will be removed in a future version of the code.
 
 @section{API}
-@(include-extracted cclp/abstract-multi-domain)
+@(include-extracted cclp-analysis/abstract-multi-domain)
 @(generate-bibliography)

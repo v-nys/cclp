@@ -25,17 +25,17 @@
   mock
   racket/generator
   scribble/srcdoc
-  (only-in cclp/interaction analysis-tree proceed)
-  cclp/abstract-analysis
-  (only-in cclp/abstract-knowledge full-evaluation?)
-  cclp/concrete-domain
-  cclp/concrete-knowledge
-  cclp/concrete-resolve
-  (only-in cclp/mi-map synth-str)
-  cclp/concrete-substitution
-  (only-in cclp/data-utils some-v)
-  cclp/domain-switching
-  cclp/gen-graph-structs
+  (only-in cclp-analysis/interaction analysis-tree proceed)
+  cclp-analysis/abstract-analysis
+  (only-in cclp-analysis/abstract-knowledge full-evaluation?)
+  cclp-analysis/concrete-domain
+  cclp-analysis/concrete-knowledge
+  cclp-analysis/concrete-resolve
+  (only-in cclp-analysis/mi-map synth-str)
+  cclp-analysis/concrete-substitution
+  (only-in cclp-analysis/data-utils some-v)
+  cclp-analysis/domain-switching
+  cclp-analysis/gen-graph-structs
   positional-tree-utils
   list-utils)
 (require (for-doc scribble/manual))

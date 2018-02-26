@@ -1,6 +1,6 @@
 #lang racket
-(require cclp/concrete-domain
-         (only-in cclp/domain-switching cons-symbol concrete-nil))
+(require cclp-analysis/concrete-domain
+         (only-in cclp-analysis/domain-switching cons-symbol concrete-nil))
 
 (define (synth-str concrete-e)
   (match concrete-e

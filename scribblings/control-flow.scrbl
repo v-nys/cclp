@@ -6,4 +6,4 @@
 Utility module containing useful control flow constructs.
 
 @section{API}
-@(include-extracted "../control-flow.rkt")
+@(include-extracted "../cclp-analysis/control-flow.rkt")

@@ -5,10 +5,10 @@
   graph
   math/number-theory
   anaphoric
-  cclp/abstract-multi-domain
-  cclp/clustering-structs
-  cclp/gen-graph-structs
-  cclp/genealogical-graph)
+  cclp-analysis/abstract-multi-domain
+  cclp-analysis/clustering-structs
+  cclp-analysis/gen-graph-structs
+  cclp-analysis/genealogical-graph)
 
 (define (partition-set proc st)
   (for/fold ([true-set (set)]

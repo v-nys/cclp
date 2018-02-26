@@ -25,7 +25,7 @@
 (require (prefix-in ad: "abstract-multi-domain.rkt"))
 ; because output patterns can be obtained by applying a subsitution
 (require (prefix-in as: "abstract-substitution.rkt")
-         (only-in cclp/abstract-analysis full-ai-rule->full-evaluation))
+         (only-in cclp-analysis/abstract-analysis full-ai-rule->full-evaluation))
 ; for rules on how to fully evaluate
 (require (prefix-in fai: "fullai-domain.rkt"))
 (require (only-in "syntax-utils.rkt" odd-elems-as-list))
@@ -40,7 +40,7 @@
 (require (for-syntax (only-in list-utils odd-elems)))
 (require reprovide/reprovide)
 
-(reprovide cclp/cclp-data-structure-expander)
+(reprovide cclp-analysis/cclp-data-structure-expander)
 
 (define (extract-program-constants e)
   (match e

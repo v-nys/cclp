@@ -4,19 +4,19 @@
   racket/struct
   scribble/srcdoc
   (only-in "abstract-analysis.rkt" tree-label? tree-label-conjunction generalization?)
-  cclp/abstract-multi-domain
+  cclp-analysis/abstract-multi-domain
   (only-in "abstract-domain-ordering.rkt" renames?)
   (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables extract-variables get-multi-id)
   (only-in "abstract-renaming.rkt" offset-vars)
   (only-in "abstract-unify.rkt" abstract-unify)
   (only-in "abstract-substitution.rkt" abstract-equality apply-substitution)
   (only-in "data-utils.rkt" some-v)
-  cclp/gen-graph-structs
-  cclp/genealogical-graph
+  cclp-analysis/gen-graph-structs
+  cclp-analysis/genealogical-graph
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
   (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
   (only-in list-utils replace-sublist map-accumulatel group-by)
-  cclp/clustering
+  cclp-analysis/clustering
   graph)
 (require (for-doc scribble/manual))
 

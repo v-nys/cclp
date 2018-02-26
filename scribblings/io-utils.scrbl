@@ -6,4 +6,4 @@
 Utility module containing helpers for interation with the user.
 
 @section{API}
-@(include-extracted "../io-utils.rkt")
+@(include-extracted "../cclp-analysis/io-utils.rkt")

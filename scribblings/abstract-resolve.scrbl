@@ -5,4 +5,4 @@
 @title{Abstract resolution}
 
 @section{API}
-@(include-extracted "../abstract-resolve.rkt")
+@(include-extracted "../cclp-analysis/abstract-resolve.rkt")

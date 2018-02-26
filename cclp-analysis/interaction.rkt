@@ -46,13 +46,13 @@
 (require "genealogical-graph.rkt"
          "mi-map.rkt"
          (only-in "generalize.rkt" generalize/bu)
-         (only-in cclp/clustering assign-prime-factor-ids cluster))
+         (only-in cclp-analysis/clustering assign-prime-factor-ids cluster))
 (require
   file/convertible
   graph
   pict
   pretty-graphs
-  cclp/genealogical-graph-visualization)
+  cclp-analysis/genealogical-graph-visualization)
 (require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
 
 (require (only-in br/cond while))

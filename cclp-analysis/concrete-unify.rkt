@@ -22,8 +22,8 @@
 #lang at-exp racket
 (require
   scribble/srcdoc
-  cclp/concrete-domain
-  cclp/concrete-substitution)
+  cclp-analysis/concrete-domain
+  cclp-analysis/concrete-substitution)
 (require (for-doc scribble/manual))
 
 (define (concrete-unify concrete-subst)

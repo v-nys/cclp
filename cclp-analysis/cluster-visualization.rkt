@@ -1,5 +1,5 @@
 #lang racket
-(require pict cclp/clustering-structs cclp/gen-graph-structs cclp/genealogical-graph-visualization)
+(require pict cclp-analysis/clustering-structs cclp-analysis/gen-graph-structs cclp-analysis/genealogical-graph-visualization)
 (define (cluster->pict cluster encoding->id id->conjunct)
   (define (rec c) (cluster->pict c encoding->id id->conjunct))
   (match cluster

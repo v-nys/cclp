@@ -154,7 +154,7 @@
    (λ (s) (make-vector 1 (adj-list (preprior-graph-prior s))))
    ; FIXME assumes fixed directory structure :-S
    ; may be fixed simply by using cclp/...
-   (cons 'ds-info (module-path-index-join "../cclp/preprior-graph.rkt" #f))
+   (cons 'ds-info (module-path-index-join "../cclp-analysis/preprior-graph.rkt" #f))
    #f
    (or (current-load-relative-directory) (current-directory))))
 (define (mk-preprior-graph) (preprior-graph (unweighted-graph/directed '())))

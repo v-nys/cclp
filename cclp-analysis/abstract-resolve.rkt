@@ -25,7 +25,7 @@
 (require "abstract-substitution.rkt")
 (require "abstract-unify.rkt")
 (require "data-utils.rkt")
-(require (prefix-in ad: cclp/abstract-multi-domain))
+(require (prefix-in ad: cclp-analysis/abstract-multi-domain))
 (require "abstract-domain-ordering.rkt")
 (require "execution.rkt")
 (require "concrete-knowledge.rkt")

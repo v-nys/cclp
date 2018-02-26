@@ -2,8 +2,8 @@
 (require
   pict
   scribble/srcdoc
-  cclp/abstract-multi-domain
-  cclp/gen-graph-structs)
+  cclp-analysis/abstract-multi-domain
+  cclp-analysis/gen-graph-structs)
 (require
   (for-doc scribble/manual))
 

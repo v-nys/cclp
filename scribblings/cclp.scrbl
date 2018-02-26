@@ -11,7 +11,7 @@ From this abstract interpretation, a logic program which does not require specia
 
 @section{A simple example}
 @verbatim{
-#lang reader "cclp-reader.rkt"
+#lang cclp
 {PROGRAM}
 sort(X,Y) :- perm(X,Y),ord(Y).
 

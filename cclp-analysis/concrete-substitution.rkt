@@ -52,7 +52,7 @@
 1 0 21 #"drscheme:scheme-snip\0"
 2 0 34 #"(lib \"scheme-snipclass.ss\" \"xml\")\0"
 1 0 1 6 #"wxloc\0"
-          0 0 55 0 1 #"\0"
+          0 0 60 0 1 #"\0"
 0 75 1 #"\0"
 0 12 90 -1 90 -1 3 -1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 255 255 255 1 -1 0 9
 #"Standard\0"
@@ -214,7 +214,22 @@
 -1 4 1 #"\0"
 0 71 1 #"\0"
 1.0 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1.0 1.0 1.0 0 100 0 0 0 0 -1
--1           0 723 0 17 3 13 #"; MIT License"
+-1 0 1 #"\0"
+0 75 10 #"Monospace\0"
+0.0 10 90 -1 90 -1 3 -1 0 1 0 1 0 0 0.0 0.0 0.0 0.0 0.0 0.0 0 0 0 255
+255 255 1 -1 2 1 #"\0"
+0 -1 1 #"\0"
+1.0 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0.0 0.0 0.0 1.0 1.0 1.0 0 0 0 0 0 0
+-1 -1 2 1 #"\0"
+0 -1 1 #"\0"
+1.0 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0.0 0.0 0.0 1.0 1.0 1.0 150 0 150 0
+0 0 -1 -1 2 1 #"\0"
+0 -1 1 #"\0"
+1.0 0 -1 -1 93 -1 -1 -1 0 1 0 0 0 0 0.0 0.0 0.0 1.0 1.0 1.0 255 0 0 0 0
+0 -1 -1 2 1 #"\0"
+0 -1 1 #"\0"
+1.0 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0.0 0.0 0.0 1.0 1.0 1.0 0 0 175 0 0
+0 -1 -1           0 710 0 17 3 13 #"; MIT License"
 0 0 24 29 1 #"\n"
 0 0 17 3 1 #";"
 0 0 24 29 1 #"\n"
@@ -222,24 +237,26 @@
 0 0 24 29 1 #"\n"
 0 0 17 3 2 #"; "
 0 0 24 29 1 #"\n"
-0 0 17 3 62
-#"; Permission is hereby granted, free of charge, to any person "
-0 0 17 3 16 #"obtaining a copy"
-0 0 24 29 1 #"\n"
-0 0 17 3 59
-#"; of this software and associated documentation files (the "
-0 0 17 3 20 #"\"Software\"), to deal"
-0 0 24 29 1 #"\n"
-0 0 17 3 68
-#"; in the Software without restriction, including without limitation "
-0 0 17 3 10 #"the rights"
-0 0 24 29 1 #"\n"
-0 0 17 3 71
+0 0 17 3 78
+(
+ #"; Permission is hereby granted, free of charge, to any person obtain"
+ #"ing a copy"
+) 0 0 24 29 1 #"\n"
+0 0 17 3 79
+(
+ #"; of this software and associated documentation files (the \"Softwar"
+ #"e\"), to deal"
+) 0 0 24 29 1 #"\n"
+0 0 17 3 78
+(
+ #"; in the Software without restriction, including without limitation "
+ #"the rights"
+) 0 0 24 29 1 #"\n"
+0 0 17 3 75
 (
  #"; to use, copy, modify, merge, publish, distribute, sublicense, and/"
- #"or "
-) 0 0 17 3 4 #"sell"
-0 0 24 29 1 #"\n"
+ #"or sell"
+) 0 0 24 29 1 #"\n"
 0 0 17 3 71
 (
  #"; copies of the Software, and to permit persons to whom the Software"
@@ -250,38 +267,45 @@
 0 0 24 29 1 #"\n"
 0 0 17 3 2 #"; "
 0 0 24 29 1 #"\n"
-0 0 17 3 65
-#"; The above copyright notice and this permission notice shall be "
-0 0 17 3 15 #"included in all"
-0 0 24 29 1 #"\n"
+0 0 17 3 80
+(
+ #"; The above copyright notice and this permission notice shall be inc"
+ #"luded in all"
+) 0 0 24 29 1 #"\n"
 0 0 17 3 49 #"; copies or substantial portions of the Software."
 0 0 24 29 1 #"\n"
 0 0 17 3 2 #"; "
 0 0 24 29 1 #"\n"
-0 0 17 3 66
-#"; THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, "
-0 0 17 3 10 #"EXPRESS OR"
-0 0 24 29 1 #"\n"
-0 0 17 3 58
-#"; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF "
-0 0 17 3 16 #"MERCHANTABILITY,"
-0 0 24 29 1 #"\n"
-0 0 17 3 68
-#"; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT "
-0 0 17 3 9 #"SHALL THE"
-0 0 24 29 1 #"\n"
-0 0 17 3 67
-#"; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR "
-0 0 17 3 5 #"OTHER"
-0 0 24 29 1 #"\n"
-0 0 17 3 66
-#"; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, "
-0 0 17 3 13 #"ARISING FROM,"
-0 0 24 29 1 #"\n"
-0 0 17 3 64
-#"; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER "
-0 0 17 3 15 #"DEALINGS IN THE"
-0 0 24 29 1 #"\n"
+0 0 17 3 76
+(
+ #"; THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, "
+ #"EXPRESS OR"
+) 0 0 24 29 1 #"\n"
+0 0 17 3 74
+(
+ #"; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTAB"
+ #"ILITY,"
+) 0 0 24 29 1 #"\n"
+0 0 17 3 77
+(
+ #"; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT "
+ #"SHALL THE"
+) 0 0 24 29 1 #"\n"
+0 0 17 3 72
+(
+ #"; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR O"
+ #"THER"
+) 0 0 24 29 1 #"\n"
+0 0 17 3 79
+(
+ #"; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, AR"
+ #"ISING FROM,"
+) 0 0 24 29 1 #"\n"
+0 0 17 3 79
+(
+ #"; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEAL"
+ #"INGS IN THE"
+) 0 0 24 29 1 #"\n"
 0 0 17 3 11 #"; SOFTWARE."
 0 0 24 29 1 #"\n"
 0 0 28 3 19 #"#lang at-exp racket"
@@ -296,15 +320,16 @@
 0 0 14 3 15 #"scribble/srcdoc"
 0 0 24 29 1 #"\n"
 0 0 24 3 2 #"  "
-0 0 14 3 20 #"cclp/concrete-domain"
+0 0 14 3 29 #"cclp-analysis/concrete-domain"
 0 0 24 29 1 #"\n"
 0 0 24 3 2 #"  "
-0 0 14 3 23 #"cclp/concrete-knowledge"
+0 0 14 3 32 #"cclp-analysis/concrete-knowledge"
 0 0 24 29 1 #"\n"
 0 0 24 3 3 #"  ("
 0 0 14 3 7 #"only-in"
 0 0 24 3 1 #" "
-0 0 14 3 21 #"cclp/domain-switching"
+0 0 14 3 13 #"cclp-analysis"
+0 0 14 3 17 #"/domain-switching"
 0 0 24 3 1 #" "
 0 0 14 3 11 #"cons-symbol"
 0 0 24 3 1 #" "
@@ -525,8 +550,7 @@
 0 0 24 3 4 #"  @{"
 0 0 20 3 66
 #"An equality between two concrete domain elements. A list of these "
-0 0 20 3 20 #"makes up a concrete "
-0 0 20 3 13 #"substitution."
+0 0 20 3 33 #"makes up a concrete substitution."
 0 0 24 3 3 #"}))"
 0 0 24 29 1 #"\n"
 0 0 24 29 1 #"\n"
@@ -689,8 +713,7 @@
 0 0 14 3 5 #"list?"
 0 0 24 3 1 #" "
 0 0 14 3 18 #"concrete-equality?"
-0 0 24 3 2 #") "
-0 0 24 3 1 #"("
+0 0 24 3 3 #") ("
 0 0 14 3 4 #"or/c"
 0 0 24 3 1 #" "
 0 0 14 3 5 #"term?"
@@ -933,8 +956,7 @@
 0 0 24 3 2 #" ("
 0 0 14 3 5 #"error"
 0 0 24 3 1 #" "
-0 0 19 3 38 #"\"Don't know how to substitute in this "
-0 0 19 3 9 #"context.\""
+0 0 19 3 47 #"\"Don't know how to substitute in this context.\""
 0 0 24 3 5 #")])])"
 0 0 24 29 1 #"\n"
 0 0 24 3 8 #"       ("

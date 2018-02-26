@@ -1,7 +1,7 @@
 #lang info
 (define scribblings '(("scribblings/cclp.scrbl" (multi-page))))
-(define collection "cclp")
-(define version "0.1")
+(define collection 'multi)
+(define version "0.2")
 (define deps '("anaphoric"
                "base"
                "beautiful-racket-lib"

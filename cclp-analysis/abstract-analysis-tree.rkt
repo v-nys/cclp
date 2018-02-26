@@ -23,7 +23,7 @@
   "preprior-graph.rkt"
   (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*)
   (only-in "abstraction-inspection-utils.rkt" assemble-var-indices)
-  (only-in cclp/depth-k-abstraction abstract))
+  (only-in cclp-analysis/depth-k-abstraction abstract))
 (require (for-doc scribble/manual))
 
 (module+ test

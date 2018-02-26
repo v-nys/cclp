@@ -22,10 +22,10 @@
 #lang at-exp racket
 (require
   scribble/srcdoc
-  cclp/concrete-domain
-  cclp/concrete-knowledge
-  cclp/concrete-substitution
-  cclp/concrete-unify)
+  cclp-analysis/concrete-domain
+  cclp-analysis/concrete-knowledge
+  cclp-analysis/concrete-substitution
+  cclp-analysis/concrete-unify)
 (require (for-doc scribble/manual))
 
 (struct resolvent (conjunction substitution)

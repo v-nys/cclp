@@ -2,16 +2,16 @@
 @(require
    (for-label
     racket
-    cclp/genealogical-graph
-    cclp/genealogical-graph-visualization)
+    cclp-analysis/genealogical-graph
+    cclp-analysis/genealogical-graph-visualization)
    (only-in racket/file file->string)
-   cclp/interaction
+   cclp-analysis/interaction
    scribble/example
    scribble/extract)
 
 @(define gen-graph-illustration-eval (make-base-eval))
 @(gen-graph-illustration-eval
-  '(require graph pict pretty-graphs cclp/genealogical-graph cclp/genealogical-graph-visualization cclp/generalize cclp/cluster-visualization cclp/clustering cclp/interaction repeated-application (prefix-in primes: cclp-programs/primes) (prefix-in graph-coloring: cclp-programs/graph-coloring) (prefix-in sameleaves: cclp-programs/sameleaves)))
+  '(require graph pict pretty-graphs cclp-analysis/genealogical-graph cclp-analysis/genealogical-graph-visualization cclp-analysis/generalize cclp-analysis/cluster-visualization cclp-analysis/clustering cclp-analysis/interaction repeated-application (prefix-in primes: cclp-programs/primes) (prefix-in graph-coloring: cclp-programs/graph-coloring) (prefix-in sameleaves: cclp-programs/sameleaves)))
 @(gen-graph-illustration-eval
   '(define primes-15-applications (apply↑ 15 proceed primes:initial-program-analysis)))
 @(gen-graph-illustration-eval
@@ -38,7 +38,7 @@
   '(define sameleaves-49-applications (proceed sameleaves-48-applications)))
 
 @title{Recursion analysis using a genealogical graph}
-@defmodule[cclp/genealogical-graph]
+@defmodule[cclp-analysis/genealogical-graph]
 
 A genealogical graph is an auxiliary data structure used to detect similarity between abstract conjunctions, where one is not simply a renaming or an instance of the other. If conjunctions display this similarity appear during a computation, a multi abstraction is required in order to complete the program analysis.
 
