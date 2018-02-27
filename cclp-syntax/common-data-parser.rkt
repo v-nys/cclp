@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2016 Vincent Nys
+; Copyright (c) 2016-2018 Vincent Nys
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,13 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-; note: grammar could be reduced in size (e.g. abstract-number-term is redundant)
+; TODO: grammar could be reduced in size (e.g. abstract-number-term is redundant)
 ; original goal was to write preprior-pair so that components were regular abstract atoms, too
 ; this is beyond my current understanding of Racket macros
 
 ; TODO: update any SYMBOL entries to allow for integration with AMB-AVAR-SYMBOL-A and -G
 
 #lang brag
-cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PARTIAL-ORDER-DELIMITER partial-order-section] [K-DELIMITER NUMBER] QUERY-DELIMITER abstract-atom
-
-program-section : (rule PERIOD)*
 atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]
 term : variable | function-term | lplist
 variable : VARIABLE-IDENTIFIER
@@ -39,7 +36,7 @@ lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)
 rule : (atom IMPLIES conjunction) | atom
 conjunction : atom (COMMA atom)*
 
-full-evaluation-section : (fullai-rule-with-body | fullai-rule-without-body)+
+fullai-rule : fullai-rule-with-body | fullai-rule-without-body
 fullai-rule-with-body : abstract-atom-with-args LEADS-TO (abstract-substitution | fail) PERIOD
 fullai-rule-without-body : abstract-atom-with-args PERIOD
 abstract-atom-with-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
@@ -58,8 +55,5 @@ abstract-substitution : abstract-substitution-pair (COMMA abstract-substitution-
 abstract-substitution-pair : abstract-variable SLASH abstract-term
 abstract-atom : abstract-atom-with-args | abstract-atom-without-args
 abstract-conjunction : abstract-atom (COMMA abstract-atom)*
-
-partial-order-section : partial-ordering-pair+
-partial-ordering-pair : abstract-atom LT abstract-atom
 
 fail : SYMBOL

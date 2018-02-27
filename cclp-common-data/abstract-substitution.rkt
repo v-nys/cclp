@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2016 Vincent Nys
+; Copyright (c) 2016-2018 Vincent Nys
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -21,23 +21,20 @@
 ; SOFTWARE.
 
 #lang racket
-(require "concrete-domain.rkt")
-(require racket/serialize)
-(serializable-struct
- rule (head body idx)
- #:transparent
- #:methods
- gen:equal+hash
- [(define (equal-proc r1 r2 equal?-recur)
-    (and (equal?-recur (rule-head r1) (rule-head r2))
-         (equal?-recur (rule-body r1) (rule-body r2))
-         (equal?-recur (rule-idx r1) (rule-idx r2))))
-  (define (hash-proc my-rule hash-recur)
-    (+ (hash-recur (rule-head my-rule))
-       (* 3 (hash-recur (rule-body my-rule)))
-       (* 5 (hash-recur (rule-idx my-rule)))))
-  (define (hash2-proc my-rule hash2-recur)
-    (+ (hash2-recur (rule-head my-rule))
-       (hash2-recur (rule-body my-rule))
-       (hash2-recur (rule-idx my-rule))))])
-(provide (struct-out rule))
+(require racket/serialize "abstract-multi-domain.rkt")
+
+(define (write-abstract-equality obj port mode)
+  (if (boolean? mode)
+      (fprintf port "#(struct:abstract-equality ~s ~s)" (abstract-equality-term1 obj) (abstract-equality-term2 obj))
+      (fprintf port "~v/~v" (abstract-equality-term1 obj) (abstract-equality-term2 obj))))
+
+; terms are really any abstract domain elements
+(serializable-struct abstract-equality (term1 term2)
+                     #:transparent
+                     #:methods
+                     gen:custom-write
+                     [(define write-proc write-abstract-equality)])
+(provide (struct-out abstract-equality))
+
+(define (abstract-substitution? l) (and (list? l) (andmap abstract-equality? l)))
+(provide abstract-substitution?)

@@ -1,6 +1,6 @@
 ; MIT License
 ;
-; Copyright (c) 2016 Vincent Nys
+; Copyright (c) 2016-2018 Vincent Nys
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal

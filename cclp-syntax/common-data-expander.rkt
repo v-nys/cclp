@@ -1,7 +1,7 @@
 #lang racket
 (require
   (for-syntax syntax/parse)
-  (prefix-in ad: cclp-analysis/abstract-multi-domain)
+  (prefix-in ad: cclp-common-data/abstract-multi-domain)
   (only-in cclp-analysis/syntax-utils odd-elems-as-list))
 
 (define-syntax-rule (abstract-atom-with-args symbol "(" arg ... ")")

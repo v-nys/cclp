@@ -21,25 +21,16 @@
 ; SOFTWARE.
 
 #lang racket
-(require "abstract-multi-domain.rkt")
-(require "abstract-knowledge.rkt")
-(require "data-utils.rkt")
+(require cclp-common-data/abstract-multi-domain)
+(require cclp-common-data/abstract-knowledge)
+(require "data-utils.rkt"
+         cclp-common-data/abstract-substitution)
 (require (for-syntax syntax/parse))
 (require racket/serialize)
 
 (require scribble/srcdoc)
 
-(define (write-abstract-equality obj port mode)
-  (if (boolean? mode)
-      (fprintf port "#(struct:abstract-equality ~s ~s)" (abstract-equality-term1 obj) (abstract-equality-term2 obj))
-      (fprintf port "~v/~v" (abstract-equality-term1 obj) (abstract-equality-term2 obj))))
 
-; terms are really any abstract domain elements
-(serializable-struct abstract-equality (term1 term2) #:transparent #:methods gen:custom-write [(define write-proc write-abstract-equality)])
-(provide (struct-out abstract-equality))
-
-(define (abstract-substitution? l) (and (list? l) (andmap abstract-equality? l)))
-(provide abstract-substitution?)
 
 ; note: can only substitute for an abstract variable, and there is never any reason to substitute an atom or conjunction for something, so use terms
 ;(: substitute-in-term (-> AbstractTerm AbstractVariable AbstractTerm AbstractTerm))
@@ -129,26 +120,6 @@
             (listof abstract-conjunct?)))
   (subst substitution-object)
   ("One documentation-time expression" "Another documentation-time expression")))
-
-(define-syntax (t stx)
-  (syntax-parse stx
-    [(_ ((~literal a) NUM))
-     #'(a NUM)]
-    [(_ ((~literal g) NUM))
-     #'(g NUM)]
-    [(_ id:id)
-     #'(abstract-function (quote id) (list))]
-    [(_ (id:id [ARG ...]))
-     #'(abstract-function (quote id) (list (t ARG) ...))]))
-(define-syntax (aeq stx)
-  (syntax-parse stx
-    [(_ (TERM1 TERM2))
-     #'(abstract-equality (t TERM1) (t TERM2))]))
-(define-syntax (asubst stx)
-  (syntax-parse stx
-    [(_ SUBST-PAIR ...)
-     #'(list (aeq SUBST-PAIR) ...)]))
-(provide asubst)
 
 ;(module+ test
 ;  (require rackunit)

@@ -7,11 +7,6 @@
     (define get-token
       (lexer-src-pos
        [whitespace (token 'WS lexeme #:skip? #t)]
-       ["{PROGRAM}" (token 'PROGRAM-DELIMITER lexeme)]
-       ["{FULL EVALUATION}" (token 'FULL-EVALUATION-DELIMITER lexeme)]
-       ["{QUERY}" (token 'QUERY-DELIMITER lexeme)]
-       ["{PARTIAL ORDER}" (token 'PARTIAL-ORDER-DELIMITER lexeme)]
-       ["{K}" (token 'K-DELIMITER lexeme)]
        [(re-seq (char-range "A" "Z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'VARIABLE-IDENTIFIER lexeme)]
        [(re--
          (re-seq (char-range "a" "z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_")))
@@ -21,7 +16,6 @@
        ["a" (token 'AMB-AVAR-SYMBOL-A lexeme)]
        ["g" (token 'AMB-AVAR-SYMBOL-G lexeme)]
        [(re-seq numeric (re-* numeric)) (token 'NUMBER (string->number lexeme))]
-       [(re-seq "%" (re-* (char-complement "\n"))) (token 'COMMENT lexeme #:skip? #t)]
        ["->" (token 'LEADS-TO lexeme)]
        ["/" (token 'SLASH lexeme)]
        ["(" (token 'OPEN-PAREN lexeme)]
@@ -33,6 +27,7 @@
        [":-" (token 'IMPLIES lexeme)]
        ["." (token 'PERIOD lexeme)]
        ["<" (token 'LT lexeme)]
+       ["<" (token 'GT lexeme)]
        [(eof) eof]))
     (get-token input-port))
   next-token)

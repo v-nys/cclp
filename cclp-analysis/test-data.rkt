@@ -67,7 +67,5 @@ HERE
 (define permsort-consts (list (function 'nil (list))))
 (provide permsort-consts)
 
-(define permsort-prior (mk-preprior-graph))
-(begin
-  )
+(define permsort-prior (mk-preprior-graph)) ; TODO
 (provide permsort-prior)

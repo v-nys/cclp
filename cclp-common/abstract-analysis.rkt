@@ -26,12 +26,12 @@
   racket/struct ; for constructor-style printers
   scribble/srcdoc)
 (require
-  "abstract-knowledge.rkt"
-  (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-conjunct?)
-  "abstract-substitution.rkt"
-  (prefix-in ck: "concrete-knowledge.rkt")
+  cclp-common-data/abstract-knowledge
+  (only-in cclp-common-data/abstract-multi-domain abstract-atom? abstract-conjunct?)
+  cclp-common-data/abstract-substitution
+  "abstract-substitution-application.rkt"
+  (prefix-in ck: cclp-common-data/concrete-knowledge)
   "data-utils.rkt" ; selection is still expressed as a maybe
-  (prefix-in faid: "fullai-domain.rkt")
   (only-in "gen-graph-structs.rkt" index-range?)
   (only-in "control-flow.rkt" aif it)
   "preprior-graph.rkt")
@@ -39,17 +39,17 @@
 
 (define (full-ai-rule->full-evaluation r)
   (full-evaluation
-   (faid:full-ai-rule-input-pattern r)
-   (aif (faid:full-ai-rule-output-substitution r)
-        (apply-substitution it (faid:full-ai-rule-input-pattern r))
+   (full-ai-rule-input-pattern r)
+   (aif (full-ai-rule-output-substitution r)
+        (apply-substitution it (full-ai-rule-input-pattern r))
         #f)
-   (faid:full-ai-rule-idx r)))
+   (full-ai-rule-idx r)))
 (provide
  (proc-doc/names
   full-ai-rule->full-evaluation
-  (-> faid:full-ai-rule? full-evaluation?)
+  (-> full-ai-rule? full-evaluation?)
   (rule)
-  @{Converts a @racket[faid:full-ai-rule?] to a @racket[full-evaluation?].
+  @{Converts a @racket[full-ai-rule?] to a @racket[full-evaluation?].
  This function should be deprecated ASAP.}))
 
 (serializable-struct

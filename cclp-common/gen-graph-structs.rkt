@@ -26,7 +26,7 @@
   racket/serialize
   racket/struct
   scribble/srcdoc
-  "abstract-multi-domain.rkt")
+  cclp-common-data/abstract-multi-domain)
 (require (for-doc scribble/manual))
 
 (serializable-struct

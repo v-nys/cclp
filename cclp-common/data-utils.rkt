@@ -26,8 +26,3 @@
                 (and (some? elem)
                      (type-predicate (some-v elem))))))
 (provide maybe)
-
-; may want to create a set utils module?
-(define (optional-set-union . sets)
-  (foldl (λ (el acc) (set-union el acc)) (set) sets))
-(provide optional-set-union)

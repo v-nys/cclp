@@ -1,9 +1,10 @@
 #lang at-exp racket
 (require
   scribble/srcdoc
-  "abstract-multi-domain.rkt"
+  cclp-common-data/abstract-multi-domain
   (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
-  "abstract-substitution.rkt"
+  cclp-common-data/abstract-substitution
+  "abstract-substitution-application.rkt"
   (only-in "abstract-unify.rkt" abstract-unify)
   (only-in "abstraction-inspection-utils.rkt" extract-subscripted-variables assemble-var-indices)
   (only-in "data-utils.rkt" some-v))

@@ -1,5 +1,5 @@
 #lang racket
-(require "abstract-multi-domain.rkt")
+(require cclp-common-data/abstract-multi-domain)
 
 ;; note: mapping distinguishes between a* id 'i j and a* id 1 j and a* id 'L j!
 (define (remove-multi-subscripts abs [mapping #f])
