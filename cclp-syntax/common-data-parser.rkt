@@ -27,14 +27,18 @@
 ; TODO: update any SYMBOL entries to allow for integration with AMB-AVAR-SYMBOL-A and -G
 
 #lang brag
-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]
+atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN termlist CLOSE-PAREN]
+termlist : term (COMMA term)*
 term : variable | function-term | lplist
 variable : VARIABLE-IDENTIFIER
-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | number-term
+function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN termlist CLOSE-PAREN]) | number-term
 number-term : NUMBER
 lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN
 rule : (atom IMPLIES conjunction) | atom
 conjunction : atom (COMMA atom)*
+substitution : CURLY-OPEN substitution-pair (COMMA substitution-pair)* CURLY-CLOSE
+substitution-pair : variable SLASH term
+concrete-multi : SYMBOL OPEN-PAREN termlist CLOSE-PAREN
 
 fullai-rule : fullai-rule-with-body | fullai-rule-without-body
 fullai-rule-with-body : abstract-atom-with-args LEADS-TO (abstract-substitution | fail) NUMBER
