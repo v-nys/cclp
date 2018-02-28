@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
+#lang alpha-gamma racket
 (require cclp-common-data/abstract-substitution
          cclp-common/abstract-substitution-application)
 (require "data-utils.rkt")
@@ -104,47 +104,44 @@
     [else (equal? avar aterm)]))
 (provide occurs)
 
-;(module+ test
-;  (require rackunit)
-;  (require (for-syntax syntax/parse))
-;  (require "cclp-interpreter.rkt")
-;
-;  (require (for-syntax (only-in "abstract-substitution.rkt" asubst)))
-;
-;  ; the occurs check
-;  (check-true (occurs (g 1) (interpret-abstract-term "g1")))
-;  (check-false (occurs (g 1) (interpret-abstract-term "g2")))
-;  (check-true (occurs (a 1) (interpret-abstract-term "a1")))
-;  (check-false (occurs (a 1) (interpret-abstract-term "a2")))
-;
-;  (check-false (occurs (a 1) (interpret-abstract-term "someconstant")))
-;  (check-false (occurs (g 1) (interpret-abstract-term "someconstant")))
-;
-;  (check-true (occurs (a 1) (interpret-abstract-term "foo(bar(a1))")))
-;  (check-false (occurs (a 1) (interpret-abstract-term "foo(bar(a2))")))
-;  (check-true (occurs (g 1) (interpret-abstract-term "foo(bar(g1))")))
-;  (check-false (occurs (g 1) (interpret-abstract-term "foo(bar(g2))")))
-;
-;  (check-true (occurs (a 1) (interpret-abstract-atom "foo(bar(a1))")))
-;  (check-false (occurs (a 1) (interpret-abstract-atom "foo(bar(a2))")))
-;  (check-true (occurs (g 1) (interpret-abstract-atom "foo(bar(g1))")))
-;  (check-false (occurs (g 1) (interpret-abstract-atom "foo(bar(g2))")))
-;
-;  (check-equal? (abstract-unify (asubst (foo bar)) 0) (none) "unification of different functions")
-;  (check-equal? (abstract-unify (asubst (foo foo)) 0) (some (list)) "unification of identical functions")
-;  (check-equal? (abstract-unify (asubst ((a 1) (a 2))) 0) (some (asubst ((a 1) (a 2)))) "unification of equivalent variables")
-;  (check-equal? (abstract-unify (asubst ((a 1) (g 1))) 0) (some (asubst ((a 1) (g 1)))) "unification of most general with more specific variable")
-;  (check-equal? (abstract-unify (asubst ((foo [(bar [(a 1)])]) (foo [(bar [(g 1)])]))) 0) (some (asubst ((a 1) (g 1)))) "unification of nested terms")
-;  ;(check-equal? (abstract-unify (term-equality-list ("g1" "node(a1)")) 0) (some (term-equality-list ("a1" "g2") ("g1" "node(g2)"))) "unification introducing new variable")
-;
-;  (check-equal? (abstract-unify (asubst ((cons [(g 1) nil]) (cons [(g 2) nil]))) 0) (some (asubst ((g 1) (g 2)))) "unification of lists")
-;  (check-equal? (abstract-unify (asubst ((append [(a 13) (a 14) (a 12)]) (append [(a 19) (a 20) (a 18)]))) 0) (some (asubst ((a 13) (a 19)) ((a 14) (a 20)) ((a 12) (a 18)))) "unification of renamings respects the order of the arguments")
-;  ;(check-equal? (abstract-unify (term-equality-list ("collect(g3,a3)" "collect(node(a1),cons(a1,g4))")) 0) (some (term-equality-list ("a1" "g5") ("g3" "node(g5)") ("a3" "cons(g5,g4)"))))
-;
-;  (test-case "unification of more complex terms"
-;             (check-true
-;              (some?
-;               (abstract-unify
-;                (asubst ((collect [(g 1) (a 4)]) (collect [(tree [(a 5) (a 6)]) (a 7)]))) 0)))
-;             (check-equal? (list->set (some-v (abstract-unify (asubst ((collect [(g 1) (a 4)]) (collect [(tree [(a 5) (a 6)]) (a 7)]))) 0)))
-;                           (list->set (asubst ((a 5) (g 6)) ((a 6) (g 7)) ((g 1) (tree [(g 6) (g 7)])) ((a 4) (a 7)))))))
+(module+ test
+  (require rackunit)
+  (require (for-syntax syntax/parse))
+
+  ; the occurs check
+  (check-true (occurs (g 1) (g 1)))
+  (check-false (occurs (g 1) (g 2)))
+  (check-true (occurs (a 1) (a 1)))
+  (check-false (occurs (a 1) (a 2)))
+
+  (check-false (occurs (a 1) β(someconstant)))
+  (check-false (occurs (g 1) β(someconstant)))
+
+  (check-true (occurs (a 1) β(foo(bar(a1)))))
+  (check-false (occurs (a 1) β(foo(bar(a2)))))
+  (check-true (occurs (g 1) β(foo(bar(g1)))))
+  (check-false (occurs (g 1) β(foo(bar(g2)))))
+
+  (check-true (occurs (a 1) α(foo(bar(a1)))))
+  (check-false (occurs (a 1) α(foo(bar(a2)))))
+  (check-true (occurs (g 1) α(foo(bar(g1)))))
+  (check-false (occurs (g 1) α(foo(bar(g2)))))
+
+  (check-equal? (abstract-unify α({foo / bar}) 0) (none) "unification of different functions")
+  (check-equal? (abstract-unify α({foo / foo}) 0) (some empty) "unification of identical functions")
+  (check-equal? (abstract-unify α({a1 / a2}) 0) (some α({a1 / a2})) "unification of equivalent variables")
+  (check-equal? (abstract-unify α({a1 / g1}) 0) (some α({a1 / g1})) "unification of most general with more specific variable")
+  (check-equal? (abstract-unify α({foo(bar(a1)) / foo(bar(g1))}) 0) (some α({a1 / g1})) "unification of nested terms")
+  (check-equal? (abstract-unify α({g1 / node(a1)}) 0) (some α({a1 / g2, g1 / node(g2)})) "unification introducing new variable")
+
+  (check-equal? (abstract-unify α({[g1] / [g2]}) 0) (some α({g1 / g2})) "unification of lists")
+  (check-equal? (abstract-unify α({append(a13,a14,a12) / append(a19,a20,a18)}) 0) (some α({a13/a19, a14/a20, a12/a18})) "unification of renamings respects the order of the arguments")
+  (check-equal? (abstract-unify α({collect(g3,a3)/collect(node(a1),[a1|g4])}) 0) (some α({a1/g5,g3/node(g5),a3/[g5|g4]})))
+
+  (test-case "unification of more complex terms"
+             (check-true
+              (some?
+               (abstract-unify
+                α({collect(g1,a4)/collect(tree(a5,a6),a7)}) 0)))
+             (check-equal? (list->set (some-v (abstract-unify α({collect(g1,a4)/collect(tree(a5,a6),a7)}) 0)))
+                           (list->set α({a5/g6,a6/g7,g1/tree(g6,g7),a4/a7})))))

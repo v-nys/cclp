@@ -27,48 +27,48 @@
 ; TODO: update any SYMBOL entries to allow for integration with AMB-AVAR-SYMBOL-A and -G
 
 #lang brag
-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN termlist CLOSE-PAREN]
-termlist : term (COMMA term)*
-term : variable | function-term | lplist
-variable : VARIABLE-IDENTIFIER
-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN termlist CLOSE-PAREN]) | number-term
-number-term : NUMBER
-lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN
-rule : ((atom IMPLIES conjunction) | atom) NUMBER
-conjunction : conjunct (COMMA conjunct)*
-conjunct : atom | concrete-multi
-concrete-multi : SYMBOL OPEN-PAREN termlist CLOSE-PAREN
+ag-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN ag-termlist CLOSE-PAREN]
+ag-termlist : ag-term (COMMA ag-term)*
+ag-term : ag-variable | ag-function-term | ag-lplist
+ag-variable : VARIABLE-IDENTIFIER
+ag-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN ag-termlist CLOSE-PAREN]) | ag-number-term
+ag-number-term : NUMBER
+ag-lplist : OPEN-LIST-PAREN [ag-term (COMMA ag-term)* [LIST-SEPARATOR (ag-lplist | ag-variable)]] CLOSE-LIST-PAREN
+ag-rule : ((ag-atom IMPLIES ag-conjunction) | ag-atom) NUMBER
+ag-conjunction : ag-conjunct (COMMA ag-conjunct)*
+ag-conjunct : ag-atom | ag-concrete-multi
+ag-concrete-multi : SYMBOL OPEN-PAREN ag-termlist CLOSE-PAREN
 
-fullai-rule : fullai-rule-with-body | fullai-rule-without-body
-fullai-rule-with-body : abstract-atom-with-args LEADS-TO (abstract-substitution | fail) NUMBER
-fullai-rule-without-body : abstract-atom-with-args NUMBER
-abstract-atom-with-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN abstract-termlist CLOSE-PAREN
-abstract-termlist : abstract-term (COMMA abstract-term)*
-abstract-term : abstract-variable | abstract-function-term | abstract-lplist
-abstract-variable : (AMB-AVAR-SYMBOL-A NUMBER) | (AMB-AVAR-SYMBOL-G NUMBER)
-abstract-number : NUMBER
-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN abstract-termlist CLOSE-PAREN]) | abstract-number
-abstract-lplist : OPEN-LIST-PAREN [abstract-term (COMMA abstract-term)* [LIST-SEPARATOR (abstract-lplist | abstract-variable)]] CLOSE-LIST-PAREN
-abstract-atom-without-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G)
-fail : SYMBOL
+ag-fullai-rule : ag-fullai-rule-with-body | ag-fullai-rule-without-body
+ag-fullai-rule-with-body : ag-abstract-atom-with-args LEADS-TO (ag-abstract-substitution | ag-fail) NUMBER
+ag-fullai-rule-without-body : ag-abstract-atom-with-args NUMBER
+ag-abstract-atom-with-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN ag-abstract-termlist CLOSE-PAREN
+ag-abstract-termlist : ag-abstract-term (COMMA ag-abstract-term)*
+ag-abstract-term : ag-abstract-variable | ag-abstract-function-term | ag-abstract-lplist
+ag-abstract-variable : (AMB-AVAR-SYMBOL-A NUMBER) | (AMB-AVAR-SYMBOL-G NUMBER)
+ag-abstract-number : NUMBER
+ag-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN ag-abstract-termlist CLOSE-PAREN]) | ag-abstract-number
+ag-abstract-lplist : OPEN-LIST-PAREN [ag-abstract-term (COMMA ag-abstract-term)* [LIST-SEPARATOR (ag-abstract-lplist | ag-abstract-variable)]] CLOSE-LIST-PAREN
+ag-abstract-atom-without-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G)
+ag-fail : SYMBOL
 
-abstract-conjunction : abstract-conjunct (COMMA abstract-conjunct)*
-abstract-conjunct : abstract-atom | multi-abstraction
-abstract-atom : abstract-atom-with-args | abstract-atom-without-args
-multi-abstraction : SYMBOL OPEN-PAREN parameterized-abstract-conjunction COMMA SYMBOL COMMA init COMMA consecutive COMMA final COMMA NUMBER CLOSE-PAREN
-parameterized-abstract-conjunction : parameterized-abstract-atom (COMMA parameterized-abstract-atom)*
-parameterized-abstract-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN parameterized-abstract-termlist CLOSE-PAREN
-parameterized-abstract-term : parameterized-abstract-variable | parameterized-abstract-function-term | parameterized-abstract-lplist
-parameterized-abstract-variable : (AMB-AVAR-SYMBOL-A LT NUMBER COMMA symbolic-index COMMA NUMBER GT) | (AMB-AVAR-SYMBOL-G LT NUMBER COMMA symbolic-index COMMA NUMBER GT)
-symbolic-index : NUMBER | SYMBOL | IPLUSONE
-parameterized-abstract-variable-g : AMB-AVAR-SYMBOL-G LT NUMBER COMMA symbolic-index COMMA NUMBER GT
-init : CURLY-OPEN [parameterized-abstract-variable EQ abstract-term (COMMA parameterized-abstract-variable EQ abstract-term)*] CURLY-CLOSE
-consecutive : CURLY-OPEN [parameterized-abstract-variable EQ parameterized-abstract-term (COMMA parameterized-abstract-variable EQ parameterized-abstract-term)*] CURLY-CLOSE
-final : CURLY-OPEN [parameterized-abstract-variable EQ abstract-term (COMMA parameterized-abstract-variable EQ abstract-term)*] CURLY-CLOSE
-parameterized-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN parameterized-abstract-termlist CLOSE-PAREN]) | parameterized-abstract-number-term
-parameterized-abstract-termlist : parameterized-abstract-term (COMMA parameterized-abstract-term)*
-parameterized-abstract-number-term : NUMBER
-parameterized-abstract-lplist : OPEN-LIST-PAREN [parameterized-abstract-term (COMMA parameterized-abstract-term)* [LIST-SEPARATOR (parameterized-abstract-lplist | parameterized-abstract-variable)]] CLOSE-LIST-PAREN
+ag-abstract-conjunction : ag-abstract-conjunct (COMMA ag-abstract-conjunct)*
+ag-abstract-conjunct : ag-abstract-atom | ag-multi-abstraction
+ag-abstract-atom : ag-abstract-atom-with-args | ag-abstract-atom-without-args
+ag-multi-abstraction : SYMBOL OPEN-PAREN ag-parameterized-abstract-conjunction COMMA SYMBOL COMMA ag-init COMMA ag-consecutive COMMA ag-final COMMA NUMBER CLOSE-PAREN
+ag-parameterized-abstract-conjunction : ag-parameterized-abstract-atom (COMMA ag-parameterized-abstract-atom)*
+ag-parameterized-abstract-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN ag-parameterized-abstract-termlist CLOSE-PAREN
+ag-parameterized-abstract-term : ag-parameterized-abstract-variable | ag-parameterized-abstract-function-term | ag-parameterized-abstract-lplist
+ag-parameterized-abstract-variable : (AMB-AVAR-SYMBOL-A LT NUMBER COMMA ag-symbolic-index COMMA NUMBER GT) | (AMB-AVAR-SYMBOL-G LT NUMBER COMMA ag-symbolic-index COMMA NUMBER GT)
+ag-symbolic-index : NUMBER | SYMBOL | IPLUSONE
+ag-parameterized-abstract-variable-g : AMB-AVAR-SYMBOL-G LT NUMBER COMMA ag-symbolic-index COMMA NUMBER GT
+ag-init : CURLY-OPEN [ag-parameterized-abstract-variable EQ ag-abstract-term (COMMA ag-parameterized-abstract-variable EQ ag-abstract-term)*] CURLY-CLOSE
+ag-consecutive : CURLY-OPEN [ag-parameterized-abstract-variable EQ ag-parameterized-abstract-term (COMMA ag-parameterized-abstract-variable EQ ag-parameterized-abstract-term)*] CURLY-CLOSE
+ag-final : CURLY-OPEN [ag-parameterized-abstract-variable EQ ag-abstract-term (COMMA ag-parameterized-abstract-variable EQ ag-abstract-term)*] CURLY-CLOSE
+ag-parameterized-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN ag-parameterized-abstract-termlist CLOSE-PAREN]) | ag-parameterized-abstract-number-term
+ag-parameterized-abstract-termlist : ag-parameterized-abstract-term (COMMA ag-parameterized-abstract-term)*
+ag-parameterized-abstract-number-term : NUMBER
+ag-parameterized-abstract-lplist : OPEN-LIST-PAREN [ag-parameterized-abstract-term (COMMA ag-parameterized-abstract-term)* [LIST-SEPARATOR (ag-parameterized-abstract-lplist | ag-parameterized-abstract-variable)]] CLOSE-LIST-PAREN
 
-abstract-substitution : CURLY-OPEN abstract-substitution-pair (COMMA abstract-substitution-pair)* CURLY-CLOSE
-abstract-substitution-pair : abstract-variable SLASH abstract-term
+ag-abstract-substitution : CURLY-OPEN [ag-abstract-substitution-pair (COMMA ag-abstract-substitution-pair)*] CURLY-CLOSE
+ag-abstract-substitution-pair : ag-abstract-term SLASH ag-abstract-term

@@ -3,252 +3,253 @@
   (for-syntax syntax/parse)
   (prefix-in ad: cclp-common-data/abstract-multi-domain)
   (prefix-in ak: cclp-common-data/abstract-knowledge)
+  (prefix-in as: cclp-common-data/abstract-substitution)
   (prefix-in cd: cclp-common-data/concrete-domain)
   (prefix-in ck: cclp-common-data/concrete-knowledge))
 
-(define-syntax (abstract-atom-with-args stx)
+(define-syntax (ag-abstract-atom-with-args stx)
   (syntax-parse stx
     [(_ sym "(" tl ")")
      (syntax/loc stx
        (ad:abstract-atom (string->symbol (quote sym)) tl))]))
-(provide abstract-atom-with-args)
+(provide ag-abstract-atom-with-args)
 
-(define-syntax (abstract-termlist stx)
+(define-syntax (ag-abstract-termlist stx)
   (syntax-parse stx
     [(_ t)
      (syntax/loc stx (list t))]
     [(_ t "," t-or-comma ...)
-     (syntax/loc stx (cons t (abstract-termlist t-or-comma ...)))]))
-(provide abstract-termlist)
+     (syntax/loc stx (cons t (ag-abstract-termlist t-or-comma ...)))]))
+(provide ag-abstract-termlist)
 
-(define-syntax (parameterized-abstract-termlist stx)
+(define-syntax (ag-parameterized-abstract-termlist stx)
   (syntax-parse stx
     [(_ t)
      (syntax/loc stx (list t))]
     [(_ t "," t-or-comma ...)
-     (syntax/loc stx (cons t (parameterized-abstract-termlist t-or-comma ...)))]))
-(provide parameterized-abstract-termlist)
+     (syntax/loc stx (cons t (ag-parameterized-abstract-termlist t-or-comma ...)))]))
+(provide ag-parameterized-abstract-termlist)
 
-(define-syntax-rule (abstract-atom-without-args symbol)
+(define-syntax-rule (ag-abstract-atom-without-args symbol)
   (ad:abstract-atom (string->symbol (quote symbol)) (list)))
-(provide abstract-atom-without-args)
+(provide ag-abstract-atom-without-args)
 
-(define-syntax (abstract-atom stx)
+(define-syntax (ag-abstract-atom stx)
   (syntax-parse stx [(_ args-or-nothing) (syntax/loc stx args-or-nothing)]))
-(provide abstract-atom)
+(provide ag-abstract-atom)
 
-(define-syntax-rule (abstract-term specific-term) specific-term)
-(provide abstract-term)
+(define-syntax-rule (ag-abstract-term specific-term) specific-term)
+(provide ag-abstract-term)
 
-(define-syntax (abstract-variable stx)
+(define-syntax (ag-abstract-variable stx)
   (syntax-parse stx
     [(_ "a" idx)
      (syntax/loc stx (ad:a (quote idx)))]
     [(_ "g" idx)
      (syntax/loc stx (ad:g (quote idx)))]))
-(provide abstract-variable)
+(provide ag-abstract-variable)
 
-(define-syntax (abstract-lplist stx)
+(define-syntax (ag-abstract-lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
      (syntax/loc stx (ad:abstract-function (string->symbol "[]") '()))]
     [(_ "[" term0 "]")
      (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 (ad:abstract-function (string->symbol "[]") '()))))]
     [(_ "[" term0 "," rest ... "]")
-     (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 (abstract-lplist "[" rest ... "]"))))]
+     (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 (ag-abstract-lplist "[" rest ... "]"))))]
     [(_ "[" term0 "|" rest "]")
      (syntax/loc stx (ad:abstract-function (string->symbol "'[|]'") (list term0 rest)))]))
-(provide abstract-lplist)
+(provide ag-abstract-lplist)
 
-(define-syntax (abstract-conjunction stx)
+(define-syntax (ag-abstract-conjunction stx)
   (syntax-parse stx
     [(_ conjunct) (syntax/loc stx (list conjunct))]
-    [(_ conjunct "," conjunct-or-comma ...) (syntax/loc stx (cons conjunct (abstract-conjunction conjunct-or-comma ...)))]))
-(provide abstract-conjunction)
+    [(_ conjunct "," conjunct-or-comma ...) (syntax/loc stx (cons conjunct (ag-abstract-conjunction conjunct-or-comma ...)))]))
+(provide ag-abstract-conjunction)
 
-(define-syntax (abstract-substitution stx)
+(define-syntax (ag-abstract-substitution stx)
   (syntax-parse stx
     [(_ "{" "}") (list)]
     [(_ "{" subst-pair "}") (syntax/loc stx (list subst-pair))]
-    [(_ "{" subst-pair "," rest-arg ... "}") (syntax/loc stx (cons subst-pair (abstract-substitution "{" rest-arg ... "}")))]))
-(provide abstract-substitution)
+    [(_ "{" subst-pair "," rest-arg ... "}") (syntax/loc stx (cons subst-pair (ag-abstract-substitution "{" rest-arg ... "}")))]))
+(provide ag-abstract-substitution)
 
-(define-syntax-rule (abstract-substitution-pair lhs "/" rhs)
+(define-syntax-rule (ag-abstract-substitution-pair lhs "/" rhs)
   (as:abstract-equality lhs rhs))
-(provide abstract-substitution-pair)
+(provide ag-abstract-substitution-pair)
 
-(define-syntax-rule (fullai-rule with-or-without-body) with-or-without-body)
-(provide fullai-rule)
+(define-syntax-rule (ag-fullai-rule with-or-without-body) with-or-without-body)
+(provide ag-fullai-rule)
 
-(define-syntax-rule (abstract-number n) (ad:abstract-function (string->symbol (number->string n)) empty))
-(provide abstract-number)
+(define-syntax-rule (ag-abstract-number n) (ad:abstract-function (string->symbol (number->string n)) empty))
+(provide ag-abstract-number)
 
-(define-syntax (abstract-function-term stx)
-  (syntax-parse stx #:literals (abstract-number)
-    [(_ (abstract-number n)) (syntax/loc stx (abstract-number n))]
+(define-syntax (ag-abstract-function-term stx)
+  (syntax-parse stx #:literals (ag-abstract-number)
+    [(_ (ag-abstract-number n)) (syntax/loc stx (ag-abstract-number n))]
     [(_ functor) (syntax/loc stx (ad:abstract-function (string->symbol functor) '()))]
     [(_ functor "(" tl ")") (syntax/loc stx (ad:abstract-function (string->symbol functor) tl))]))
-(provide abstract-function-term)
+(provide ag-abstract-function-term)
 
-(define-syntax-rule (fail _sym) (quote #f))
-(provide fail)
+(define-syntax-rule (ag-fail _sym) (quote #f))
+(provide ag-fail)
 
-(define-syntax (fullai-rule-without-body stx)
+(define-syntax (ag-fullai-rule-without-body stx)
   (syntax-parse stx
     [(_ aawa num)
      (syntax/loc stx (ak:full-ai-rule aawa (quote #f) num))]))
-(provide fullai-rule-without-body)
+(provide ag-fullai-rule-without-body)
 
-(define-syntax (fullai-rule-with-body stx)
+(define-syntax (ag-fullai-rule-with-body stx)
   (syntax-parse stx
     [(_ aawa "->" outcome num)
      (syntax/loc stx (ak:full-ai-rule aawa outcome num))]))
-(provide fullai-rule-with-body)
+(provide ag-fullai-rule-with-body)
 
-(define-syntax-rule (parameterized-abstract-number-term num)
+(define-syntax-rule (ag-parameterized-abstract-number-term num)
   (abstract-function* (number->symbol num) empty))
-(provide parameterized-abstract-number-term)
+(provide ag-parameterized-abstract-number-term)
 
-(define-syntax (symbolic-index stx)
+(define-syntax (ag-symbolic-index stx)
   (syntax-parse stx
     [(_ "i") (syntax/loc stx 'i)]
     [(_ "i+1") (syntax/loc stx 'i+1)]
     [(_ "L") (syntax/loc stx 'L)]
     [(_ num) (syntax/loc stx num)]))
-(provide symbolic-index)
+(provide ag-symbolic-index)
 
-(define-syntax-rule (abstract-conjunct ac) ac)
-(provide abstract-conjunct)
+(define-syntax-rule (ag-abstract-conjunct ac) ac)
+(provide ag-abstract-conjunct)
 
-(define-syntax (parameterized-abstract-variable stx)
+(define-syntax (ag-parameterized-abstract-variable stx)
   (syntax-parse stx
     [(_ "a" "<" midx "," sidx "," vidx ">")
      (syntax/loc stx (ad:a* (quote midx) sidx (quote vidx)))]
     [(_ "g" "<" midx "," sidx "," vidx ">")
      (syntax/loc stx (ad:g* (quote midx) sidx (quote vidx)))]))
-(provide parameterized-abstract-variable)
+(provide ag-parameterized-abstract-variable)
 
-(define-syntax (parameterized-abstract-lplist stx)
+(define-syntax (ag-parameterized-abstract-lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
      (syntax/loc stx (ad:abstract-function* (string->symbol "[]") '()))]
     [(_ "[" term0 "]")
      (syntax/loc stx (ad:abstract-function* (string->symbol "'[|]'") (list term0 (ad:abstract-function* (string->symbol "[]") '()))))]
     [(_ "[" term0 "," rest ... "]")
-     (syntax/loc stx (ad:abstract-function* (string->symbol "'[|]'") (list term0 (parameterized-abstract-lplist "[" rest ... "]"))))]
+     (syntax/loc stx (ad:abstract-function* (string->symbol "'[|]'") (list term0 (ag-parameterized-abstract-lplist "[" rest ... "]"))))]
     [(_ "[" term0 "|" rest "]")
      (syntax/loc stx (ad:abstract-function* (string->symbol "'[|]'") (list term0 rest)))]))
-(provide parameterized-abstract-lplist)
+(provide ag-parameterized-abstract-lplist)
 
-(define-syntax (parameterized-abstract-function-term stx)
-  (syntax-parse stx #:literals (parameterized-abstract-number-term)
-    [(_ (parameterized-abstract-number-term n)) (syntax/loc stx (parameterized-abstract-number-term n))]
+(define-syntax (ag-parameterized-abstract-function-term stx)
+  (syntax-parse stx #:literals (ag-parameterized-abstract-number-term)
+    [(_ (ag-parameterized-abstract-number-term n)) (syntax/loc stx (ag-parameterized-abstract-number-term n))]
     [(_ functor) (syntax/loc stx (ad:abstract-function* (string->symbol functor) '()))]
     [(_ functor "(" tl ")") (syntax/loc stx (ad:abstract-function* (string->symbol functor) tl))]))
-(provide parameterized-abstract-function-term)
+(provide ag-parameterized-abstract-function-term)
 
-(define-syntax (parameterized-abstract-atom stx)
+(define-syntax (ag-parameterized-abstract-atom stx)
   (syntax-parse stx
     [(_ sym "(" tl ")")
      (syntax/loc stx
        (ad:abstract-atom* (string->symbol (quote sym)) tl))]))
-(provide parameterized-abstract-atom)
+(provide ag-parameterized-abstract-atom)
 
-(define-syntax (parameterized-abstract-conjunction stx)
+(define-syntax (ag-parameterized-abstract-conjunction stx)
   (syntax-parse stx
     [(_ conjunct) (syntax/loc stx (list conjunct))]
-    [(_ conjunct "," conjunct-or-comma ...) (syntax/loc stx (cons conjunct (parameterized-abstract-conjunction conjunct-or-comma ...)))]))
-(provide parameterized-abstract-conjunction)
+    [(_ conjunct "," conjunct-or-comma ...) (syntax/loc stx (cons conjunct (ag-parameterized-abstract-conjunction conjunct-or-comma ...)))]))
+(provide ag-parameterized-abstract-conjunction)
 
-(define-syntax-rule (parameterized-abstract-term pat) pat)
-(provide parameterized-abstract-term)
+(define-syntax-rule (ag-parameterized-abstract-term pat) pat)
+(provide ag-parameterized-abstract-term)
 
-(define-syntax (init stx)
+(define-syntax (ag-init stx)
   (syntax-parse stx
     [(_ "{" "}") (syntax/loc stx empty)]
     [(_ "{" pav "=" at "}") (syntax/loc stx (list (cons pav at)))]
-    [(_ "{" pav "=" at "," rest ... "}") (syntax/loc stx (cons (cons pav at) (init "{" rest ... "}")))]))
-(provide init)
+    [(_ "{" pav "=" at "," rest ... "}") (syntax/loc stx (cons (cons pav at) (ag-init "{" rest ... "}")))]))
+(provide ag-init)
 
-(define-syntax (final stx)
+(define-syntax (ag-final stx)
   (syntax-parse stx
     [(_ "{" "}") (syntax/loc stx empty)]
     [(_ "{" pav "=" at "}") (syntax/loc stx (list (cons pav at)))]
-    [(_ "{" pav "=" at "," rest ... "}") (syntax/loc stx (cons (cons pav at) (init "{" rest ... "}")))]))
-(provide final)
+    [(_ "{" pav "=" at "," rest ... "}") (syntax/loc stx (cons (cons pav at) (ag-final "{" rest ... "}")))]))
+(provide ag-final)
 
-(define-syntax (consecutive stx)
+(define-syntax (ag-consecutive stx)
   (syntax-parse stx
     [(_ "{" "}") (syntax/loc stx empty)]
     [(_ "{" pav "=" pat "}") (syntax/loc stx (list (cons pav pat)))]
-    [(_ "{" pav "=" pat "," rest ... "}") (syntax/loc stx (cons (cons pav pat) (init "{" rest ... "}")))]))
-(provide consecutive)
+    [(_ "{" pav "=" pat "," rest ... "}") (syntax/loc stx (cons (cons pav pat) (ag-consecutive "{" rest ... "}")))]))
+(provide ag-consecutive)
 
-(define-syntax (multi-abstraction stx)
+(define-syntax (ag-multi-abstraction stx)
   (syntax-parse stx
     [(_ "multi" "(" pac "," "t" "," i "," c "," f "," num ")")
      (syntax/loc stx (ad:multi pac #t i c f num))]
     [(_ "multi" "(" pac "," "f" "," i "," c "," f "," num ")")
      (syntax/loc stx (ad:multi pac #f i c f num))]))
-(provide multi-abstraction)
+(provide ag-multi-abstraction)
 
-(define-syntax-rule (concrete-multi tl) (cd:concrete-multi tl))
-(provide concrete-multi)
+(define-syntax-rule (ag-concrete-multi tl) (cd:concrete-multi tl))
+(provide ag-concrete-multi)
 
-(define-syntax (atom stx)
+(define-syntax (ag-atom stx)
   (syntax-parse stx
     [(_ sym) (syntax/loc stx (cd:atom sym empty))]
     [(_ sym "(" tl ")") (syntax/loc stx (cd:atom sym tl))]))
-(provide atom)
+(provide ag-atom)
 
-(define-syntax (rule stx)
+(define-syntax (ag-rule stx)
   (syntax-parse stx
     [(at ":-" con num) (syntax/loc stx (ck:rule at con num))]
     [(at num) (syntax/loc stx (ck:rule at empty num))]))
-(provide rule)
+(provide ag-rule)
 
-(define-syntax-rule (variable sym) (cd:variable (string->symbol sym)))
-(provide variable)
+(define-syntax-rule (ag-variable sym) (cd:variable (string->symbol sym)))
+(provide ag-variable)
 
-(define-syntax-rule (number-term num) (cd:function (string->symbol (number->string num)) empty))
+(define-syntax-rule (ag-number-term num) (cd:function (string->symbol (number->string num)) empty))
 
-(define-syntax (function-term stx)
-  (syntax-parse stx #:literals (number-term)
-    [(_ (number-term n)) (syntax/loc stx (number-term n))]
+(define-syntax (ag-function-term stx)
+  (syntax-parse stx #:literals (ag-number-term)
+    [(_ (ag-number-term n)) (syntax/loc stx (number-term n))]
     [(_ functor) (syntax/loc stx (cd:function (string->symbol functor) '()))]
     [(_ functor "(" tl ")") (syntax/loc stx (cd:function (string->symbol functor) tl))]))
-(provide function-term)
+(provide ag-function-term)
 
-(define-syntax-rule (conjunct c) c)
-(provide conjunct)
+(define-syntax-rule (ag-conjunct c) c)
+(provide ag-conjunct)
 
-(define-syntax (conjunction stx)
+(define-syntax (ag-conjunction stx)
   (syntax-parse stx
     [(_ c)
      (syntax/loc stx (list c))]
     [(_ c "," c-or-comma ...)
-     (syntax/loc stx (cons c (termlist c-or-comma ...)))]))
-(provide conjunction)
+     (syntax/loc stx (cons c (ag-termlist c-or-comma ...)))]))
+(provide ag-conjunction)
 
-(define-syntax (termlist stx)
+(define-syntax (ag-termlist stx)
   (syntax-parse stx
     [(_ t)
      (syntax/loc stx (list t))]
     [(_ t "," t-or-comma ...)
-     (syntax/loc stx (cons t (termlist t-or-comma ...)))]))
-(provide termlist)
+     (syntax/loc stx (cons t (ag-termlist t-or-comma ...)))]))
+(provide ag-termlist)
 
-(define-syntax (lplist stx)
+(define-syntax (ag-lplist stx)
   (syntax-parse stx
     [(_ "[" "]")
      (syntax/loc stx (cd:function (string->symbol "[]") '()))]
     [(_ "[" term0 "]")
      (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (cd:function (string->symbol "[]") '()))))]
     [(_ "[" term0 "," rest ... "]")
-     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (lplist "[" rest ... "]"))))]
+     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (ag-lplist "[" rest ... "]"))))]
     [(_ "[" term0 "|" rest "]")
      (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 rest)))]))
-(provide lplist)
+(provide ag-lplist)
 
-(define-syntax-rule (term specific-term) specific-term)
-(provide term)
+(define-syntax-rule (ag-term specific-term) specific-term)
+(provide ag-term)
