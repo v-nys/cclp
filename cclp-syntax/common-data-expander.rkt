@@ -2,7 +2,9 @@
 (require
   (for-syntax syntax/parse)
   (prefix-in ad: cclp-common-data/abstract-multi-domain)
-  (prefix-in ak: cclp-common-data/abstract-knowledge))
+  (prefix-in ak: cclp-common-data/abstract-knowledge)
+  (prefix-in cd: cclp-common-data/concrete-domain)
+  (prefix-in ck: cclp-common-data/concrete-knowledge))
 
 (define-syntax (abstract-atom-with-args stx)
   (syntax-parse stx
@@ -189,3 +191,64 @@
     [(_ "multi" "(" pac "," "f" "," i "," c "," f "," num ")")
      (syntax/loc stx (ad:multi pac #f i c f num))]))
 (provide multi-abstraction)
+
+(define-syntax-rule (concrete-multi tl) (cd:concrete-multi tl))
+(provide concrete-multi)
+
+(define-syntax (atom stx)
+  (syntax-parse stx
+    [(_ sym) (syntax/loc stx (cd:atom sym empty))]
+    [(_ sym "(" tl ")") (syntax/loc stx (cd:atom sym tl))]))
+(provide atom)
+
+(define-syntax (rule stx)
+  (syntax-parse stx
+    [(at ":-" con num) (syntax/loc stx (ck:rule at con num))]
+    [(at num) (syntax/loc stx (ck:rule at empty num))]))
+(provide rule)
+
+(define-syntax-rule (variable sym) (cd:variable (string->symbol sym)))
+(provide variable)
+
+(define-syntax-rule (number-term num) (cd:function (string->symbol (number->string num)) empty))
+
+(define-syntax (function-term stx)
+  (syntax-parse stx #:literals (number-term)
+    [(_ (number-term n)) (syntax/loc stx (number-term n))]
+    [(_ functor) (syntax/loc stx (cd:function (string->symbol functor) '()))]
+    [(_ functor "(" tl ")") (syntax/loc stx (cd:function (string->symbol functor) tl))]))
+(provide function-term)
+
+(define-syntax-rule (conjunct c) c)
+(provide conjunct)
+
+(define-syntax (conjunction stx)
+  (syntax-parse stx
+    [(_ c)
+     (syntax/loc stx (list c))]
+    [(_ c "," c-or-comma ...)
+     (syntax/loc stx (cons c (termlist c-or-comma ...)))]))
+(provide conjunction)
+
+(define-syntax (termlist stx)
+  (syntax-parse stx
+    [(_ t)
+     (syntax/loc stx (list t))]
+    [(_ t "," t-or-comma ...)
+     (syntax/loc stx (cons t (termlist t-or-comma ...)))]))
+(provide termlist)
+
+(define-syntax (lplist stx)
+  (syntax-parse stx
+    [(_ "[" "]")
+     (syntax/loc stx (cd:function (string->symbol "[]") '()))]
+    [(_ "[" term0 "]")
+     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (cd:function (string->symbol "[]") '()))))]
+    [(_ "[" term0 "," rest ... "]")
+     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (lplist "[" rest ... "]"))))]
+    [(_ "[" term0 "|" rest "]")
+     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 rest)))]))
+(provide lplist)
+
+(define-syntax-rule (term specific-term) specific-term)
+(provide term)

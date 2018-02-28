@@ -34,10 +34,9 @@ variable : VARIABLE-IDENTIFIER
 function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN termlist CLOSE-PAREN]) | number-term
 number-term : NUMBER
 lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN
-rule : (atom IMPLIES conjunction) | atom
-conjunction : atom (COMMA atom)*
-substitution : CURLY-OPEN substitution-pair (COMMA substitution-pair)* CURLY-CLOSE
-substitution-pair : variable SLASH term
+rule : ((atom IMPLIES conjunction) | atom) NUMBER
+conjunction : conjunct (COMMA conjunct)*
+conjunct : atom | concrete-multi
 concrete-multi : SYMBOL OPEN-PAREN termlist CLOSE-PAREN
 
 fullai-rule : fullai-rule-with-body | fullai-rule-without-body
