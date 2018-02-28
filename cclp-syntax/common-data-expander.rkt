@@ -78,6 +78,9 @@
 (define-syntax-rule (fullai-rule with-or-without-body) with-or-without-body)
 (provide fullai-rule)
 
+(define-syntax-rule (abstract-number n) (ad:abstract-function (string->symbol (number->string n)) empty))
+(provide abstract-number)
+
 (define-syntax (abstract-function-term stx)
   (syntax-parse stx #:literals (abstract-number)
     [(_ (abstract-number n)) (syntax/loc stx (abstract-number n))]
