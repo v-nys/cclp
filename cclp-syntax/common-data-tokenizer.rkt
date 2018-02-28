@@ -25,9 +25,12 @@
        ["|" (token 'LIST-SEPARATOR lexeme)]
        ["," (token 'COMMA lexeme)]
        [":-" (token 'IMPLIES lexeme)]
-       ["." (token 'PERIOD lexeme)]
+       ["i+1" (token 'IPLUSONE lexeme)] ; may seem odd, but plus is never used else
+       ["{" (token 'CURLY-OPEN lexeme)]
+       ["}" (token 'CURLY-CLOSE lexeme)]
        ["<" (token 'LT lexeme)]
-       ["<" (token 'GT lexeme)]
+       [">" (token 'GT lexeme)]
+       ["=" (token 'EQ lexeme)]
        [(eof) eof]))
     (get-token input-port))
   next-token)

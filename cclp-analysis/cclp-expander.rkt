@@ -255,16 +255,7 @@
 
 ; empty substitutions make sense if we can just scratch the abstract atom
 ; e.g. lte(g1,g2) just disappears and does not need a substitution
-(define-syntax (abstract-substitution stx)
-  (syntax-parse stx
-    [(_) (list)]
-    [(_ lhs0 lhs1 ...)
-     (syntax/loc stx (odd-elems-as-list lhs0 lhs1 ...))]))
-(provide abstract-substitution)
 
-(define-syntax-rule (abstract-substitution-pair lhs "/" rhs)
-  (as:abstract-equality lhs rhs))
-(provide abstract-substitution-pair)
 
 (define-syntax (concrete-constant stx)
   (syntax-parse stx

@@ -37,23 +37,35 @@ rule : (atom IMPLIES conjunction) | atom
 conjunction : atom (COMMA atom)*
 
 fullai-rule : fullai-rule-with-body | fullai-rule-without-body
-fullai-rule-with-body : abstract-atom-with-args LEADS-TO (abstract-substitution | fail) PERIOD
-fullai-rule-without-body : abstract-atom-with-args PERIOD
-abstract-atom-with-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
-abstract-atom-without-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G)
-
+fullai-rule-with-body : abstract-atom-with-args LEADS-TO (abstract-substitution | fail) NUMBER
+fullai-rule-without-body : abstract-atom-with-args NUMBER
+abstract-atom-with-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN abstract-termlist CLOSE-PAREN
+abstract-termlist : abstract-term (COMMA abstract-term)*
 abstract-term : abstract-variable | abstract-function-term | abstract-lplist
-abstract-variable : abstract-variable-a | abstract-variable-g
-abstract-variable-a : AMB-AVAR-SYMBOL-A NUMBER
-abstract-variable-g : AMB-AVAR-SYMBOL-G NUMBER
-abstract-number-term : abstract-number
+abstract-variable : (AMB-AVAR-SYMBOL-A NUMBER) | (AMB-AVAR-SYMBOL-G NUMBER)
 abstract-number : NUMBER
-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]) | abstract-number-term
-
+abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN abstract-termlist CLOSE-PAREN]) | abstract-number
 abstract-lplist : OPEN-LIST-PAREN [abstract-term (COMMA abstract-term)* [LIST-SEPARATOR (abstract-lplist | abstract-variable)]] CLOSE-LIST-PAREN
-abstract-substitution : abstract-substitution-pair (COMMA abstract-substitution-pair)*
-abstract-substitution-pair : abstract-variable SLASH abstract-term
-abstract-atom : abstract-atom-with-args | abstract-atom-without-args
-abstract-conjunction : abstract-atom (COMMA abstract-atom)*
-
+abstract-atom-without-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G)
 fail : SYMBOL
+
+abstract-conjunction : abstract-conjunct (COMMA abstract-conjunct)*
+abstract-conjunct : abstract-atom | multi-abstraction
+abstract-atom : abstract-atom-with-args | abstract-atom-without-args
+multi-abstraction : SYMBOL OPEN-PAREN parameterized-abstract-conjunction SYMBOL init consecutive final NUMBER CLOSE-PAREN
+parameterized-abstract-conjunction : parameterized-abstract-atom (COMMA parameterized-abstract-atom)*
+parameterized-abstract-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN parameterized-abstract-termlist CLOSE-PAREN
+parameterized-abstract-term : parameterized-abstract-variable | parameterized-abstract-function-term | parameterized-abstract-lplist
+parameterized-abstract-variable : (AMB-AVAR-SYMBOL-A LT NUMBER COMMA symbolic-index COMMA NUMBER GT) | (AMB-AVAR-SYMBOL-G LT NUMBER COMMA symbolic-index COMMA NUMBER GT)
+symbolic-index : NUMBER | SYMBOL | IPLUSONE
+parameterized-abstract-variable-g : AMB-AVAR-SYMBOL-G LT NUMBER COMMA symbolic-index COMMA NUMBER GT
+init : CURLY-OPEN [parameterized-abstract-variable EQ abstract-term (COMMA parameterized-abstract-variable EQ abstract-term)*] CURLY-CLOSE
+consecutive : CURLY-OPEN [parameterized-abstract-variable EQ parameterized-abstract-term (COMMA parameterized-abstract-variable EQ parameterized-abstract-term)*] CURLY-CLOSE
+final : CURLY-OPEN [parameterized-abstract-variable EQ abstract-term (COMMA parameterized-abstract-variable EQ abstract-term)*] CURLY-CLOSE
+parameterized-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN parameterized-abstract-termlist CLOSE-PAREN]) | parameterized-abstract-number-term
+parameterized-abstract-termlist : parameterized-abstract-term (COMMA parameterized-abstract-term)*
+parameterized-abstract-number-term : NUMBER
+parameterized-abstract-lplist : OPEN-LIST-PAREN [parameterized-abstract-term (COMMA parameterized-abstract-term)* [LIST-SEPARATOR (parameterized-abstract-lplist | parameterized-abstract-variable)]] CLOSE-LIST-PAREN
+
+abstract-substitution : CURLY-OPEN abstract-substitution-pair (COMMA abstract-substitution-pair)* CURLY-CLOSE
+abstract-substitution-pair : abstract-variable SLASH abstract-term
