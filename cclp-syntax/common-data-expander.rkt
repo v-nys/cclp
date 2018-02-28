@@ -1,7 +1,8 @@
 #lang racket
 (require
   (for-syntax syntax/parse)
-  (prefix-in ad: cclp-common-data/abstract-multi-domain))
+  (prefix-in ad: cclp-common-data/abstract-multi-domain)
+  (prefix-in ak: cclp-common-data/abstract-knowledge))
 
 (define-syntax (abstract-atom-with-args stx)
   (syntax-parse stx
@@ -90,13 +91,13 @@
 (define-syntax (fullai-rule-without-body stx)
   (syntax-parse stx
     [(_ aawa num)
-     (syntax/loc stx (ak:full-ai-rule aawa (quote #f) (string->number num)))]))
+     (syntax/loc stx (ak:full-ai-rule aawa (quote #f) num))]))
 (provide fullai-rule-without-body)
 
 (define-syntax (fullai-rule-with-body stx)
   (syntax-parse stx
     [(_ aawa "->" outcome num)
-     (syntax/loc stx (ak:full-ai-rule aawa outcome (string->number num)))]))
+     (syntax/loc stx (ak:full-ai-rule aawa outcome num))]))
 (provide fullai-rule-with-body)
 
 (define-syntax-rule (parameterized-abstract-number-term num)
@@ -108,7 +109,7 @@
     [(_ "i") (syntax/loc stx 'i)]
     [(_ "i+1") (syntax/loc stx 'i+1)]
     [(_ "L") (syntax/loc stx 'L)]
-    [(_ num) (syntax/loc stx (string->number num))]))
+    [(_ num) (syntax/loc stx num)]))
 (provide symbolic-index)
 
 (define-syntax-rule (abstract-conjunct ac) ac)
@@ -146,7 +147,7 @@
     [(_ sym "(" tl ")")
      (syntax/loc stx
        (ad:abstract-atom* (string->symbol (quote sym)) tl))]))
-(provide abstract-atom)
+(provide parameterized-abstract-atom)
 
 (define-syntax (parameterized-abstract-conjunction stx)
   (syntax-parse stx
@@ -180,8 +181,8 @@
 
 (define-syntax (multi-abstraction stx)
   (syntax-parse stx
-    [(_ "multi" "(" pac "t" i c f num ")")
+    [(_ "multi" "(" pac "," "t" "," i "," c "," f "," num ")")
      (syntax/loc stx (ad:multi pac #t i c f num))]
-    [(_ "multi" "(" pac "f" i c f num ")")
+    [(_ "multi" "(" pac "," "f" "," i "," c "," f "," num ")")
      (syntax/loc stx (ad:multi pac #f i c f num))]))
 (provide multi-abstraction)

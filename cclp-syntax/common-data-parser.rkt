@@ -52,7 +52,7 @@ fail : SYMBOL
 abstract-conjunction : abstract-conjunct (COMMA abstract-conjunct)*
 abstract-conjunct : abstract-atom | multi-abstraction
 abstract-atom : abstract-atom-with-args | abstract-atom-without-args
-multi-abstraction : SYMBOL OPEN-PAREN parameterized-abstract-conjunction SYMBOL init consecutive final NUMBER CLOSE-PAREN
+multi-abstraction : SYMBOL OPEN-PAREN parameterized-abstract-conjunction COMMA SYMBOL COMMA init COMMA consecutive COMMA final COMMA NUMBER CLOSE-PAREN
 parameterized-abstract-conjunction : parameterized-abstract-atom (COMMA parameterized-abstract-atom)*
 parameterized-abstract-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN parameterized-abstract-termlist CLOSE-PAREN
 parameterized-abstract-term : parameterized-abstract-variable | parameterized-abstract-function-term | parameterized-abstract-lplist
