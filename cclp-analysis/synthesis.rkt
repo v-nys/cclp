@@ -26,7 +26,7 @@
   racket/generator
   scribble/srcdoc
   (only-in cclp-analysis/interaction analysis-tree proceed)
-  cclp-analysis/abstract-analysis
+  cclp-common/abstract-analysis
   (only-in cclp-common-data/abstract-knowledge full-evaluation?)
   cclp-common-data/concrete-domain
   cclp-common-data/concrete-knowledge
