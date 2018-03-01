@@ -31,6 +31,7 @@
        ["<" (token 'LT lexeme)]
        [">" (token 'GT lexeme)]
        ["=" (token 'EQ lexeme)]
+       ["." (token 'PERIOD lexeme)]
        [(eof) eof]))
     (get-token input-port))
   next-token)

@@ -20,7 +20,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang at-exp racket
+#lang alpha-gamma at-exp racket
 (require cclp-common-data/abstract-multi-domain
          "data-utils.rkt"
          cclp-common-data/abstract-substitution
@@ -87,41 +87,36 @@
    (-> (or/c abstract-domain-elem*? abstract-knowledge?)
        abstract-domain-elem*?
        (or/c abstract-domain-elem*? abstract-knowledge?))]))
-;(module+ test
-;  (require "domain-switching.rkt" (prefix-in ak: "abstract-knowledge.rkt"))
-;  (test-case
-;   "the right abstract rule should be obtained"
-;   (let* ([rule (interpret-concrete-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)")]
-;          [abstract-conjunction (list (interpret-abstract-atom "collect(g1,a1)"))]
-;          [abstract-rule (pre-abstract-rule rule (list))]
-;          [renamed-abstract-rule (rename-apart abstract-rule abstract-conjunction)]
-;          [expected
-;           (ak:abstract-rule (interpret-abstract-atom "collect(tree(a6,a7),a8)")
-;                             (list (interpret-abstract-atom "collect(a6,a9)")
-;                                   (interpret-abstract-atom "collect(a7,a10)")
-;                                   (interpret-abstract-atom "append(a9,a10,a8)")))])
-;     (check-equal?
-;      abstract-rule
-;      (ak:abstract-rule (interpret-abstract-atom "collect(tree(a1,a2),a3)")
-;                        (list (interpret-abstract-atom "collect(a1,a4)")
-;                              (interpret-abstract-atom "collect(a2,a5)")
-;                              (interpret-abstract-atom "append(a4,a5,a3)"))))
-;     (check-equal? renamed-abstract-rule expected)))
-;  (test-case
-;   "a properly renamed full evaluation should be obtained"
-;   (let* ([full-eval (ak:full-evaluation (interpret-abstract-atom "del(a1,[g1|g2],a2)")
-;                                         (interpret-abstract-atom "del(g3,[g1|g2],g4)")
-;                                         1)]
-;          [abstract-conjunction
-;           (interpret-abstract-conjunction "del(a12,[g18|g19],a14),perm(a14,a13),ord([g3,a12|a13])")]
-;          [renamed-abstract-rule (rename-apart full-eval abstract-conjunction)]
-;          [expected
-;           (ak:full-evaluation (interpret-abstract-atom "del(a15,[g20|g21],a16)")
-;                               (interpret-abstract-atom "del(g22,[g20|g21],g23)")
-;                               1)])
-;     (check-equal?
-;      renamed-abstract-rule
-;      expected))))
+(module+ test
+  (require cclp-common/domain-switching (prefix-in ak: cclp-common-data/abstract-knowledge))
+  (test-case
+   "the right abstract rule should be obtained"
+   (let* ([rule γ(collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z) 1)]
+          [abstract-conjunction (list α(collect(g1,a1)))]
+          [abstract-rule (pre-abstract-rule rule (list))]
+          [renamed-abstract-rule (rename-apart abstract-rule abstract-conjunction)]
+          [expected
+           (ak:abstract-rule α(collect(tree(a6,a7),a8))
+                             α(collect(a6,a9),collect(a7,a10),append(a9,a10,a8)))])
+     (check-equal?
+      abstract-rule
+      (ak:abstract-rule α(collect(tree(a1,a2),a3))
+                        α(collect(a1,a4),collect(a2,a5),append(a4,a5,a3))))
+     (check-equal? renamed-abstract-rule expected)))
+  (test-case
+   "a properly renamed full evaluation should be obtained"
+   (let* ([full-eval (ak:full-evaluation α(del(a1,[g1|g2],a2))
+                                         α(del(g3,[g1|g2],g4))
+                                         1)]
+          [abstract-conjunction α(del(a12,[g18|g19],a14),perm(a14,a13),ord([g3,a12|a13]))]
+          [renamed-abstract-rule (rename-apart full-eval abstract-conjunction)]
+          [expected
+           (ak:full-evaluation α(del(a15,[g20|g21],a16))
+                               α(del(g22,[g20|g21],g23))
+                               1)])
+     (check-equal?
+      renamed-abstract-rule
+      expected))))
 
 (define (normalize-abstract-atom aa)
   (let* ([mmax-a (maximum-var-index aa a?)]
@@ -165,9 +160,8 @@
     (abstract-atom 'foo (list (g 5) (g 6))))
    (abstract-atom 'foo (list (g 1) (g 2))))
   (check-equal?
-   (normalize-abstract-atom
-    (abstract-atom 'foo (list (a 6) (a 5))))
-   (abstract-atom 'foo (list (a 1) (a 2))))
+   (normalize-abstract-atom α(foo(a6,a5)))
+   α(foo(a1,a2)))
   (check-equal?
    (normalize-abstract-atom
     (abstract-atom 'foo (list (g 6) (g 5))))

@@ -34,10 +34,10 @@ ag-variable : VARIABLE-IDENTIFIER
 ag-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN ag-termlist CLOSE-PAREN]) | ag-number-term
 ag-number-term : NUMBER
 ag-lplist : OPEN-LIST-PAREN [ag-term (COMMA ag-term)* [LIST-SEPARATOR (ag-lplist | ag-variable)]] CLOSE-LIST-PAREN
-ag-rule : ((ag-atom IMPLIES ag-conjunction) | ag-atom) NUMBER
+ag-rule : (ag-atom IMPLIES ag-conjunction | ag-atom) NUMBER 
 ag-conjunction : ag-conjunct (COMMA ag-conjunct)*
 ag-conjunct : ag-atom | ag-concrete-multi
-ag-concrete-multi : SYMBOL OPEN-PAREN ag-termlist CLOSE-PAREN
+ag-concrete-multi : PERIOD SYMBOL OPEN-PAREN ag-termlist CLOSE-PAREN
 
 ag-fullai-rule : ag-fullai-rule-with-body | ag-fullai-rule-without-body
 ag-fullai-rule-with-body : ag-abstract-atom-with-args LEADS-TO (ag-abstract-substitution | ag-fail) NUMBER
