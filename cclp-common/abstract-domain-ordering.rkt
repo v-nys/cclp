@@ -1,4 +1,4 @@
-#lang at-exp racket
+#lang alpha-gamma at-exp racket
 
 ; cannot define these functions in the domain module, would cause circular import between domain module and unification module
 (require cclp-common-data/abstract-multi-domain)
@@ -71,272 +71,273 @@
     [((? abstract-domain-elem?) (? multi?)) #f]
     [((? multi?) (? abstract-atom?))
      (>=-extension domain-elem1 (list domain-elem2))]))
-;(module+ test
-;  (check-true (>=-extension (interpret-abstract-term "a1") (interpret-abstract-term "g1")))
-;  (check-true (>=-extension (interpret-abstract-term "a1") (interpret-abstract-term "a2")))
-;  (check-false (>=-extension (interpret-abstract-term "g1") (interpret-abstract-term "a1")))
-;  (check-true (>=-extension (interpret-abstract-term "g1") (interpret-abstract-term "g1")))
-;  (check-true (>=-extension (interpret-abstract-term "nil") (interpret-abstract-term "nil")))
-;  (check-false (>=-extension (interpret-abstract-term "nil") (interpret-abstract-term "nonnil")))
-;  (check-true
-;   (>=-extension
-;    (interpret-abstract-term "foo(g1,bar(g2,a1,g1))")
-;    (interpret-abstract-term "foo(nil,bar(nonnil,g3,nil))")))
-;  (check-false
-;   (>=-extension
-;    (interpret-abstract-term "foo(g1,bar(g2,a1,g1))")
-;    (interpret-abstract-term "foo(nil,bar(nonnil,g3,nonnil))")))
-;  (check-true
-;   (>=-extension
-;    (interpret-abstract-atom "foo(g1,bar(g2,a1,g1))")
-;    (interpret-abstract-atom "foo(nil,bar(nonnil,g3,nil))")))
-;  (check-false
-;   (>=-extension
-;    (interpret-abstract-atom "foo(g1,bar(g2,a1,g1))")
-;    (interpret-abstract-atom "foo(nil,bar(nonnil,g3,nonnil))")))
-;  (check-false
-;   (>=-extension
-;    (interpret-abstract-term "foo(g1,bar(g2,a1,g1))")
-;    (interpret-abstract-atom "foo(nil,bar(nonnil,g3,nil))")))
-;  (check-true
-;   (>=-extension
-;    (interpret-abstract-atom "sift([g1|a1],a2)")
-;    (interpret-abstract-atom "sift([g2|a4],a1)"))) ; renaming should be implicit
-;  (check-true
-;   (>=-extension
-;    (list (interpret-abstract-atom "sift([g1|a1],a2)"))
-;    (list (interpret-abstract-atom "sift([g2|a4],a1)"))))
-;  (check-false
-;   (>=-extension
-;    (list (interpret-abstract-atom "sift([g1|g2],a2)"))
-;    (list (interpret-abstract-atom "sift([g3|a4],a1)"))))
-;  (check-true
-;   (>=-extension
-;    (list
-;     (interpret-abstract-atom "sift([g1|a1],a2)")
-;     (interpret-abstract-atom "filter(a2,a3)"))
-;    (list
-;     (interpret-abstract-atom "sift([g2|a4],a1)")
-;     (interpret-abstract-atom "filter(a1,a5)"))))
-;  (check-false
-;   (>=-extension
-;    (list
-;     (interpret-abstract-atom "sift([g1|a1],a2)")
-;     (interpret-abstract-atom "filter(a2,a3)"))
-;    (list
-;     (interpret-abstract-atom "sift([g2|a4],a1)")
-;     (interpret-abstract-atom "filter(a6,a5)"))))
-;  (check-true
-;   (>=-extension
-;    (multi
-;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;     #t
-;     (list
-;       (cons (g* 1 1 1) (g 1))
-;       (cons (a* 1 1 1) (a 1))
-;       (cons (a* 1 1 2) (a 2)))
-;     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;     (list
-;       (cons (g* 1 'L 1) (g 2))
-;       (cons (a* 1 'L 1) (a 2))
-;       (cons (a* 1 'L 2) (a 3))))
-;    (multi
-;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;     #t
-;     (list
-;       (cons (g* 1 1 1) (g 1))
-;       (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 1))))
-;       (cons (a* 1 1 2) (a 2)))
-;     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;     (list
-;       (cons (g* 1 'L 1) (g 2))
-;       (cons (a* 1 'L 1) (a 2))
-;       (cons (a* 1 'L 2) (a 3))))))
-;  (check-false
-;   (>=-extension
-;    (multi
-;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;     #t
-;     (list
-;       (cons (g* 1 1 1) (g 1))
-;       (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 1))))
-;       (cons (a* 1 1 2) (a 2)))
-;     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;     (list
-;       (cons (g* 1 'L 1) (g 2))
-;       (cons (a* 1 'L 1) (a 2))
-;       (cons (a* 1 'L 2) (a 3))))
-;    (multi
-;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;     #t
-;     (list
-;       (cons (g* 1 1 1) (g 1))
-;       (cons (a* 1 1 1) (a 1))
-;       (cons (a* 1 1 2) (a 2)))
-;     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;     (list
-;       (cons (g* 1 'L 1) (g 2))
-;       (cons (a* 1 'L 1) (a 2))
-;       (cons (a* 1 'L 2) (a 3))))))
-;  (check-true
-;   (>=-extension
-;    (multi
-;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;     #t
-;     (list
-;       (cons (g* 1 1 1) (g 1))
-;       (cons (a* 1 1 1) (a 1))
-;       (cons (a* 1 1 2) (a 2)))
-;     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;     (list
-;       (cons (g* 1 'L 1) (g 2))
-;       (cons (a* 1 'L 1) (a 3))
-;       (cons (a* 1 'L 2) (a 4))))
-;    (list (abstract-atom 'filter (list (g 1) (a 1) (a 2))))))
-;  (check-true
-;   (>=-extension
-;    (multi
-;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;     #t
-;     (list
-;       (cons (g* 1 1 1) (g 1))
-;       (cons (a* 1 1 1) (a 1))
-;       (cons (a* 1 1 2) (a 2)))
-;     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;     (list
-;       (cons (g* 1 'L 1) (g 2))
-;       (cons (a* 1 'L 1) (a 3))
-;       (cons (a* 1 'L 2) (a 4))))
-;    (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
-;          (abstract-atom 'filter (list (g 2) (a 2) (a 3))))))
-;  (check-true
-;   (>=-extension
-;    (multi
-;     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;     #t
-;     (list
-;       (cons (g* 1 1 1) (g 1))
-;       (cons (a* 1 1 1) (a 1))
-;       (cons (a* 1 1 2) (a 2)))
-;     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;     (list
-;       (cons (g* 1 'L 1) (g 2))
-;       (cons (a* 1 'L 1) (a 3))
-;       (cons (a* 1 'L 2) (a 4))))
-;    (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
-;          (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
-;          (abstract-atom 'filter (list (g 3) (a 3) (a 4))))))
-;  (check-true
-;   (>=-extension
-;    (list
-;     (abstract-atom 'integers (list (g 10) (a 1)))
-;     (multi
-;      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;      #t
-;      (list
-;        (cons (g* 1 1 1) (g 1))
-;        (cons (a* 1 1 1) (a 1))
-;        (cons (a* 1 1 2) (a 2)))
-;      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;      (list
-;        (cons (g* 1 'L 1) (g 2))
-;        (cons (a* 1 'L 1) (a 3))
-;        (cons (a* 1 'L 2) (a 4))))
-;     (abstract-atom 'sift (list (a 4) (a 5))))
-;    (list
-;     (abstract-atom 'integers (list (g 10) (a 1)))
-;     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
-;     (abstract-atom 'sift (list (a 2) (a 3))))))
-;  (check-true
-;   (>=-extension
-;    (list
-;     (abstract-atom 'integers (list (g 10) (a 1)))
-;     (multi
-;      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;      #t
-;      (list
-;        (cons (g* 1 1 1) (g 1))
-;        (cons (a* 1 1 1) (a 1))
-;        (cons (a* 1 1 2) (a 2)))
-;      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;      (list
-;        (cons (g* 1 'L 1) (g 2))
-;        (cons (a* 1 'L 1) (a 3))
-;        (cons (a* 1 'L 2) (a 4))))
-;     (abstract-atom 'sift (list (a 4) (a 5))))
-;    (list
-;     (abstract-atom 'integers (list (g 10) (a 1)))
-;     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
-;     (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
-;     (abstract-atom 'sift (list (a 3) (a 4))))))
-;  (check-true
-;   (>=-extension
-;    (list
-;     (abstract-atom 'integers (list (g 10) (a 1)))
-;     (multi
-;      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;      #t
-;      (list
-;        (cons (g* 1 1 1) (g 1))
-;        (cons (a* 1 1 1) (a 1))
-;        (cons (a* 1 1 2) (a 2)))
-;      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;      (list
-;        (cons (g* 1 'L 1) (g 2))
-;        (cons (a* 1 'L 1) (a 3))
-;        (cons (a* 1 'L 2) (a 4))))
-;     (abstract-atom 'sift (list (a 4) (a 5))))
-;    (list
-;     (abstract-atom 'integers (list (g 10) (a 1)))
-;     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
-;     (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
-;     (abstract-atom 'filter (list (g 3) (a 3) (a 4)))
-;     (abstract-atom 'sift (list (a 4) (a 5))))))
-;  (check-true
-;   (>=-extension
-;    (list
-;     (abstract-atom 'integers (list (g 10) (a 1)))
-;     (multi
-;      (list (abstract-atom* 'filterA (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;      #t
-;      (list
-;        (cons (g* 1 1 1) (g 1))
-;        (cons (a* 1 1 1) (a 1))
-;        (cons (a* 1 1 2) (a 2)))
-;      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;      (list
-;        (cons (g* 1 'L 1) (g 2))
-;        (cons (a* 1 'L 1) (a 3))
-;        (cons (a* 1 'L 2) (a 4))))
-;     (multi
-;      (list (abstract-atom* 'filterB (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2))))
-;      #t
-;      (list
-;        (cons (g* 2 1 1) (g 4))
-;        (cons (a* 2 1 1) (a 4))
-;        (cons (a* 2 1 2) (a 5)))
-;      (list (cons (a* 2 'i+1 1) (a* 2 'i 2)))
-;      (list
-;        (cons (g* 2 'L 1) (g 5))
-;        (cons (a* 2 'L 1) (a 6))
-;        (cons (a* 2 'L 2) (a 7)))))
-;    (list
-;     (abstract-atom 'integers (list (g 10) (a 1)))
-;     (abstract-atom 'filterA (list (g 1) (a 1) (a 2)))
-;     (abstract-atom 'filterA (list (g 2) (a 2) (a 3)))
-;     (abstract-atom 'filterA (list (g 3) (a 3) (a 4)))
-;     (multi
-;      (list (abstract-atom* 'filterB (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
-;      #t
-;      (list
-;        (cons (g* 1 1 1) (g 4))
-;        (cons (a* 1 1 1) (a 4))
-;        (cons (a* 1 1 2) (a 5)))
-;      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-;      (list
-;        (cons (g* 1 'L 1) (g 6))
-;        (cons (a* 1 'L 1) (a 6))
-;        (cons (a* 1 'L 2) (a 7))))))))
+(module+ test
+  (check-true (>=-extension (a 1) (g 1)))
+  (check-true (>=-extension (a 1) (a 2)))
+  (check-false (>=-extension (g 1) (a 1)))
+  (check-true (>=-extension (g 1) (g 1)))
+  (check-true (>=-extension β(nil) β(nil)))
+  (check-false (>=-extension β(nil) β(nonnil)))
+  (check-true
+   (>=-extension
+    β(foo(g1,bar(g2,a1,g1)))
+    β(foo(nil,bar(nonnil,g3,nil)))))
+  (check-false
+   (>=-extension
+    β(foo(g1,bar(g2,a1,g1)))
+    β(foo(nil,bar(nonnil,g3,nonnil)))))
+  (check-true
+   (>=-extension
+    α(foo(g1,bar(g2,a1,g1)))
+    α(foo(nil,bar(nonnil,g3,nil)))))
+  (check-false
+   (>=-extension
+    α(foo(g1,bar(g2,a1,g1)))
+    α(foo(nil,bar(nonnil,g3,nonnil)))))
+  (check-true
+   (>=-extension
+    β(foo(g1,bar(g2,a1,g1)))
+    β(foo(nil,bar(nonnil,g3,nil)))))
+  (check-true
+   (>=-extension
+    α(sift([g1|a1],a2))
+    α(sift([g2|a4],a1)))) ; renaming should be implicit
+  (check-true
+   (>=-extension
+    (list α(sift([g1|a1],a2)))
+    (list α(sift([g2|a4],a1)))))
+  (check-false
+   (>=-extension
+    (list α(sift([g1|g2],a2)))
+    (list α(sift([g3|a4],a1)))))
+  (check-true
+   (>=-extension
+    (list
+     α(sift([g1|a1],a2))
+     α(filter(a2,a3)))
+    (list
+     α(sift([g2|a4],a1))
+     α(filter(a1,a5)))))
+  (check-false
+   (>=-extension
+    (list
+     α(sift([g1|a1],a2))
+     α(filter(a2,a3)))
+    (list
+     α(sift([g2|a4],a1))
+     α(filter(a6,a5)))))
+  (check-true
+   (>=-extension
+    α(multi(filter(g<1,i,1>,a<1,i,1>,a<1,i,2>),t,{g<1,1,1>=g1,a<1,1,1>=a1,a<1,1,2>=a2},{a<1,i+1,1>=a<1,i,2>},{g<1,l,1>=g2,a<1,l,1>=a2,a<1,l,2>=a3},1))
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (list
+      (cons (g* 1 1 1) (g 1))
+      (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 1))))
+      (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
+      (cons (g* 1 'L 1) (g 2))
+      (cons (a* 1 'L 1) (a 2))
+      (cons (a* 1 'L 2) (a 3)))
+     1)))
+  (check-false
+   (>=-extension
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (list
+      (cons (g* 1 1 1) (g 1))
+      (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 1))))
+      (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
+      (cons (g* 1 'L 1) (g 2))
+      (cons (a* 1 'L 1) (a 2))
+      (cons (a* 1 'L 2) (a 3)))
+     1)
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (list
+      (cons (g* 1 1 1) (g 1))
+      (cons (a* 1 1 1) (a 1))
+      (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
+      (cons (g* 1 'L 1) (g 2))
+      (cons (a* 1 'L 1) (a 2))
+      (cons (a* 1 'L 2) (a 3)))
+     1)))
+  (check-true
+   (>=-extension
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (list
+      (cons (g* 1 1 1) (g 1))
+      (cons (a* 1 1 1) (a 1))
+      (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
+      (cons (g* 1 'L 1) (g 2))
+      (cons (a* 1 'L 1) (a 3))
+      (cons (a* 1 'L 2) (a 4)))
+     1)
+    (list (abstract-atom 'filter (list (g 1) (a 1) (a 2))))))
+  (check-true
+   (>=-extension
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (list
+      (cons (g* 1 1 1) (g 1))
+      (cons (a* 1 1 1) (a 1))
+      (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
+      (cons (g* 1 'L 1) (g 2))
+      (cons (a* 1 'L 1) (a 3))
+      (cons (a* 1 'L 2) (a 4)))
+     1)
+    (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
+          (abstract-atom 'filter (list (g 2) (a 2) (a 3))))))
+  (check-true
+   (>=-extension
+    (multi
+     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+     #t
+     (list
+      (cons (g* 1 1 1) (g 1))
+      (cons (a* 1 1 1) (a 1))
+      (cons (a* 1 1 2) (a 2)))
+     (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+     (list
+      (cons (g* 1 'L 1) (g 2))
+      (cons (a* 1 'L 1) (a 3))
+      (cons (a* 1 'L 2) (a 4)))
+     1)
+    (list (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
+          (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
+          (abstract-atom 'filter (list (g 3) (a 3) (a 4))))))
+  (check-true
+   (>=-extension
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (list
+       (cons (g* 1 1 1) (g 1))
+       (cons (a* 1 1 1) (a 1))
+       (cons (a* 1 1 2) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (g* 1 'L 1) (g 2))
+       (cons (a* 1 'L 1) (a 3))
+       (cons (a* 1 'L 2) (a 4)))
+      1)
+     (abstract-atom 'sift (list (a 4) (a 5))))
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
+     (abstract-atom 'sift (list (a 2) (a 3))))))
+  (check-true
+   (>=-extension
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (list
+       (cons (g* 1 1 1) (g 1))
+       (cons (a* 1 1 1) (a 1))
+       (cons (a* 1 1 2) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (g* 1 'L 1) (g 2))
+       (cons (a* 1 'L 1) (a 3))
+       (cons (a* 1 'L 2) (a 4)))
+      1)
+     (abstract-atom 'sift (list (a 4) (a 5))))
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
+     (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
+     (abstract-atom 'sift (list (a 3) (a 4))))))
+  (check-true
+   (>=-extension
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (list
+       (cons (g* 1 1 1) (g 1))
+       (cons (a* 1 1 1) (a 1))
+       (cons (a* 1 1 2) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (g* 1 'L 1) (g 2))
+       (cons (a* 1 'L 1) (a 3))
+       (cons (a* 1 'L 2) (a 4)))
+      1)
+     (abstract-atom 'sift (list (a 4) (a 5))))
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (abstract-atom 'filter (list (g 1) (a 1) (a 2)))
+     (abstract-atom 'filter (list (g 2) (a 2) (a 3)))
+     (abstract-atom 'filter (list (g 3) (a 3) (a 4)))
+     (abstract-atom 'sift (list (a 4) (a 5))))))
+  (check-true
+   (>=-extension
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (multi
+      (list (abstract-atom* 'filterA (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (list
+       (cons (g* 1 1 1) (g 1))
+       (cons (a* 1 1 1) (a 1))
+       (cons (a* 1 1 2) (a 2)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (g* 1 'L 1) (g 2))
+       (cons (a* 1 'L 1) (a 3))
+       (cons (a* 1 'L 2) (a 4)))
+      1)
+     (multi
+      (list (abstract-atom* 'filterB (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2))))
+      #t
+      (list
+       (cons (g* 2 1 1) (g 4))
+       (cons (a* 2 1 1) (a 4))
+       (cons (a* 2 1 2) (a 5)))
+      (list (cons (a* 2 'i+1 1) (a* 2 'i 2)))
+      (list
+       (cons (g* 2 'L 1) (g 5))
+       (cons (a* 2 'L 1) (a 6))
+       (cons (a* 2 'L 2) (a 7)))
+      1))
+    (list
+     (abstract-atom 'integers (list (g 10) (a 1)))
+     (abstract-atom 'filterA (list (g 1) (a 1) (a 2)))
+     (abstract-atom 'filterA (list (g 2) (a 2) (a 3)))
+     (abstract-atom 'filterA (list (g 3) (a 3) (a 4)))
+     (multi
+      (list (abstract-atom* 'filterB (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      #t
+      (list
+       (cons (g* 1 1 1) (g 4))
+       (cons (a* 1 1 1) (a 4))
+       (cons (a* 1 1 2) (a 5)))
+      (list (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (g* 1 'L 1) (g 6))
+       (cons (a* 1 'L 1) (a 6))
+       (cons (a* 1 'L 2) (a 7)))
+      1)))))
 (provide
  (proc-doc/names
   >=-extension

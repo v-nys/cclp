@@ -223,11 +223,11 @@
                   ;        ; should be able to do this more concisely using #lang lp building blocks, roughly as (expand (parse 'function "dummy(A,A,dummy2,dummy3,dummy2)"))
                   ;        [concrete-args (list (variable 'A) (variable 'A) (variable 'B) (function 'dummy2 '()) (function 'dummy3 '()) (function 'dummy2 '()))])
                  ;    (check-equal? (pre-abstract (function 'dummy concrete-args)) (abstract-function 'dummy abstract-args) "abstracting a complex term"))
-         ;  (check-equal?
-             ;   (pre-abstract-rule
-                  ;    (interpret-concrete-rule "collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z)") (list))
-             ;   (ak:abstract-rule (interpret-abstract-atom "collect(tree(a1,a2),a3)") (list (interpret-abstract-atom "collect(a1,a4)") (interpret-abstract-atom "collect(a2,a5)") (interpret-abstract-atom "append(a4,a5,a3)"))))
-         ;
+         (check-equal?
+          (pre-abstract-rule
+           γ(collect(tree(X,Y),Z) :- collect(X,Z1),collect(Y,Z2),append(Z1,Z2,Z) 1) (list))
+          (ak:abstract-rule α(collect(tree(a1,a2),a3)) α(collect(a1,a4),collect(a2,a5),append(a4,a5,a3))))
+         
          ;  (check-equal?
              ;   (pre-abstract-rule
                   ;    (interpret-concrete-rule "append([],L,L)")

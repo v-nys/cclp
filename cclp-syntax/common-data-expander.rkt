@@ -114,7 +114,7 @@
   (syntax-parse stx
     [(_ "i") (syntax/loc stx 'i)]
     [(_ "i+1") (syntax/loc stx 'i+1)]
-    [(_ "L") (syntax/loc stx 'L)]
+    [(_ "l") (syntax/loc stx 'L)]
     [(_ num) (syntax/loc stx num)]))
 (provide ag-symbolic-index)
 
