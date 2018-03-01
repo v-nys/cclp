@@ -1,6 +1,6 @@
 #lang at-exp racket
 (require syntax/macro-testing)
-(require (only-in "control-flow.rkt" until))
+(require (only-in cclp-common/control-flow until))
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 
@@ -17,7 +17,7 @@
         ([current-output-port output-port]
          [current-input-port (open-input-string "hello\ntwelve\n12")])
       (check-equal? (prompt-for-integer) 12)
-      (check-equal? (get-output-string output-port) "Not an integer!\nNot an integer!\n"))))
+      (check-equal? (get-output-string output-port) "Not an integer >= 0!\nNot an integer >= 0!\n"))))
 (provide
  (proc-doc/names
   prompt-for-integer
@@ -74,7 +74,7 @@
        'bar)
       (check-equal?
        (get-output-string output-port)
-       "What can I get you?\n1: Gimme foo\n2: Gimme bar\n3: Print something\nNot an integer!\nNot an integer!\nNot a valid choice!\n"))))
+       "What can I get you?\n1: Gimme foo\n2: Gimme bar\n3: Print something\nNot an integer >= 0!\nNot an integer >= 0!\nNot a valid choice!\n"))))
 (provide
  (form-doc
   (interactive-dispatch prompt (label body ...) ...)

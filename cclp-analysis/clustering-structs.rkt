@@ -2,7 +2,7 @@
 (require
   scribble/srcdoc
   (for-doc scribble/manual)
-  cclp-analysis/gen-graph-structs)
+  cclp-common/gen-graph-structs)
 
 (struct clustering (subclusters gcd)
   #:methods
