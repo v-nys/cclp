@@ -23,26 +23,24 @@
 #lang at-exp racket
 
 (require "io-utils.rkt")
-(require "data-utils.rkt")
-(require (only-in "concrete-knowledge.rkt" rule?))
-(require "fullai-domain.rkt")
-(require (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-function? multi?))
+(require cclp-common/data-utils)
+(require (only-in cclp-common-data/concrete-knowledge rule?))
+(require (only-in cclp-common-data/abstract-multi-domain abstract-atom? abstract-function? multi?))
 (require positional-tree-utils (only-in positional-tree-utils/printer tree-display))
 (require (only-in list-utils findf-index))
 (require "abstract-resolve.rkt")
-(require "abstract-knowledge.rkt")
-(require "abstract-substitution.rkt")
+(require cclp-common-data/abstract-knowledge)
+(require cclp-common-data/abstract-substitution)
 (require scribble/srcdoc)
-(require "abstract-domain-ordering.rkt")
+(require cclp-common/abstract-domain-ordering)
 (require racket/serialize)
-(require "abstract-analysis.rkt")
+(require cclp-common/abstract-analysis)
 (require "abstract-analysis-tree.rkt")
-(require (only-in "concrete-domain.rkt" function?))
-(require "cclp-interpreter.rkt")
-(require "preprior-graph.rkt")
-(require "abstract-renaming.rkt")
-(require (only-in "abstraction-inspection-utils.rkt" assemble-var-indices))
-(require "gen-graph-structs.rkt")
+(require (only-in cclp-common-data/concrete-domain function?))
+(require cclp-common/preprior-graph)
+(require cclp-common/abstract-renaming)
+(require (only-in cclp-common/abstraction-inspection-utils assemble-var-indices))
+(require cclp-common/gen-graph-structs)
 (require "genealogical-graph.rkt"
          "mi-map.rkt"
          (only-in "generalize.rkt" generalize/bu)
@@ -53,7 +51,7 @@
   pict
   pretty-graphs
   cclp-analysis/genealogical-graph-visualization)
-(require (only-in "multi-unfolding.rkt" unfold-multi-bounded))
+(require (only-in cclp-common/multi-unfolding unfold-multi-bounded))
 
 (require (only-in br/cond while))
 

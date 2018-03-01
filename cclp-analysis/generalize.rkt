@@ -3,18 +3,19 @@
   2d/match
   racket/struct
   scribble/srcdoc
-  (only-in "abstract-analysis.rkt" tree-label? tree-label-conjunction generalization?)
-  cclp-analysis/abstract-multi-domain
-  (only-in "abstract-domain-ordering.rkt" renames?)
-  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices extract-subscripted-variables extract-variables get-multi-id)
-  (only-in "abstract-renaming.rkt" offset-vars)
-  (only-in "abstract-unify.rkt" abstract-unify)
-  (only-in "abstract-substitution.rkt" abstract-equality apply-substitution)
-  (only-in "data-utils.rkt" some-v)
-  cclp-analysis/gen-graph-structs
+  (only-in cclp-common/abstract-analysis tree-label? tree-label-conjunction generalization?)
+  cclp-common-data/abstract-multi-domain
+  (only-in cclp-common/abstract-domain-ordering renames?)
+  (only-in cclp-common/abstraction-inspection-utils assemble-var-indices extract-subscripted-variables extract-variables get-multi-id)
+  (only-in cclp-common/abstract-renaming offset-vars)
+  (only-in cclp-common/abstract-unify abstract-unify)
+  (only-in cclp-common-data/abstract-substitution abstract-equality)
+  (only-in cclp-common/abstract-substitution-application apply-substitution)
+  (only-in cclp-common/data-utils some-v)
+  cclp-common/gen-graph-structs
   cclp-analysis/genealogical-graph
-  (only-in "multi-folding-unfolding.rkt" remove-multi-subscripts)
-  (only-in "multi-unfolding.rkt" unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
+  (only-in cclp-common/multi-folding-unfolding remove-multi-subscripts)
+  (only-in cclp-common/multi-unfolding unfold-multi-many unfold-multi-many-bounded unfold-multi-many-right)
   (only-in list-utils replace-sublist map-accumulatel group-by)
   cclp-analysis/clustering
   graph)
@@ -84,9 +85,9 @@
      (gen-node (abstract-atom 'len '()) 10 (gen 0 #f) #f #t))
     (list
      (gen-node (abstract-atom 'integers '()) 2 (gen 0 #f) #f #t)
-     (gen-node (multi '() #t empty empty empty) 11 (gen-range 1 2 1 #t) #f #t)
+     (gen-node (multi '() #t empty empty empty 1) 11 (gen-range 1 2 1 #t) #f #t)
      (gen-node (abstract-atom 'filter (list (g 4) (abstract-function 'cons (list (g 5) (a 3) (a 4))) (a 5))) 5 (gen 3 1) #f #t)
-     (gen-node (multi '() #t empty empty empty) 12 (gen-range 4 5 1 #t) #f #t)
+     (gen-node (multi '() #t empty empty empty 1) 12 (gen-range 4 5 1 #t) #f #t)
      (gen-node (abstract-atom 'filter '()) 8 (gen 6 1) #f #t)
      (gen-node (abstract-atom 'sift '()) 9 (gen 6 1) #f #t)
      (gen-node (abstract-atom 'len '()) 10 (gen 0 #f) #f #t)))

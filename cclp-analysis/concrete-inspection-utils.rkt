@@ -1,6 +1,6 @@
 #lang at-exp racket
 (require
-  "concrete-domain.rkt"
+  cclp-common-data/concrete-domain
   (only-in list-utils frequencies))
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))

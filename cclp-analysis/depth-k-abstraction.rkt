@@ -24,9 +24,9 @@
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 
-(require "abstract-multi-domain.rkt")
-(require (only-in "abstraction-inspection-utils.rkt" maximum-var-index))
-(require (only-in "data-utils.rkt" some-v some?))
+(require cclp-common-data/abstract-multi-domain)
+(require (only-in cclp-common/abstraction-inspection-utils maximum-var-index))
+(require (only-in cclp-common/data-utils some-v some?))
 (require (only-in list-utils map-accumulatel))
 
 (define max-depth (make-parameter 5))

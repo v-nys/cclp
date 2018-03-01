@@ -22,7 +22,7 @@
 #lang at-exp racket
 (require
   scribble/srcdoc
-  cclp-analysis/concrete-domain
+  cclp-common-data/concrete-domain
   cclp-analysis/concrete-substitution)
 (require (for-doc scribble/manual))
 

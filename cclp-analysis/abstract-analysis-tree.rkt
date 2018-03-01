@@ -8,28 +8,27 @@
   graph
   positional-tree-utils)
 (require
-  "abstract-analysis.rkt"
-  (only-in "abstract-domain-ordering.rkt" renames? >=-extension)
-  "abstract-knowledge.rkt"
-  (only-in "abstract-multi-domain.rkt" abstract-atom? abstract-conjunct? multi?)
-  "abstract-resolve.rkt"
-  (only-in "concrete-domain.rkt" function?)
-  (prefix-in ck: "concrete-knowledge.rkt")
-  (only-in "control-flow.rkt" aif it)
-  "data-utils.rkt"
+  cclp-common/abstract-analysis
+  (only-in cclp-common/abstract-domain-ordering renames? >=-extension)
+  cclp-common-data/abstract-knowledge
+  (only-in cclp-common-data/abstract-multi-domain abstract-atom? abstract-conjunct? multi?)
+  cclp-analysis/abstract-resolve
+  (only-in cclp-common-data/concrete-domain function?)
+  (prefix-in ck: cclp-common-data/concrete-knowledge)
+  (only-in cclp-common/control-flow aif it)
+  cclp-common/data-utils
   (only-in "execution.rkt" selected-index)
   (only-in "generalize.rkt" generalize/bu)
   (only-in "genealogical-graph.rkt" active-branch)
-  "preprior-graph.rkt"
-  (only-in "multi-unfolding.rkt" unfold-multi-bounded unfold-multi*)
-  (only-in "abstraction-inspection-utils.rkt" assemble-var-indices)
+  cclp-common/preprior-graph
+  (only-in cclp-common/multi-unfolding unfold-multi-bounded unfold-multi*)
+  (only-in cclp-common/abstraction-inspection-utils assemble-var-indices)
   (only-in cclp-analysis/depth-k-abstraction abstract))
 (require (for-doc scribble/manual))
 
 (module+ test
   (require rackunit)
-  (require "test-data.rkt")
-  (require "cclp-interpreter.rkt"))
+  (require "test-data.rkt"))
 
 (define (largest-node-index t)
   (match t

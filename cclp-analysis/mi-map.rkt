@@ -28,26 +28,25 @@
          (only-in list-utils map-accumulatel)
          positional-tree-utils
          sugar/coerce
-         "abstract-analysis.rkt"
-         (prefix-in ak: "abstract-knowledge.rkt")
-         (only-in "abstract-substitution.rkt" apply-substitution)
-         (only-in "abstraction-inspection-utils.rkt"
+         cclp-common/abstract-analysis
+         (prefix-in ak: cclp-common-data/abstract-knowledge)
+         (only-in cclp-common/abstract-substitution-application apply-substitution)
+         (only-in cclp-common/abstraction-inspection-utils
                   extract-abstract-compounds
                   extract-variables/duplicates
                   extract-all-variables/duplicates
                   extract-all-variables/duplicates/exclude-constraints
                   get-multi-id
                   maximum-var-index)
-         "abstract-multi-domain.rkt"
-         (only-in "abstract-renaming.rkt" rename-apart rename-apart/substitution)
-         "cclp-interpreter.rkt"
-         "concrete-domain.rkt"
-         (prefix-in ck: "concrete-knowledge.rkt")
+         cclp-common-data/abstract-multi-domain
+         (only-in cclp-common/abstract-renaming rename-apart rename-apart/substitution)
+         cclp-common-data/concrete-domain
+         (prefix-in ck: cclp-common-data/concrete-knowledge)
          "concrete-inspection-utils.rkt"
-         (only-in "control-flow.rkt" aif it)
-         (only-in "data-utils.rkt" some-v)
-         "domain-switching.rkt"
-         (only-in "gen-graph-structs.rkt" index-range index-range-start index-range-end-before)
+         (only-in cclp-common/control-flow aif it)
+         (only-in cclp-common/data-utils some-v)
+         cclp-common/domain-switching
+         (only-in cclp-common/gen-graph-structs index-range index-range-start index-range-end-before)
          (only-in "io-utils.rkt" between?))
 
 (define cons-symbol (string->symbol "'[|]'"))
