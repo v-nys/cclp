@@ -27,39 +27,36 @@
 ; TODO: update any SYMBOL entries to allow for integration with AMB-AVAR-SYMBOL-A and -G
 
 #lang brag
-cclp-program : PROGRAM-DELIMITER program-section [FULL-EVALUATION-DELIMITER full-evaluation-section] [PARTIAL-ORDER-DELIMITER partial-order-section] [K-DELIMITER NUMBER] QUERY-DELIMITER abstract-atom
+cclp-program : PROGRAM-DELIMITER cclp-program-section [FULL-EVALUATION-DELIMITER cclp-full-evaluation-section] [PARTIAL-ORDER-DELIMITER cclp-partial-order-section] [K-DELIMITER NUMBER] QUERY-DELIMITER cclp-abstract-atom
 
-program-section : (rule PERIOD)*
-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]
-term : variable | function-term | lplist
-variable : VARIABLE-IDENTIFIER
-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN term (COMMA term)* CLOSE-PAREN]) | number-term
-number-term : NUMBER
-lplist : OPEN-LIST-PAREN [term (COMMA term)* [LIST-SEPARATOR (lplist | variable)]] CLOSE-LIST-PAREN
-rule : (atom IMPLIES conjunction) | atom
-conjunction : atom (COMMA atom)*
+cclp-program-section : (cclp-rule PERIOD)*
+cclp-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN cclp-termlist CLOSE-PAREN]
+cclp-termlist : cclp-term (COMMA cclp-term)*
+cclp-term : cclp-variable | cclp-function-term | cclp-lplist
+cclp-variable : VARIABLE-IDENTIFIER
+cclp-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN cclp-termlist CLOSE-PAREN]) | cclp-number-term
+cclp-number-term : NUMBER
+cclp-lplist : OPEN-LIST-PAREN [cclp-term (COMMA cclp-term)* [LIST-SEPARATOR (cclp-lplist | cclp-variable)]] CLOSE-LIST-PAREN
+cclp-rule : (cclp-atom IMPLIES cclp-conjunction) | cclp-atom
+cclp-conjunction : cclp-atom (COMMA cclp-atom)*
 
-full-evaluation-section : (fullai-rule-with-body | fullai-rule-without-body)+
-fullai-rule-with-body : abstract-atom-with-args LEADS-TO (abstract-substitution | fail) PERIOD
-fullai-rule-without-body : abstract-atom-with-args PERIOD
-abstract-atom-with-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN
-abstract-atom-without-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G)
+cclp-full-evaluation-section : (cclp-fullai-rule-with-body | cclp-fullai-rule-without-body)+
+cclp-fullai-rule-with-body : cclp-abstract-atom-with-args LEADS-TO (cclp-abstract-substitution | cclp-fail) PERIOD
+cclp-fullai-rule-without-body : cclp-abstract-atom-with-args PERIOD
+cclp-abstract-atom-with-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN cclp-abstract-termlist CLOSE-PAREN
+cclp-abstract-termlist : cclp-abstract-term (COMMA cclp-abstract-term)*
+cclp-abstract-term : cclp-abstract-variable | cclp-abstract-function-term | cclp-abstract-lplist
+cclp-abstract-variable : (AMB-AVAR-SYMBOL-A NUMBER) | (AMB-AVAR-SYMBOL-G NUMBER)
+cclp-abstract-number : NUMBER
+cclp-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN cclp-abstract-termlist CLOSE-PAREN]) | cclp-abstract-number
+cclp-abstract-atom-without-args : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G)
 
-abstract-term : abstract-variable | abstract-function-term | abstract-lplist
-abstract-variable : abstract-variable-a | abstract-variable-g
-abstract-variable-a : AMB-AVAR-SYMBOL-A NUMBER
-abstract-variable-g : AMB-AVAR-SYMBOL-G NUMBER
-abstract-number-term : abstract-number
-abstract-number : NUMBER
-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) [OPEN-PAREN abstract-term (COMMA abstract-term)* CLOSE-PAREN]) | abstract-number-term
+cclp-abstract-lplist : OPEN-LIST-PAREN [cclp-abstract-term (COMMA cclp-abstract-term)* [LIST-SEPARATOR (cclp-abstract-lplist | cclp-abstract-variable)]] CLOSE-LIST-PAREN
+cclp-abstract-substitution : cclp-abstract-substitution-pair (COMMA cclp-abstract-substitution-pair)*
+cclp-abstract-substitution-pair : cclp-abstract-variable SLASH cclp-abstract-term
+cclp-abstract-atom : cclp-abstract-atom-with-args | cclp-abstract-atom-without-args
 
-abstract-lplist : OPEN-LIST-PAREN [abstract-term (COMMA abstract-term)* [LIST-SEPARATOR (abstract-lplist | abstract-variable)]] CLOSE-LIST-PAREN
-abstract-substitution : abstract-substitution-pair (COMMA abstract-substitution-pair)*
-abstract-substitution-pair : abstract-variable SLASH abstract-term
-abstract-atom : abstract-atom-with-args | abstract-atom-without-args
-abstract-conjunction : abstract-atom (COMMA abstract-atom)*
+cclp-partial-order-section : cclp-partial-ordering-pair+
+cclp-partial-ordering-pair : cclp-abstract-atom LT cclp-abstract-atom
 
-partial-order-section : partial-ordering-pair+
-partial-ordering-pair : abstract-atom LT abstract-atom
-
-fail : SYMBOL
+cclp-fail : SYMBOL

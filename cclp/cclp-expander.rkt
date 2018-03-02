@@ -20,27 +20,46 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang br
+#lang racket
 ; for abstract variables, functions, atoms,...
-(require (prefix-in ad: "abstract-multi-domain.rkt"))
+(require (prefix-in ad: cclp-common-data/abstract-multi-domain))
 ; because output patterns can be obtained by applying a subsitution
-(require (prefix-in as: "abstract-substitution.rkt")
-         (only-in cclp-analysis/abstract-analysis full-ai-rule->full-evaluation))
+(require (prefix-in as: cclp-common-data/abstract-substitution)
+         (only-in cclp-common/abstract-analysis full-ai-rule->full-evaluation))
 ; for rules on how to fully evaluate
-(require (prefix-in fai: "fullai-domain.rkt"))
+(require cclp-common-data/abstract-knowledge)
 (require (only-in "syntax-utils.rkt" odd-elems-as-list))
-(require (prefix-in cd: "concrete-domain.rkt"))
-(require (prefix-in ck: "concrete-knowledge.rkt"))
+(require (prefix-in cd: cclp-common-data/concrete-domain))
+(require (prefix-in ck: cclp-common-data/concrete-knowledge))
 (require (for-syntax syntax/parse))
-(require "interaction.rkt")
+(require cclp-analysis/interaction)
 (require racket/contract)
-(require "abstract-domain-ordering.rkt")
-(require "preprior-graph.rkt" (only-in graph add-directed-edge!))
+(require cclp-common/abstract-domain-ordering)
+(require cclp-common/preprior-graph (only-in graph add-directed-edge!))
 (require (only-in sugar/coerce ->symbol))
 (require (for-syntax (only-in list-utils odd-elems)))
-(require reprovide/reprovide)
+(require racket/provide)
 
-(reprovide cclp-analysis/cclp-data-structure-expander)
+(require
+  (rename-in
+   cclp-syntax/common-data-expander
+   [ag-atom cclp-atom]
+   [ag-termlist cclp-termlist]
+   [ag-term cclp-term]
+   [ag-variable cclp-variable]
+   [ag-function-term cclp-function-term]
+   [ag-number-term cclp-number-term]
+   [ag-lplist cclp-lplist]
+   [ag-abstract-atom-with-args cclp-abstract-atom-with-args]
+   [ag-abstract-termlist cclp-abstract-termlist]
+   [ag-abstract-term cclp-abstract-term]
+   [ag-abstract-variable cclp-abstract-variable]
+   [ag-abstract-number cclp-abstract-number]
+   [ag-abstract-function-term cclp-abstract-function-term]
+   [ag-abstract-atom-without-args cclp-abstract-atom-without-args]
+   [ag-abstract-lplist cclp-abstract-lplist]
+   [ag-abstract-atom cclp-abstract-atom]
+   [ag-fail cclp-fail]))
 
 (define (extract-program-constants e)
   (match e
@@ -65,7 +84,6 @@
                     (syntax->list (optional-cclp-sections/full-evaluation #'(OPTIONAL-SECTION ...)))])
        (syntax/loc stx
          (cclp _PROGRAM-SECTION _FULL-EVALUATION-SECTION (extract-program-constants _PROGRAM-SECTION) _PARTIAL-ORDER-SECTION _QUERY-SECTION "dummy" _K-SECTION)))]))
-(provide cclp-program)
 
 (define-for-syntax (optional-cclp-sections/full-evaluation stx)
   (syntax-parse stx
@@ -116,28 +134,25 @@
         (module+ main
           (require (only-in racket/set set->list)
                    repeated-application
-                   cclp/synthesis)
+                   cclp-analysis/synthesis)
           (let* ([complete-analysis (apply↑* proceed initial-program-analysis)]
                  [segments ((compose sort-segments set->list synthesizable-segments analysis-tree) complete-analysis)]
                  [resultants (map (compose pretty-print-rule (λ (b) (branch->clause b))) segments)])
             (for-each
              displayln
              resultants)))))]))
-(provide
- (rename-out
-  [cclp-module-begin #%module-begin]))
 
 ; PART FOR THE LOGIC PROGRAM ITSELF
 (define-for-syntax (inject-rule-id-stx rule-stx id)
-  (syntax-parse rule-stx #:literals (rule)
-    [(rule arg ...)
+  (syntax-parse rule-stx #:literals (cclp-rule)
+    [(cclp-rule arg ...)
      (cons
       (quasisyntax/loc rule-stx
-        (rule arg ... #,id))
+        (cclp-rule arg ... #,id))
       (add1 id))]))
 
 (require (for-syntax (only-in list-utils map-accumulatel)))
-(define-syntax (program-section stx)
+(define-syntax (cclp-program-section stx)
   (with-syntax ([(RULE-STX ...)
                  (car
                   (map-accumulatel
@@ -146,64 +161,17 @@
                    (odd-elems (cdr (syntax->list stx)))))])
     (syntax/loc stx
       (list RULE-STX ...))))
-(provide program-section)
 
-(define-syntax (atom stx)
-  (syntax-parse stx
-    [(_ symbol)
-     (syntax/loc stx (cd:atom (string->symbol (quote symbol)) '()))]
-    [(_ symbol "(" arg ... ")")
-     (syntax/loc stx (cd:atom (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
-(provide atom)
-
-(define-syntax (term stx)
-  (syntax-parse stx
-    [(_ VAR-OR-LIST-OR-MISC-FUNCTION)
-     (syntax/loc stx VAR-OR-LIST-OR-MISC-FUNCTION)]))
-(provide term)
-
-(define-syntax-rule (variable VARIABLE-NAME) (cd:variable (string->symbol (quote VARIABLE-NAME))))
-(provide variable)
-
-(define-syntax (function-term stx)
-  (syntax-parse stx
-    [(_ symbol:str)
-     (syntax/loc stx (cd:function (string->symbol (quote symbol)) '()))]
-    [(_ num-term) (syntax/loc stx num-term)] ; these are just plain numbers
-    [(_ symbol "(" arg ... ")")
-     (syntax/loc stx (cd:function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
-(provide function-term)
-
-(define-syntax (lplist stx)
-  (syntax-parse stx
-    [(_ "[" "]")
-     (syntax/loc stx (cd:function (string->symbol "[]") '()))]
-    [(_ "[" term0 "]")
-     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (cd:function (string->symbol "[]") '()))))]
-    [(_ "[" term0 "," rest ... "]")
-     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 (lplist "[" rest ... "]"))))]
-    [(_ "[" term0 "|" rest ... "]")
-     (syntax/loc stx (cd:function (string->symbol "'[|]'") (list term0 rest ...)))]))
-(provide lplist)
-
-(define-syntax (rule stx)
+(define-syntax (cclp-rule stx)
   (syntax-parse stx
     [(_ atom id) (syntax/loc stx (ck:rule atom '() id))]
     [(_ atom ":-" conjunction id) (syntax/loc stx (ck:rule atom conjunction id))]))
-(provide rule)
 
-(define-syntax (conjunction stx)
+(define-syntax (cclp-conjunction stx)
   (syntax-parse stx
     [(_ conjunct ...) (syntax/loc stx (odd-elems-as-list conjunct ...))]))
-(provide conjunction)
 
 ; PART RELATED TO FULL EVALUATION
-
-(define-syntax (fail stx)
-  (syntax-parse stx
-    [(_ "fail")
-     (syntax/loc stx #f)]))
-(provide fail)
 
 (define-for-syntax (inject-full-ai-rule air-stx id)
   (syntax-parse
@@ -211,7 +179,7 @@
     [(type args ...)
      (cons #`(type args ... #,id) (add1 id))]))
 
-(define-syntax (full-evaluation-section stx)
+(define-syntax (cclp-full-evaluation-section stx)
   (with-syntax
       ([(INJECTED-RULE ...)
         (car
@@ -220,57 +188,22 @@
           1
           (cdr (syntax->list stx))))])
     (syntax/loc stx (list INJECTED-RULE ...))))
-(provide full-evaluation-section)
 
-(define-syntax-rule (fullai-rule-with-body atom "->" subst "." idx)
-  (fai:full-ai-rule atom subst idx))
-(provide fullai-rule-with-body)
+(define-syntax-rule (cclp-fullai-rule-with-body atom "->" subst "." idx)
+  (full-ai-rule atom subst idx))
 
-(define-syntax-rule (fullai-rule-without-body atom "." idx)
-  (fai:full-ai-rule atom (list) idx))
-(provide fullai-rule-without-body)
+(define-syntax-rule (cclp-fullai-rule-without-body atom "." idx)
+  (full-ai-rule atom (list) idx))
 
-
-
-(define-syntax (abstract-function-term stx)
+(define-syntax (cclp-abstract-substitution stx)
   (syntax-parse stx
-    [(_ symbol:str) (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) '()))]
-    [(_ num-term) (syntax/loc stx num-term)]
-    [(_ symbol "(" arg ... ")")
-     (syntax/loc stx (ad:abstract-function (string->symbol (quote symbol)) (odd-elems-as-list arg ...)))]))
-(provide abstract-function-term)
+    [(_ subst-pair) (syntax/loc stx (list subst-pair))]
+    [(_ subst-pair "," rest-arg ...) (syntax/loc stx (cons subst-pair (cclp-abstract-substitution rest-arg ...)))]))
 
-(define-syntax-rule (abstract-number NUMBER)
-  (ad:abstract-function (->symbol (quote NUMBER)) '()))
-(provide abstract-number)
+(define-syntax-rule (cclp-abstract-substitution-pair lhs "/" rhs)
+  (as:abstract-equality lhs rhs))
 
-(define-syntax-rule (abstract-number-term TERM) TERM)
-(provide abstract-number-term)
-
-(define-syntax-rule (number-term TERM)
-  (cd:function (->symbol (quote TERM)) '()))
-(provide number-term)
-
-
-
-; empty substitutions make sense if we can just scratch the abstract atom
-; e.g. lte(g1,g2) just disappears and does not need a substitution
-
-
-(define-syntax (concrete-constant stx)
-  (syntax-parse stx
-    [(_ _CONSTANT-SYMBOL)
-     (with-syntax
-         ([CON-SYM (datum->syntax #'_CONSTANT-SYMBOL (string->symbol (syntax->datum #'_CONSTANT-SYMBOL)))])
-       (syntax/loc stx (cd:function (quote CON-SYM) (list))))]))
-(provide concrete-constant)
-
-(define-syntax (concrete-constants-section stx)
-  (syntax-parse stx
-    [(_ _CONCRETE-CONSTANT ...) (syntax/loc stx (list _CONCRETE-CONSTANT ...))]))
-(provide concrete-constants-section)
-
-(define-syntax (partial-order-section stx)
+(define-syntax (cclp-partial-order-section stx)
   (syntax-parse stx
     [(_ PAIR ...)
      (syntax/loc stx
@@ -278,136 +211,37 @@
          (for ([p (list PAIR ...)])
            (add-directed-edge! g (car p) (cdr p)))
          g))]))
-(provide partial-order-section)
 
-(define-syntax (partial-ordering-pair stx)
+(define-syntax (cclp-partial-ordering-pair stx)
   (syntax-parse stx
     [(_ A _ B)
      (syntax/loc stx
        (cons A B))]))
-(provide partial-ordering-pair)
 
-(module+ test
-  (require rackunit)
-  (check-equal? (number-term 4) (cd:function (->symbol 4) '()))
-  (check-equal? (lplist "[" "]") (cd:function (string->symbol "[]") '()))
-
-  (check-equal? (abstract-variable-a "a" 1) (ad:a 1))
-  (check-equal? (abstract-variable-g "g" 2) (ad:g 2))
-  (check-equal? (abstract-number 3) (ad:abstract-function (->symbol 3) '()))
-  (check-equal? (abstract-variable (abstract-variable-a "a" 1)) (ad:a 1))
-  (check-equal? (abstract-variable (abstract-variable-g "g" 2)) (ad:g 2))
-  (check-equal? (abstract-number-term (abstract-number 3)) (ad:abstract-function (->symbol 3) '()))
-  (check-equal? (abstract-function-term "my-func") (ad:abstract-function 'my-func '()))
-  (check-equal? (abstract-atom-without-args "my-atom") (ad:abstract-atom 'my-atom '()))
-  (check-equal? (abstract-atom (abstract-atom-without-args "my-atom"))
-                (ad:abstract-atom 'my-atom '()))
-  (check-equal? (abstract-lplist "[" "]") (ad:abstract-function (string->symbol "[]") '()))
-  (check-equal? (abstract-lplist
-                 "["
-                 (abstract-variable (abstract-variable-g "g" 2))
-                 ","
-                 (abstract-variable (abstract-variable-a "a" 1))
-                 "]")
-                (ad:abstract-function
-                 (string->symbol "'[|]'")
-                 (list (ad:g 2)
-                       (ad:abstract-function
-                        (string->symbol "'[|]'")
-                        (list (ad:a 1)
-                              (ad:abstract-function (string->symbol "[]") '()))))))
-  (check-equal? (abstract-lplist
-                 "["
-                 (abstract-variable (abstract-variable-g "g" 2))
-                 ","
-                 (abstract-variable (abstract-variable-a "a" 1))
-                 "|"
-                 (abstract-variable (abstract-variable-a "a" 2))
-                 "]")
-                (ad:abstract-function
-                 (string->symbol "'[|]'")
-                 (list (ad:g 2) (ad:abstract-function (string->symbol "'[|]'") (list (ad:a 1) (ad:a 2))))))
-  (check-equal? (conjunction
-                 (abstract-atom (abstract-atom-without-args "my-atom1"))
-                 "," (abstract-atom (abstract-atom-without-args "my-atom2"))
-                 "," (abstract-atom (abstract-atom-without-args "my-atom3")))
-                (list (ad:abstract-atom 'my-atom1 '())
-                      (ad:abstract-atom 'my-atom2 '())
-                      (ad:abstract-atom 'my-atom3 '())))
-  (check-equal? (abstract-function-term
-                 "my-func"
-                 "("
-                 (abstract-term (abstract-variable (abstract-variable-g "g" 1)))
-                 ","
-                 (abstract-term (abstract-variable (abstract-variable-g "g" 2))) ")")
-                (ad:abstract-function 'my-func (list (ad:g 1) (ad:g 2))))
-  (check-equal? (abstract-atom
-                 (abstract-atom-with-args
-                  "my-atom"
-                  "("
-                  (abstract-variable (abstract-variable-g "g" 1))
-                  ","
-                  (abstract-variable (abstract-variable-g "g" 2))
-                  ")"))
-                (ad:abstract-atom 'my-atom (list (ad:g 1) (ad:g 2))))
-
-  ; concrete program section
-  (check-equal?
-   (variable "MyPrologVar")
-   (cd:variable 'MyPrologVar))
-
-  ; full eval section
-  (check-equal?
-   (fullai-rule-without-body
-    (abstract-atom-with-args
-     "myatom"
-     "("
-     (abstract-variable
-      (abstract-variable-g "g" 1))
-     ","
-     (abstract-variable
-      (abstract-variable-g "g" 2))
-     ")")
-    "."
-    1)
-   (fai:full-ai-rule
-    (ad:abstract-atom 'myatom (list (ad:g 1) (ad:g 2)))
-    (list)
-    1))
-
-  (check-equal?
-   (fullai-rule-with-body
-    (abstract-atom-with-args
-     "del"
-     "("
-     (abstract-variable
-      (abstract-variable-a "a" 1))
-     ","
-     (abstract-variable
-      (abstract-variable-g "g" 1))
-     ","
-     (abstract-variable
-      (abstract-variable-a "a" 2))
-     ")")
-    "->"
-    (abstract-substitution
-     (abstract-substitution-pair
-      (abstract-variable
-       (abstract-variable-a "a" 1))
-      "/"
-      (abstract-variable
-       (abstract-variable-g "g" 2)))
-     ","
-     (abstract-substitution-pair
-      (abstract-variable
-       (abstract-variable-a "a" 2))
-      "/"
-      (abstract-variable
-       (abstract-variable-g "g" 3))))
-    "."
-    1)
-   (fai:full-ai-rule
-    (ad:abstract-atom 'del (list (ad:a 1) (ad:g 1) (ad:a 2)))
-    (list (as:abstract-equality (ad:a 1) (ad:g 2))
-          (as:abstract-equality (ad:a 2) (ad:g 3)))
-    1)))
+(provide
+ ; note: matching-identifiers-out does not play nice with rename-in used above
+ cclp-abstract-atom
+ cclp-abstract-atom-with-args
+ cclp-abstract-atom-without-args
+ cclp-abstract-lplist
+ cclp-abstract-substitution
+ cclp-abstract-substitution-pair
+ cclp-abstract-term
+ cclp-abstract-termlist
+ cclp-abstract-variable
+ cclp-atom
+ cclp-conjunction
+ cclp-full-evaluation-section
+ cclp-fullai-rule-with-body
+ cclp-fullai-rule-without-body
+ cclp-lplist
+ cclp-partial-order-section
+ cclp-partial-ordering-pair
+ cclp-program
+ cclp-program-section
+ cclp-rule
+ cclp-term
+ cclp-termlist
+ cclp-variable
+ (rename-out
+  [cclp-module-begin #%module-begin]))

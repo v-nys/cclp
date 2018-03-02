@@ -22,7 +22,7 @@
 
 #lang br
 (require reprovide/reprovide)
-(reprovide "cclp-tokenizer.rkt")
+(reprovide cclp-syntax/common-data-tokenizer)
 
 (require "cclp-parser.rkt")
 (define (read-syntax source-path input-port)

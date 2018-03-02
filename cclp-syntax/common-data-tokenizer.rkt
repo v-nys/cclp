@@ -7,6 +7,11 @@
     (define get-token
       (lexer-src-pos
        [whitespace (token 'WS lexeme #:skip? #t)]
+       ["{PROGRAM}" (token 'PROGRAM-DELIMITER lexeme)]
+       ["{FULL EVALUATION}" (token 'FULL-EVALUATION-DELIMITER lexeme)]
+       ["{PARTIAL ORDER}" (token 'PARTIAL-ORDER-DELIMITER lexeme)]
+       ["{K}" (token 'K-DELIMITER lexeme)]
+       ["{QUERY}" (token 'QUERY-DELIMITER lexeme)]
        [(re-seq (char-range "A" "Z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_"))) (token 'VARIABLE-IDENTIFIER lexeme)]
        [(re--
          (re-seq (char-range "a" "z") (re-* (re-or (re-or (re-or (char-range "a" "z") (char-range "A" "Z")) numeric) "_")))

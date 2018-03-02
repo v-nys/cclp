@@ -198,8 +198,8 @@
 
 (define-syntax (ag-atom stx)
   (syntax-parse stx
-    [(_ sym) (syntax/loc stx (cd:atom (string->symbol sym) empty))]
-    [(_ sym "(" tl ")") (syntax/loc stx (cd:atom (string->symbol sym) tl))]))
+    [(_ sym) (syntax/loc stx (cd:atom (string->symbol (quote sym)) empty))]
+    [(_ sym "(" tl ")") (syntax/loc stx (cd:atom (string->symbol (quote sym)) tl))]))
 (provide ag-atom)
 
 (define-syntax (ag-rule stx)
@@ -208,10 +208,11 @@
     [(_ at num) (syntax/loc stx (ck:rule at empty num))]))
 (provide ag-rule)
 
-(define-syntax-rule (ag-variable sym) (cd:variable (string->symbol sym)))
+(define-syntax-rule (ag-variable sym) (cd:variable (string->symbol (quote sym))))
 (provide ag-variable)
 
 (define-syntax-rule (ag-number-term num) (cd:function (string->symbol (number->string num)) empty))
+(provide ag-number-term)
 
 (define-syntax (ag-function-term stx)
   (syntax-parse stx #:literals (ag-number-term)
