@@ -112,7 +112,7 @@
     [(list-rest
       ;; generalization followed by generalization is possible on paper, but implementation never does this
       (tree-label tl-con1 (none) sub r i)
-      (generalization g-con g-sel g-i abstracted-ranges b-b) ; TODO may be able to utilize last field, which was added later
+      (generalization g-con g-sel g-i abstracted-ranges b-b) ; TODO may be able to utilize last field, which was added later (groupings->abstracted-ranges exists...)
       l-rest)
      (match-let
          ([(list next-uid _ _ add-edges)

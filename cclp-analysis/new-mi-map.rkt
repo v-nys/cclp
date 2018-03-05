@@ -6,7 +6,22 @@
          cclp-common/abstract-analysis
          (prefix-in ak: cclp-common-data/abstract-knowledge)
          (prefix-in ck: cclp-common-data/concrete-knowledge)
+         cclp-common/gen-graph-structs ; for index-range, TODO this could actually go somewhere else
          cclp-common/data-utils)
+
+(define (groupings->abstracted-ranges groupings)
+  (define (merge-index-ranges rngs)
+    (define sorted
+      (sort
+       rngs
+       (λ (rng1 rng2)
+         (< (index-range-start rng1)
+            (index-range-start rng2)))))
+    (index-range
+     (index-range-start (first sorted))
+     (index-range-end-before (last sorted))))
+  (define same-multi-groupings (group-by cdr groupings))
+  (map (λ (g) (merge-index-ranges (car g))) same-multi-groupings))
 
 (define (mi-map-visit-from idx n)
   (match n
@@ -31,9 +46,12 @@
     [(node (tree-label _ _ _ 'many idx2) _)
      (displayln (format "state_transition(~a,~a,many)." idx idx2))]
     ;; generalization
-    ;; TODO: need the correct ranges
-    [(node (generalization _ _ idx2 _ _) _)
-     (displayln (format "grouping(~a,~a,ListOfRanges)" idx idx2))]
+    [(node (generalization _ _ idx2 _ groupings) _)
+     (let* ([ranges (groupings->abstracted-ranges)]
+            [displayed-ranges
+             (string-join
+              (map (λ (rng) (format "(~a,~a)" (index-range-start rng) (index-range-end-before rng))) ranges) "," #:before-first "[" #:after-last "]")])
+       (displayln (format "grouping(~a,~a,~a)" idx idx2 displayed-ranges)))]
     [(node (cycle _) _)
      (void)]
     [else
