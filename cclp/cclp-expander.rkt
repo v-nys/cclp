@@ -229,6 +229,7 @@
  cclp-abstract-term
  cclp-abstract-termlist
  cclp-abstract-variable
+ cclp-abstract-function-term
  cclp-atom
  cclp-conjunction
  cclp-full-evaluation-section
@@ -243,5 +244,8 @@
  cclp-term
  cclp-termlist
  cclp-variable
+ cclp-function-term
+ cclp-number-term
+ cclp-abstract-number
  (rename-out
   [cclp-module-begin #%module-begin]))

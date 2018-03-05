@@ -81,7 +81,7 @@
 (define-syntax-rule (ag-fullai-rule with-or-without-body) with-or-without-body)
 (provide ag-fullai-rule)
 
-(define-syntax-rule (ag-abstract-number n) (ad:abstract-function (string->symbol (number->string n)) empty))
+(define-syntax-rule (ag-abstract-number n) (ad:abstract-function (string->symbol (number->string (quote n))) empty))
 (provide ag-abstract-number)
 
 (define-syntax (ag-abstract-function-term stx)
@@ -211,12 +211,12 @@
 (define-syntax-rule (ag-variable sym) (cd:variable (string->symbol (quote sym))))
 (provide ag-variable)
 
-(define-syntax-rule (ag-number-term num) (cd:function (string->symbol (number->string num)) empty))
+(define-syntax-rule (ag-number-term num) (cd:function (string->symbol (number->string (quote num))) empty))
 (provide ag-number-term)
 
 (define-syntax (ag-function-term stx)
   (syntax-parse stx #:literals (ag-number-term)
-    [(_ (ag-number-term n)) (syntax/loc stx (number-term n))]
+    [(_ (ag-number-term n)) (syntax/loc stx (ag-number-term n))]
     [(_ functor) (syntax/loc stx (cd:function (string->symbol functor) '()))]
     [(_ functor "(" tl ")") (syntax/loc stx (cd:function (string->symbol functor) tl))]))
 (provide ag-function-term)
