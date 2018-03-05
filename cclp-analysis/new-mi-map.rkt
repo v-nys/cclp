@@ -9,19 +9,26 @@
          cclp-common/gen-graph-structs ; for index-range, TODO this could actually go somewhere else
          cclp-common/data-utils)
 
-(define (groupings->abstracted-ranges groupings)
-  (define (merge-index-ranges rngs)
-    (define sorted
-      (sort
-       rngs
-       (λ (rng1 rng2)
-         (< (index-range-start rng1)
-            (index-range-start rng2)))))
-    (index-range
-     (index-range-start (first sorted))
-     (index-range-end-before (last sorted))))
+(define (groupings->bb-ranges groupings)
+  ;; there are two list levels in groupings
+  ;; outermost because several multis can appear during generalization
+  ;; innermost because a single multi is made up of N grouped building blocks
   (define same-multi-groupings (group-by cdr groupings))
-  (map (λ (g) (merge-index-ranges (car g))) same-multi-groupings))
+  ;; group-by adds another list level, which was implicit in the exact-nonnegative-integer? above
+  ;; an application of (λ (g) ...) produces a (listof (listof index-range))
+  (define (inner-sort index-ranges)
+    (sort
+     index-ranges
+     (λ (rng1 rng2)
+       (< (index-range-start rng1)
+          (index-range-start rng2)))))
+  (map
+   (λ (g)
+     (flatten
+      (sort
+       (map (compose inner-sort car) g)
+       (λ (ll1 ll2) (< (index-range-start (first (first ll1))) (index-range-start (first (first ll2))))))))
+   same-multi-groupings))
 
 (define (mi-map-visit-from idx n)
   (match n
@@ -47,10 +54,11 @@
      (displayln (format "state_transition(~a,~a,many)." idx idx2))]
     ;; generalization
     [(node (generalization _ _ idx2 _ groupings) _)
-     (let* ([ranges (groupings->abstracted-ranges)]
-            [displayed-ranges
-             (string-join
-              (map (λ (rng) (format "(~a,~a)" (index-range-start rng) (index-range-end-before rng))) ranges) "," #:before-first "[" #:after-last "]")])
+     (let* ([ranges (groupings->bb-ranges groupings)] ; gives a list of list of ranges
+            [range->str (λ (r) (format "(~a,~a)" (index-range-start r) (index-range-end-before r)))]
+            [l-of-rng->str (λ (lr) (string-join (map range->str lr) "," #:before-first "[" #:after-last "]"))]
+            [l-of-l-of-rng->str (λ (llr) (string-join (map l-of-rng->str llr) "," #:before-first "[" #:after-last "]"))]
+            [displayed-ranges (l-of-l-of-rng->str ranges)])
        (displayln (format "grouping(~a,~a,~a)" idx idx2 displayed-ranges)))]
     [(node (cycle _) _)
      (void)]
