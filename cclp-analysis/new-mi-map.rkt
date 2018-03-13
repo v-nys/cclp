@@ -30,60 +30,78 @@
        (λ (ll1 ll2) (< (index-range-start (first (first ll1))) (index-range-start (first (first ll2))))))))
    same-multi-groupings))
 
-(define (mi-map-visit-from idx n)
+(define (mi-map-visit-from idx n [out (current-output-port)])
   (match n
     ;i ending up with empty goal
     [(node (tree-label (list) _ _ (ck:rule _ _ rule-idx) #f) _)
-     (displayln (format "state_transition(~a,empty,rule~a)." idx rule-idx))]
+     (displayln (format "state_transition(~a,empty,rule~a)." idx rule-idx) out)]
     [(node (tree-label (list) _ _ (ak:full-evaluation _ _ rule-idx) #f) _)
-     (displayln (format "state_transition(~a,empty,fullai~a)." idx rule-idx))]
+     (displayln (format "state_transition(~a,empty,fullai~a)." idx rule-idx) out)]
     ;; ending up with nonempty goal, which cycles back
     [(node (tree-label _ _ _ (ck:rule _ _ rule-idx) _) (list (node (cycle cycle-idx) _)))
-     (displayln (format "state_transition(~a,~a,rule~a)." idx cycle-idx rule-idx))]
+     (displayln (format "state_transition(~a,~a,rule~a)." idx cycle-idx rule-idx) out)]
     [(node (tree-label _ _ _ (ak:full-evaluation _ _ rule-idx) _) (list (node (cycle cycle-idx) _)))
-     (displayln (format "state_transition(~a,~a,fullai~a)." idx cycle-idx rule-idx))]
+     (displayln (format "state_transition(~a,~a,fullai~a)." idx cycle-idx rule-idx) out)]
     ;; ending up with nonempty goal
     [(node (tree-label _ _ _ (ck:rule _ _ rule-idx) idx2) _)
-     (displayln (format "state_transition(~a,~a,rule~a)." idx idx2 rule-idx))]
+     (displayln (format "state_transition(~a,~a,rule~a)." idx idx2 rule-idx) out)]
     [(node (tree-label _ _ _ (ak:full-evaluation _ _ rule-idx) idx2) _)
-     (displayln (format "state_transition(~a,~a,fullai~a)." idx idx2 rule-idx))]
-    ;; multi unfolding
+     (displayln (format "state_transition(~a,~a,fullai~a)." idx idx2 rule-idx) out)]
+    ;; multi unfolding to a cycle
+    [(node (tree-label _ _ _ 'one idx2) (list (node (cycle cycle-idx) _)))
+     (displayln (format "state_transition(~a,~a,one)." idx cycle-idx) out)]
+    [(node (tree-label _ _ _ 'many idx2) (list (node (cycle cycle-idx) _)))
+     (displayln (format "state_transition(~a,~a,many)." idx cycle-idx) out)]
+    ;; multi unfolding to a non-cycle
     [(node (tree-label _ _ _ 'one idx2) _)
-     (displayln (format "state_transition(~a,~a,one)." idx idx2))]
+     (displayln (format "state_transition(~a,~a,one)." idx idx2) out)]
     [(node (tree-label _ _ _ 'many idx2) _)
-     (displayln (format "state_transition(~a,~a,many)." idx idx2))]
-    ;; generalization
+     (displayln (format "state_transition(~a,~a,many)." idx idx2) out)]
+    ;; generalization to a cycle
+    [(node (generalization _ _ idx2 _ groupings) (list (node (cycle cycle-idx) _)))
+     (let* ([ranges (groupings->bb-ranges groupings)] ; gives a list of list of ranges
+            [range->str (λ (r) (format "(~a,~a)" (index-range-start r) (index-range-end-before r)))]
+            [l-of-rng->str (λ (lr) (string-join (map range->str lr) "," #:before-first "[" #:after-last "]"))]
+            [l-of-l-of-rng->str (λ (llr) (string-join (map l-of-rng->str llr) "," #:before-first "[" #:after-last "]"))]
+            [displayed-ranges (l-of-l-of-rng->str ranges)])
+       (displayln (format "grouping(~a,~a,~a)." idx cycle-idx displayed-ranges) out))]
+    ;; generalization to a non-cycle
     [(node (generalization _ _ idx2 _ groupings) _)
      (let* ([ranges (groupings->bb-ranges groupings)] ; gives a list of list of ranges
             [range->str (λ (r) (format "(~a,~a)" (index-range-start r) (index-range-end-before r)))]
             [l-of-rng->str (λ (lr) (string-join (map range->str lr) "," #:before-first "[" #:after-last "]"))]
             [l-of-l-of-rng->str (λ (llr) (string-join (map l-of-rng->str llr) "," #:before-first "[" #:after-last "]"))]
             [displayed-ranges (l-of-l-of-rng->str ranges)])
-       (displayln (format "grouping(~a,~a,~a)" idx idx2 displayed-ranges)))]
+       (displayln (format "grouping(~a,~a,~a)." idx idx2 displayed-ranges) out))]
     [(node (cycle _) _)
      (void)]
     [else
-     (displayln (format "don't know how to be visited yet"))]))
+     (displayln (format "don't know how to be visited yet") out)]))
 
-(define (display-selected-index l)
+(define (display-selected-index l [out (current-output-port)])
   (when (some? (label-selection l))
     (displayln
      (format
       "selected_index(~a,~a)."
       (label-index l)
-      (some-v (label-selection l))))))
+      (some-v (label-selection l)))
+     out)))
 
-(define (mi-map-visitor n)
+(define (mi-map-visitor n [out (current-output-port)])
   (match n
     [(node (and (? label-with-conjunction?) label) children)
-     (display-selected-index label)
+     (display-selected-index label out)
      (for ([ch children])
-       (mi-map-visit-from (label-index label) ch))]
+       (mi-map-visit-from (label-index label) ch out))]
     [(node (cycle idx) (list)) (void)]))
 
 (define (display-mi-map tree)
+  (define out (open-output-string))
+  ; TODO: sort lines of get-output-string alphabetically
   (begin
-    (visit mi-map-visitor tree)
+    (visit (λ (n) (mi-map-visitor n out)) tree)
+    (for ([line (sort (string-split (get-output-string out) "\n") string<?)])
+      (displayln line))
     tree))
 (provide
  (proc-doc/names

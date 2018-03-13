@@ -205,7 +205,7 @@
       [(? list?) (map refresh c)]
       [(atom sym args) (atom sym (map refresh args))]
       [(function sym args) (function sym (map refresh args))]
-      [(variable vn) (variable (gensym))]))
+      [(variable vn) (variable (gensym 'Var))]))
   (define (extend-con/subs n acc) ;; here, acc is a list of con/subs
     (define (in-grouping? i g)
       (ormap

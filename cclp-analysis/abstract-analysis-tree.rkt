@@ -165,19 +165,19 @@
       (begin
         (match-let* ([next-index (aif (largest-node-index top) (+ it 1) 1)]
                      [conjunction (label-conjunction (node-label candidate))]
-                     [equivalent-predecessor
+                     [first-eq-predecessor
                       (findf
                        (λ (p-and-i) (renames? (car p-and-i) conjunction))
-                       predecessors)]
+                       (sort predecessors (λ (pi1 pi2) (< (cdr pi1) (cdr pi2)))))]
                      [fully-evaluated-atom? (ormap full-eval-covers (cartesian-product full-evaluations conjunction))]
                      [(list gen-conjunction gen-rngs bb)
                       (if
-                       (or (null? (node-children top)) equivalent-predecessor fully-evaluated-atom?)
+                       (or (null? (node-children top)) first-eq-predecessor fully-evaluated-atom?)
                        (list conjunction (list) (list))
                        (generalize/bu (active-branch top)))])
           (begin
-            (cond [equivalent-predecessor
-                   (let* ([cycle-node (node (cycle (cdr equivalent-predecessor)) '())]
+            (cond [first-eq-predecessor
+                   (let* ([cycle-node (node (cycle (cdr first-eq-predecessor)) '())]
                           [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
                           [updated-top (replace-first-subtree top candidate updated-candidate)])
                      (cons updated-candidate updated-top))]
