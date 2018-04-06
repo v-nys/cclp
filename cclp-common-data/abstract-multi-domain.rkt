@@ -316,7 +316,7 @@
                          (simple-multi-consecutive obj)
                          (simple-multi-final obj)))) obj out mode)
         ;; print-as-expression is not relevant in this application
-        (display (format "simple-multi(~a,~v,~v,~v,~v,~v)" (string-join (map printed-form (simple-multi-conjunction obj)) "∧") (simple-multi-init obj) (simple-multi-consecutive obj) (simple-multi-final obj)) out)))]
+        (display (format "simple-multi(~a,~v,~v,~v)" (string-join (map printed-form (simple-multi-conjunction obj)) "∧") (simple-multi-init obj) (simple-multi-consecutive obj) (simple-multi-final obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc m1 m2 equal?-recur)
