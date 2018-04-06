@@ -60,8 +60,10 @@
         (assemble-var-indices
          right-variable-type?
          (full-evaluation-output-pattern abstract-data)))]
-      [(multi _ _ ic _ fc _)
-       (assemble-var-indices right-variable-type? (map cdr (append ic fc)))]))
+      [(simple-multi _ ic _ fc)
+       (assemble-var-indices right-variable-type? (map cdr (append ic fc)))]
+      [(multi/annotations sm _ _)
+       (assemble-var-indices right-variable-type? sm)]))
   (remove-duplicates (assemble-aux right-variable-type? abstract-data)))
 (provide
  (proc-doc/names
@@ -137,8 +139,10 @@
      (maximum-var-index (cons (abstract-rule-head abstraction) (abstract-rule-body abstraction)) right-variable-type?)]
     [(? full-evaluation?)
      (maximum-var-index (list (full-evaluation-input-pattern abstraction) (full-evaluation-output-pattern abstraction)) right-variable-type?)]
-    [(multi _ _ ic _ fc _)
-     (maximum-var-index (map cdr (append ic fc)) right-variable-type?)]))
+    [(simple-multi _ ic _ fc)
+     (maximum-var-index (map cdr (append ic fc)) right-variable-type?)]
+    [(multi/annotations sm _ _)
+     (maximum-var-index sm right-variable-type?)]))
 (provide (contract-out [maximum-var-index (-> (or/c abstract-domain-elem*? abstract-knowledge?) (-> any/c boolean?) (maybe exact-nonnegative-integer?))]))
 
 ;(module+ test
@@ -185,7 +189,7 @@
      (append
       (rec h)
       (append-map rec t))]
-    [(multi conjunction _ ic cc fc _)
+    [(simple-multi conjunction ic cc fc)
      (append
       (append-map rec conjunction)
       (if
@@ -195,6 +199,8 @@
         (append-map (compose rec cdr) ic)
         (append-map (compose rec cdr) cc)
         (append-map (compose rec cdr) fc))))]
+    [(multi/annotations sm _ _)
+     (extract-all-variables/duplicates/base sm exclude-constraints?)]
     [(or
       (abstract-atom _ args)
       (abstract-function _ args)
@@ -296,8 +302,10 @@
 
 (define (get-multi-id m)
   (match m
-    [(multi patt _ _ _ _ _)
+    [(simple-multi patt _ _ _)
      (get-multi-id patt)]
+    [(multi/annotations sm _ _)
+     (get-multi-id sm)]
     [(list-rest h t)
      (or (get-multi-id h)
          (get-multi-id t))]
@@ -333,8 +341,10 @@
       (abstract-function _ args)
       (abstract-function* _ args))
      (list v)]
-    [(multi patt _ _ _ _ _)
+    [(simple-multi patt _ _ _)
      (append-map extract-abstract-compounds patt)]
+    [(multi/annotations sm _ _)
+     (extract-abstract-compounds sm)]
     [_ (list)]))
 ;(module+ test
 ;  (check-equal?
