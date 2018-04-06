@@ -1,7 +1,26 @@
 #lang alpha-gamma racket
+(require cclp-common/abstraction-inspection-utils)
 (require cclp-common-data/abstract-multi-domain)
 
-(define (normalize acon) acon)
+(define (normalize acon)
+        (define first-multi (findf multi? acon))
+        (define-values
+         (max-a max-g)
+         (values
+          (maximum-var-index acon a?)
+          (maximum-var-index acon g?)))
+        (if (not first-multi)
+            acon
+            acon))
+; DONE: if there are no multis in acon, just return acon
+; if there are any multis, replace the first with its case: one unfolding and attempt to wrap the subconjunction of corresponding length that follows
+; a) this is possible and the result is equivalent with acon: keep normalizing
+; b) this is possible, but the result is not equivalent: only the part of acon after the multi is eligible for further normalization
+; c) this is not possible, as the first conjunct in the following subconjunction is also a multi: another case split
+; c1) unfold:one does affect denotation -> apply unfold:one and keep normalizing
+; c2) unfold:one affects denotation -> do not apply unfold:one and keep normalizing
+; d) this is not possible, as another conjunct than the first in the following subconjunction is a multi: only the part of acon after the multi is eligible... (~b)
+
 
 (module+
  test
