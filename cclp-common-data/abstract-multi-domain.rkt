@@ -304,54 +304,119 @@
   @{A template for abstract atoms occurring inside a multi abstraction.}))
 
 (serializable-struct
- multi (conjunction ascending? init consecutive final rta)
+ simple-multi (conjunction init consecutive final)
  #:methods
  gen:custom-write
  [(define (write-proc obj out mode)
     (if (boolean? mode)
         ((make-constructor-style-printer
-          (λ (obj) 'multi)
-          (λ (obj) (list (multi-conjunction obj)
-                         (multi-ascending? obj)
-                         (multi-init obj)
-                         (multi-consecutive obj)
-                         (multi-final obj)
-                         (multi-rta obj)))) obj out mode)
+          (λ (obj) 'simple-multi)
+          (λ (obj) (list (simple-multi-conjunction obj)
+                         (simple-multi-init obj)
+                         (simple-multi-consecutive obj)
+                         (simple-multi-final obj)))) obj out mode)
         ;; print-as-expression is not relevant in this application
-        (display (format "multi(~a,~v,~v,~v,~v,~v)" (string-join (map printed-form (multi-conjunction obj)) "∧") (multi-ascending? obj) (multi-init obj) (multi-consecutive obj) (multi-final obj) (multi-rta obj)) out)))]
+        (display (format "simple-multi(~a,~v,~v,~v,~v,~v)" (string-join (map printed-form (simple-multi-conjunction obj)) "∧") (simple-multi-init obj) (simple-multi-consecutive obj) (simple-multi-final obj)) out)))]
  #:methods
  gen:equal+hash
  [(define (equal-proc m1 m2 equal?-recur)
-    (and (equal?-recur (multi-conjunction m1) (multi-conjunction m2))
-         (equal?-recur (multi-ascending? m1) (multi-ascending? m2))
-         (equal?-recur (multi-init m1) (multi-init m2))
-         (equal?-recur (multi-consecutive m1) (multi-consecutive m2))
-         (equal?-recur (multi-final m1) (multi-final m2))
-         (equal?-recur (multi-rta m1) (multi-rta m2))))
+    (and (equal?-recur (simple-multi-conjunction m1) (simple-multi-conjunction m2))
+         (equal?-recur (simple-multi-init m1) (simple-multi-init m2))
+         (equal?-recur (simple-multi-consecutive m1) (simple-multi-consecutive m2))
+         (equal?-recur (simple-multi-final m1) (simple-multi-final m2))))
   (define (hash-proc m hash-recur)
-    (+ (hash-recur (multi-conjunction m))
-       (hash-recur (multi-ascending? m))
-       (hash-recur (multi-init m))
-       (hash-recur (multi-consecutive m))
-       (hash-recur (multi-final m))
-       (hash-recur (multi-rta m))))
+    (+ (hash-recur (simple-multi-conjunction m))
+       (hash-recur (simple-multi-init m))
+       (hash-recur (simple-multi-consecutive m))
+       (hash-recur (simple-multi-final m))))
   (define (hash2-proc m hash2-recur)
-    (+ (hash2-recur (multi-conjunction m))
-       (hash2-recur (multi-ascending? m))
-       (hash2-recur (multi-init m))
-       (hash2-recur (multi-consecutive m))
-       (hash2-recur (multi-final m))
-       (hash2-recur (multi-rta m))))])
+    (+ (hash2-recur (simple-multi-conjunction m))
+       (hash2-recur (simple-multi-init m))
+       (hash2-recur (simple-multi-consecutive m))
+       (hash2-recur (simple-multi-final m))))])
 (provide
  (struct*-doc
-  multi
+  simple-multi
   ([conjunction (listof abstract-atom*?)]
-   [ascending? boolean?]
    [init (listof (cons/c abstract-variable*? abstract-term?))]
    [consecutive (listof (cons/c abstract-variable*? abstract-term*?))]
-   [final (listof (cons/c abstract-variable*? abstract-term?))]
-   [rta exact-positive-integer?])
+   [final (listof (cons/c abstract-variable*? abstract-term?))])
   @{The multi abstraction.}))
+
+(serializable-struct
+ multi/annotations (multi ascending? rta)
+ #:methods
+ gen:custom-write
+ [(define (write-proc obj out mode)
+    (if (boolean? mode)
+        ((make-constructor-style-printer
+          (λ (obj) 'multi/annotations)
+          (λ (obj) (list (multi/annotations-ascending? obj)
+                         (multi/annotations-rta obj)))) obj out mode)
+        (display
+         (format
+          "multi(~a,~v,~v,~v,~v,~v)"
+          (string-join (map printed-form (simple-multi-conjunction (multi/annotations-multi obj))) "∧")
+          (multi/annotations-ascending? obj)
+          (simple-multi-init (multi/annotations-multi obj))
+          (simple-multi-consecutive (multi/annotations-multi obj))
+          (simple-multi-final (multi/annotations-multi obj))
+          (multi/annotations-rta obj))
+         out)))]
+ #:methods
+ gen:equal+hash
+ [(define (equal-proc m1 m2 equal?-recur)
+    (and (equal?-recur (multi/annotations-multi m1) (multi/annotations-multi m2))
+         (equal?-recur (multi/annotations-ascending? m1) (multi/annotations-ascending? m2))
+         (equal?-recur (multi/annotations-rta m1) (multi/annotations-rta m2))))
+  (define (hash-proc m hash-recur)
+    (+ (hash-recur (multi/annotations-multi m))
+       (hash-recur (multi/annotations-ascending? m))
+       (hash-recur (multi/annotations-rta m))))
+  (define (hash2-proc m hash2-recur)
+    (+ (hash2-recur (multi/annotations-multi m))
+       (hash2-recur (multi/annotations-ascending? m))
+       (hash2-recur (multi/annotations-rta m))))])
+(provide
+ (struct*-doc
+  multi/annotations
+  ([multi simple-multi?]
+   [ascending? boolean?]
+   [rta exact-nonnegative-integer?])
+  @{The multi abstraction with required annotations for automated generalization.}))
+
+(define (multi? m)
+  (or (simple-multi? m)
+      (multi/annotations? m)))
+(provide multi?)
+
+(define (multi-conjunction m)
+  (match m
+    [(or (simple-multi c _ _ _)
+         (multi/annotations (simple-multi c _ _ _) _ _))
+     c]))
+(provide multi-conjunction)
+
+(define (multi-init m)
+  (match m
+    [(or (simple-multi _ i _ _)
+         (multi/annotations (simple-multi _ i _ _) _ _))
+     i]))
+(provide multi-init)
+
+(define (multi-consecutive m)
+  (match m
+    [(or (simple-multi _ _ c _)
+         (multi/annotations (simple-multi _ _ c _) _ _))
+     c]))
+(provide multi-consecutive)
+
+(define (multi-final m)
+  (match m
+    [(or (simple-multi _ _ _ f)
+         (multi/annotations (simple-multi _ _ _ f) _ _))
+     f]))
+(provide multi-final)
 
 (define (abstract-term? elem)
   (or (abstract-variable? elem) (abstract-function? elem)))
