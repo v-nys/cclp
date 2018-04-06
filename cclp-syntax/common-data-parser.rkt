@@ -55,7 +55,8 @@ ag-fail : SYMBOL
 ag-abstract-conjunction : ag-abstract-conjunct (COMMA ag-abstract-conjunct)*
 ag-abstract-conjunct : ag-abstract-atom | ag-multi-abstraction
 ag-abstract-atom : ag-abstract-atom-with-args | ag-abstract-atom-without-args
-ag-multi-abstraction : SYMBOL OPEN-PAREN ag-parameterized-abstract-conjunction COMMA SYMBOL COMMA ag-init COMMA ag-consecutive COMMA ag-final COMMA NUMBER CLOSE-PAREN
+ag-multi-abstraction : ag-simple-multi | ag-annotated-multi
+ag-simple-multi: SYMBOL OPEN-PAREN ag-parameterized-abstract-conjunction COMMA ag-init COMMA ag-consecutive COMMA ag-final CLOSE-PAREN
 ag-parameterized-abstract-conjunction : ag-parameterized-abstract-atom (COMMA ag-parameterized-abstract-atom)*
 ag-parameterized-abstract-atom : (SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVAR-SYMBOL-G) OPEN-PAREN ag-parameterized-abstract-termlist CLOSE-PAREN
 ag-parameterized-abstract-term : ag-parameterized-abstract-variable | ag-parameterized-abstract-function-term | ag-parameterized-abstract-lplist
@@ -69,6 +70,7 @@ ag-parameterized-abstract-function-term : ((SYMBOL | AMB-AVAR-SYMBOL-A | AMB-AVA
 ag-parameterized-abstract-termlist : ag-parameterized-abstract-term (COMMA ag-parameterized-abstract-term)*
 ag-parameterized-abstract-number-term : NUMBER
 ag-parameterized-abstract-lplist : OPEN-LIST-PAREN [ag-parameterized-abstract-term (COMMA ag-parameterized-abstract-term)* [LIST-SEPARATOR (ag-parameterized-abstract-lplist | ag-parameterized-abstract-variable)]] CLOSE-LIST-PAREN
+ag-annotated-multi: SYMBOL OPEN-PAREN ag-parameterized-abstract-conjunction COMMA SYMBOL COMMA ag-init COMMA ag-consecutive COMMA ag-final COMMA NUMBER CLOSE-PAREN
 
 ag-abstract-substitution : CURLY-OPEN [ag-abstract-substitution-pair (COMMA ag-abstract-substitution-pair)*] CURLY-CLOSE
 ag-abstract-substitution-pair : ag-abstract-term SLASH ag-abstract-term

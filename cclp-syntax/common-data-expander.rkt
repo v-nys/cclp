@@ -185,13 +185,23 @@
     [(_ "{" pav "=" pat "," rest ... "}") (syntax/loc stx (cons (cons pav pat) (ag-consecutive "{" rest ... "}")))]))
 (provide ag-consecutive)
 
-(define-syntax (ag-multi-abstraction stx)
+(define-syntax-rule (ag-multi-abstraction simple-or-annotated)
+  simple-or-annotated)
+(provide ag-multi-abstraction)
+
+(define-syntax (ag-annotated-multi stx)
   (syntax-parse stx
     [(_ "multi" "(" pac "," "t" "," i "," c "," f "," num ")")
-     (syntax/loc stx (ad:multi pac #t i c f num))]
-    [(_ "multi" "(" pac "," "f" "," i "," c "," f "," num ")")
-     (syntax/loc stx (ad:multi pac #f i c f num))]))
-(provide ag-multi-abstraction)
+     (syntax/loc stx (ad:multi/annotations (ad:simple-multi pac i c f) #t num))]
+    [(_ "multi" "(" pac "," "t" "," i "," c "," f "," num ")")
+     (syntax/loc stx (ad:multi/annotations (ad:simple-multi pac i c f) #f num))]))
+(provide ag-annotated-multi)
+
+(define-syntax (ag-simple-multi stx)
+  (syntax-parse stx
+    [(_ "multi" "(" pac "," i "," c "," f ")")
+     (syntax/loc stx (ad:simple-multi pac i c f))]))
+(provide ag-simple-multi)
 
 (define-syntax-rule (ag-concrete-multi tl) (cd:concrete-multi tl))
 (provide ag-concrete-multi)
