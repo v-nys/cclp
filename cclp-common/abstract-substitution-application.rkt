@@ -45,8 +45,11 @@
 (define (substitute-in-conjunct substituter substitutee input-conjunct)
   (match input-conjunct
     [(abstract-atom sym args) (abstract-atom sym (map (λ (a) (substitute-in-term substituter substitutee a)) args))]
-    [(multi c1 a i c2 f rta)
-     (multi c1 a (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) i) c2 (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) f) rta)]))
+    [(multi/annotations sm asc? rta)
+     (multi/annotations (substitute-in-conjunct substituter substitutee sm) asc? rta)]
+    [(simple-multi c1 i c2 f)
+     (simple-multi c1 (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) i) c2 (map (match-lambda [(cons lhs rhs) (cons lhs (substitute-in-term substituter substitutee rhs))]) f))]
+    ))
 
 ;(: substitute-in-conjunction (-> AbstractTerm AbstractVariable AbstractConjunction AbstractConjunction))
 (define (substitute-in-conjunction substituter substitutee conjunction) (map (λ (a) (substitute-in-conjunct substituter substitutee a)) conjunction))

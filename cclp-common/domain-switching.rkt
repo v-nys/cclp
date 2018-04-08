@@ -260,7 +260,9 @@
                          (abstract-atom sym args)
                          (abstract-atom* sym args))
                         (cons (atom sym (map (λ (a) (car (aux a 'dummy))) args)) tail-no)]
-                       [(multi patt _ _ _ _ _)
+                       [(or
+                         (simple-multi patt _ _ _)
+                         (multi/annotations (simple-multi patt _ _ _) _ _))
                         (cons
                          (concrete-multi
                           (function
@@ -291,23 +293,20 @@
           (concrete-synth-counterpart
            (list
             (abstract-atom 'integers (list (g 1) (a 1)))
-            (multi
+            (simple-multi
              (list
               (abstract-atom* 'filterA (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2)))
               (abstract-atom* 'filterB (list (g* 1 'i 2) (a* 1 'i 2) (a* 1 'i 3))))
-             #t
              (list
               (cons (a* 1 'i 1) (a 1)))
              (list
               (cons (a* 1 'i+1 1) (a* 1 'i 3)))
              (list
-              (cons (a* 1 'L 3) (a 2)))
-             1)
-            (multi
+              (cons (a* 1 'L 3) (a 2))))
+            (simple-multi
              (list
               (abstract-atom* 'filterA (list (g* 2 'i 1) (a* 2 'i 1) (a* 2 'i 2)))
               (abstract-atom* 'filterB (list (g* 2 'i 2) (a* 2 'i 2) (a* 2 'i 3))))
-             #t
              (list
               (cons
                (a* 2 'i 1)
@@ -315,8 +314,7 @@
              (list
               (cons (a* 2 'i+1 1) (a* 2 'i 3)))
              (list
-              (cons (a* 2 'L 3) (a 3)))
-             1)
+              (cons (a* 2 'L 3) (a 3))))
             (abstract-atom 'sift (list (a 3) (a 4)))))
           (list
            (atom 'integers (list (variable 'G1) (variable 'A1)))

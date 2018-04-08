@@ -70,7 +70,7 @@
       ([(node-constructor) (λ (id) (gen-node (abstract-atom 'foo empty) id (gen 0 #f) #f #t))]
        [(node1 node2 node3 node4 node5 node6 node8)
         (apply values (map node-constructor '(1 2 3 4 5 6 8)))]
-       [(node7) (gen-node (multi (list) #t empty empty empty 1) 7 (gen-range 1 2 1 #t) #f #t)]
+       [(node7) (gen-node (multi/annotations (simple-multi (list) empty empty empty) #t 1) 7 (gen-range 1 2 1 #t) #f #t)]
        [(graph)
         (unweighted-graph/directed
          `((,node1 ,node2)
@@ -140,11 +140,11 @@
       (abstract-atom? (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))
       (not
        (renames-with-corresponding-args?
-        (hash-ref id->conjunct (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))
+        (hash-ref id->conjunct (multi/annotations-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))
         (hash-ref id->conjunct (hash-ref encoding->id parent-encoding)))))))
    (clustering
-    (set (cluster gen-nodes id->encoding unfolded-multi-encodings id->conjunct encoding->id #:parent-encoding (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))))
-    (hash-ref id->encoding (multi-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all)))))
+    (set (cluster gen-nodes id->encoding unfolded-multi-encodings id->conjunct encoding->id #:parent-encoding (hash-ref id->encoding (multi/annotations-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all))))))
+    (hash-ref id->encoding (multi/annotations-rta (hash-ref id->conjunct (hash-ref encoding->id gcd-all)))))
    (match partitions
      [(list (list single-gn))
       #:when (multi? (gen-node-conjunct single-gn))
@@ -387,7 +387,7 @@
                          (gen-number established)
                          0)
                      (gensym))]
-           [asc? (and (multi? gnc) (multi-ascending? gnc))])
+           [asc? (and (multi? gnc) (multi/annotations-ascending? gnc))])
        (cons
         (clustering
          (struct-copy
@@ -451,7 +451,7 @@
                gcd)
               (gen-number established))]
             [(list mc)
-             #:when (and (multi? (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd cluster)))) (multi-ascending? (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd cluster)))))
+             #:when (and (multi? (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd cluster)))) (multi/annotations-ascending? (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd cluster)))))
              (match-let
                  ([annotated-nmcs
                    (list->set
@@ -480,7 +480,7 @@
                     [sorted-mcs (sort multi-clusters (λ (c1 c2) (< (gen-node-id (some-gen-node c1)) (gen-node-id (some-gen-node c2)))))])
                (cond
                  ;; no non-multi clusters here -> TODO: document why
-                 [(multi-ascending? (hash-ref id->conjunct gcd-id))
+                 [(multi/annotations-ascending? (hash-ref id->conjunct gcd-id))
                   (match-let
                       ([(cons amc1 last1)
                         (rec (first sorted-mcs) #:established established)])
@@ -520,7 +520,7 @@
                    (set->list subclusters)))
                  (and (abstract-atom? (hash-ref id->conjunct gcd-id))
                       (aif (findf multi-cluster? (set->list subclusters))
-                           (renames-with-corresponding-args? (hash-ref id->conjunct (multi-rta (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd it))))) (hash-ref id->conjunct gcd-id))
+                           (renames-with-corresponding-args? (hash-ref id->conjunct (multi/annotations-rta (hash-ref id->conjunct (hash-ref encoding->id (clustering-gcd it))))) (hash-ref id->conjunct gcd-id))
                            #f)))])
           (if is-rta?
               (let-values ([(multi-clusters non-multi-clusters)

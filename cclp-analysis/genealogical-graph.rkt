@@ -480,7 +480,7 @@
     ;; the remaining cases, by elimination, are multi cases
     [(and (abstract-atom? (gen-node-conjunct id-conjunct)))
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (gen (gen-range-first parent-gen) (gen-range-origin parent-gen))]))]
-    [(and (multi? (gen-node-conjunct id-conjunct)) (multi-ascending? parent-conjunct))
+    [(and (multi/annotations? (gen-node-conjunct id-conjunct)) (multi/annotations-ascending? parent-conjunct))
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (struct-copy gen-range parent-gen [first (gen-add1 (gen-range-first parent-gen))])]))]
     [else
      (rename-vertex! graph id-conjunct (struct-copy gen-node id-conjunct [range (struct-copy gen-range parent-gen [first (gen-sub1 (gen-range-first parent-gen))])]))]))

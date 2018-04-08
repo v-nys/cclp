@@ -53,10 +53,7 @@
      (abstract-function* sym (map curried args))]
     [(a i) (a* multi-id idx i)]
     [(g i) (g* multi-id idx i)]))
-
-(define (multi-id m)
-  (define vars (extract-subscripted-variables m))
-  (abstract-variable*-multi-id (first vars)))
+(provide prefix-subscripts)
 
 (define (generalized-ranges pre post)
   (define post-ids (map gen-node-id post))
@@ -85,9 +82,9 @@
      (gen-node (abstract-atom 'len '()) 10 (gen 0 #f) #f #t))
     (list
      (gen-node (abstract-atom 'integers '()) 2 (gen 0 #f) #f #t)
-     (gen-node (multi '() #t empty empty empty 1) 11 (gen-range 1 2 1 #t) #f #t)
+     (gen-node (multi/annotations (simple-multi '() empty empty empty) #t 1) 11 (gen-range 1 2 1 #t) #f #t)
      (gen-node (abstract-atom 'filter (list (g 4) (abstract-function 'cons (list (g 5) (a 3) (a 4))) (a 5))) 5 (gen 3 1) #f #t)
-     (gen-node (multi '() #t empty empty empty 1) 12 (gen-range 4 5 1 #t) #f #t)
+     (gen-node (multi/annotations (simple-multi '() empty empty empty) #t 1) 12 (gen-range 4 5 1 #t) #f #t)
      (gen-node (abstract-atom 'filter '()) 8 (gen 6 1) #f #t)
      (gen-node (abstract-atom 'sift '()) 9 (gen 6 1) #f #t)
      (gen-node (abstract-atom 'len '()) 10 (gen 0 #f) #f #t)))
@@ -129,12 +126,13 @@
                                      [(abstract-equality (g idx1) (g idx2)) (if (member (g (- idx2 offset)) context-vars) (cons (cons (g* fresh-id 'L idx1) (g (- idx2 offset))) acc) acc)])) '() subst-1)])
           (list
            (gen-node
-            (multi
-             (prefix-subscripts fresh-id 'i (map gen-node-conjunct lvl-1))
+            (multi/annotations
+             (simple-multi
+              (prefix-subscripts fresh-id 'i (map gen-node-conjunct lvl-1))
+              new-init
+              new-consecutive
+              new-final)
              (gen-number< genn-1 genn-2)
-             new-init
-             new-consecutive
-             new-final
              id)
             dummy-id
             (gen-range genn-1 genn-2 id (gen-number< genn-1 genn-2))
@@ -153,15 +151,15 @@
               [context-vars (extract-variables (map gen-node-conjunct context))]
               [new-init
                (filter
-                 (match-lambda [(cons v1 v2) (member v2 context-vars)])
-                 (map
-                  (match-lambda
-                    [(abstract-equality var1 var2)
-                     (cons
-                      (prefix-subscripts (multi-id existing-multi) 1 (offset-vars var1 (- offset) (- offset)))
-                      var2)])
-                  unification))])
-         (cons (list (gen-node (struct-copy multi existing-multi [init new-init]) dummy-id (gen-range n o id asc?) #f #t)) fresh-id))]     
+                (match-lambda [(cons v1 v2) (member v2 context-vars)])
+                (map
+                 (match-lambda
+                   [(abstract-equality var1 var2)
+                    (cons
+                     (prefix-subscripts (get-multi-id existing-multi) 1 (offset-vars var1 (- offset) (- offset)))
+                     var2)])
+                 unification))])
+         (cons (list (gen-node (struct-copy multi/annotations existing-multi [multi (struct-copy simple-multi (multi/annotations-multi existing-multi) [init new-init])]) dummy-id (gen-range n o id asc?) #f #t)) fresh-id))]     
       [(list
         (and (list (gen-node (and (? multi?) existing-multi) _ (gen-range m o id asc?) _ _)) lvl-1)
         (and (list-rest (gen-node (? abstract-atom?) _ (gen n id) _ _) first-rest) lvl-2))
@@ -180,13 +178,13 @@
                  (match-lambda
                    [(abstract-equality var1 var2)
                     (cons
-                     (prefix-subscripts (multi-id existing-multi) 'L (offset-vars var1 (- offset) (- offset)))
+                     (prefix-subscripts (get-multi-id existing-multi) 'L (offset-vars var1 (- offset) (- offset)))
                      var2)])
                  unification))])
-         (cons (list (gen-node (struct-copy multi existing-multi [final new-final]) dummy-id (gen-range m n id asc?) #f #t)) fresh-id))]      
+         (cons (list (gen-node (struct-copy multi/annotations existing-multi [multi (struct-copy simple-multi (multi/annotations-multi existing-multi) [final new-final])]) dummy-id (gen-range m n id asc?) #f #t)) fresh-id))]      
       [(list
         (list (gen-node (and (? multi?) existing-multi-1) _ (gen-range n m id asc?) _ _))
-        (list (gen-node (multi placeholder-2 _ _ _ final-2 rta) _ (gen-range o p id asc?) _ _)))
+        (list (gen-node (multi/annotations (simple-multi placeholder-2 _ _ final-2) _ rta) _ (gen-range o p id asc?) _ _)))
        (let* ([placeholder-1 (multi-conjunction existing-multi-1)]
               [subscriptless-instance-1 (remove-multi-subscripts placeholder-1)]
               [subscriptless-instance-2 (remove-multi-subscripts placeholder-2)]
@@ -197,10 +195,10 @@
                (map
                 (match-lambda
                   [(cons lhs rhs)
-                   (cons (prefix-subscripts (multi-id existing-multi-1) 'L (apply-substitution subst (offset-vars (remove-multi-subscripts lhs) offset offset)))
+                   (cons (prefix-subscripts (get-multi-id existing-multi-1) 'L (apply-substitution subst (offset-vars (remove-multi-subscripts lhs) offset offset)))
                          rhs)])
                 final-2)])
-         (cons (list (gen-node (struct-copy multi existing-multi-1 [final new-final]) dummy-id (gen-range n p id asc?) #f #t)) fresh-id))]
+         (cons (list (gen-node (struct-copy multi/annotations existing-multi-1 [multi (struct-copy simple-multi (multi/annotations-multi existing-multi-1) [final new-final])]) dummy-id (gen-range n p id asc?) #f #t)) fresh-id))]
       [(or (list _) (list _ _))
        (cons potential fresh-id)]))
   (aux partitioning))
@@ -504,19 +502,19 @@
     (match* (a m)
       [((list-rest
          (gen-node _ _ (gen n r) _ _) _)
-        (gen-node (multi conjunct asc? i c f rta) _ (gen-range l _ r asc?) _ _))
+        (gen-node (multi/annotations (simple-multi conjunct i c f) asc? rta) _ (gen-range l _ r asc?) _ _))
        (and
         (or
          (and asc? (equal? (gen-add1 n) l))
          (and (not asc?) (equal? (gen-sub1 n) l)))
         (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (map gen-node-conjunct (cons m a)))))])
           (renames?
-           (append (map gen-node-conjunct potential) (list (multi conjunct asc? i c f rta)))
-           (unfold-multi-many (multi conjunct asc? i c f rta) offset offset))))]
+           (append (map gen-node-conjunct potential) (list (multi/annotations (simple-multi conjunct i c f) asc? rta)))
+           (unfold-multi-many (multi/annotations (simple-multi conjunct i c f) asc? rta) offset offset))))]
       [(_ _) #f]))
   (define (multi-joins-atoms? m a)
     (match* (m a)
-      [((gen-node (multi conjunct asc? i c f rta) _ (gen-range _ l r asc?) _ _)
+      [((gen-node (multi/annotations (simple-multi conjunct i c f) asc? rta) _ (gen-range _ l r asc?) _ _)
         (list-rest
          (gen-node _ _ (gen n r) _ _) _))
        (and
@@ -525,13 +523,13 @@
          (and (not asc?) (equal? (gen-sub1 l) n)))
         (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (map gen-node-conjunct (cons m a)))))])
           (renames?
-           (unfold-multi-many-right (multi conjunct asc? i c f rta) offset offset)
+           (unfold-multi-many-right (multi/annotations (simple-multi conjunct i c f) asc? rta) offset offset)
            (append (map gen-node-conjunct potential) (map gen-node-conjunct a)))))]
       [(_ _) #f]))
   (define (multi-joins-multi? m1 m2)
     (match* (m1 m2)
-      [((list (gen-node (and (multi _ asc? _ _ _ rta) conjunct-1) _ (gen-range _ m r asc?) _ _))
-        (gen-node (and (multi _ asc? _ _ _ rta) conjunct-2) _ (gen-range o _ r asc?) _ _))
+      [((list (gen-node (and (multi/annotations _ asc? rta) conjunct-1) _ (gen-range _ m r asc?) _ _))
+        (gen-node (and (multi/annotations _ asc? rta) conjunct-2) _ (gen-range o _ r asc?) _ _))
        (let ([offset (apply max (cons 0 (assemble-var-indices (λ (_) #t) (cons conjunct-2 (map gen-node-conjunct m1)))))])
          (and
           (or (and asc? (equal? o (gen-add1 m))) (and (not asc?) (equal? o (gen-sub1 m))))
@@ -649,14 +647,15 @@
     (abstract-atom 'collect (list (g 1) (a 1)))
     (abstract-atom 'collect (list (g 2) (a 2)))
     (abstract-atom 'append (list (a 1) (a 2) (a 3)))
-    (multi
-     (list
-      (abstract-atom* 'collect (list (g* 1 'i 4) (a* 1 'i 4)))
-      (abstract-atom* 'append (list (a* 1 'i 3) (a* 1 'i 4) (a* 1 'i 5))))
+    (multi/annotations
+     (simple-multi
+      (list
+       (abstract-atom* 'collect (list (g* 1 'i 4) (a* 1 'i 4)))
+       (abstract-atom* 'append (list (a* 1 'i 3) (a* 1 'i 4) (a* 1 'i 5))))
+      (list (cons (a* 1 1 3) (a 3)))
+      (list (cons (a* 1 'i+1 3) (a* 1 'i 5)))
+      (list (cons (a* 1 'L 5) (a 7))))
      #f
-     (list (cons (a* 1 1 3) (a 3)))
-     (list (cons (a* 1 'i+1 3) (a* 1 'i 5)))
-     (list (cons (a* 1 'L 5) (a 7)))
      1)
     (abstract-atom 'collect (list (g 8) (a 8)))
     (abstract-atom 'eq (list (a 7) (a 8)))))
@@ -676,26 +675,28 @@
       (gen-node (abstract-atom 'len (list (a 9) (g 9))) 10 (gen 0 #f) #f #t))))
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
-    (multi
-     (list (abstract-atom* 'filter (list (g* 1 'i 2) (a* 1 'i 1) (a* 1 'i 2))))
+    (multi/annotations
+     (simple-multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 2) (a* 1 'i 1) (a* 1 'i 2))))
+      (list
+       (cons (a* 1 1 1) (a 1)))
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (a* 1 'L 2) (a 3))))
      #t
-     (list
-      (cons (a* 1 1 1) (a 1)))
-     (list
-      (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-     (list
-      (cons (a* 1 'L 2) (a 3)))
      1)
     (abstract-atom 'filter (list (g 4) (abstract-function 'cons (list (g 5) (a 3) (a 4))) (a 5)))
-    (multi
-     (list (abstract-atom* 'filter (list (g* 2 'i 6) (a* 2 'i 5) (a* 2 'i 6))))
+    (multi/annotations
+     (simple-multi
+      (list (abstract-atom* 'filter (list (g* 2 'i 6) (a* 2 'i 5) (a* 2 'i 6))))
+      (list
+       (cons (a* 2 1 5) (a 5)))
+      (list
+       (cons (a* 2 'i+1 5) (a* 2 'i 6)))
+      (list
+       (cons (a* 2 'L 6) (a 7))))
      #t
-     (list
-      (cons (a* 2 1 5) (a 5)))
-     (list
-      (cons (a* 2 'i+1 5) (a* 2 'i 6)))
-     (list
-      (cons (a* 2 'L 6) (a 7)))
      1)
     (abstract-atom 'filter (list (g 8) (a 7) (a 8)))
     (abstract-atom 'sift (list (a 8) (a 9)))
@@ -707,15 +708,16 @@
      (list
       (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
       (gen-node
-       (multi
-        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+       (multi/annotations
+        (simple-multi
+         (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+         (list
+          (cons (a* 1 1 1) (a 1)))
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+         (list
+          (cons (a* 1 'L 2) (a 4))))
         #t
-        (list
-         (cons (a* 1 1 1) (a 1)))
-        (list
-         (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-        (list
-         (cons (a* 1 'L 2) (a 4)))
         1)
        3
        (gen-range 1 3 1 #t)
@@ -728,15 +730,16 @@
       (gen-node (abstract-atom 'len (list (a 8) (g 7))) 8 (gen 0 #f) #f #t))))
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
-    (multi
-     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+    (multi/annotations
+     (simple-multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      (list
+       (cons (a* 1 1 1) (a 1)))
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (a* 1 'L 2) (a 5))))
      #t
-     (list
-      (cons (a* 1 1 1) (a 1)))
-     (list
-      (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-     (list
-      (cons (a* 1 'L 2) (a 5)))
      1)
     (abstract-atom 'filter (list (g 10) (abstract-function 'cons (list (g 5) (a 5))) (a 6)))
     (abstract-atom 'filter (list (g 6) (a 6) (a 7)))
@@ -750,15 +753,16 @@
       (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
       (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
       (gen-node
-       (multi
-        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+       (multi/annotations
+        (simple-multi
+         (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+         (list
+          (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 2)))))
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+         (list
+          (cons (a* 1 'L 2) (a 3))))
         #t
-        (list
-         (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 2)))))
-        (list
-         (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-        (list
-         (cons (a* 1 'L 2) (a 3)))
         1)
        3
        (gen-range 2 'n 1 #t)
@@ -770,15 +774,16 @@
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
     (abstract-atom 'filter (list (g 2) (a 1) (a 2)))
-    (multi
-     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+    (multi/annotations
+     (simple-multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      (list
+       (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 2)))))
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (a* 1 'L 2) (a 3))))
      #t
-     (list
-      (cons (a* 1 1 1) (abstract-function 'cons (list (g 3) (a 2)))))
-     (list
-      (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-     (list
-      (cons (a* 1 'L 2) (a 3)))
      1)
     (abstract-atom 'filter (list (g 4) (a 3) (a 4)))
     (abstract-atom 'sift (list (a 4) (a 5)))
@@ -794,16 +799,17 @@
       (gen-node (abstract-atom 'collect (list (g 4) (a 4))) 5 (gen 4 1) #f #t)
       (gen-node (abstract-atom 'append (list (a 3) (a 4) (a 5))) 6 (gen 4 1) #f #t)
       (gen-node
-       (multi
-        (list
-         (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
-         (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+       (multi/annotations
+        (simple-multi
+         (list
+          (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
+          (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+         (list
+          (cons (a* 1 1 2) (a 5)))
+         (list (cons (a* 1 'i+1 2) (a* 1 'i 3)))
+         (list
+          (cons (a* 1 'L 3) (a 10))))
         #f
-        (list
-         (cons (a* 1 1 2) (a 5)))
-        (list (cons (a* 1 'i+1 2) (a* 1 'i 3)))
-        (list
-         (cons (a* 1 'L 3) (a 10)))
         1)
        7
        (gen-range 3 1 1 #f)
@@ -815,31 +821,33 @@
     (abstract-atom 'collect (list (g 1) (a 1)))
     (abstract-atom 'collect (list (g 2) (a 2)))
     (abstract-atom 'append (list (a 1) (a 2) (a 3)))
-    (multi
-     (list
-      (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
-      (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+    (multi/annotations
+     (simple-multi
+      (list
+       (abstract-atom* 'collect (list (g* 1 'i 1) (a* 1 'i 1)))
+       (abstract-atom* 'append (list (a* 1 'i 2) (a* 1 'i 1) (a* 1 'i 3))))
+      (list
+       (cons (a* 1 1 2) (a 3)))
+      (list (cons (a* 1 'i+1 2) (a* 1 'i 3)))
+      (list
+       (cons (a* 1 'L 3) (a 10))))
      #f
-     (list
-      (cons (a* 1 1 2) (a 3)))
-     (list (cons (a* 1 'i+1 2) (a* 1 'i 3)))
-     (list
-      (cons (a* 1 'L 3) (a 10)))
      1)
     (abstract-atom 'collect (list (g 11) (a 11)))
     (abstract-atom 'eq (list (a 10) (a 11)))))
   (let ([node1 (gen-node (abstract-atom 'allsafe (list (g 1) (g 2) (g 3) (abstract-function 'cons (list (g 4) (a 1))))) 2 (gen 1 1) #f #f)]
         [node2
          (gen-node
-          (multi
-           (list
-            (abstract-atom* 'allsafe (list (g* 1 'i 1) (g* 1 'i 2) (g* 1 'i 3) (abstract-function* 'cons (list (g* 1 'i 4) (a* 1 'i 1))))))
+          (multi/annotations
+           (simple-multi
+            (list
+             (abstract-atom* 'allsafe (list (g* 1 'i 1) (g* 1 'i 2) (g* 1 'i 3) (abstract-function* 'cons (list (g* 1 'i 4) (a* 1 'i 1))))))
+            (list (cons (g* 1 1 4) (g 4)))
+            (list
+             (cons (g* 1 'i+1 4) (g* 1 'i 4))
+             (cons (a* 1 'i+1 1) (a* 1 'i 1)))
+            empty)
            #t
-           (list (cons (g* 1 1 4) (g 4)))
-           (list
-            (cons (g* 1 'i+1 4) (g* 1 'i 4))
-            (cons (a* 1 'i+1 1) (a* 1 'i 1)))
-           empty
            1)
           3
           (gen-range 2 5 1 #t)
@@ -857,15 +865,16 @@
       (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
       (gen-node (abstract-atom 'filter (list (g 3) (a 2) (a 3))) 4 (gen 2 1) #f #t)
       (gen-node
-       (multi
-        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+       (multi/annotations
+        (simple-multi
+         (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+         (list
+          (cons (a* 1 1 1) (a 3)))
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+         (list
+          (cons (a* 1 'L 2) (a 4))))
         #t
-        (list
-         (cons (a* 1 1 1) (a 3)))
-        (list
-         (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-        (list
-         (cons (a* 1 'L 2) (a 4)))
         1)
        5
        (gen-range 3 'n 1 #t)
@@ -876,15 +885,16 @@
       (gen-node (abstract-atom 'len (list (a 6) (g 5))) 8 (gen 0 #f) #f #t))))
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
-    (multi
-     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+    (multi/annotations
+     (simple-multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      (list
+       (cons (a* 1 1 1) (a 1)))
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (a* 1 'L 2) (a 4))))
      #t
-     (list
-      (cons (a* 1 1 1) (a 1)))
-     (list
-      (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-     (list
-      (cons (a* 1 'L 2) (a 4)))
      1)
     (abstract-atom 'filter (list (g 4) (a 4) (a 5)))
     (abstract-atom 'sift (list (a 5) (a 6)))
@@ -898,15 +908,16 @@
       (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
       (gen-node (abstract-atom 'filter (list (g 3) (a 2) (a 3))) 4 (gen 2 1) #f #t)
       (gen-node
-       (multi
-        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+       (multi/annotations
+        (simple-multi
+         (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+         (list
+          (cons (a* 1 1 1) (abstract-function 'cons (list (g 4) (a 3)))))
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+         (list
+          (cons (a* 1 'L 2) (a 4))))
         #t
-        (list
-         (cons (a* 1 1 1) (abstract-function 'cons (list (g 4) (a 3)))))
-        (list
-         (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-        (list
-         (cons (a* 1 'L 2) (a 4)))
         1)
        5
        (gen-range 3 'n 1 #t)
@@ -917,25 +928,27 @@
       (gen-node (abstract-atom 'len (list (a 6) (g 6))) 8 (gen 0 #f) #f #t))))
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
-    (multi
-     (list (abstract-atom* 'filter (list (g* 2 'i 2) (a* 2 'i 1) (a* 2 'i 2))))
+    (multi/annotations
+     (simple-multi
+      (list (abstract-atom* 'filter (list (g* 2 'i 2) (a* 2 'i 1) (a* 2 'i 2))))
+      (list
+       (cons (a* 2 1 1) (a 1)))
+      (list
+       (cons (a* 2 'i+1 1) (a* 2 'i 2)))
+      (list
+       (cons (a* 2 'L 2) (a 3))))
      #t
-     (list
-      (cons (a* 2 1 1) (a 1)))
-     (list
-      (cons (a* 2 'i+1 1) (a* 2 'i 2)))
-     (list
-      (cons (a* 2 'L 2) (a 3)))
      1)
-    (multi
-     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+    (multi/annotations
+     (simple-multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      (list
+       (cons (a* 1 1 1) (abstract-function 'cons (list (g 4) (a 3)))))
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (a* 1 'L 2) (a 4))))
      #t
-     (list
-      (cons (a* 1 1 1) (abstract-function 'cons (list (g 4) (a 3)))))
-     (list
-      (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-     (list
-      (cons (a* 1 'L 2) (a 4)))
      1)
     (abstract-atom 'filter (list (g 5) (a 4) (a 5)))
     (abstract-atom 'sift (list (a 5) (a 6)))
@@ -948,15 +961,16 @@
       (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
       (gen-node (abstract-atom 'filter (list (g 2) (a 1) (a 2))) 3 (gen 1 1) #f #t)
       (gen-node
-       (multi
-        (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+       (multi/annotations
+        (simple-multi
+         (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+         (list
+          (cons (a* 1 1 1) (a 2)))
+         (list
+          (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+         (list
+          (cons (a* 1 'L 2) (a 3))))
         #t
-        (list
-         (cons (a* 1 1 1) (a 2)))
-        (list
-         (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-        (list
-         (cons (a* 1 'L 2) (a 3)))
         1)
        4
        (gen-range 2 'n 1 #t)
@@ -967,15 +981,16 @@
       (gen-node (abstract-atom 'len (list (a 5) (g 4))) 7 (gen 0 #f) #f #t))))
    (list
     (abstract-atom 'integers (list (g 1) (a 1)))
-    (multi
-     (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+    (multi/annotations
+     (simple-multi
+      (list (abstract-atom* 'filter (list (g* 1 'i 1) (a* 1 'i 1) (a* 1 'i 2))))
+      (list
+       (cons (a* 1 1 1) (a 1)))
+      (list
+       (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+      (list
+       (cons (a* 1 'L 2) (a 3))))
      #t
-     (list
-      (cons (a* 1 1 1) (a 1)))
-     (list
-      (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-     (list
-      (cons (a* 1 'L 2) (a 3)))
      1)
     (abstract-atom 'filter (list (g 3) (a 3) (a 4)))
     (abstract-atom 'sift (list (a 4) (a 5)))
@@ -1026,28 +1041,30 @@
     (list
      (gen-node (abstract-atom 'integers (list (g 1) (a 1))) 2 (gen 0 #f) #f #t)
      (gen-node
-      (multi
-       (list (abstract-atom* 'filter (list (g* 1 'i 2) (a* 1 'i 1) (a* 1 'i 2))))
+      (multi/annotations
+       (simple-multi
+        (list (abstract-atom* 'filter (list (g* 1 'i 2) (a* 1 'i 1) (a* 1 'i 2))))
+        (list
+         (cons (a* 1 1 1) (a 1)))
+        (list
+         (cons (a* 1 'i+1 1) (a* 1 'i 2)))
+        (list
+         (cons (a* 1 'L 2) (a 3))))
        #t
-       (list
-        (cons (a* 1 1 1) (a 1)))
-       (list
-        (cons (a* 1 'i+1 1) (a* 1 'i 2)))
-       (list
-        (cons (a* 1 'L 2) (a 3)))
        1)
       11 (gen-range 1 'n 1 #t) #f #t)
      (gen-node (abstract-atom 'filter (list (g 4) (a 3) (abstract-function 'cons (list (g 5) (a 4))))) 5 (gen (symsum 'n 1) 1) #f #t)
      (gen-node
-      (multi
-       (list (abstract-atom* 'filter (list (g* 2 'i 2) (a* 2 'i 1) (a* 2 'i 2))))
+      (multi/annotations
+       (simple-multi
+        (list (abstract-atom* 'filter (list (g* 2 'i 2) (a* 2 'i 1) (a* 2 'i 2))))
+        (list
+         (cons (a* 2 1 1) (a 4)))
+        (list
+         (cons (a* 2 'i+1 1) (a* 2 'i 2)))
+        (list
+         (cons (a* 2 'L 2) (a 5))))
        #t
-       (list
-        (cons (a* 2 1 1) (a 4)))
-       (list
-        (cons (a* 2 'i+1 1) (a* 2 'i 2)))
-       (list
-        (cons (a* 2 'L 2) (a 5)))
        1)
       12 (gen-range (symsum 'n 2) 'm 1 #t) #f #t)
      (gen-node (abstract-atom 'filter (list (g 5) (a 5) (a 6))) 8 (gen (symsum 'm 1) 1) #f #t)
