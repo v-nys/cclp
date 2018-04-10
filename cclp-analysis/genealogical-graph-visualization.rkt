@@ -28,7 +28,9 @@
          (for/list ([a (add-between args 'comma)])
            (abstract-term->pict a)))
         (text ")"))]
-      [(multi patt asc? ic cc fc rta)
+      [(multi/annotations _ _ _)
+       (text "multi")]
+      [(simple-multi _ _ _ _)
        (text "multi")]))
 (provide abstract-conjunct->pict)
 

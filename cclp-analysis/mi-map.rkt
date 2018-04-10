@@ -121,14 +121,19 @@
           [(cons after success?)
            (rename args)])
        (cons (constructor sym after) success?))]
-    [(multi patt asc? ic consec fc rta)
+    [(simple-multi patt ic consec fc)
      (match-let
          ([(cons after-1 success-1?)
            (rename patt)]
           [zip (λ (l1 l2) (map (λ (e1 e2) (cons e1 e2)) l1 l2))])
        (cond [success-1?
-              (cons (multi after-1 asc? ic consec fc rta) success-1?)]
+              (cons (simple-multi after-1 ic consec fc) success-1?)]
              [else (cons locus #f)]))]
+    [(multi/annotations sm asc? rta)
+     (match-let
+         ([(cons after-sm success-sm?)
+           (rename sm)])
+       (if success-sm? (cons (multi/annotations after-sm asc? rta) #t) (cons locus #f)))]
     [(list)
      (cons locus #f)]
     [(list-rest h t)
@@ -458,7 +463,12 @@
       [(a* _ _ _) "_-a"]
       [(g* _ _ _) "_-g"]))
   (match* (a-multi c-multi)
-    [((multi patt _ _ _ _ _) (concrete-multi c-lst))
+    [((simple-multi patt _ _ _) (concrete-multi c-lst))
+     (format
+      "check_pattern(~a,[building_block([~a])])"
+      (synth-str c-lst)
+      (concrete-patternize patt))]
+    [((multi/annotations (simple-multi patt _ _ _) asc? rta) (concrete-multi c-lst))
      (format
       "check_pattern(~a,[building_block([~a])])"
       (synth-str c-lst)
@@ -1016,14 +1026,26 @@
            [success-2?
             (cons (cons h t-after) success-2?)]
            [else obj/success?]))]
-      [(cons (multi patt asc? ic cc fc rta) #f)
+      [(cons (simple-multi patt ic cc fc) #f)
        (match s
          [(cons (? abstract-function*?) _)
           (match-let
               ([(cons pattern-after success?)
                 (rec (cons patt #f))])
             (cons
-             (multi pattern-after asc? ic cc fc rta)
+             (simple-multi pattern-after ic cc fc)
+             success?))]
+         [(cons (? abstract-function?) _)
+          ;; we don't replace these in a multi (they can only occur inside constraints)
+          obj/success?])]
+      [(cons (multi/annotations sm asc? rta) #f)
+       (match s
+         [(cons (? abstract-function*?) _)
+          (match-let
+              ([(cons sm-after success?)
+                (rec (cons sm #f))])
+            (cons
+             (multi/annotations sm-after asc? rta)
              success?))]
          [(cons (? abstract-function?) _)
           ;; we don't replace these in a multi (they can only occur inside constraints)
