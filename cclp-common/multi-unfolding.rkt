@@ -78,7 +78,7 @@
              [(simple-multi c1 i c2 f)
               (struct-copy simple-multi m [init (map consecutive-shift c2)])]
              [(multi/annotations (simple-multi c1 i c2 f) asc? rta)
-              (multi/annotations (struct-copy simple-multi m [init (map consecutive-shift c2)]) asc? rta)]))))
+              (multi/annotations (simple-multi c1 (map consecutive-shift c2) c2 f) asc? rta)]))))
 (provide unfold-multi-many)
 
 (define (unfold-multi-many-bounded num m a-off g-off)
@@ -108,7 +108,7 @@
       [(simple-multi c1 i c2 f)
        (struct-copy simple-multi m [final (map consecutive-shift c2)])]
       [(multi/annotations (simple-multi c1 i c2 f) asc? rta)
-       (multi/annotations (struct-copy simple-multi m [final (map consecutive-shift c2)]) asc? rta)]))
+       (multi/annotations (simple-multi c1 i c2 (map consecutive-shift c2)) asc? rta)]))
    final-conjunction))
 (module+ test
   (check-equal?

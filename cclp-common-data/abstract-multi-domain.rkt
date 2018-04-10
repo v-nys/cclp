@@ -351,7 +351,8 @@
     (if (boolean? mode)
         ((make-constructor-style-printer
           (λ (obj) 'multi/annotations)
-          (λ (obj) (list (multi/annotations-ascending? obj)
+          (λ (obj) (list (multi/annotations-multi obj)
+                         (multi/annotations-ascending? obj)
                          (multi/annotations-rta obj)))) obj out mode)
         (display
          (format

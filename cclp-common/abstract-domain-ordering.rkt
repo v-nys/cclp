@@ -39,6 +39,8 @@
                            (or (>=-extension unf-one domain-elem2)
                                (>=-extension unf-many domain-elem2)))
                      #f)]
+                [((? multi?) (? list?))
+                 (>=-extension (list domain-elem1) domain-elem2)]
                 [((? list?) (? list?))
                  #:when (and (ormap multi? domain-elem1) (ormap multi? domain-elem2))
                  (let* ([off (apply max (cons 0 (assemble-var-indices (λ (_) #t) domain-elem2)))]
@@ -303,14 +305,21 @@
                                      (list
                                       (cons (g* 1 'L 1) (g 6))
                                       (cons (a* 1 'L 1) (a 6))
-                                      (cons (a* 1 'L 2) (a 7))))))))
+                                      (cons (a* 1 'L 2) (a 7)))))))
+                                 (check-true
+                                  (>=-extension
+                                   α(integers(g1,a1),filter(g6,a1,a2),filter(g2,a2,a3),multi(filter(g<2,i,1>,a<2,i,1>,a<2,i,2>),{a<2,1,1>=a3},{a<2,i+1,1>=a<2,i,2>},{a<2,l,2>=a4}),filter(g3,a4,a5),sift(a5,a6),length(a6,g5))
+                                   α(integers(g1,a1),filter(g6,a1,a7),filter(g8,a7,a2),filter(g2,a2,a3),filter(g3,a3,a4),sift(a4,a5),length(a5,g5))))
+                                 (check-true
+                                  (>=-extension
+                                   α(integers(g1,a1),filter(g6,a1,a2),multi(filter(g<2,i,1>,a<2,i,1>,a<2,i,2>),{a<2,1,1>=a2},{a<2,i+1,1>=a<2,i,2>},{a<2,l,2>=a3}),filter(g3,a3,a4),sift(a4,a5),length(a5,g5))
+                                   α(integers(g1,a1),filter(g6,a1,a7),filter(g8,a7,a2),filter(g2,a2,a3),filter(g3,a3,a4),sift(a4,a5),length(a5,g5)))))
 (provide
  (proc-doc/names
   >=-extension
-  (-> (or/c abstract-domain-elem? multi?) (or/c abstract-domain-elem? multi?) boolean?)
+  (-> abstract-domain-elem*? abstract-domain-elem*? boolean?)
   (domain-elem1 domain-elem2)
-  @{Checks whether @racket[domain-elem1] is at least as general as @racket[domain-elem2].
-           Note that this does not currently support the abstract multi domain, only the abstract domain.}))
+  @{Checks whether @racket[domain-elem1] is at least as general as @racket[domain-elem2].}))
 
 (define (renames? domain-elem1 domain-elem2)
         (and (>=-extension domain-elem1 domain-elem2)
@@ -321,3 +330,9 @@
   (-> abstract-domain-elem*? abstract-domain-elem*? boolean?)
   (domain-elem1 domain-elem2)
   @{Checks whether @racket[domain-elem1] is equivalent to @racket[domain-elem2].}))
+
+(module+ test
+         (check-true
+          (renames?
+           α(integers(g1,a1),multi(filter(g<1,i,1>,a<1,i,1>,a<1,i,2>),t,{a<1,1,1>=a1},{a<1,i+1,1>=a<1,i,2>},{a<1,l,2>=a2},1),filter(g2,a2,a3),filter(g3,a3,a4),sift(a4,a5),length(a5,g5))
+           α(integers(g1,a1),filter(g6,a1,a2),multi(filter(g<2,i,1>,a<2,i,1>,a<2,i,2>),{a<2,1,1>=a2},{a<2,i+1,1>=a<2,i,2>},{a<2,l,2>=a3}),filter(g3,a3,a4),sift(a4,a5),length(a5,g5)))))
