@@ -53,13 +53,18 @@
       [(variable v)
        (list (variable v))]
       [(or
-        (atom _ args)
-        (function _ args)
-        (and (? list?) args))
-       (append-map extract-variables args)]))
-  (let* ([vars (remove-duplicates (extract-variables (cons (rule-head c) (rule-body c))))]
+        (atom _ meaningful-content)
+        (function _ meaningful-content)
+        (and (? list?) meaningful-content))
+       (append-map extract-variables meaningful-content)]
+      [(concrete-multi lst)
+       (extract-variables lst)]
+      [(rule h b _)
+       (extract-variables (cons h b))]))
+  (let* ([vars (remove-duplicates (extract-variables c))]
          [subst (map (λ (v) (concrete-equality v (variable (gensym 'Var)))) vars)])
     (apply-variable-substitution subst c)))
+(provide rename)
 
 (define (resolve conjunction idx clause [gensym gensym])
   (let* ([conjunct (list-ref conjunction idx)]

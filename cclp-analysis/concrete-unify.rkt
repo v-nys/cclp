@@ -63,6 +63,8 @@
              (substitute v f t))])
        (and rec-unification
             (cons (concrete-equality v f) rec-unification)))]
+    [(list-rest (concrete-equality (concrete-multi args1) (concrete-multi args2)) t)
+     (concrete-unify (cons (concrete-equality args1 args2) t))]
     [else #f]))
 (module+ test
   (require rackunit)

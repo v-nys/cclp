@@ -106,7 +106,8 @@
   ; TODO: consider adding concrete multi?
   (or (term? elem)
       (atom? elem)
-      ((listof atom?) elem)))
+      (concrete-multi? elem)
+      ((listof concrete-domain-elem?) elem)))
 (provide
  (proc-doc/names
   concrete-domain-elem?
