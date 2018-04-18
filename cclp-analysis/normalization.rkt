@@ -172,4 +172,7 @@
   α(integers(g1,a1),filter(g6,a1,a2),filter(g2,a2,a3),multi(filter(g<3,i,1>,a<3,i,1>,a<3,i,2>),{a<3,1,1>=a3},{a<3,i+1,1>=a<3,i,2>},{g<3,l,1>=g3,a<3,l,2>=a4}),sift(a4,a5),length(a5,g5)))
  (check-equal?
   (normalize α(integers(g1,a1),multi(filter(g<1,i,1>,a<1,i,1>,a<1,i,2>),t,{a<1,1,1>=a1},{a<1,i+1,1>=a<1,i,2>},{a<1,l,2>=a2},1),filter(g2,a2,a3),multi(filter(g<2,i,1>,a<2,i,1>,a<2,i,2>),t,{a<2,1,1>=a3},{a<2,i+1,1>=a<2,i,2>},{a<2,l,2>=a4},1),sift(a4,a5),length(a5,g5)))
-  α(integers(g1,a1),filter(g6,a1,a2),filter(g2,a2,a3),multi(filter(g<4,i,1>,a<4,i,1>,a<4,i,2>),{a<4,1,1>=a3},{a<4,i+1,1>=a<4,i,2>},{g<4,l,1>=g7,a<4,l,2>=a4}),sift(a4,a5),length(a5,g5))))
+  α(integers(g1,a1),filter(g6,a1,a2),filter(g2,a2,a3),multi(filter(g<4,i,1>,a<4,i,1>,a<4,i,2>),{a<4,1,1>=a3},{a<4,i+1,1>=a<4,i,2>},{g<4,l,1>=g7,a<4,l,2>=a4}),sift(a4,a5),length(a5,g5)))
+ (check-equal?
+  (normalize α(integers(g1,a1),multi(filter(g<1,i,1>,a<1,i,1>,a<1,i,2>),t,{a<1,1,1>=[g2|a1]},{a<1,i+1,1>=a<1,i,2>},{a<1,l,2>=a2},1),filter(g3,a2,a3),sift(a3,a4),length(a4,g4)))
+  α(integers(g1,a1),filter(g5,[g2|a1],a2),multi(filter(g<2,i,1>,a<2,i,1>,a<2,i,2>),{a<2,1,1>=a2},{a<2,i+1,1>=a<2,i,2>},{g<2,l,1>=g3,a<2,l,2>=a3}),sift(a3,a4),length(a4,g4))))
