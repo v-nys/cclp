@@ -126,7 +126,7 @@
 
 (define (advance-analysis top clauses full-evaluations concrete-constants prior #:new-edges [new-edges (list)] #:k [k #f])
   (log-debug "advancing analysis")
-  (define (update-candidate candidate idx sel new-edges children)
+  (define (update-candidate candidate idx sel children)
     (match candidate
       [(node (tree-label c _ sub r _) _)
        (node (tree-label c sel sub r idx) children)]
@@ -177,12 +177,12 @@
           (begin
             (cond [first-eq-predecessor
                    (let* ([cycle-node (node (cycle (cdr first-eq-predecessor)) '())]
-                          [updated-candidate (update-candidate candidate next-index (none) (list) (list cycle-node))]
+                          [updated-candidate (update-candidate candidate next-index (none) (list cycle-node))]
                           [updated-top (replace-first-subtree top candidate updated-candidate)])
                      (cons updated-candidate updated-top))]
                   [(not (null? gen-rngs))
                    (let* ([gen-node (node (generalization gen-conjunction (none) #f gen-rngs bb) '())]
-                          [updated-candidate (update-candidate candidate next-index (none) (list) (list gen-node))]
+                          [updated-candidate (update-candidate candidate next-index (none) (list gen-node))]
                           [updated-top (replace-first-subtree top candidate updated-candidate)])
                      (cons updated-candidate updated-top))]
                   [else
@@ -204,7 +204,7 @@
                                           (reverse (abstract-resolve conjunction it clauses full-evaluations concrete-constants)))
                                       (unfold-multi* it conjunction))]
                                  [child-nodes (if (abstract-atom? selected-conjunct) (map resolvent->node resolvents) (map m-unf->node resolvents '(one many)))]
-                                 [updated-candidate (update-candidate candidate next-index (some it) new-edges child-nodes)]
+                                 [updated-candidate (update-candidate candidate next-index (some it) child-nodes)]
                                  [updated-top (replace-first-subtree top candidate updated-candidate)])
                             (cons updated-candidate updated-top))
                           (cons 'underspecified-order candidate)))]))))
