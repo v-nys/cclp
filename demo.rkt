@@ -7,8 +7,11 @@
   cclp-programs/graph-coloring
   positional-tree-utils
   positional-tree-utils/printer
-  cclp-common/abstract-analysis)
+  cclp-common/abstract-analysis
+  (only-in graph graphviz))
 (define complete-analysis (apply↑* proceed initial-program-analysis))
+(visualize-partial-order complete-analysis)
+(displayln (graphviz (analysis-partial-order complete-analysis)))
 ;(define segments
 ;  (segments-for-postprocessing
 ;   ((compose sort-segments set->list synthesizable-segments analysis-tree) complete-analysis)

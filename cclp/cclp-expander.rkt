@@ -35,7 +35,7 @@
 (require cclp-analysis/interaction)
 (require racket/contract)
 (require cclp-common/abstract-domain-ordering)
-(require cclp-common/preprior-graph (only-in graph add-directed-edge!))
+(require cclp-common/preprior-graph (only-in graph add-directed-edge! add-vertex!))
 (require (only-in sugar/coerce ->symbol))
 (require (for-syntax (only-in list-utils odd-elems)))
 (require racket/provide)

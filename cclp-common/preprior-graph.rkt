@@ -56,11 +56,11 @@
                         normalized-v)
                        (define reaching
                                (filter
-                                (λ (xv) (and (>=-extension normalized-v xv) (not (renames? xv normalized-v))))
+                                (λ (xv) (>=-extension normalized-v xv))
                                 existing-vs))
                        (define reached
                                (filter
-                                (λ (xv) (and (>=-extension xv normalized-v) (not (renames? xv normalized-v))))
+                                (λ (xv) (>=-extension xv normalized-v))
                                 existing-vs))
                        (for ([r reaching]) (component-add-directed-edge! (preprior-graph-prior g) r normalized-v))
                        (for ([r reached]) (component-add-directed-edge! (preprior-graph-prior g) normalized-v r))
@@ -85,10 +85,11 @@
                   (normalize-abstract-atom u)
                   (normalize-abstract-atom v)))
          (define/generic component-add-directed-edge! add-directed-edge!)
-         (define/generic component-remove-directed-edge! remove-directed-edge!)
          (define (add-directed-edge! g u v [weight 'default-value])
                  (define n-u (normalize-abstract-atom u))
                  (define n-v (normalize-abstract-atom v))
+                 (add-vertex! g u)
+                 (add-vertex! g v)
                  (component-add-directed-edge!
                   (preprior-graph-prior g)
                   n-u
@@ -100,6 +101,7 @@
                         n-u
                         n-v)
                        (error (format "Adding edge from ~a to ~a would break partial ordering" n-u n-v))))
+         (define/generic component-remove-directed-edge! remove-directed-edge!)
          (define/generic component-remove-edge! remove-edge!)
          (define (remove-edge! g u v)
                  (component-remove-edge!

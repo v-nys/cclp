@@ -61,7 +61,7 @@
 (serializable-struct cclp (clauses full-ai-rules concrete-constants initial-partial-order query filename k))
 (provide (struct-out cclp))
 
-(serializable-struct analysis (cclp tree partial-order))
+(serializable-struct analysis (cclp tree partial-order edge-types))
 (provide (struct-out analysis))
 
 (require anaphoric)
@@ -195,11 +195,14 @@
          (in-edges
           (analysis-partial-order
            my-analysis))])
-    (displayln
-     (format
-      "~v < ~v"
-      (first precedence)
-      (second precedence)))))
+    ;; no need to show edges from more specific atoms to more general atoms
+    ;; also no need to show indirectly reached atoms, but how to do that?
+    (when (not (>=-extension (second precedence) (first precedence)))
+      (displayln
+       (format
+        "~v < ~v"
+        (first precedence)
+        (second precedence))))))
 (provide visualize-partial-order)
 
 (define (write-svg! pict fn)
