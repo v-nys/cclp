@@ -26,7 +26,6 @@
 (require "data-utils.rkt"
          cclp-common-data/abstract-substitution)
 (require (for-syntax syntax/parse))
-(require racket/serialize)
 
 (require scribble/srcdoc)
 

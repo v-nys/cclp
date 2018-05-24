@@ -2,7 +2,6 @@
 (require
   racket/match
   racket/logging
-  racket/serialize
   scribble/srcdoc)
 (require
   graph

@@ -33,7 +33,6 @@
 (require cclp-common-data/abstract-substitution)
 (require scribble/srcdoc)
 (require cclp-common/abstract-domain-ordering)
-(require racket/serialize)
 (require cclp-common/abstract-analysis)
 (require "abstract-analysis-tree.rkt")
 (require (only-in cclp-common-data/concrete-domain function?))
@@ -58,34 +57,13 @@
 (require racket/logging)
 (require (for-doc scribble/manual))
 
-(serializable-struct cclp (clauses full-ai-rules concrete-constants initial-partial-order query filename k))
+(struct cclp (clauses full-ai-rules concrete-constants initial-partial-order query filename k))
 (provide (struct-out cclp))
 
-(serializable-struct analysis (cclp tree partial-order edge-types))
+(struct analysis (cclp tree partial-order))
 (provide (struct-out analysis))
 
 (require anaphoric)
-
-(define (save-analysis prog-analysis #:fn [fn #f])
-  (let* ([out
-          (open-output-file
-           (or
-            fn
-            (serialized-filename
-             (analysis-cclp prog-analysis)))
-           #:exists 'truncate/replace)]
-         [serialized (serialize prog-analysis)])
-    (begin
-      (write serialized out)
-      (close-output-port out))))
-(provide save-analysis)
-
-(define (load-analysis fn)
-  (let* ([in (open-input-file fn)]
-         [loaded (deserialize (read in))])
-    (close-input-port in)
-    loaded))
-(provide load-analysis)
 
 (define (proceed prog-analysis)
   (match prog-analysis
@@ -154,35 +132,6 @@
          (annotate-general! gr root targets depth))
        gr)]))
 
-(define (save-genealogical-graph! prog-analysis #:fn [fn #f])
-  (let* ([gg (analysis->current-genealogical-graph prog-analysis)]
-         [serialized (serialize (get-edges gg))])
-    (when gg
-      (let ([out
-             (open-output-file
-              (or
-               fn
-               (path-replace-extension
-                (last
-                 (explode-path
-                  (cclp-filename
-                   (analysis-cclp prog-analysis))))
-                (format
-                 ".serializedgg.~a"
-                 (size
-                  (analysis-tree prog-analysis)))))
-              #:exists 'truncate/replace)])
-        (write serialized out)
-        (close-output-port out)))))
-(provide save-genealogical-graph!)
-
-(define (load-genealogical-graph fn)
-  (let* ([in (open-input-file fn)]
-         [loaded (deserialize (read in))])
-    (close-input-port in)
-    (unweighted-graph/directed loaded)))
-(provide load-genealogical-graph)
-
 (define (show-analysis prog-analysis)
   (tree-display
    (analysis-tree
@@ -234,13 +183,6 @@
    (graph-copy
     (cclp-initial-partial-order program-data))))
 (provide cclp->initial-analysis)
-
-(define (serialized-filename program-data)
-  (path-replace-extension
-   (last
-    (explode-path
-     (cclp-filename program-data)))
-   ".serializedcclp"))
 
 ;                                                                          
 ;                                                                          

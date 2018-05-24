@@ -22,7 +22,6 @@
 
 #lang racket
 (require cclp-common-data/abstract-multi-domain)
-(require racket/serialize)
 
 (define (write-rule obj port mode)
   (if (boolean? mode)
@@ -35,7 +34,7 @@
                    (fprintf port "~v" atom-or-comma)))
              (fprintf port "."))))
        
-(serializable-struct abstract-rule (head body)
+(struct abstract-rule (head body)
   #:methods gen:custom-write
   [(define write-proc write-rule)]
   #:methods gen:equal+hash
@@ -57,7 +56,7 @@
              (fprintf port "~v" (full-evaluation-output-pattern obj))
              (fprintf port "."))))
 
-(serializable-struct full-evaluation (input-pattern output-pattern idx)
+(struct full-evaluation (input-pattern output-pattern idx)
                      #:transparent
                      #:methods
                      gen:custom-write [(define write-proc write-full-eval)])

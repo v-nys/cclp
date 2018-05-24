@@ -21,11 +21,11 @@
 ; SOFTWARE.
 
 #lang at-exp racket
-(require racket/serialize
-         racket/struct
-         scribble/srcdoc)
+(require
+  racket/struct
+  scribble/srcdoc)
 (require (for-doc scribble/manual))
-(serializable-struct
+(struct
  variable (name)
  #:methods
  gen:equal+hash
@@ -47,7 +47,7 @@
   ([name symbol?])
   @{A variable in the concrete domain.}))
 
-(serializable-struct
+(struct
  function (functor args)
  #:methods
  gen:equal+hash
@@ -77,7 +77,7 @@
   (or (variable? t) (function? t)))
 (provide term?)
 
-(serializable-struct
+(struct
  atom (symbol args)
  #:methods
  gen:equal+hash

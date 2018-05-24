@@ -21,7 +21,7 @@
 ; SOFTWARE.
 
 #lang racket
-(require racket/serialize "abstract-multi-domain.rkt")
+(require "abstract-multi-domain.rkt")
 
 (define (write-abstract-equality obj port mode)
   (if (boolean? mode)
@@ -29,11 +29,11 @@
       (fprintf port "~v/~v" (abstract-equality-term1 obj) (abstract-equality-term2 obj))))
 
 ; terms are really any abstract domain elements
-(serializable-struct abstract-equality (term1 term2)
-                     #:transparent
-                     #:methods
-                     gen:custom-write
-                     [(define write-proc write-abstract-equality)])
+(struct abstract-equality (term1 term2)
+  #:transparent
+  #:methods
+  gen:custom-write
+  [(define write-proc write-abstract-equality)])
 (provide (struct-out abstract-equality))
 
 (define (abstract-substitution? l) (and (list? l) (andmap abstract-equality? l)))

@@ -22,7 +22,6 @@
 
 #lang at-exp racket
 (require
-  racket/serialize ; so that analysis trees can be saved/loaded
   racket/struct ; for constructor-style printers
   scribble/srcdoc)
 (require
@@ -52,7 +51,7 @@
   @{Converts a @racket[full-ai-rule?] to a @racket[full-evaluation?].
  This function should be deprecated ASAP.}))
 
-(serializable-struct
+(struct
  cycle (index)
  #:methods
  gen:equal+hash
@@ -79,7 +78,7 @@
      conjunction, generalizing over that which introduces the @racket[cycle].
      The latter is normally represented as the parent of the @racket[cycle].}))
 
-(serializable-struct
+(struct
  tree-label (conjunction selection substitution rule index)
  #:methods
  gen:equal+hash
@@ -132,7 +131,7 @@
      It is an integer if the node has been visited and @racket[#f] if the node has not yet been visited.
      It does not track implicit edges (those between more/less general abstract atoms).}))
 
-(serializable-struct
+(struct
  widening (conjunction selection message index)
  ; message has no bearing on the semantics, so ignore that
  #:methods
@@ -175,7 +174,7 @@
      The @racket[index] field serves the same purpose as that of @racket[tree-label].
      It does not track implicit edges (those between more/less general abstract atoms).}))
 
-(serializable-struct
+(struct
  case (conjunction selection index)
  #:methods
  gen:equal+hash
@@ -203,7 +202,7 @@
      The @racket[index] field serves the same purpose as that of @racket[tree-label].
      It does not track implicit edges (those between more/less general abstract atoms).}))
 
-(serializable-struct
+(struct
  generalization (conjunction selection index abstracted-ranges groupings)
  #:methods
  gen:equal+hash

@@ -21,9 +21,8 @@
 ; SOFTWARE.
 
 #lang racket
-(require racket/serialize
-         racket/struct)
-(serializable-struct
+(require racket/struct)
+(struct
  rule (head body idx)
  #:methods
  gen:custom-write

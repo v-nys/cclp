@@ -5,7 +5,6 @@
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 (module+ test (require rackunit))
-(require racket/serialize)
 
 (define (adj-list g)
         (map
@@ -19,17 +18,6 @@
                   (equal? (first e) v))
                (get-edges g)))))
          (get-vertices g)))
-
-(define ds-info
-        (make-deserialize-info
-         (λ (edges)
-            (preprior-graph
-             (unweighted-graph/adj edges)))
-         (λ ()
-            (values
-             (error "should not be required")
-             (error "should not be required")))))
-(provide ds-info)
 
 (struct preprior-graph (prior)
         #:methods gen:graph
@@ -149,16 +137,7 @@
          (define (hash-proc g hash-recur)
                  (hash-recur (preprior-graph-prior g)))
          (define (hash2-proc g hash2-recur)
-                 (hash2-recur (preprior-graph-prior g)))]
-        #:property
-        prop:serializable
-        (make-serialize-info
-         (λ (s) (make-vector 1 (adj-list (preprior-graph-prior s))))
-         ; FIXME assumes fixed directory structure :-S
-         ; may be fixed simply by using cclp/...
-         (cons 'ds-info (module-path-index-join "../cclp-analysis/preprior-graph.rkt" #f))
-         #f
-         (or (current-load-relative-directory) (current-directory))))
+                 (hash2-recur (preprior-graph-prior g)))])
 (define (mk-preprior-graph) (preprior-graph (unweighted-graph/directed '())))
 (provide
  (proc-doc/names
