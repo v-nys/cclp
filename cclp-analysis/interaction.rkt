@@ -140,18 +140,47 @@
 (provide show-analysis)
 
 (define (visualize-partial-order my-analysis)
-  (for ([precedence
-         (in-edges
-          (analysis-partial-order
-           my-analysis))])
-    ;; no need to show edges from more specific atoms to more general atoms
-    ;; also no need to show indirectly reached atoms, but how to do that?
-    (when (not (>=-extension (second precedence) (first precedence)))
-      (displayln
-       (format
-        "~v < ~v"
-        (first precedence)
-        (second precedence))))))
+  (define non-instantiation-edges
+    (filter
+     (λ (e) (not (>=-extension (second e) (first e))))
+     (get-edges
+      (analysis-partial-order my-analysis))))
+  (define simplified-po
+    (mk-preprior-graph))
+  ;; note this may still contain redundant info:
+  ;; A < B, B < C, A' < C where A' is more specific than A
+  ;; A' < C is redundant but it is not an instantiation edge
+  ;; A' should not even explicitly be in the graph
+  ;; adding the edge, however, does insert it
+  (for ([edge non-instantiation-edges])
+    (add-directed-edge! simplified-po (first edge) (second edge)))
+  ;; means that A' *will* occur in the transitive closure
+  ;; this is why vertices are added below
+  (define initial-tc
+    (transitive-closure
+        simplified-po))
+  (define essential-edges
+    (foldl
+     (λ (nie acc)
+       (let ([acc-graph (mk-preprior-graph)])
+         (for ([edge acc]
+               #:unless (equal? edge nie))
+           (add-directed-edge! acc-graph (first edge) (second edge)))
+         ;; adding the vertices makes it so that A' does not cause a problem
+         (add-vertex! acc-graph (first nie))
+         (add-vertex! acc-graph (second nie))
+         (let ([new-tc (transitive-closure acc-graph)])
+           (if (equal? new-tc initial-tc)
+               (remove nie acc)
+               acc))))
+     non-instantiation-edges
+     non-instantiation-edges))
+  (for ([edge essential-edges])
+    (displayln
+     (format
+      "~v < ~v"
+      (first edge)
+      (second edge)))))
 (provide visualize-partial-order)
 
 (define (write-svg! pict fn)

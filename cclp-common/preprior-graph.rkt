@@ -68,10 +68,7 @@
                   (normalize-abstract-atom new)))
          (define/generic component-add-edge! add-edge!)
          (define (add-edge! g u v [weight 'default-value])
-                 (component-add-edge!
-                  (preprior-graph-prior g)
-                  (normalize-abstract-atom u)
-                  (normalize-abstract-atom v)))
+                 (add-directed-edge! g u v weight))
          (define/generic component-add-directed-edge! add-directed-edge!)
          (define (add-directed-edge! g u v [weight 'default-value])
                  (define n-u (normalize-abstract-atom u))
