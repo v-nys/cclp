@@ -140,6 +140,8 @@
 (provide show-analysis)
 
 (define (visualize-partial-order my-analysis)
+  ;; FIXME: this is still not minimal!
+  ;; e.g. we get integers(g1,a1) < sift(a1,a2) and integers(2,a1) < sift(a1,a2) for primes
   (define non-instantiation-edges
     (filter
      (λ (e) (not (>=-extension (second e) (first e))))
@@ -158,7 +160,7 @@
   ;; this is why vertices are added below
   (define initial-tc
     (transitive-closure
-        simplified-po))
+     simplified-po))
   (define essential-edges
     (foldl
      (λ (nie acc)
@@ -182,6 +184,40 @@
       (first edge)
       (second edge)))))
 (provide visualize-partial-order)
+
+(define (visualize-partial-order/verbose my-analysis)
+  (for
+      ([s (sort (map (λ (e) (format "~v < ~v" (first e) (second e))) (get-edges (analysis-partial-order my-analysis))) string<?)])
+    (displayln s)))
+(provide visualize-partial-order/verbose)
+
+(define (visualize-partial-order/mi my-analysis)
+  (define edge-groups
+    (sort
+     (group-by
+      first
+      ;; edges are lists of two elements
+      ;; get-edges yields a list of lists of two elements
+      ;; so edge-groups is a list of lists of lists of two elements
+      ;; and a single group is a list of lists of two elements
+      (get-edges
+       (analysis-partial-order my-analysis)))
+     (λ (g1 g2)
+       (or (string<? (~v (first (first g1))) (~v (first (first g2))))
+           (and
+            (string=?
+             (~v (first (first g1)))
+             (~v (first (first g2))))
+            (string<?
+             (~v (second (first g1)))
+             (~v (second (first g2)))))))))
+  ;; improve formatting:
+  (for ([grp edge-groups])
+    (let* ([first-elem (first (first grp))]
+           [second-elems (map second grp)]
+           [lst (string-join (map ~v second-elems) ",\n" #:before-first "[" #:after-last "]")])
+      (displayln (format "precedence(~v,~a)." first-elem lst)))))  
+(provide visualize-partial-order/mi)
 
 (define (write-svg! pict fn)
   (with-output-to-file
