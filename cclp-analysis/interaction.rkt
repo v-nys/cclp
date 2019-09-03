@@ -42,7 +42,6 @@
 (require cclp-common/gen-graph-structs)
 (require "genealogical-graph.rkt"
          "mi-map.rkt"
-         (only-in "generalize.rkt" generalize/bu)
          (only-in cclp-analysis/clustering assign-prime-factor-ids cluster))
 (require
   file/convertible
@@ -131,6 +130,7 @@
        (when active-branch
          (annotate-general! gr root targets depth))
        gr)]))
+(provide analysis->current-genealogical-graph)
 
 (define (show-analysis prog-analysis)
   (tree-display
